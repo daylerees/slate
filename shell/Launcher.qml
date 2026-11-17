@@ -532,7 +532,7 @@ PanelWindow {
         { name: "Private Mode", words: "private privacy mode incognito microphone mic camera webcam screenshots recording", icon: 0xF227,
           on: () => Config.s.privateMode, set: v => Config.setPrivateMode(v), can: () => true },
         { name: "Do Not Disturb", words: "dnd do not disturb notifications quiet silence focus", icon: 0xECE9,
-          on: () => !!root.notifs && root.notifs.dnd, set: v => { if (root.notifs) root.notifs.dnd = v; }, can: () => !!root.notifs },
+          on: () => !!root.notifs && root.notifs.quiet, set: v => { if (root.notifs) root.notifs.setQuiet(v); }, can: () => !!root.notifs },
         { name: "Night Light", words: "night light nightlight warm blue light", icon: 0xEAF8,
           on: () => Config.s.nightLight, set: v => Config.s.nightLight = v, can: () => true },
         { name: "Game Mode", words: "game gaming mode performance", icon: 0xF1D2,

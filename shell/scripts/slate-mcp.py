@@ -977,6 +977,8 @@ REFUSE = {
     "barShowAssistant", "privateMode", "privateRestore",
     # Slate's own bookkeeping: the icon theme to go back to
     "iconThemeBefore",
+    # a list of apps (which may still interrupt you while it's quiet: the person's to choose)
+    "dndAllowed",
 }
 ON_OFF = ["", "on", "off"]
 CORNERS = ["none", "lock", "launcher", "overview", "control", "notifications", "screenoff"]
@@ -992,6 +994,9 @@ VALUES = {
     "nightLightSchedule": ["manual", "sun", "custom"],
     "nightLightFrom": (r"([01]\d|2[0-3]):[0-5]\d", "a time like 20:00"),
     "nightLightTo": (r"([01]\d|2[0-3]):[0-5]\d", "a time like 07:00"),
+    "dndFrom": (r"([01]\d|2[0-3]):[0-5]\d", "a time like 22:00"),
+    "dndTo": (r"([01]\d|2[0-3]):[0-5]\d", "a time like 07:00"),
+    "dndDays": ["every", "weekdays", "weekends"],
     "workspaceShape": ["square", "circle"],
     "iconShape": ["tile", "squircle", "circle", "square", "original"],
     "folderColour": (r"[a-z]{3,20}", "default, auto, or a folder color your icons have, like teal"),
@@ -1061,6 +1066,7 @@ SWITCHES = {
     "accentFromWallpaper", "toneFromWallpaper", "wallpaperHideSmall", "wallpaperShowSlate",
     "nightLight", "airplaneMode", "iconFill", "tintIcons", "gameMode", "iconTileColour",
     "reduceTransparency", "reduceMotion", "zoom", "highContrast", "onScreenKeyboard", "screenReader", "pointerTrail",
+    "dndSchedule", "dndFullscreen", "dndCalls",
     "roundedScreenCorners", "shadows", "roundedElements", "reopenAppsAfterRestart",
     "keepEmptyWorkspace", "barBlur", "barPanelBlur", "barAutoHide", "barShowControl",
     "barShowClock", "barShowApps", "barShowSpaces", "spaceBorders", "spaceBadges",

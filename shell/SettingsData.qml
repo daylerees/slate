@@ -186,6 +186,16 @@ JsonAdapter {
     property bool barShowNotifications: true
     property bool barShowClipboard: false     // clipboard history, with how many items it holds
     property bool barShowScreenshot: false    // screenshot buttons (area, window, screen)
+    // Do Not Disturb by itself (Settings → Notifications; Notifications.qml): on a schedule
+    // (dndFrom to dndTo, on "every" day, "weekdays" or "weekends"), while a window is full screen,
+    // during calls; and the apps that still pop up (by the name they give)
+    property bool dndSchedule: false
+    property string dndFrom: "22:00"
+    property string dndTo: "07:00"
+    property string dndDays: "every"
+    property bool dndFullscreen: false
+    property bool dndCalls: false
+    property var dndAllowed: []
     // Screen recordings' sound (Settings → Screenshots; scripts/record.sh): "none", "computer"
     // (what's playing) or "microphone"
     property string recordSound: "none"

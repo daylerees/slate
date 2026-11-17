@@ -31,8 +31,8 @@ Column {
             Label { anchors.verticalCenter: parent.verticalCenter; text: "Do Not Disturb"; color: pop.dim; font.pixelSize: Config.text(12) }
             Switch {
                 anchors.verticalCenter: parent.verticalCenter
-                checked: pop.notifs ? pop.notifs.dnd : false
-                onToggled: if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd
+                checked: pop.notifs ? pop.notifs.quiet : false
+                onToggled: if (pop.notifs) pop.notifs.setQuiet(!pop.notifs.quiet)
             }
             RowButton {
                 visible: notifView.list.length > 0
@@ -44,6 +44,13 @@ Column {
         }
     }
 
+    // (on by itself: why, and till when)
+    Label {
+        visible: !!pop.notifs && pop.notifs.quietWhy !== ""
+        width: parent.width
+        text: pop.notifs ? "Do Not Disturb is on " + pop.notifs.quietWhy : ""
+        color: pop.dim; font.pixelSize: Config.text(12); font.weight: Font.Normal; wrapMode: Text.Wrap
+    }
     Item {
         visible: notifView.list.length === 0
         width: parent.width; height: 120

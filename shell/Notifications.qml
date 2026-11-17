@@ -8,6 +8,8 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Notifications
+import Quickshell.Services.Pipewire
+import Quickshell.Hyprland
 
 Scope {
     id: notifs
@@ -21,7 +23,63 @@ Scope {
     readonly property string stateFile: Quickshell.env("HOME") + "/.local/state/slate/notifications.json"
 
     // ---- State -------------------------------------------------------------
-    property bool dnd: false
+    property bool dnd: false                // Do Not Disturb by hand (the switch; saved)
+
+    // ---- Quiet by itself (Settings → Notifications → Do Not Disturb) --------------------------
+    // On a schedule, while a window is full screen, and during calls (an app using a
+    // microphone). Turning Do Not Disturb off by hand while one of these has it on lets
+    // notifications through until that changes (the schedule's end, the window leaving full
+    // screen, the call ending); everything else uses `quiet`, never `dnd`.
+    readonly property string autoWhy: Config.s.dndSchedule && quietHours ? "schedule"
+        : Config.s.dndFullscreen && fullscreenNow ? "fullscreen"
+        : Config.s.dndCalls && onCall ? "call" : ""
+    property string letThrough: ""          // the automatic reason turned off by hand
+    onAutoWhyChanged: letThrough = ""
+    readonly property bool quiet: dnd || (autoWhy !== "" && letThrough !== autoWhy)
+    // Why it's on, in words for the bell and the panels ("" when it's off, or on by hand)
+    readonly property string quietWhy: !quiet || dnd ? "" : ({
+        schedule: "until " + Config.clockText(clockAt(Config.s.dndTo)),
+        fullscreen: "while a window is full screen",
+        call: "while you're on a call" })[autoWhy] || ""
+    function setQuiet(on) {
+        if (on) { dnd = true; return; }
+        dnd = false;
+        if (autoWhy !== "") letThrough = autoWhy;
+    }
+    // The schedule: from dndFrom to dndTo (past midnight too), on the days chosen. Checked every
+    // half a minute while it's on (the input that makes it worth running)
+    property bool quietHours: false
+    function minutes(text) { const m = /^(\d{1,2}):(\d{2})$/.exec(text || ""); return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 0; }
+    function clockAt(text) { const d = new Date(); d.setHours(Math.floor(minutes(text) / 60), minutes(text) % 60, 0, 0); return d; }
+    function quietAt(now) {
+        const t = now.getHours() * 60 + now.getMinutes();
+        const from = minutes(Config.s.dndFrom), to = minutes(Config.s.dndTo);
+        const inside = from <= to ? (t >= from && t < to) : (t >= from || t < to);
+        if (!inside) return false;
+        // (the day it began: after midnight, a night that started yesterday)
+        const began = new Date(now);
+        if (from > to && t < to) began.setDate(began.getDate() - 1);
+        const weekend = began.getDay() === 0 || began.getDay() === 6;
+        return Config.s.dndDays === "weekdays" ? !weekend : Config.s.dndDays === "weekends" ? weekend : true;
+    }
+    function checkQuietHours() { quietHours = Config.s.dndSchedule && quietAt(new Date()); }
+    Timer { running: Config.s.dndSchedule; interval: 30000; repeat: true; triggeredOnStart: true; onTriggered: notifs.checkQuietHours() }
+    Connections {
+        target: Config.s
+        function onDndScheduleChanged() { notifs.checkQuietHours(); }
+        function onDndFromChanged() { notifs.checkQuietHours(); }
+        function onDndToChanged() { notifs.checkQuietHours(); }
+        function onDndDaysChanged() { notifs.checkQuietHours(); }
+    }
+    // Full screen: the workspace you're on has a full-screen window
+    property bool testFullscreen: false     // (the tests: as if it had)
+    readonly property bool fullscreenNow: testFullscreen || (!!Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.hasFullscreen)
+    // A call: an app's stream taking sound from a microphone (an audio source that isn't a stream)
+    property bool testOnCall: false         // (the tests: as if there were one)
+    readonly property bool onCall: testOnCall || (Config.s.dndCalls && Pipewire.linkGroups.values.some(g =>
+        !!g.source && !!g.target && g.source.audio && !g.source.isSink && !g.source.isStream && g.target.isStream))
+    // Apps that still pop up while it's quiet (Settings: dndAllowed, by the name they give)
+    function allowedThrough(appName) { return (Config.s.dndAllowed || []).indexOf(appName) >= 0; }
     // Newest first: { key, id, appName, summary, body, entryId, image, appIcon, time, urgency,
     // page } (page: the Settings page Slate's own notices open, from their x-slate-page hint)
     property var history: []
@@ -155,9 +213,10 @@ Scope {
             notifs.history = [item].concat(notifs.history).slice(0, notifs.maxHistory);
             notifs.unread++;
             notifs.save();
-            // Do Not Disturb holds back all but urgent ones; game mode holds back every one (they
+            // Do Not Disturb (by hand or by itself) holds back all but urgent ones and the apps
+            // allowed through; game mode holds back every one (they
             // still go to the history, and the bell counts them)
-            if (!Config.gameMode && (!notifs.dnd || n.urgency === NotificationUrgency.Critical)) {
+            if (!Config.gameMode && (!notifs.quiet || n.urgency === NotificationUrgency.Critical || notifs.allowedThrough(n.appName))) {
                 notifs.showToast(item);
                 notifs.chime(n);
             }
@@ -219,8 +278,19 @@ Scope {
     //   slate ipc call notifications dnd true      Do Not Disturb on (false: off)
     IpcHandler {
         target: "notifications"
-        function dnd(on: bool): void { notifs.dnd = on; }
-        function dndGet(): string { return String(notifs.dnd); }
+        function dnd(on: bool): void { notifs.setQuiet(on); }
+        function dndGet(): string { return String(notifs.quiet); }
+        // Would the schedule have it on at this time ("HH:MM") on this day (0 Sunday … 6 Saturday)?
+        function quietAt(time: string, day: int): string {
+            const m = notifs.minutes(time);
+            return String(Config.s.dndSchedule && notifs.quietAt(new Date(2026, 0, 4 + day, Math.floor(m / 60), m % 60)));
+        }
+        // (the tests: as if a window were full screen, or a call going)
+        function testRule(what: string, on: bool): void {
+            if (!Config.testMode) return;
+            if (what === "fullscreen") notifs.testFullscreen = on;
+            if (what === "call") notifs.testOnCall = on;
+        }
         // The latest ones, newest first: [{"app", "summary", "body", "time"}]
         function list(): string {
             return JSON.stringify(notifs.history.slice(0, 20).map(h => ({ app: h.appName || "", summary: h.summary || "", body: h.body || "", time: h.time || 0 })));

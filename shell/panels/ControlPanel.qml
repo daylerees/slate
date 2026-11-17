@@ -278,7 +278,7 @@ Column {
                 bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
                 caffeine: { label: "Caffeine", on: Config.caffeine, code: 0xEF0E },
                 night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
-                dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.dnd : false, code: 0xECE9 },
+                dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.quiet : false, code: 0xECE9 },
                 perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 },
                 airplane: { label: "Airplane Mode", on: Config.s.airplaneMode, code: 0xEB6F },
                 gamemode: { label: "Game Mode", on: Config.s.gameMode, code: 0xF1D2 },
@@ -338,7 +338,7 @@ Column {
                         case "bt": if (Bluetooth.defaultAdapter) Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled; break;
                         case "caffeine": Config.caffeine = !Config.caffeine; break;
                         case "night": Config.s.nightLight = !Config.s.nightLight; break;
-                        case "dnd": if (pop.notifs) pop.notifs.dnd = !pop.notifs.dnd; break;
+                        case "dnd": if (pop.notifs) pop.notifs.setQuiet(!pop.notifs.quiet); break;
                         case "perf": PowerProfiles.profile = tile.on ? PowerProfile.Balanced : PowerProfile.Performance; break;
                         case "airplane": Config.s.airplaneMode = !Config.s.airplaneMode; break;
                         case "gamemode": Config.setGameMode(!Config.s.gameMode); break;

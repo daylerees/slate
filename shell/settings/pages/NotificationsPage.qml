@@ -19,14 +19,98 @@ Column {
     Group {
         SettingRow {
             label: "Do Not Disturb"
-            detail: "Quietens pop-ups so you can focus (critical ones still show). Nothing's lost: everything still goes to history"
-            SettingToggle { checked: win.notifs ? win.notifs.dnd : false; onToggled: v => { if (win.notifs) win.notifs.dnd = v; } }
+            detail: win.notifs && win.notifs.quietWhy !== ""
+                ? "On by itself " + win.notifs.quietWhy + ". Switching it off lets notifications through till then"
+                : "Quietens pop-ups so you can focus (critical ones still show). Nothing's lost: everything still goes to history"
+            SettingToggle { checked: win.notifs ? win.notifs.quiet : false; onToggled: v => { if (win.notifs) win.notifs.setQuiet(v); } }
         }
         Separator {}
         SoundSetting {
             label: "Sound"
             detail: "A soft chime when a notification pops up (also in Sound settings)"
             which: "notification"; sample: "notification"
+        }
+    }
+    // Do Not Disturb by itself (Notifications.qml: autoWhy), and who still gets through
+    GroupLabel { text: "Quiet by itself" }
+    Group {
+        ToggleSetting {
+            label: "On a schedule"
+            detail: "Do Not Disturb comes on at the times you choose. Switching it off by hand lasts until the next change"
+            key: "dndSchedule"
+        }
+        Separator { visible: Config.s.dndSchedule }
+        ChoiceSetting {
+            visible: Config.s.dndSchedule
+            label: "From"
+            settingKey: "dndFrom"
+            value: Config.s.dndFrom
+            options: win.halfHours(0, 23.5)
+            onPicked: v => Config.s.dndFrom = v
+        }
+        Separator { visible: Config.s.dndSchedule }
+        ChoiceSetting {
+            visible: Config.s.dndSchedule
+            label: "Until"
+            settingKey: "dndTo"
+            value: Config.s.dndTo
+            options: win.halfHours(0, 23.5)
+            onPicked: v => Config.s.dndTo = v
+        }
+        Separator { visible: Config.s.dndSchedule }
+        DropdownSetting {
+            visible: Config.s.dndSchedule
+            label: "On"
+            settingKey: "dndDays"
+            options: [{ value: "every", label: "Every day" }, { value: "weekdays", label: "Weekdays" }, { value: "weekends", label: "Weekends" }]
+            value: Config.s.dndDays
+            onPicked: v => Config.s.dndDays = v
+        }
+        Separator {}
+        ToggleSetting {
+            label: "While a window is full screen"
+            detail: "A film, a game or a presentation isn't interrupted"
+            key: "dndFullscreen"
+        }
+        Separator {}
+        ToggleSetting {
+            label: "During calls"
+            detail: "While an app is using your microphone"
+            key: "dndCalls"
+        }
+    }
+    GroupLabel { text: "Still let through" }
+    Group {
+        Repeater {
+            model: Config.s.dndAllowed || []
+            delegate: Column {
+                id: allowedRow
+                required property string modelData
+                required property int index
+                width: parent ? parent.width : 0
+                Separator { visible: allowedRow.index > 0 }
+                ListItemRow {
+                    label: allowedRow.modelData
+                    detail: "Its notifications pop up even while Do Not Disturb is on"
+                    onRemoved: Config.s.dndAllowed = (Config.s.dndAllowed || []).filter(a => a !== allowedRow.modelData)
+                }
+            }
+        }
+        Separator { visible: (Config.s.dndAllowed || []).length > 0 }
+        DropdownSetting {
+            id: allowAdd
+            label: "Add an app"
+            detail: options.length > 0 ? "Apps that have sent you notifications. Urgent notifications always get through"
+                : "Apps show up here once they've sent you a notification"
+            noneLabel: "Choose"
+            value: ""
+            options: {
+                const seen = [];
+                for (const h of (win.notifs ? win.notifs.history : []))
+                    if (h.appName && seen.indexOf(h.appName) < 0 && (Config.s.dndAllowed || []).indexOf(h.appName) < 0) seen.push(h.appName);
+                return seen.sort((a, b) => a.localeCompare(b)).map(n => ({ value: n, label: n }));
+            }
+            onPicked: v => { if (v) Config.s.dndAllowed = (Config.s.dndAllowed || []).concat([v]); }
         }
     }
     GroupLabel { text: "Pop-ups" }

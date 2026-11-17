@@ -454,7 +454,7 @@ PanelWindow {
             { label: "Next wallpaper", icon: 0xEB0A, run: call(["wallpaper", "next"]) },
             { separator: true },
             // (ticked while on, as the menus' other switches are)
-            { label: "Do Not Disturb", icon: bar.notifs && bar.notifs.dnd ? 0xEA5E : 0, run: () => { if (bar.notifs) bar.notifs.dnd = !bar.notifs.dnd; } },
+            { label: "Do Not Disturb", icon: bar.notifs && bar.notifs.quiet ? 0xEA5E : 0, run: () => { if (bar.notifs) bar.notifs.setQuiet(!bar.notifs.quiet); } },
             { label: "Night Light", icon: Config.s.nightLight ? 0xEA5E : 0, run: call(["nightlight", "toggle"]) },
             { label: "Glass", icon: Config.s.glass ? 0xEA5E : 0, run: () => { Config.s.glass = !Config.s.glass; } },
             { separator: true },
@@ -1606,12 +1606,12 @@ PanelWindow {
                         id: bellBtn
                         wanted: Config.s.barShowNotifications
                         pastel: "notifications"            // its colour when the look is Colourful
-                        iconCode: bar.notifs && bar.notifs.dnd ? 0xECE9 : 0xEA35
+                        iconCode: bar.notifs && bar.notifs.quiet ? 0xECE9 : 0xEA35
                         // Unread count beside the bell (hidden during Do Not Disturb)
                         sample: "50"
-                        label: bar.notifs && bar.notifs.unread > 0 && !bar.notifs.dnd
+                        label: bar.notifs && bar.notifs.unread > 0 && !bar.notifs.quiet
                             ? (bar.notifs.unread > 99 ? "99+" : String(bar.notifs.unread)) : ""
-                        tipText: !bar.notifs ? "" : bar.notifs.dnd ? "Notifications: Do Not Disturb is on"
+                        tipText: !bar.notifs ? "" : bar.notifs.quiet ? "Notifications: Do Not Disturb is on" + (bar.notifs.quietWhy ? " " + bar.notifs.quietWhy : "")
                             : bar.notifs.unread === 1 ? "1 new notification" : bar.notifs.unread > 1 ? bar.notifs.unread + " new notifications" : ""
                         onClicked: bar.openPopout("notifications", bellBtn)
                     }
