@@ -110,7 +110,7 @@ Column {
         textFormat: Text.PlainText        // never markup: it can quote what the printing service said
         text: printersPane.note
         color: printersPane.note.startsWith("Slate couldn't do that") ? win.danger : win.dim
-        font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
+        font.family: win.font; font.pixelSize: Config.text(12); wrapMode: Text.Wrap
     }
 
     GroupLabel { visible: printersPane.printingOn; text: "Printers" }
@@ -120,7 +120,7 @@ Column {
             visible: printersPane.state.printers.length === 0
             x: 16; height: 48; verticalAlignment: Text.AlignVCenter
             text: "No printers just yet. Let's find one below"
-            color: win.dim; font.family: win.font; font.pixelSize: 13
+            color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
         }
         Repeater {
             // A row for each printer, by its name, kept while the printer is: what it
@@ -154,13 +154,13 @@ Column {
                 Column {
                     anchors { left: printerIcon.right; leftMargin: 12; right: printerButtons.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                     spacing: 2
-                    Text { width: parent.width; textFormat: Text.PlainText; text: printerRow.printer.info || printerRow.printer.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+                    Text { width: parent.width; textFormat: Text.PlainText; text: printerRow.printer.info || printerRow.printer.name; color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium; elide: Text.ElideRight }
                     Text {
                         width: parent.width; elide: Text.ElideRight
                         textFormat: Text.PlainText        // never markup
                         text: printersPane.statusText(printerRow.printer)
                         color: printerRow.printer.status === "stopped" ? win.danger : printerRow.printer.default ? win.accent : win.dim
-                        font.family: win.font; font.pixelSize: 12
+                        font.family: win.font; font.pixelSize: Config.text(12)
                     }
                 }
                 Row {
@@ -240,8 +240,8 @@ Column {
                 Column {
                     anchors { left: foundIcon.right; leftMargin: 16; right: addButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                     spacing: 2
-                    Text { width: parent.width; textFormat: Text.PlainText; text: foundRow.modelData.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
-                    Text { text: foundRow.modelData.via === "USB" ? "Plugged in by USB" : "On your network"; color: win.dim; font.family: win.font; font.pixelSize: 12 }
+                    Text { width: parent.width; textFormat: Text.PlainText; text: foundRow.modelData.name; color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium; elide: Text.ElideRight }
+                    Text { text: foundRow.modelData.via === "USB" ? "Plugged in by USB" : "On your network"; color: win.dim; font.family: win.font; font.pixelSize: Config.text(12) }
                 }
                 Button {
                     id: addButton
@@ -275,7 +275,7 @@ Column {
             visible: printersPane.scan.sane && printersPane.scan.scanners.length === 0
             x: 16; height: 48; verticalAlignment: Text.AlignVCenter
             text: scanProc.running ? "Looking for scanners…" : "No scanners found"
-            color: win.dim; font.family: win.font; font.pixelSize: 13
+            color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
         }
         Repeater {
             model: printersPane.scan.sane ? printersPane.scan.scanners : []
@@ -296,7 +296,7 @@ Column {
                     anchors { left: scannerIcon.right; leftMargin: 16; right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
                     textFormat: Text.PlainText        // never markup: the scanner's own name
                     text: scannerRow.modelData.name
-                    color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight
+                    color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium; elide: Text.ElideRight
                 }
             }
         }

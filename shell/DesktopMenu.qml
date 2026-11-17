@@ -262,7 +262,7 @@ PanelWindow {
                             textFormat: Text.PlainText        // never markup: some rows carry an app's name or a window's title
                             text: row.modelData.label || ""
                             color: row.modelData.danger ? Config.tint("#f28b8b") : dm.textColor
-                            font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                            font.family: Config.s.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                             elide: Text.ElideRight
                         }
                         // A submenu's arrow

@@ -59,12 +59,12 @@ Item {
             // (room left after the name for the changed-from-default dot)
             width: Math.min(implicitWidth, parent.width - (settingRow.changed ? 20 : 0))
             textFormat: Text.PlainText        // never markup: a row can be named after an app, a device or a download
-            text: label; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight
+            text: label; color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium; elide: Text.ElideRight
             opacity: settingRow.waitOpacity
             Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
         }
         Text {
-            width: Math.min(parent.width, win.detailMeasure); visible: detail !== ""; textFormat: Text.PlainText; text: detail; color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
+            width: Math.min(parent.width, win.detailMeasure); visible: detail !== ""; textFormat: Text.PlainText; text: detail; color: win.dim; font.family: win.font; font.pixelSize: Config.text(12); wrapMode: Text.Wrap
             opacity: settingRow.waitOpacity
             Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
         }
@@ -87,7 +87,7 @@ Item {
                 spacing: 5
                 Text {
                     width: Math.min(implicitWidth, labels.width - 24)
-                    text: settingRow.needs; color: win.dim; font.family: win.font; font.pixelSize: 12; elide: Text.ElideRight
+                    text: settingRow.needs; color: win.dim; font.family: win.font; font.pixelSize: Config.text(12); elide: Text.ElideRight
                 }
                 Text {
                     visible: needsLine.linked

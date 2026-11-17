@@ -93,7 +93,7 @@ Column {
                                     radius: parent.parent.modelData.shape === "square" ? 10 * 0.28 : 5
                                     color: parent.parent.on ? win.accentText : win.dim
                                 }
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
+                                Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
                             }
                             ClickTap { onTapped: Config.s.workspaceShape = parent.modelData.shape }
                         }

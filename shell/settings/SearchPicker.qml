@@ -53,7 +53,7 @@ Column {
             TextInput {
                 id: findBox
                 anchors { left: findGlass.right; leftMargin: 8; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                color: win.text; font.family: win.font; font.pixelSize: 13
+                color: win.text; font.family: win.font; font.pixelSize: Config.text(13)
                 selectionColor: win.accent; selectedTextColor: win.accentText
                 clip: true
                 Keys.onReturnPressed: if (searchPicker.shown.length > 0) { searchPicker.picked(searchPicker.shown[0].value); searchPicker.open = false; }
@@ -77,8 +77,8 @@ Column {
                     color: pickHover.hovered ? Config.hover : "transparent"
                     Column {
                         anchors { left: parent.left; right: parent.right; leftMargin: 10; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                        Text { width: parent.width; textFormat: Text.PlainText; text: parent.parent.modelData.label; color: win.text; font.family: win.font; font.pixelSize: 13; elide: Text.ElideRight }
-                        Text { id: pickDetail; width: parent.width; visible: !!parent.parent.modelData.detail; textFormat: Text.PlainText; text: parent.parent.modelData.detail || ""; color: win.dim; font.family: win.font; font.pixelSize: 11; elide: Text.ElideRight }
+                        Text { width: parent.width; textFormat: Text.PlainText; text: parent.parent.modelData.label; color: win.text; font.family: win.font; font.pixelSize: Config.text(13); elide: Text.ElideRight }
+                        Text { id: pickDetail; width: parent.width; visible: !!parent.parent.modelData.detail; textFormat: Text.PlainText; text: parent.parent.modelData.detail || ""; color: win.dim; font.family: win.font; font.pixelSize: Config.text(11); elide: Text.ElideRight }
                     }
                     HoverHandler { id: pickHover }
                     ClickTap { onTapped: { searchPicker.picked(parent.modelData.value); searchPicker.open = false; } }
@@ -87,7 +87,7 @@ Column {
                     anchors.centerIn: parent
                     visible: pickList.count === 0
                     text: "Nothing matches"
-                    color: win.dim; font.family: win.font; font.pixelSize: 12
+                    color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
                 }
             }
             ScrollShade {

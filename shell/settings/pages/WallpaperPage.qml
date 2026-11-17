@@ -58,7 +58,7 @@ Column {
                     leftPadding: 6
                     textFormat: Text.PlainText        // never markup: a folder's name
                     text: wallpaperPane.browseDir.replace(Quickshell.env("HOME"), "~")
-                    color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                    color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                     elide: Text.ElideMiddle
                 }
             }
@@ -96,7 +96,7 @@ Column {
                             anchors { left: dirIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                             textFormat: Text.PlainText        // never markup: a file's name
                             text: parent.fileName
-                            color: win.text; font.family: win.font; font.pixelSize: 13
+                            color: win.text; font.family: win.font; font.pixelSize: Config.text(13)
                             elide: Text.ElideRight
                         }
                         HoverHandler { id: dirHover }
@@ -107,7 +107,7 @@ Column {
                     anchors.centerIn: parent
                     visible: dirList.count === 0
                     text: "No folders in here"
-                    color: win.dim; font.family: win.font; font.pixelSize: 12
+                    color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
                 }
                 ScrollShade {
                     anchors { top: parent.top; left: parent.left; right: parent.right }
@@ -224,7 +224,7 @@ Column {
     Text {
         visible: wallFiles.count === 0
         text: "No pictures in this folder yet. Pop some in, or choose another folder above"
-        color: win.dim; font.family: win.font; font.pixelSize: 13
+        color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
         leftPadding: 4
     }
     // Thumbnails; click one to use it

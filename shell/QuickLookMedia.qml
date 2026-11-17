@@ -100,7 +100,7 @@ Item {
             anchors { left: playButton.right; leftMargin: 8; verticalCenter: parent.verticalCenter }
             text: media.clock(player.position) + " / " + media.clock(player.duration)
             color: media.dimColor
-            font.family: media.fontFamily; font.pixelSize: 12; font.features: { "tnum": 1 }
+            font.family: media.fontFamily; font.pixelSize: Config.text(12); font.features: { "tnum": 1 }
         }
         // The track: click or drag along it to go there
         Item {

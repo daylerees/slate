@@ -128,7 +128,7 @@ PanelWindow {
                         text: liveCard.modelData.title || ""
                         elide: Text.ElideRight
                         color: liveCard.modelData.activated ? dock.activeDotColor : dock.textColor
-                        font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                        font.family: Config.s.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                     }
                     HoverHandler { id: liveHover }
                     ClickTap { hand: false; onTapped: { liveCard.modelData.activate(); dock.previewApp = null; } }
@@ -152,7 +152,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: "+" + previews.moreCount
                         color: dock.textColor
-                        font.family: Config.s.fontFamily; font.pixelSize: 22; font.weight: Font.Medium
+                        font.family: Config.s.fontFamily; font.pixelSize: Config.text(22); font.weight: Font.Medium
                     }
                 }
                 Text {
@@ -161,7 +161,7 @@ PanelWindow {
                     text: "More windows"
                     elide: Text.ElideRight
                     color: dock.textColor
-                    font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                    font.family: Config.s.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                 }
             }
         }
@@ -195,7 +195,7 @@ PanelWindow {
                         text: titleCard.modelData.title || ""
                         elide: Text.ElideRight
                         color: titleCard.modelData.activated ? dock.activeDotColor : dock.textColor
-                        font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                        font.family: Config.s.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                     }
                     HoverHandler { id: titleHover }
                     ClickTap { hand: false; onTapped: { titleCard.modelData.activate(); dock.previewApp = null; } }
@@ -217,7 +217,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: "+" + previews.moreCount
                         color: dock.textColor
-                        font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                        font.family: Config.s.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                     }
                 }
                 Text {
@@ -225,7 +225,7 @@ PanelWindow {
                     text: "More windows"
                     elide: Text.ElideRight
                     color: dock.textColor
-                    font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                    font.family: Config.s.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                 }
             }
         }

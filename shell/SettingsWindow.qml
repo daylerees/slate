@@ -340,7 +340,7 @@ FloatingWindow {
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverVideoQuality", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
         updates: ["updateCheck", "softwareUpdateCheck"],
-        accessibility: ["reduceTransparency", "reduceMotion", "zoom", "zoomLevel", "zoomFollow"],
+        accessibility: ["reduceTransparency", "reduceMotion", "zoom", "zoomLevel", "zoomFollow", "highContrast", "textScale"],
         assistant: ["assistantBlur", "assistantOpacity", "assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantLocalModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications", "assistantVoice"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
@@ -490,8 +490,8 @@ FloatingWindow {
     }
     property string pageTitle: ""
     // Descriptions wrap at a comfortable reading length (~70 characters of the UI font)
-    FontMetrics { id: detailMetrics; font.family: win.font; font.pixelSize: 12 }
-    FontMetrics { id: introMetrics; font.family: win.font; font.pixelSize: 13 }
+    FontMetrics { id: detailMetrics; font.family: win.font; font.pixelSize: Config.text(12) }
+    FontMetrics { id: introMetrics; font.family: win.font; font.pixelSize: Config.text(13) }
     readonly property real detailMeasure: detailMetrics.averageCharacterWidth * 70
     readonly property real introMeasure: introMetrics.averageCharacterWidth * 70
     // Every page (SettingsIndex.pages: id, label, icon, about, more)
@@ -581,8 +581,8 @@ FloatingWindow {
                             Column {
                                 visible: !win.compact
                                 anchors.verticalCenter: parent.verticalCenter
-                                Text { text: "Slate"; color: win.text; font.family: win.font; font.pixelSize: 18; font.weight: Font.Medium }
-                                Text { text: "Settings"; color: win.dim; font.family: win.font; font.pixelSize: 12 }
+                                Text { text: "Slate"; color: win.text; font.family: win.font; font.pixelSize: Config.text(18); font.weight: Font.Medium }
+                                Text { text: "Settings"; color: win.dim; font.family: win.font; font.pixelSize: Config.text(12) }
                             }
                         }
                         MouseArea { anchors.fill: parent; onPressed: win.startSystemMove() }
@@ -613,7 +613,7 @@ FloatingWindow {
                                 text: parent.modelData.label
                                 color: parent.current ? win.accentText : win.dim
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                                font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                             }
                             HoverHandler { id: navHover }
                             ClickTap { onTapped: win.section = parent.modelData.id }
@@ -700,7 +700,7 @@ FloatingWindow {
                         objectName: "pageFind"
                         activeFocusOnTab: true          // Tab: on into the page's own boxes
                         anchors { left: pageFindIcon.right; leftMargin: 8; right: pageFindClear.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                        color: win.text; font.family: win.font; font.pixelSize: 13
+                        color: win.text; font.family: win.font; font.pixelSize: Config.text(13)
                         selectionColor: win.accent; selectedTextColor: win.accentText
                         clip: true
                         Keys.onPressed: e => {
@@ -750,7 +750,7 @@ FloatingWindow {
                         anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 6 : 22; right: resetBtn.visible ? resetBtn.left : parent.right; rightMargin: resetBtn.visible ? 12 : 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
                         text: win.pageTitle
                         color: win.text
-                        font.family: win.font; font.pixelSize: 22; font.weight: Font.Medium
+                        font.family: win.font; font.pixelSize: Config.text(22); font.weight: Font.Medium
                         elide: Text.ElideRight
                     }
                     // Restore defaults: opposite the title, only on pages with settings, and only
@@ -792,7 +792,7 @@ FloatingWindow {
                         width: parent.width
                         topPadding: 10; bottomPadding: 10; leftPadding: 12
                         text: "No settings match “" + pageFind.text.trim() + "”"
-                        color: win.dim; font.family: win.font; font.pixelSize: 13
+                        color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
                         elide: Text.ElideRight
                     }
                     Repeater {
@@ -819,7 +819,7 @@ FloatingWindow {
                                 Text {
                                     width: parent.width
                                     text: pageHit.modelData.label
-                                    color: pageHit.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                    color: pageHit.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                                     elide: Text.ElideRight
                                 }
                                 Text {
@@ -827,7 +827,7 @@ FloatingWindow {
                                     text: (SettingsIndex.pageNames[pageHit.modelData.page] || "")
                                         + (pageHit.modelData.group && pageHit.modelData.group !== pageHit.modelData.label ? " → " + pageHit.modelData.group : "")
                                         + (pageHit.modelData.detail ? " · " + pageHit.modelData.detail : "")
-                                    color: pageHit.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
+                                    color: pageHit.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: Config.text(11)
                                     elide: Text.ElideRight
                                 }
                             }
@@ -946,7 +946,7 @@ FloatingWindow {
         readonly property real searchH: searching ? 40 : 0
         // For the list's width: as wide as its longest choice, at least the button's, at most
         // the window less a margin (longer ones shorten in the middle)
-        TextMetrics { id: rowMetrics; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium }
+        TextMetrics { id: rowMetrics; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
         function place() {
             const b = owner.button;
             const p = b.mapToItem(dropLayer, 0, 0);
@@ -1002,7 +1002,7 @@ FloatingWindow {
                 TextInput {
                     id: dropFind
                     anchors { left: dropFindIcon.right; leftMargin: 8; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                    color: win.text; font.family: win.font; font.pixelSize: 13
+                    color: win.text; font.family: win.font; font.pixelSize: Config.text(13)
                     selectionColor: win.accent; selectedTextColor: win.accentText
                     clip: true
                     text: dropLayer.query
@@ -1030,7 +1030,7 @@ FloatingWindow {
                 visible: dropLayer.searching && dropLayer.shown.length === 0
                 anchors { top: dropFindBox.bottom; topMargin: 12; left: parent.left; leftMargin: 18 }
                 text: "Nothing matches “" + dropLayer.query.trim() + "”"
-                color: win.dim; font.family: win.font; font.pixelSize: 12
+                color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
             }
             ListView {
                 id: menuList
@@ -1069,7 +1069,7 @@ FloatingWindow {
                         text: parent.modelData.label
                         color: parent.picked ? win.accentText : parent.current ? win.accent : win.text
                         // (an option can name a typeface to be written in: the font settings' do)
-                        font.family: parent.modelData.font || win.font; font.pixelSize: 13; font.weight: Font.Medium
+                        font.family: parent.modelData.font || win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                         elide: Text.ElideMiddle      // device names differ at the end: keep it in view
                     }
                     Text {

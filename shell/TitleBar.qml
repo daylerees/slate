@@ -245,7 +245,7 @@ PanelWindow {
                 textFormat: Text.PlainText        // never markup: the window's title is the app's to choose
                 text: tb.o ? (tb.o.title || tb.o.class || "") : ""
                 color: tb.textColor
-                font.family: Config.s.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                font.family: Config.s.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                 elide: Text.ElideRight
             }
         }

@@ -27,7 +27,7 @@ Row {
         horizontalAlignment: Text.AlignRight
         text: valueSlider.zeroText !== "" && valueSlider.value <= valueSlider.from ? valueSlider.zeroText : valueSlider.value.toFixed(valueSlider.decimals) + valueSlider.suffix
         color: win.dim
-        font.family: win.font; font.pixelSize: 12
+        font.family: win.font; font.pixelSize: Config.text(12)
     }
     Item {
         width: 200; height: 24

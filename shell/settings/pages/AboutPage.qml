@@ -21,7 +21,7 @@ Column {
     // As in LICENSE
     Text {
         text: "© 2026 Dayle Rees · MIT License"
-        color: win.dim; font.family: win.font; font.pixelSize: 12
+        color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
         leftPadding: 4; bottomPadding: 10
     }
     // What Slate is using right now, shown like the battery panel's meters: its memory (of
@@ -94,12 +94,12 @@ Column {
                     spacing: 6
                     Item {
                         width: parent.width; height: meterName.height
-                        Text { id: meterName; text: parent.parent.modelData; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium }
+                        Text { id: meterName; text: parent.parent.modelData; color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
                         Text {
                             anchors.right: parent.right
                             text: parent.parent.isMem ? (usage.mem > 0 ? usage.mb(usage.mem) + " of " + usage.mb(usage.memTotal) : "Checking…")
                                 : (usage.cpu < 0 ? "Checking…" : usage.cpu.toFixed(1) + "% of " + usage.cores + " cores")
-                            color: win.dim; font.family: win.font; font.pixelSize: 12
+                            color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
                         }
                     }
                     Rectangle {
@@ -162,7 +162,7 @@ Column {
                     anchors { left: parent.left; top: parent.top }
                     visible: usage.history.length >= 2
                     text: "Last minute · peak " + parent.realPeak.toFixed(1) + "%"
-                    color: win.dim; font.family: win.font; font.pixelSize: 11
+                    color: win.dim; font.family: win.font; font.pixelSize: Config.text(11)
                 }
             }
         }

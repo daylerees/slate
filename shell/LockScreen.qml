@@ -491,7 +491,7 @@ Scope {
                 anchors.centerIn: parent
                 text: "Preview · click here to close"
                 color: Config.tint("#eef1f5")
-                font.family: Config.s.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                font.family: Config.s.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
             }
             TapHandler { onTapped: root.previewing = false }
         }

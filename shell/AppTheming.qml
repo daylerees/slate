@@ -63,6 +63,8 @@ Scope {
         // Input, Settings → Appearance; off until chosen, and undone when switched off)
         pointerInApps: Config.s.pointerInApps,
         codeFontInApps: Config.s.codeFontInApps,
+        // Accessibility → Text size: GTK apps' text grows to match (only with GTK themed)
+        textScale: Config.textScale,
         // Quick Look on Dolphin's and Thunar's menus (Settings → Default Apps; off until chosen)
         quickLookInFileManagers: Config.s.quickLookInFileManagers,
         on: Config.s.themedApps || []

@@ -314,6 +314,11 @@ def main():
             was_set_before(ctx, "code-font"), lambda: code_font(ctx, p.get("codeFont", "")))
     font_changed = len(changed) > before
     in_apps(ctx, "quick-look", bool(p.get("quickLookInFileManagers")), False, lambda: quick_look_menus(ctx))
+    # Accessibility → Text size: GTK apps' text the same size, only while GTK is themed (and
+    # undone, back to how it was, when either is switched off)
+    scale = float(p.get("textScale") or 1)
+    in_apps(ctx, "text-size", "gtk" in on and scale in (1.15, 1.3), False,
+            lambda: ctx.gsetting("org.gnome.desktop.interface", "text-scaling-factor", str(scale)))
     ctx.save()
     if live:
         for a in slate_apps.APPS:

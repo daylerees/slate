@@ -1060,7 +1060,7 @@ PanelWindow {
                     text: win.dragRunning ? "Unpin" : "Remove from Dock"
                     color: removeTip.warn
                     font.family: Config.s.fontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: Config.text(13)
                     font.weight: Font.Medium
                 }
             }
@@ -1290,7 +1290,7 @@ PanelWindow {
                         text: moreApp.modelData.entry?.name ?? moreApp.modelData.key
                         elide: Text.ElideRight
                         color: win.textColor
-                        font.family: Config.s.fontFamily; font.pixelSize: 11
+                        font.family: Config.s.fontFamily; font.pixelSize: Config.text(11)
                     }
                     // Running: the dock's short bar under the name (the accent for the one you're in)
                     Rectangle {
@@ -1351,7 +1351,7 @@ PanelWindow {
                     horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                     text: appMenu.app && appMenu.app.trashMenu ? "Nothing in the waste basket" : "No downloads just yet"
                     color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
-                    font.family: Config.s.fontFamily; font.pixelSize: 13
+                    font.family: Config.s.fontFamily; font.pixelSize: Config.text(13)
                 }
                 DockGrid {
                     menu: appMenu; dock: win
@@ -1413,7 +1413,7 @@ PanelWindow {
                             text: dl.modelData.name
                             elide: Text.ElideMiddle
                             color: win.textColor
-                            font.family: Config.s.fontFamily; font.pixelSize: 11
+                            font.family: Config.s.fontFamily; font.pixelSize: Config.text(11)
                         }
                         HoverHandler {
                             id: dlHover
@@ -1768,6 +1768,9 @@ PanelWindow {
                 bottomRightRadius: 0
                 color: win.dockColor
                 Gloss { radius: parent.radius; opacity: Math.min(1, win.dockColor.a / 0.05) }   // glass: a sheen (gone with the background)
+                ContrastEdge {                  // high contrast: a clear edge (open along the screen edge)
+                    radius: parent.radius; bottomLeftRadius: 0; bottomRightRadius: 0
+                }
             }
 
             // Where a dragged app will go: a faint tile in the gap the others make for it

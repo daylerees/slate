@@ -190,7 +190,7 @@ PanelWindow {
             anchors { top: parent.top; right: parent.right; topMargin: 18; rightMargin: 22 }
             text: "Skip"
             color: skipHover.hovered ? w.text : w.dim
-            font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium
+            font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
             HoverHandler { id: skipHover }
             ClickTap { onTapped: w.finish() }
         }
@@ -214,7 +214,7 @@ PanelWindow {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Welcome to Slate"
-                        color: w.text; font.family: w.font; font.pixelSize: 30; font.weight: Font.DemiBold
+                        color: w.text; font.family: w.font; font.pixelSize: Config.text(30); font.weight: Font.DemiBold
                     }
                     Text {
                         width: Math.min(parent.width, 520)
@@ -223,7 +223,7 @@ PanelWindow {
                         wrapMode: Text.Wrap
                         lineHeight: 1.25
                         text: "It's lovely to have you here. Slate is a calm desktop for Linux with a premium feel, and everything you'd expect where you'd expect to find it.\n\nIt works well just as it is, and a lot of it takes care of itself. Let's set a few things up together: each choice comes with our recommendation, and nothing here is final. Everything can be changed later, all in one place: Settings (Super+Z)."
-                        color: w.dim; font.family: w.font; font.pixelSize: 14
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(14)
                     }
                 }
             }
@@ -237,11 +237,11 @@ PanelWindow {
                 Column {
                     width: parent.width
                     spacing: 6
-                    Text { text: "How would you like your windows?"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
+                    Text { text: "How would you like your windows?"; color: w.text; font.family: w.font; font.pixelSize: Config.text(22); font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 14
                         text: "Slate can arrange them for you, or leave them wherever you put them. Go with whichever feels like home."
-                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                     }
                     Row {
                         width: parent.width
@@ -293,19 +293,19 @@ PanelWindow {
                                     spacing: 6
                                     Row {
                                         spacing: 8
-                                        Text { text: modeCard.modelData.title; color: w.text; font.family: w.font; font.pixelSize: 16; font.weight: Font.DemiBold }
+                                        Text { text: modeCard.modelData.title; color: w.text; font.family: w.font; font.pixelSize: Config.text(16); font.weight: Font.DemiBold }
                                         Rectangle {
                                             visible: modeCard.modelData.rec
                                             anchors.verticalCenter: parent.verticalCenter
                                             width: recText.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                             color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
-                                            Text { id: recText; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                            Text { id: recText; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: Config.text(11); font.weight: Font.Medium }
                                         }
                                     }
                                     Text {
                                         width: parent.width; wrapMode: Text.Wrap
                                         text: modeCard.modelData.detail
-                                        color: w.dim; font.family: w.font; font.pixelSize: 12; lineHeight: 1.2
+                                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(12); lineHeight: 1.2
                                     }
                                 }
                                 HoverHandler { id: modeHover }
@@ -328,14 +328,14 @@ PanelWindow {
                 Column {
                     width: parent.width
                     spacing: 6
-                    Text { text: "Colors"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
+                    Text { text: "Colors"; color: w.text; font.family: w.font; font.pixelSize: Config.text(22); font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 12
                         text: "Slate can borrow its colors from your wallpaper, so everything matches, and change along with it."
-                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                     }
                     // Theme
-                    Text { text: "Theme"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium; bottomPadding: 4 }
+                    Text { text: "Theme"; color: w.text; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium; bottomPadding: 4 }
                     Row {
                         spacing: 10
                         Repeater {
@@ -354,7 +354,7 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     spacing: 8
                                     Text { anchors.verticalCenter: parent.verticalCenter; text: w.glyph(themeOpt.modelData.icon); color: themeOpt.on ? w.accentText : w.dim; font.family: w.iconFont; font.pixelSize: 16 }
-                                    Text { anchors.verticalCenter: parent.verticalCenter; text: themeOpt.modelData.label; color: themeOpt.on ? w.accentText : w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
+                                    Text { anchors.verticalCenter: parent.verticalCenter; text: themeOpt.modelData.label; color: themeOpt.on ? w.accentText : w.text; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
                                 }
                                 HoverHandler { id: themeHover }
                                 ClickTap { onTapped: w.pickThemeMode(themeOpt.modelData.mode) }
@@ -363,7 +363,7 @@ PanelWindow {
                     }
                     Item { width: 1; height: 14 }
                     // Accent
-                    Text { text: "Accent color"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium; bottomPadding: 4 }
+                    Text { text: "Accent color"; color: w.text; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium; bottomPadding: 4 }
                     Row {
                         width: parent.width
                         spacing: 12
@@ -384,16 +384,16 @@ PanelWindow {
                                     spacing: 6
                                     Row {
                                         spacing: 8
-                                        Text { text: accOpt.modelData.title; color: w.text; font.family: w.font; font.pixelSize: 14; font.weight: Font.DemiBold }
+                                        Text { text: accOpt.modelData.title; color: w.text; font.family: w.font; font.pixelSize: Config.text(14); font.weight: Font.DemiBold }
                                         Rectangle {
                                             visible: accOpt.modelData.rec
                                             anchors.verticalCenter: parent.verticalCenter
                                             width: accRec.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                             color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
-                                            Text { id: accRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                            Text { id: accRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: Config.text(11); font.weight: Font.Medium }
                                         }
                                     }
-                                    Text { width: parent.width; wrapMode: Text.Wrap; text: accOpt.modelData.detail; color: w.dim; font.family: w.font; font.pixelSize: 12 }
+                                    Text { width: parent.width; wrapMode: Text.Wrap; text: accOpt.modelData.detail; color: w.dim; font.family: w.font; font.pixelSize: Config.text(12) }
                                     Row {
                                         spacing: 7
                                         topPadding: 4
@@ -441,17 +441,17 @@ PanelWindow {
                             spacing: 4
                             Text {
                                 text: "Theme your other apps too" + (appsRow.installed.length ? " (" + appsRow.installed.length + " found)" : "")
-                                color: w.text; font.family: w.font; font.pixelSize: 14; font.weight: Font.DemiBold
+                                color: w.text; font.family: w.font; font.pixelSize: Config.text(14); font.weight: Font.DemiBold
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
                                 text: "Every app Slate can theme that you have installed (GTK and Qt apps, terminals, editors and more) follows these colors too, so your whole desktop matches."
-                                color: w.dim; font.family: w.font; font.pixelSize: 12
+                                color: w.dim; font.family: w.font; font.pixelSize: Config.text(12)
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
                                 text: "This changes those apps' own settings (their color or theme files). Don't worry: each one is backed up first, and switching an app off in Settings \u2192 App Theming puts its original back."
-                                color: Config.tint("#e8c48f"); font.family: w.font; font.pixelSize: 12
+                                color: Config.tint("#e8c48f"); font.family: w.font; font.pixelSize: Config.text(12)
                             }
                         }
                         HoverHandler { id: appsHover }
@@ -485,11 +485,11 @@ PanelWindow {
                 Column {
                     width: parent.width
                     spacing: 6
-                    Text { text: "Glass or flat?"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
+                    Text { text: "Glass or flat?"; color: w.text; font.family: w.font; font.pixelSize: Config.text(22); font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 14
                         text: "Two looks to start from. Try them both: this window changes with your choice, and you can fine-tune every detail later in Settings \u2192 Appearance."
-                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                     }
                     Row {
                         width: parent.width
@@ -558,19 +558,19 @@ PanelWindow {
                                     spacing: 6
                                     Row {
                                         spacing: 8
-                                        Text { text: lookCard.modelData.name; color: w.text; font.family: w.font; font.pixelSize: 16; font.weight: Font.DemiBold }
+                                        Text { text: lookCard.modelData.name; color: w.text; font.family: w.font; font.pixelSize: Config.text(16); font.weight: Font.DemiBold }
                                         Rectangle {
                                             visible: lookCard.modelData.rec
                                             anchors.verticalCenter: parent.verticalCenter
                                             width: lookRec.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                             color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
-                                            Text { id: lookRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                            Text { id: lookRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: Config.text(11); font.weight: Font.Medium }
                                         }
                                     }
                                     Text {
                                         width: parent.width; wrapMode: Text.Wrap
                                         text: lookCard.modelData.detail
-                                        color: w.dim; font.family: w.font; font.pixelSize: 12; lineHeight: 1.2
+                                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(12); lineHeight: 1.2
                                     }
                                 }
                                 HoverHandler { id: lookHover }
@@ -592,18 +592,18 @@ PanelWindow {
                             spacing: 4
                             Row {
                                 spacing: 8
-                                Text { text: "Slate's pointer and code font in your other apps too"; color: w.text; font.family: w.font; font.pixelSize: 14; font.weight: Font.DemiBold }
+                                Text { text: "Slate's pointer and code font in your other apps too"; color: w.text; font.family: w.font; font.pixelSize: Config.text(14); font.weight: Font.DemiBold }
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: inAppsRec.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                     color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
-                                    Text { id: inAppsRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                    Text { id: inAppsRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: Config.text(11); font.weight: Font.Medium }
                                 }
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
                                 text: "Your apps get the same pointer and monospaced font as Slate, so everything matches. This changes those apps' own settings: switch it off at any time in Settings, and Slate puts them back as they were."
-                                color: w.dim; font.family: w.font; font.pixelSize: 12
+                                color: w.dim; font.family: w.font; font.pixelSize: Config.text(12)
                             }
                         }
                         HoverHandler { id: inAppsHover }
@@ -629,11 +629,11 @@ PanelWindow {
                 Column {
                     width: parent.width
                     spacing: 6
-                    Text { text: "The menu bar and dock"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
+                    Text { text: "The menu bar and dock"; color: w.text; font.family: w.font; font.pixelSize: Config.text(22); font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 18
                         text: "Put them on whichever edge you like. Most people enjoy the bar along the top and the dock at the bottom."
-                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                     }
                     Row {
                         width: parent.width
@@ -650,8 +650,8 @@ PanelWindow {
                                 Column {
                                     anchors { fill: parent; margins: 16 }
                                     spacing: 6
-                                    Text { text: edgeCard.modelData.title; color: w.text; font.family: w.font; font.pixelSize: 15; font.weight: Font.DemiBold }
-                                    Text { width: parent.width; wrapMode: Text.Wrap; text: edgeCard.modelData.detail; color: w.dim; font.family: w.font; font.pixelSize: 12; bottomPadding: 8 }
+                                    Text { text: edgeCard.modelData.title; color: w.text; font.family: w.font; font.pixelSize: Config.text(15); font.weight: Font.DemiBold }
+                                    Text { width: parent.width; wrapMode: Text.Wrap; text: edgeCard.modelData.detail; color: w.dim; font.family: w.font; font.pixelSize: Config.text(12); bottomPadding: 8 }
                                     EdgePicker {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         accent: w.accent
@@ -662,7 +662,7 @@ PanelWindow {
                                     Text {
                                         width: parent.width; horizontalAlignment: Text.AlignHCenter; topPadding: 6
                                         text: "Click an edge"
-                                        color: w.dim; font.family: w.font; font.pixelSize: 11
+                                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(11)
                                     }
                                 }
                             }
@@ -678,8 +678,8 @@ PanelWindow {
                         Column {
                             anchors { left: parent.left; right: hideSwitch.left; leftMargin: 14; rightMargin: 12; verticalCenter: parent.verticalCenter }
                             spacing: 3
-                            Text { text: "Hide the dock when windows are open"; color: w.text; font.family: w.font; font.pixelSize: 14; font.weight: Font.DemiBold }
-                            Text { width: parent.width; elide: Text.ElideRight; text: "Gives your windows more room. Push the pointer to its edge whenever you want it back"; color: w.dim; font.family: w.font; font.pixelSize: 12 }
+                            Text { text: "Hide the dock when windows are open"; color: w.text; font.family: w.font; font.pixelSize: Config.text(14); font.weight: Font.DemiBold }
+                            Text { width: parent.width; elide: Text.ElideRight; text: "Gives your windows more room. Push the pointer to its edge whenever you want it back"; color: w.dim; font.family: w.font; font.pixelSize: Config.text(12) }
                         }
                         HoverHandler { id: hideHover }
                         Toggle {
@@ -704,11 +704,11 @@ PanelWindow {
                 Column {
                     width: parent.width
                     spacing: 6
-                    Text { text: "Keyboard shortcuts"; color: w.text; font.family: w.font; font.pixelSize: 22; font.weight: Font.DemiBold }
+                    Text { text: "Keyboard shortcuts"; color: w.text; font.family: w.font; font.pixelSize: Config.text(22); font.weight: Font.DemiBold }
                     Text {
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 14
                         text: "Most of Slate's shortcuts use Super: the key with your operating system's logo on it. That's the Windows key on most keyboards, or Command (\u2318) on a Mac one.\n\nComing from Hyprland? You're welcome to keep the keys you already know."
-                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                     }
                     Repeater {
                         model: [
@@ -730,16 +730,16 @@ PanelWindow {
                                 spacing: 4
                                 Row {
                                     spacing: 8
-                                    Text { text: keyOpt.modelData.title; color: w.text; font.family: w.font; font.pixelSize: 14; font.weight: Font.DemiBold }
+                                    Text { text: keyOpt.modelData.title; color: w.text; font.family: w.font; font.pixelSize: Config.text(14); font.weight: Font.DemiBold }
                                     Rectangle {
                                         visible: keyOpt.modelData.rec
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: keyRec.implicitWidth + 14; height: 20; radius: Config.corner(10)
                                         color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.18)
-                                        Text { id: keyRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                        Text { id: keyRec; anchors.centerIn: parent; text: "Recommended"; color: w.accent; font.family: w.font; font.pixelSize: Config.text(11); font.weight: Font.Medium }
                                     }
                                 }
-                                Text { width: parent.width; elide: Text.ElideRight; text: keyOpt.modelData.detail; color: w.dim; font.family: w.font; font.pixelSize: 12 }
+                                Text { width: parent.width; elide: Text.ElideRight; text: keyOpt.modelData.detail; color: w.dim; font.family: w.font; font.pixelSize: Config.text(12) }
                             }
                             Text {
                                 id: keyTick
@@ -778,7 +778,7 @@ PanelWindow {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Meet Nova"
-                        color: w.text; font.family: w.font; font.pixelSize: 28; font.weight: Font.DemiBold
+                        color: w.text; font.family: w.font; font.pixelSize: Config.text(28); font.weight: Font.DemiBold
                     }
                     Text {
                         width: Math.min(parent.width, 540)
@@ -787,13 +787,13 @@ PanelWindow {
                         wrapMode: Text.Wrap
                         lineHeight: 1.25
                         text: "Nova is Slate's assistant. Ask in plain words, like \u201Cturn on glass\u201D or \u201Cput Firefox on workspace 2\u201D, and Nova asks an AI agent you already use, such as Claude Code, to do it through Slate's own tools: changing settings, arranging windows and more.\n\nIt works with your agent and your own account, and Slate keeps no keys. Nova is off to start with, and it's still an experiment. If you'd like to try it, Settings \u2192 Assistant explains what it can see and do, and the risks, before you switch it on."
-                        color: w.dim; font.family: w.font; font.pixelSize: 14
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(14)
                     }
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: novaText.implicitWidth + 32; height: 38; radius: Config.corner(10)
                         color: novaHover.hovered ? Config.hoverOn(w.card) : w.card
-                        Text { id: novaText; anchors.centerIn: parent; text: "Open Assistant settings"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
+                        Text { id: novaText; anchors.centerIn: parent; text: "Open Assistant settings"; color: w.text; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
                         HoverHandler { id: novaHover }
                         ClickTap { onTapped: w.openAssistant() }
                     }
@@ -841,13 +841,13 @@ PanelWindow {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "You're all set"
-                        color: w.text; font.family: w.font; font.pixelSize: 26; font.weight: Font.DemiBold
+                        color: w.text; font.family: w.font; font.pixelSize: Config.text(26); font.weight: Font.DemiBold
                     }
                     Item { width: 1; height: 6 }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Here are a few keys to help you find your way. Super is the key with the Windows logo (Command on a Mac keyboard).\nSettings has the full list whenever you need it (Super+Z → Shortcuts)."
-                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                     }
                     Item { width: 1; height: 22 }
                     Grid {
@@ -875,7 +875,7 @@ PanelWindow {
                                 Column {
                                     anchors { left: tipIcon.right; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
                                     spacing: 8
-                                    Text { width: parent.width; text: tip.modelData.what; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+                                    Text { width: parent.width; text: tip.modelData.what; color: w.text; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium; elide: Text.ElideRight }
                                     // The keys, each as a keycap
                                     Row {
                                         spacing: 4
@@ -888,14 +888,14 @@ PanelWindow {
                                                 Text {
                                                     visible: index > 0
                                                     anchors.verticalCenter: parent.verticalCenter
-                                                    text: "+"; color: w.dim; font.family: w.font; font.pixelSize: 11
+                                                    text: "+"; color: w.dim; font.family: w.font; font.pixelSize: Config.text(11)
                                                 }
                                                 Rectangle {
                                                     width: Math.max(22, capText.implicitWidth + 14); height: 22; radius: Config.corner(6)
                                                     color: w.line
                                                     // A slightly darker lower edge, like a key
                                                     Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 2; radius: Config.corner(6); color: Qt.darker(w.line, 1.35) }
-                                                    Text { id: capText; anchors.centerIn: parent; anchors.verticalCenterOffset: -1; text: parent.parent.modelData; color: w.text; font.family: w.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                                    Text { id: capText; anchors.centerIn: parent; anchors.verticalCenterOffset: -1; text: parent.parent.modelData; color: w.text; font.family: w.font; font.pixelSize: Config.text(11); font.weight: Font.Medium }
                                                 }
                                             }
                                         }
@@ -913,7 +913,7 @@ PanelWindow {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Thank you for trying Slate"
-                            color: w.text; font.family: w.font; font.pixelSize: 15; font.weight: Font.Medium
+                            color: w.text; font.family: w.font; font.pixelSize: Config.text(15); font.weight: Font.Medium
                         }
                         Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 40; height: 1; color: w.line }
                     }
@@ -921,7 +921,7 @@ PanelWindow {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "We hope it feels like home."
-                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                     }
                 }
             }
@@ -953,7 +953,7 @@ PanelWindow {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "A password of your own"
-                        color: w.text; font.family: w.font; font.pixelSize: 26; font.weight: Font.DemiBold
+                        color: w.text; font.family: w.font; font.pixelSize: Config.text(26); font.weight: Font.DemiBold
                     }
                     Item { width: 1; height: 10 }
                     Text {
@@ -961,7 +961,7 @@ PanelWindow {
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
                         text: "Whoever added you to this computer chose your password, so they know it too. You can choose a new one now, or keep it and change it any time in Settings → Users."
-                        color: w.dim; font.family: w.font; font.pixelSize: 13
+                        color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                     }
                     Item { width: 1; height: 22 }
                     Repeater {
@@ -983,7 +983,7 @@ PanelWindow {
                                     verticalAlignment: TextInput.AlignVCenter
                                     echoMode: TextInput.Password
                                     color: w.text; selectionColor: w.accent
-                                    font.family: w.font; font.pixelSize: 13
+                                    font.family: w.font; font.pixelSize: Config.text(13)
                                     clip: true
                                     Component.onCompleted: {
                                         if (modelData.id === "current") passwordPage.current = box;
@@ -996,7 +996,7 @@ PanelWindow {
                                     visible: box.text === ""
                                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                                     text: modelData.hint
-                                    color: w.dim; font.family: w.font; font.pixelSize: 13
+                                    color: w.dim; font.family: w.font; font.pixelSize: Config.text(13)
                                 }
                             }
                         }
@@ -1011,7 +1011,7 @@ PanelWindow {
                             : passwordPage.chosen && passwordPage.again && passwordPage.again.text !== "" && passwordPage.chosen.text !== passwordPage.again.text ? "Those new passwords don't match"
                             : ""
                         color: w.pwChanged || w.pwBusy ? w.dim : Config.tint("#f28b8b")
-                        font.family: w.font; font.pixelSize: 12
+                        font.family: w.font; font.pixelSize: Config.text(12)
                         height: text === "" ? 0 : implicitHeight + 8
                         topPadding: 4
                     }
@@ -1027,7 +1027,7 @@ PanelWindow {
                             anchors.centerIn: parent
                             text: "Change password"
                             color: passwordPage.ready ? w.accentText : w.dim
-                            font.family: w.font; font.pixelSize: 13; font.weight: Font.DemiBold
+                            font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.DemiBold
                         }
                         ClickTap { onTapped: passwordPage.go() }
                     }
@@ -1064,7 +1064,7 @@ PanelWindow {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 width: backText.implicitWidth + 32; height: 38; radius: Config.corner(10)
                 color: backHover.hovered ? Config.hoverOn(w.card) : w.card
-                Text { id: backText; anchors.centerIn: parent; text: "Back"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
+                Text { id: backText; anchors.centerIn: parent; text: "Back"; color: w.text; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
                 HoverHandler { id: backHover }
                 ClickTap { onTapped: w.page-- }
             }
@@ -1076,7 +1076,7 @@ PanelWindow {
                     visible: w.page === w.pages - 1
                     width: setText.implicitWidth + 32; height: 38; radius: Config.corner(10)
                     color: setHover.hovered ? Config.hoverOn(w.card) : w.card
-                    Text { id: setText; anchors.centerIn: parent; text: "Open Settings"; color: w.text; font.family: w.font; font.pixelSize: 13; font.weight: Font.Medium }
+                    Text { id: setText; anchors.centerIn: parent; text: "Open Settings"; color: w.text; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
                     HoverHandler { id: setHover }
                     ClickTap {
                         onTapped: {
@@ -1095,7 +1095,7 @@ PanelWindow {
                         text: w.page === 0 ? "Get started"
                             : w.page === 8 && !w.pwChanged ? "Keep it for now"
                             : w.page === w.pages - 1 ? "Start using Slate" : "Next"
-                        color: w.accentText; font.family: w.font; font.pixelSize: 13; font.weight: Font.DemiBold
+                        color: w.accentText; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.DemiBold
                     }
                     ClickTap { onTapped: { if (w.page < w.pages - 1) w.page++; else w.finish(); } }
                 }

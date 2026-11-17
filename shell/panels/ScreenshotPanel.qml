@@ -54,7 +54,7 @@ Column {
     Label {
         width: parent.width
         text: "Saved to " + shotView.folder.replace(Quickshell.env("HOME"), "~") + " and copied"
-        color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12; elide: Text.ElideMiddle
+        color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12); elide: Text.ElideMiddle
     }
     Divider {}
     LinkRow {

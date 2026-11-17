@@ -991,7 +991,7 @@ PanelWindow {
                 text: "Search apps, windows, files and more"
                 color: root.dimTextColor
                 font.family: root.fontFamily
-                font.pixelSize: 15
+                font.pixelSize: Config.text(15)
                 font.weight: Font.Medium
                 visible: search.text === ""
             }
@@ -1003,7 +1003,7 @@ PanelWindow {
                 selectionColor: root.accent
                 selectedTextColor: root.barColor
                 font.family: root.fontFamily
-                font.pixelSize: 15
+                font.pixelSize: Config.text(15)
                 font.weight: Font.Medium
                 focus: root.shown
                 clip: true
@@ -1272,7 +1272,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: row.emojiTile ? row.modelData.emoji : ""
                         font.family: "Noto Color Emoji"
-                        font.pixelSize: Math.round(parent.height * 0.6)
+                        font.pixelSize: Config.text(Math.round(parent.height * 0.6))
                     }
                 }
                 // Draw the tile if this app doesn't have one yet
@@ -1319,7 +1319,7 @@ PanelWindow {
                         color: row.onAccent ? root.accentText : root.textColor
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                         font.family: root.fontFamily
-                        font.pixelSize: row.calc ? 16 : 14
+                        font.pixelSize: Config.text(row.calc ? 16 : 14)
                         font.weight: Font.Medium
                         elide: Text.ElideRight
                     }
@@ -1331,7 +1331,7 @@ PanelWindow {
                         color: row.onAccent ? Qt.rgba(root.accentText.r, root.accentText.g, root.accentText.b, 0.72) : root.dimTextColor
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                         font.family: root.fontFamily
-                        font.pixelSize: 12
+                        font.pixelSize: Config.text(12)
                         elide: Text.ElideRight
                     }
                 }
@@ -1375,7 +1375,7 @@ PanelWindow {
                     text: !nameStrip.item ? "" : nameStrip.item.calc ? "= " + nameStrip.item.name
                         : !nameStrip.item.kind ? root.capitalised(nameStrip.item.name) : nameStrip.item.name
                     color: root.textColor
-                    font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
+                    font.family: root.fontFamily; font.pixelSize: Config.text(14); font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
                 Text {
@@ -1385,7 +1385,7 @@ PanelWindow {
                     textFormat: Text.PlainText        // never markup: an app's own description, a file's folder
                     text: nameStrip.item && nameStrip.item.calc ? nameStrip.detail : root.capitalised(nameStrip.detail)
                     color: root.dimTextColor
-                    font.family: root.fontFamily; font.pixelSize: 12
+                    font.family: root.fontFamily; font.pixelSize: Config.text(12)
                     elide: Text.ElideRight
                 }
             }
@@ -1439,7 +1439,7 @@ PanelWindow {
             text: "Nothing matches that. Try another word"
             color: root.dimTextColor
             font.family: root.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: Config.text(14)
         }
     }
 }

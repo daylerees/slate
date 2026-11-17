@@ -95,7 +95,7 @@ Column {
             text: NotificationText.safeMarkdown(Updates.notes)
             textFormat: Text.MarkdownText
             color: win.text; linkColor: win.accent
-            font.family: win.font; font.pixelSize: 13
+            font.family: win.font; font.pixelSize: Config.text(13)
             wrapMode: Text.Wrap
             onLinkActivated: link => { if (NotificationText.openable(link)) Qt.openUrlExternally(link); }
         }
@@ -108,7 +108,7 @@ Column {
             text: "You've changed some of Slate's own files, outside settings.json, hypr/ and user/. Updating replaces them; your versions stay in " + Updates.kept + ":\n"
                 + updatesPane.touched.slice(0, 8).map(f => "  · " + f).join("\n")
                 + (updatesPane.touched.length > 8 ? "\n  · and " + (updatesPane.touched.length - 8) + " more" : "")
-            color: win.danger; font.family: win.font; font.pixelSize: 12
+            color: win.danger; font.family: win.font; font.pixelSize: Config.text(12)
             wrapMode: Text.Wrap
         }
         SettingRow {

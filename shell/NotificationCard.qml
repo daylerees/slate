@@ -240,7 +240,7 @@ Rectangle {
                     textFormat: Text.PlainText        // never markup: the app's own name for itself
                     text: card.appName
                     color: card.dim
-                    font.family: card.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+                    font.family: card.bar.fontFamily; font.pixelSize: Config.text(11); font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
                 Text {
@@ -249,7 +249,7 @@ Rectangle {
                     anchors.rightMargin: closeBtn.visible ? 6 : 0
                     text: card.entry ? card.ago(card.entry.time) : ""
                     color: card.dim
-                    font.family: card.bar.fontFamily; font.pixelSize: 11
+                    font.family: card.bar.fontFamily; font.pixelSize: Config.text(11)
                 }
                 // Close button, shown on hover: the icon on a small rounded square, lit in the
                 // accent when pointed at. (Overhangs the row a little rather than making it taller.)
@@ -279,7 +279,7 @@ Rectangle {
                 text: card.title
                 visible: text !== ""
                 color: card.textColor
-                font.family: card.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                font.family: card.bar.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
@@ -295,7 +295,7 @@ Rectangle {
                 textFormat: Text.StyledText
                 color: card.dim
                 linkColor: card.bar.accent
-                font.family: card.bar.fontFamily; font.pixelSize: 12
+                font.family: card.bar.fontFamily; font.pixelSize: Config.text(12)
                 wrapMode: Text.Wrap
                 maximumLineCount: card.inPanel ? 3 : 4
                 elide: Text.ElideRight
@@ -330,7 +330,7 @@ Rectangle {
                             textFormat: Text.PlainText        // never markup: the app's own word for its button
                             text: modelData.text
                             color: card.accent
-                            font.family: card.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                            font.family: card.bar.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                         }
                         HoverHandler { id: actHover }
                         ClickTap { onTapped: card.action(modelData.identifier) }

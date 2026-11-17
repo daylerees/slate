@@ -54,7 +54,7 @@ Column {
                 color: on ? win.accent : "transparent"
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                 HoverFill { base: win.control; hovered: optHover.hovered; gone: parent.on; radius: parent.radius }
-                Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
+                Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
                 HoverHandler { id: optHover }
                 ClickTap { onTapped: { choiceSetting.picked(parent.modelData.value); choiceSetting.open = false; } }
             }

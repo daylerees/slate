@@ -18,7 +18,7 @@ Item {
     Label {
         id: titleLabel
         anchors.verticalCenter: parent.verticalCenter
-        font.pixelSize: 15
+        font.pixelSize: Config.text(15)
         width: Math.min(implicitWidth, parent.width - (titleEdit.visible ? 30 : 0))
         elide: Text.ElideRight
     }

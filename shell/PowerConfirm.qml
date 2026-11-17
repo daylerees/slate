@@ -209,7 +209,7 @@ PanelWindow {
                     wrapMode: Text.WordWrap
                     color: root.textColor
                     font.family: root.fontFamily
-                    font.pixelSize: 18
+                    font.pixelSize: Config.text(18)
                     font.weight: Font.DemiBold
                 }
                 Item { width: 1; height: 6 }
@@ -225,7 +225,7 @@ PanelWindow {
                     text: root.info.body
                     color: root.dimTextColor
                     font.family: root.fontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: Config.text(13)
                     font.weight: Font.Medium
                 }
                 Item { width: 1; height: 22 }
@@ -244,7 +244,7 @@ PanelWindow {
                         clip: true
                         color: root.textColor
                         selectionColor: root.accent; selectedTextColor: root.accentText
-                        font.family: root.fontFamily; font.pixelSize: 14
+                        font.family: root.fontFamily; font.pixelSize: Config.text(14)
                         maximumLength: root.hasInput && root.custom.input.maxLength ? root.custom.input.maxLength : 200
                         selectByMouse: true
                         onAccepted: root.confirm()
@@ -259,7 +259,7 @@ PanelWindow {
                         textFormat: Text.PlainText        // never markup
                         text: root.hasInput ? root.custom.input.placeholder || "" : ""
                         color: root.dimTextColor
-                        font.family: root.fontFamily; font.pixelSize: 14
+                        font.family: root.fontFamily; font.pixelSize: Config.text(14)
                         elide: Text.ElideRight
                     }
                 }
@@ -294,7 +294,7 @@ PanelWindow {
                             width: parent.width
                             text: root.hasReopen ? "Reopen my apps afterwards" : root.custom && root.custom.option ? root.custom.option.label : ""
                             color: root.textColor
-                            font.family: root.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold
+                            font.family: root.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.DemiBold
                         }
                         Text {
                             width: parent.width
@@ -303,7 +303,7 @@ PanelWindow {
                             text: root.hasReopen ? "On the same workspaces, just where you left them"
                                 : root.custom && root.custom.option ? root.custom.option.detail || "" : ""
                             color: root.dimTextColor
-                            font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                            font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                         }
                     }
                     Toggle {

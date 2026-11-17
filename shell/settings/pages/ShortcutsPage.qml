@@ -98,7 +98,7 @@ Column {
             activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
             id: findKeys
             anchors { left: keysGlass.right; leftMargin: 10; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            color: win.text; font.family: win.font; font.pixelSize: 13; clip: true
+            color: win.text; font.family: win.font; font.pixelSize: Config.text(13); clip: true
             selectionColor: win.accent; selectedTextColor: win.accentText
             Text { visible: findKeys.text === ""; text: "Search shortcuts"; color: win.dim; font: findKeys.font; anchors.verticalCenter: parent.verticalCenter }
         }
@@ -135,7 +135,7 @@ Column {
                                         width: Math.max(26, capText.implicitWidth + 14); height: 24; radius: Config.corner(6)
                                         color: win.divider
                                         border.width: 1; border.color: win.controlHoverSolid
-                                        Text { id: capText; anchors.centerIn: parent; text: parent.modelData; color: win.text; font.family: win.font; font.pixelSize: 11; font.weight: Font.Medium }
+                                        Text { id: capText; anchors.centerIn: parent; text: parent.modelData; color: win.text; font.family: win.font; font.pixelSize: Config.text(11); font.weight: Font.Medium }
                                     }
                                 }
                             }

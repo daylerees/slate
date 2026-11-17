@@ -28,7 +28,7 @@ Column {
         Row {
             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
             spacing: 8
-            Label { anchors.verticalCenter: parent.verticalCenter; text: "Do Not Disturb"; color: pop.dim; font.pixelSize: 12 }
+            Label { anchors.verticalCenter: parent.verticalCenter; text: "Do Not Disturb"; color: pop.dim; font.pixelSize: Config.text(12) }
             Switch {
                 anchors.verticalCenter: parent.verticalCenter
                 checked: pop.notifs ? pop.notifs.dnd : false

@@ -13,5 +13,6 @@ Rectangle {
     radius: Config.corner(12)
     color: win.card
     Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
+    ContrastEdge { radius: parent.radius }   // high contrast: a clear edge
     Column { id: groupCol; anchors { left: parent.left; right: parent.right; top: parent.top; margins: 4 } }
 }

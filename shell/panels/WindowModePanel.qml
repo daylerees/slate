@@ -34,7 +34,7 @@ Column {
     Label {
         width: parent.width
         wrapMode: Text.Wrap
-        color: pop.dim; font.pixelSize: 12; font.weight: Font.Normal
+        color: pop.dim; font.pixelSize: Config.text(12); font.weight: Font.Normal
         text: (wmView.own ? "This workspace has a window mode of its own." : "This workspace follows the default.")
             + " A mode picked here is for this workspace only; the others keep theirs"
     }
@@ -71,7 +71,7 @@ Column {
                     text: "Default"
                     color: modeRow.fgDim
                     Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                    font.pixelSize: 12; font.weight: Font.Normal
+                    font.pixelSize: Config.text(12); font.weight: Font.Normal
                 }
             }
         }

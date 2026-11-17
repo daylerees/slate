@@ -265,7 +265,7 @@ class Tooltips(Case):
         self.assertNotRegex(src, r"DropShadow|MultiEffect|shadowEnabled", "a shadow of its own instead of Shadow.qml")
         self.assertIn("textFormat: Text.PlainText", src, "a tooltip often shows a name another program chose")
         self.assertIn("font.family: Config.s.fontFamily", src)
-        self.assertIn("font.pixelSize: 13", src)
+        self.assertIn("font.pixelSize: Config.text(13)", src)
 
     def test_every_tooltip_is_the_shared_one(self):
         for f, line in self.HOSTS:
@@ -346,3 +346,40 @@ class SoftwareCategoryColours(Case):
             for b in names[i + 1:]:
                 gap = abs(hues[a] - hues[b]) % 360
                 self.assertGreaterEqual(min(gap, 360 - gap), 30, f"{a} and {b} are nearly the same colour")
+
+
+class TextSize(Case):
+    """Accessibility → Text size: every Text's size goes through Config.text(), so it grows with
+    the setting; icons (font glyphs: the icon font, an Icon, a code:) keep theirs. The login
+    screen keeps its own (it never has the setting)."""
+    ICON = re.compile(r"\bcode:|\bIcon\s*\{|IconTile|IconButton|HeadButton|iconFont|tabler|fromCodePoint|glyph\(|\.icon\b")
+
+    def test_text_follows_the_setting(self):
+        def indent(l):
+            return len(l) - len(l.lstrip(" "))
+        root = slate.path("shell")
+        missing = []
+        for dirpath, dirs, names in os.walk(root):
+            dirs[:] = [d for d in dirs if d not in ("greeter", "reloading", "data") and not d.startswith(".")]
+            for name in names:
+                if not name.endswith(".qml") or name in ("LoginScreen.qml", "Config.qml", "Icon.qml"):
+                    continue
+                path = os.path.join(dirpath, name)
+                lines = open(path, encoding="utf-8").read().split("\n")
+                for i, line in enumerate(lines):
+                    if "font.pixelSize:" not in line or "Config.text(" in line or line.strip().startswith("//"):
+                        continue
+                    ind = indent(line)
+                    if "{" in line and line.rstrip().endswith("}"):
+                        block = line
+                    else:
+                        a = i
+                        while a > 0 and not (lines[a].rstrip().endswith("{") and indent(lines[a]) < ind):
+                            a -= 1
+                        b = i
+                        while b + 1 < len(lines) and (indent(lines[b + 1]) >= ind or not lines[b + 1].strip()):
+                            b += 1
+                        block = "\n".join(lines[a:b + 1])
+                    if not self.ICON.search(block):
+                        missing.append("%s:%d" % (os.path.relpath(path, root), i + 1))
+        self.assertEqual(missing, [], "text that doesn't follow Accessibility → Text size (use Config.text(px)): " + ", ".join(missing[:20]))

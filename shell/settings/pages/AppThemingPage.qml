@@ -174,7 +174,7 @@ Column {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: parent.parent.on ? "Installed" : "Not installed"
                                     color: parent.parent.on ? parent.parent.tone : win.dim
-                                    font.family: win.font; font.pixelSize: 11; font.weight: Font.Medium
+                                    font.family: win.font; font.pixelSize: Config.text(11); font.weight: Font.Medium
                                 }
                             }
                         }

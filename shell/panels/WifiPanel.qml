@@ -72,7 +72,7 @@ Column {
         Label {
             anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
             text: "Connected"
-            color: pop.dim; font.pixelSize: 12
+            color: pop.dim; font.pixelSize: Config.text(12)
         }
     }
     Divider { visible: wifiView.onWire && !!wifiView.dev }
@@ -183,7 +183,7 @@ Column {
                             : netRow.modelData.stateChanging ? "Connecting…"
                             : netRow.modelData.known ? "Saved" : ""
                         color: netRow.modelData.connected ? pop.accentText : pop.dim
-                        font.pixelSize: 12
+                        font.pixelSize: Config.text(12)
                     }
                     Icon {
                         visible: netRow.secure
@@ -224,11 +224,11 @@ Column {
         Behavior on sig { NumberAnimation { duration: Config.ms(900); easing.type: Easing.InOutCubic } }
         Item {
             width: parent.width; height: sigLabel.height
-            Label { id: sigLabel; text: "Signal"; font.pixelSize: 12 }
+            Label { id: sigLabel; text: "Signal"; font.pixelSize: Config.text(12) }
             Label {
                 anchors.right: parent.right
                 text: Math.round(signalInfo.sig * 100) + "%" + (wifiView.info.security ? " · " + wifiView.info.security : "")
-                color: pop.dim; font.pixelSize: 12
+                color: pop.dim; font.pixelSize: Config.text(12)
             }
         }
         Meter {
@@ -275,12 +275,12 @@ Column {
                 Column {
                     anchors { left: parent.left; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     spacing: 2
-                    Label { text: tile.detail.k; color: pop.dim; font.pixelSize: 11 }
+                    Label { text: tile.detail.k; color: pop.dim; font.pixelSize: Config.text(11) }
                     Label {
                         width: parent.width
                         text: tile.copied ? "Copied" : tile.detail.v
                         color: tile.copied ? pop.accent : pop.text
-                        font.pixelSize: 13
+                        font.pixelSize: Config.text(13)
                     }
                 }
                 HoverHandler { id: tileHover }
@@ -300,8 +300,8 @@ Column {
             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
             spacing: 8
             Icon { anchors.verticalCenter: parent.verticalCenter; code: 0xED58; color: pop.accent; font.pixelSize: 16 }
-            Label { anchors.verticalCenter: parent.verticalCenter; text: "VPN"; color: pop.accent; font.pixelSize: 12 }
-            Label { anchors.verticalCenter: parent.verticalCenter; text: wifiView.info.vpn || ""; font.pixelSize: 12 }
+            Label { anchors.verticalCenter: parent.verticalCenter; text: "VPN"; color: pop.accent; font.pixelSize: Config.text(12) }
+            Label { anchors.verticalCenter: parent.verticalCenter; text: wifiView.info.vpn || ""; font.pixelSize: Config.text(12) }
         }
     }
 

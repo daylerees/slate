@@ -43,6 +43,6 @@ Rectangle {
         color: Config.tint("#eef1f5")
         font.family: Config.s.fontFamily
         font.weight: Font.Medium
-        font.pixelSize: 13
+        font.pixelSize: Config.text(13)
     }
 }

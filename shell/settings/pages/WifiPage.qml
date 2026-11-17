@@ -113,7 +113,7 @@ Column {
                             width: parent.width; elide: Text.ElideRight
                             textFormat: Text.PlainText        // never markup
                             text: wifiPane.wires.length > 1 ? "Ethernet (" + wireRow.modelData.name + ")" : "Ethernet"
-                            color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                            color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                         }
                         Text {
                             width: parent.width; elide: Text.ElideRight
@@ -122,7 +122,7 @@ Column {
                                 : wireRow.modelData.state === ConnectionState.Connecting ? "Connecting…"
                                 : "No cable connected"
                             color: wireRow.modelData.connected ? win.accent : win.dim
-                            font.family: win.font; font.pixelSize: 12
+                            font.family: win.font; font.pixelSize: Config.text(12)
                         }
                     }
                 }
@@ -183,7 +183,7 @@ Column {
                                 width: Math.min(implicitWidth, netLabels.width - (netLock.visible ? netLock.width + 6 : 0))
                                 elide: Text.ElideRight
                                 textFormat: Text.PlainText
-                                text: netRow.n.name; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                text: netRow.n.name; color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                             }
                             Text { id: netLock; visible: netRow.secure; anchors.verticalCenter: parent.verticalCenter; text: win.glyph(0xEAE2); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 12 }
                         }
@@ -191,7 +191,7 @@ Column {
                             text: (netRow.n.connected ? "Connected" : netRow.n.stateChanging ? "Connecting…" : netRow.n.known ? "Saved" : netRow.secure ? "Secured" : "Open")
                                 + " · " + Math.round(netRow.n.signalStrength * 100) + "% signal"
                             color: netRow.n.connected ? win.accent : win.dim
-                            font.family: win.font; font.pixelSize: 12
+                            font.family: win.font; font.pixelSize: Config.text(12)
                         }
                     }
                     Row {
@@ -232,7 +232,7 @@ Column {
                             verticalAlignment: TextInput.AlignVCenter
                             echoMode: TextInput.Password
                             color: win.text
-                            font.family: win.font; font.pixelSize: 13
+                            font.family: win.font; font.pixelSize: Config.text(13)
                             onVisibleChanged: if (visible) { text = ""; forceActiveFocus(); }
                             onAccepted: { netRow.n.connectWithPsk(text); wifiPane.askingFor = ""; }
                             Keys.onEscapePressed: wifiPane.askingFor = ""
@@ -242,7 +242,7 @@ Column {
                             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                             textFormat: Text.PlainText        // never markup: the network's own name
                             text: "Password for " + netRow.n.name + ", then Enter"
-                            color: win.dim; font.family: win.font; font.pixelSize: 13
+                            color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
                         }
                     }
                 }
@@ -276,7 +276,7 @@ Column {
                     Text {
                         textFormat: Text.PlainText        // never markup: the network's own details
                         text: (wifiPane.facts.find(f => f.k === factRow.modelData) ?? { v: "" }).v
-                        color: win.dim; font.family: win.font; font.pixelSize: 13
+                        color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
                     }
                 }
             }

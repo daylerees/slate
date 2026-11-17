@@ -17,7 +17,11 @@ Scope {
     // (colors.lua) has fallbacks; these replace them, and again after a config reload.
     readonly property string borderCmd: {
         const rgba = (c, a) => "rgba(" + c.toString().slice(1, 7) + Math.round(a * 255).toString(16).padStart(2, "0") + ")";
-        const active = rgba(Config.accent, 0.6), inactive = rgba(Config.tint("#0f1216"), 0.85);
+        // (Accessibility → High contrast: a bright, solid border round the window you're in, and
+        // a plainly visible one round the rest)
+        const hc = Config.s.highContrast;
+        const active = hc ? rgba(Config.tint("#eef1f5"), 1) : rgba(Config.accent, 0.6);
+        const inactive = hc ? rgba(Config.tint("#5a6372"), 1) : rgba(Config.tint("#0f1216"), 0.85);
         // Glass (with its gloss): a sheen on the borders, as Hyprland can draw one. Its gradients
         // spread their colours evenly, so the light is the first of several: a bright catch on
         // the top left corner, fading within the first sixth or so into the colour itself, a
@@ -31,7 +35,7 @@ Scope {
         const inactiveBorder = g > 0
             ? `{ colors = { ${sheen(Config.borderSheen(Config.tint("#0f1216"), 0.85, 0.3, 0.1, 0))} }, angle = 45 }`
             : `"${inactive}"`;
-        const size = Math.max(0, Math.min(12, Config.s.windowBorderSize));   // Settings → Windows
+        const size = Math.max(hc ? 3 : 0, Math.min(12, Config.s.windowBorderSize));   // Settings → Windows (at least 3 in high contrast)
         const dim = Math.max(0, Math.min(80, Config.s.inactiveDim)) / 100;   // Settings → Windows
         // Spacing: gaps_in is added on each side of a window, so half the gap between two;
         // the screen edges get a little more. Lone windows stay gapless (workspaces.lua)

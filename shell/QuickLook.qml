@@ -324,7 +324,7 @@ PanelWindow {
                     text: root.name
                     elide: Text.ElideMiddle
                     color: root.textColor
-                    font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold
+                    font.family: root.fontFamily; font.pixelSize: Config.text(14); font.weight: Font.DemiBold
                 }
                 Text {
                     width: parent.width
@@ -332,7 +332,7 @@ PanelWindow {
                     text: root.details
                     elide: Text.ElideRight
                     color: root.dimTextColor
-                    font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                    font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                 }
             }
             // Where in the list, between arrows to the one before and after (as Left and Right)
@@ -351,7 +351,7 @@ PanelWindow {
                     horizontalAlignment: Text.AlignHCenter
                     text: (root.index + 1) + " of " + root.files.length
                     color: root.dimTextColor
-                    font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                    font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                     TextMetrics {
                         id: widest
                         font: countText.font
@@ -435,7 +435,7 @@ PanelWindow {
                         color: root.textColor
                         selectionColor: Config.accent; selectedTextColor: root.accentText
                         font.family: root.bodyCode ? root.codeFont : root.fontFamily
-                        font.pixelSize: 13
+                        font.pixelSize: Config.text(13)
                     }
                     Text {
                         id: cutNote
@@ -443,7 +443,7 @@ PanelWindow {
                         anchors { top: textEdit.bottom; left: parent.left; leftMargin: 14 }
                         text: "That's the first 200 KB. Open it to see the rest."
                         color: root.dimTextColor
-                        font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                        font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                     }
                 }
                 ScrollShade { anchors { left: parent.left; right: parent.right; top: parent.top } z: 3; cornerRadius: 10
@@ -489,7 +489,7 @@ PanelWindow {
                             horizontalAlignment: Text.AlignHCenter
                             text: "Open it to see the rest of the pages."
                             color: root.dimTextColor
-                            font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                            font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                         }
                     }
                 }
@@ -550,7 +550,7 @@ PanelWindow {
                 maximumLineCount: 3
                 elide: Text.ElideMiddle
                 color: root.textColor
-                font.family: root.fontFamily; font.pixelSize: 17; font.weight: Font.DemiBold
+                font.family: root.fontFamily; font.pixelSize: Config.text(17); font.weight: Font.DemiBold
             }
             Item { width: 1; height: 6 }
             Text {
@@ -560,7 +560,7 @@ PanelWindow {
                 text: root.details
                 wrapMode: Text.WordWrap
                 color: root.dimTextColor
-                font.family: root.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                font.family: root.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
             }
             Text {
                 width: parent.width
@@ -568,7 +568,7 @@ PanelWindow {
                 horizontalAlignment: Text.AlignHCenter
                 text: root.modified
                 color: root.dimTextColor
-                font.family: root.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                font.family: root.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
             }
             Item { width: 1; height: 10; visible: root.note !== "" }
             Text {
@@ -578,7 +578,7 @@ PanelWindow {
                 text: root.note
                 wrapMode: Text.WordWrap
                 color: root.dimTextColor
-                font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
             }
             Item { width: 1; height: 20 }
             Row {

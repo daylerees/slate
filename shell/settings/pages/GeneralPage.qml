@@ -56,14 +56,14 @@ Column {
             Column {
                 anchors { left: acctPic.right; leftMargin: 14; right: acctButtons.left; rightMargin: 16; verticalCenter: parent.verticalCenter }
                 spacing: 2
-                Text { width: parent.width; textFormat: Text.PlainText; text: generalCol.fullName; color: win.text; font.family: win.font; font.pixelSize: 15; font.weight: Font.Medium; elide: Text.ElideRight }
+                Text { width: parent.width; textFormat: Text.PlainText; text: generalCol.fullName; color: win.text; font.family: win.font; font.pixelSize: Config.text(15); font.weight: Font.Medium; elide: Text.ElideRight }
                 Text {
                     width: Math.min(parent.width, win.detailMeasure)
                     text: Config.avatarBusy ? "Changing your picture…"
                         : Config.avatarError !== "" ? Config.avatarError
                         : "Your picture on the control center, lock screen and login screen"
                     color: Config.avatarError !== "" && !Config.avatarBusy ? win.danger : win.dim
-                    font.family: win.font; font.pixelSize: 12
+                    font.family: win.font; font.pixelSize: Config.text(12)
                     wrapMode: Text.Wrap
                 }
             }
@@ -153,7 +153,7 @@ Column {
                         anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
                         verticalAlignment: TextInput.AlignVCenter
                         color: win.text; selectionColor: win.accent
-                        font.family: win.font; font.pixelSize: 12
+                        font.family: win.font; font.pixelSize: Config.text(12)
                         onTextChanged: { if (text.trim().length >= 2) geoSoon.restart(); else { geoSoon.stop(); geo.running = false; loc.results = []; loc.status = ""; } }
                         Keys.onPressed: e => {
                             if (e.key === Qt.Key_Down) { loc.pick = Math.min(loc.results.length - 1, loc.pick + 1); e.accepted = true; }
@@ -185,7 +185,7 @@ Column {
                             text: parent.showsPlace ? Config.s.locationName
                                 : Config.s.locationName !== "" ? "Search for a new place" : "Search for your town or city"
                             color: parent.showsPlace ? win.text : win.dim
-                            font.family: win.font; font.pixelSize: 12; font.weight: parent.showsPlace ? Font.Medium : Font.Normal
+                            font.family: win.font; font.pixelSize: Config.text(12); font.weight: parent.showsPlace ? Font.Medium : Font.Normal
                             elide: Text.ElideRight
                         }
                     }
@@ -212,7 +212,7 @@ Column {
                                 width: parent.width
                                 topPadding: 10; bottomPadding: 10; leftPadding: 12
                                 text: loc.status
-                                color: win.dim; font.family: win.font; font.pixelSize: 12
+                                color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
                             }
                             Repeater {
                                 model: loc.results
@@ -232,7 +232,7 @@ Column {
                                             width: parent.width
                                             textFormat: Text.PlainText        // never markup: a place's name, from the weather service
                                             text: placeRow.modelData.name
-                                            color: placeRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                            color: placeRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                                             elide: Text.ElideRight
                                         }
                                         Text {
@@ -240,7 +240,7 @@ Column {
                                             visible: text !== ""
                                             textFormat: Text.PlainText        // never markup
                                             text: [placeRow.modelData.admin1, placeRow.modelData.country].filter(x => x).join(", ")
-                                            color: placeRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
+                                            color: placeRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: Config.text(11)
                                             elide: Text.ElideRight
                                         }
                                     }

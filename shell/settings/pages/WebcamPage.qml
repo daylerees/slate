@@ -156,7 +156,7 @@ Column {
                     wrapMode: Text.WordWrap
                     visible: !(previewLoader.item && previewLoader.item.showing)
                     color: win.dim
-                    font.family: win.font; font.pixelSize: 13
+                    font.family: win.font; font.pixelSize: Config.text(13)
                     text: !camPane.preview ? "The preview is off, so the camera isn't on"
                         : previewLoader.status === Loader.Error ? "The preview needs Qt Multimedia (qt6-multimedia)"
                         : previewLoader.item && previewLoader.item.problem !== "" ? "No picture: " + previewLoader.item.problem

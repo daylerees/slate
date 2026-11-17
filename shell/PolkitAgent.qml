@@ -153,7 +153,7 @@ PanelWindow {
                     text: "Your password, please"
                     color: root.textColor
                     font.family: root.fontFamily
-                    font.pixelSize: 18
+                    font.pixelSize: Config.text(18)
                     font.weight: Font.DemiBold
                 }
                 Item { width: 1; height: 6 }
@@ -167,7 +167,7 @@ PanelWindow {
                     text: root.message
                     color: root.dimTextColor
                     font.family: root.fontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: Config.text(13)
                     font.weight: Font.Medium
                 }
                 Item { width: 1; height: 18 }
@@ -181,7 +181,7 @@ PanelWindow {
                     text: "As " + root.idName(root.selected)
                     color: root.textColor
                     font.family: root.fontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: Config.text(13)
                     font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
@@ -213,7 +213,7 @@ PanelWindow {
                                 text: (chip.modelData.isGroup ? "Group " : "") + root.idName(chip.modelData)
                                 color: chip.current ? root.accentText : root.textColor
                                 font.family: root.fontFamily
-                                font.pixelSize: 12
+                                font.pixelSize: Config.text(12)
                                 font.weight: Font.Medium
                             }
                         }
@@ -238,7 +238,7 @@ PanelWindow {
                         selectionColor: root.accent
                         selectedTextColor: root.accentText
                         font.family: root.fontFamily
-                        font.pixelSize: 15
+                        font.pixelSize: Config.text(15)
                         clip: true
                         onAccepted: root.submit()
                         Keys.onEscapePressed: root.cancel()
@@ -250,7 +250,7 @@ PanelWindow {
                         text: root.busy ? "Checking…" : root.prompt
                         color: root.dimTextColor
                         font.family: root.fontFamily
-                        font.pixelSize: 13
+                        font.pixelSize: Config.text(13)
                         font.weight: Font.Medium
                     }
                 }
@@ -267,7 +267,7 @@ PanelWindow {
                     text: root.error !== "" ? root.error : root.supplementary
                     color: root.error !== "" || root.supplementaryIsError ? root.danger : root.dimTextColor
                     font.family: root.fontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: Config.text(12)
                     font.weight: Font.Medium
                 }
                 Item { width: 1; height: 20 }

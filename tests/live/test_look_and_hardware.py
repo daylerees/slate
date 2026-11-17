@@ -369,3 +369,20 @@ class Accessibility(LiveCase):
         self.s.ipc("zoom", "note", "1")
         settings_in_hyprland(self)
         self.assertEqual(self.s.ipc("config", "get", "zoom"), "false")
+
+    def test_high_contrast_and_text_size(self):
+        """High contrast: no glass, and dim text much lighter (dark mode); Text size: Slate's
+        text grows (13 px to 17 at Largest), and between values goes to the nearest."""
+        for key in ("glass", "highContrast", "textScale"):
+            self.keep_setting(key)
+        self.config("glass", "true")
+        before = self.s.state()["look"]["dim"]
+        self.config("highContrast", "true")
+        st = self.wait(lambda st: not st["look"]["glass"] and st["look"]["dim"] != before, "high contrast")["look"]
+        light = lambda hex_: sum(int(hex_.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)) / 3
+        self.assertGreater(light(st["dim"]), light(before) + 40, "dim text isn't any clearer")
+        self.config("highContrast", "false")
+        self.wait(lambda st: st["look"]["glass"] and st["look"]["dim"] == before, "back as it was")
+        for value, want in (("1.3", 17), ("1.15", 15), ("1.2", 15), ("1", 13)):
+            self.config("textScale", value)
+            self.wait(lambda st: st["look"]["text13"] == want, f"text at {value}")

@@ -287,8 +287,8 @@ FloatingWindow {
                         Column {
                             visible: !sw.compact
                             anchors.verticalCenter: parent.verticalCenter
-                            Text { text: "Slate"; color: sw.text; font.family: sw.font; font.pixelSize: 18; font.weight: Font.Medium }
-                            Text { text: "Software"; color: sw.dim; font.family: sw.font; font.pixelSize: 12 }
+                            Text { text: "Slate"; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(18); font.weight: Font.Medium }
+                            Text { text: "Software"; color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12) }
                         }
                     }
                     MouseArea { anchors.fill: parent; onPressed: sw.startSystemMove() }
@@ -318,7 +318,7 @@ FloatingWindow {
                             text: parent.modelData.label
                             color: parent.current ? sw.accentText : sw.dim
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                            font.family: sw.font; font.pixelSize: 13; font.weight: Font.Medium
+                            font.family: sw.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                         }
                         // How many updates are waiting
                         Rectangle {
@@ -335,7 +335,7 @@ FloatingWindow {
                                 x: Math.round((parent.width - countShape.tightBoundingRect.width) / 2 - countShape.tightBoundingRect.x)
                                 y: Math.round((parent.height - countShape.tightBoundingRect.height) / 2 - countText.baselineOffset - countShape.tightBoundingRect.y)
                                 text: sw.updateCount; color: sw.accentText
-                                font.family: sw.font; font.pixelSize: 11; font.weight: Font.DemiBold
+                                font.family: sw.font; font.pixelSize: Config.text(11); font.weight: Font.DemiBold
                             }
                         }
                         HoverHandler { id: navHover }
@@ -397,7 +397,7 @@ FloatingWindow {
                                 wrapMode: Text.Wrap
                                 text: !sw.status.flatpak ? "Flatpak isn't installed, so Software can't install apps yet. Install the flatpak package, then open this again."
                                     : "Flathub isn't set up for Flatpak yet. In a terminal: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
-                                color: sw.dim; font.family: sw.font; font.pixelSize: 13
+                                color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(13)
                             }
                         }
                     }
@@ -405,7 +405,7 @@ FloatingWindow {
                         visible: sw.note !== ""
                         width: parent.width; wrapMode: Text.Wrap; bottomPadding: 6
                         textFormat: Text.PlainText        // (it can quote what Flatpak said)
-                        text: sw.note; color: sw.danger; font.family: sw.font; font.pixelSize: 12
+                        text: sw.note; color: sw.danger; font.family: sw.font; font.pixelSize: Config.text(12)
                     }
 
                     // ---- An app's own page ----
@@ -427,14 +427,14 @@ FloatingWindow {
                         Text {
                             width: parent.width; horizontalAlignment: Text.AlignHCenter
                             text: "Find apps for your computer"
-                            color: sw.text; font.family: sw.font; font.pixelSize: 24; font.weight: Font.Medium
+                            color: sw.text; font.family: sw.font; font.pixelSize: Config.text(24); font.weight: Font.Medium
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: Math.min(parent.width, 520); wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter
                             text: "Apps here come from Flathub, where thousands of free apps run safely in a space of their own. "
                                 + "What you install here is there for everyone who uses this computer, and its updates show under Updates."
-                            color: sw.dim; font.family: sw.font; font.pixelSize: 13; lineHeight: 1.15
+                            color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(13); lineHeight: 1.15
                         }
                         Item { width: 1; height: 6 }
                         SearchField {
@@ -471,7 +471,7 @@ FloatingWindow {
                             visible: !!sw.lists.offline && !sw.lists.categories
                             width: parent.width; wrapMode: Text.Wrap
                             text: "Each category's most popular apps show here when you're online. Until then, they're in alphabetical order, and search works as usual."
-                            color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                            color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
                         }
                     }
 
@@ -493,7 +493,7 @@ FloatingWindow {
                                 onClicked: sw.show("discover")
                             }
                             IconTile { id: catTile; anchors { left: catBack.right; leftMargin: 6; verticalCenter: parent.verticalCenter } size: 36; code: catPage.cat ? catPage.cat.icon : 0xEB1C; colourOf: "software-" + sw.page }
-                            Text { anchors { left: catTile.right; leftMargin: 12; verticalCenter: parent.verticalCenter } text: catPage.cat ? catPage.cat.label : ""; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium }
+                            Text { anchors { left: catTile.right; leftMargin: 12; verticalCenter: parent.verticalCenter } text: catPage.cat ? catPage.cat.label : ""; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(22); font.weight: Font.Medium }
                         }
                         Group { Repeater { model: catPage.apps.slice(0, 120); delegate: AppRow { required property var modelData; required property int index; entry: modelData; first: index === 0 } } }
                     }
@@ -503,12 +503,12 @@ FloatingWindow {
                         width: parent.width
                         visible: sw.app === "" && sw.query.trim() === "" && sw.page === "installed"
                         spacing: 4
-                        Text { text: "Installed"; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium; bottomPadding: 8 }
+                        Text { text: "Installed"; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(22); font.weight: Font.Medium; bottomPadding: 8 }
                         Text {
                             visible: sw.installed.length === 0
                             width: parent.width; wrapMode: Text.Wrap
                             text: "No apps from Flathub yet. Find one in Discover, or search above."
-                            color: sw.dim; font.family: sw.font; font.pixelSize: 13
+                            color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(13)
                         }
                         Group {
                             visible: sw.installed.length > 0
@@ -521,7 +521,7 @@ FloatingWindow {
                         width: parent.width
                         visible: sw.app === "" && sw.query.trim() === "" && sw.page === "updates"
                         spacing: 4
-                        Text { text: "Updates"; color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium; bottomPadding: 8 }
+                        Text { text: "Updates"; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(22); font.weight: Font.Medium; bottomPadding: 8 }
                         // Nothing waiting: said calmly in the middle of the page, with what that
                         // covers, when it was looked at, and a way to look again. (While looking:
                         // Slate's spinner in its place)
@@ -556,7 +556,7 @@ FloatingWindow {
                             Text {
                                 width: parent.width; horizontalAlignment: Text.AlignHCenter
                                 text: upToDate.looking ? "Looking for updates…" : "You're up to date"
-                                color: sw.text; font.family: sw.font; font.pixelSize: 20; font.weight: Font.Medium
+                                color: sw.text; font.family: sw.font; font.pixelSize: Config.text(20); font.weight: Font.Medium
                             }
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
@@ -565,13 +565,13 @@ FloatingWindow {
                                     : sw.installed.length === 0 ? "This computer's system has the latest updates."
                                     : (sw.installed.length === 1 ? "Your app" : "Your " + sw.installed.length + " apps")
                                       + " and this computer's system have the latest updates."
-                                color: sw.dim; font.family: sw.font; font.pixelSize: 13; lineHeight: 1.15
+                                color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(13); lineHeight: 1.15
                             }
                             Text {
                                 width: parent.width; horizontalAlignment: Text.AlignHCenter
                                 visible: !upToDate.looking && !!sw.checkedAt
                                 text: sw.checkedAt ? "Checked at " + Qt.formatTime(sw.checkedAt, Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP") : ""
-                                color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                                color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
                             }
                             Item { width: 1; height: 6 }
                             Button {
@@ -595,7 +595,7 @@ FloatingWindow {
                                     elide: Text.ElideRight
                                     text: allAction.running ? "Updating your apps… " + sw.progress + "%"
                                         : "Your apps and windows stay open while they update"
-                                    color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                                    color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
                                 }
                                 // While it runs, a progress bar in the button's place (as an app's row has)
                                 ProgressOr {
@@ -625,7 +625,7 @@ FloatingWindow {
                                     Text {
                                         width: parent.width; elide: Text.ElideRight
                                         text: sw.updates.systemProblem !== "" ? "System updates" : sw.updates.system.length === 1 ? "1 system update" : sw.updates.system.length + " system updates"
-                                        color: sw.text; font.family: sw.font; font.pixelSize: 13; font.weight: Font.Medium
+                                        color: sw.text; font.family: sw.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                                     }
                                     Text {
                                         width: parent.width; wrapMode: Text.Wrap
@@ -633,7 +633,7 @@ FloatingWindow {
                                         text: sw.updates.systemProblem !== "" ? sw.updates.systemProblem
                                             : sysAction.running ? "Updating the system… " + sw.progress + "%"
                                             : "They update together. Asks for an administrator's password; restart afterwards if it says to"
-                                        color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                                        color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
                                     }
                                 }
                                 ProgressOr {
@@ -661,7 +661,7 @@ FloatingWindow {
                                         anchors { left: parent.left; leftMargin: 16; right: pkgVersion.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                                         elide: Text.ElideRight; textFormat: Text.PlainText
                                         text: parent.modelData.name
-                                        color: sw.text; font.family: sw.font; font.pixelSize: 13
+                                        color: sw.text; font.family: sw.font; font.pixelSize: Config.text(13)
                                     }
                                     Text {
                                         id: pkgVersion
@@ -669,7 +669,7 @@ FloatingWindow {
                                         width: Math.min(implicitWidth, parent.width * 0.55)
                                         elide: Text.ElideMiddle; textFormat: Text.PlainText
                                         text: (parent.modelData.from ? parent.modelData.from + "  →  " : "") + parent.modelData.to
-                                        color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                                        color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
                                     }
                                 }
                             }
@@ -708,11 +708,11 @@ FloatingWindow {
         Column {
             anchors { left: rowIcon.right; leftMargin: 12; right: rowAction.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
             spacing: 2
-            Text { width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; text: row.entry.name || row.entry.id; color: sw.text; font.family: sw.font; font.pixelSize: 13; font.weight: Font.Medium }
+            Text { width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; text: row.entry.name || row.entry.id; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
             Text {
                 width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText
                 text: row.updating ? (row.newVersion ? "Version " + row.newVersion : "An update is waiting") : (row.entry.summary || "")
-                color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
             }
         }
         Item {
@@ -847,7 +847,7 @@ FloatingWindow {
             id: fieldInput
             activeFocusOnTab: true
             anchors { left: fieldIcon.right; leftMargin: field.big ? 10 : 8; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-            color: sw.text; font.family: sw.font; font.pixelSize: field.big ? 15 : 13
+            color: sw.text; font.family: sw.font; font.pixelSize: Config.text(field.big ? 15 : 13)
             selectionColor: sw.accent; selectedTextColor: sw.accentText
             clip: true
             text: sw.query
@@ -891,7 +891,7 @@ FloatingWindow {
                 anchors { left: parent.left; leftMargin: 2; verticalCenter: parent.verticalCenter }
                 spacing: 8
                 IconTile { anchors.verticalCenter: parent.verticalCenter; code: strip.cat.icon || 0xEB1C; colourOf: "software-" + strip.cat.id }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: strip.cat.label || ""; color: sw.text; font.family: sw.font; font.pixelSize: 15; font.weight: Font.Medium }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: strip.cat.label || ""; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(15); font.weight: Font.Medium }
             }
             Row {
                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
@@ -900,7 +900,7 @@ FloatingWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     rightPadding: 8
                     text: "See all"
-                    color: seeAllHover.hovered ? sw.text : sw.accent; font.family: sw.font; font.pixelSize: 12; font.weight: Font.Medium
+                    color: seeAllHover.hovered ? sw.text : sw.accent; font.family: sw.font; font.pixelSize: Config.text(12); font.weight: Font.Medium
                     HoverHandler { id: seeAllHover }
                     ClickTap { onTapped: sw.show(strip.cat.id) }
                 }
@@ -970,15 +970,15 @@ FloatingWindow {
         Text {
             visible: !!sw.installedIds[card.entry.id]
             anchors { right: parent.right; top: parent.top; margins: 14 }
-            text: "Installed"; color: sw.dim; font.family: sw.font; font.pixelSize: 11
+            text: "Installed"; color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(11)
         }
         Column {
             anchors { left: parent.left; right: parent.right; top: cardIcon.bottom; margins: 14; topMargin: 10 }
             spacing: 3
-            Text { width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; text: card.entry.name || card.entry.id; color: sw.text; font.family: sw.font; font.pixelSize: 13; font.weight: Font.Medium }
+            Text { width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; text: card.entry.name || card.entry.id; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
             Text {
                 width: parent.width; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight; textFormat: Text.PlainText
-                text: card.entry.summary || ""; color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                text: card.entry.summary || ""; color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
             }
         }
         HoverHandler { id: cardHover }
@@ -1007,7 +1007,7 @@ FloatingWindow {
                     anchors { left: appBack.right; leftMargin: 6; right: parent.right; verticalCenter: parent.verticalCenter }
                     elide: Text.ElideRight; textFormat: Text.PlainText
                     text: pg.d.name || sw.app
-                    color: sw.text; font.family: sw.font; font.pixelSize: 22; font.weight: Font.Medium
+                    color: sw.text; font.family: sw.font; font.pixelSize: Config.text(22); font.weight: Font.Medium
                 }
             }
             Item {
@@ -1019,11 +1019,11 @@ FloatingWindow {
                     id: pageInfo
                     anchors { left: bigIcon.right; leftMargin: 18; right: parent.right; verticalCenter: parent.verticalCenter }
                     spacing: 4
-                    Text { width: parent.width; wrapMode: Text.Wrap; textFormat: Text.PlainText; text: pg.d.summary || ""; color: sw.text; font.family: sw.font; font.pixelSize: 15 }
+                    Text { width: parent.width; wrapMode: Text.Wrap; textFormat: Text.PlainText; text: pg.d.summary || ""; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(15) }
                     Text {
                         width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText
                         text: [pg.d.developer, pg.d.latest ? "Version " + pg.d.latest : "", pg.d.license].filter(x => !!x).join(" · ")
-                        color: sw.dim; font.family: sw.font; font.pixelSize: 12
+                        color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
                     }
                     Item { width: 1; height: 6 }
                     Row {
@@ -1125,14 +1125,14 @@ FloatingWindow {
                 delegate: Text {
                     required property var modelData
                     width: parent.width; wrapMode: Text.Wrap; textFormat: Text.PlainText
-                    text: modelData; color: sw.text; font.family: sw.font; font.pixelSize: 13; lineHeight: 1.15
+                    text: modelData; color: sw.text; font.family: sw.font; font.pixelSize: Config.text(13); lineHeight: 1.15
                 }
             }
             Text {
                 visible: !!pg.d.homepage
                 textFormat: Text.PlainText
                 text: "Website: " + (pg.d.homepage || "")
-                color: linkHover.hovered ? sw.text : sw.accent; font.family: sw.font; font.pixelSize: 12
+                color: linkHover.hovered ? sw.text : sw.accent; font.family: sw.font; font.pixelSize: Config.text(12)
                 HoverHandler { id: linkHover }
                 ClickTap { onTapped: Qt.openUrlExternally(pg.d.homepage) }
             }

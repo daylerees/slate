@@ -119,7 +119,7 @@ PanelWindow {
                             anchors { left: backArrow.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
                             text: "Back"
                             color: tm.dimColor
-                            font.family: tm.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                            font.family: tm.bar.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                         }
                         HoverHandler { id: backHover }
                         ClickTap { hand: false; onTapped: tm.stack = tm.stack.slice(0, -1) }
@@ -181,7 +181,7 @@ PanelWindow {
                                 text: entryRow.e && !entryRow.sep ? String(entryRow.e.text).replace(/_(?!_)/g, "").replace(/__/g, "_") : ""
                                 color: tm.textColor
                                 opacity: entryRow.e && entryRow.e.enabled ? 1 : 0.4
-                                font.family: tm.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                                font.family: tm.bar.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                                 elide: Text.ElideRight
                             }
                             // Opens a submenu
@@ -214,7 +214,7 @@ PanelWindow {
                     leftPadding: 10
                     text: "Nothing here just yet"
                     color: tm.dimColor
-                    font.family: tm.bar.fontFamily; font.pixelSize: 13
+                    font.family: tm.bar.fontFamily; font.pixelSize: Config.text(13)
                 }
             }
         }

@@ -119,4 +119,17 @@ Item {
                                                      (root.castLine + root.reach) * (root.castNormal.x + root.castNormal.y), 0)
         fragmentShader: Qt.resolvedUrl("shaders/shadow.frag.qsb")
     }
+
+    // Accessibility → High contrast: the surface's clear edge (ContrastEdge), made on top of the
+    // surface itself (this sits behind it), in its shape
+    Component {
+        id: edgeComp
+        ContrastEdge {
+            required property Item shadow
+            radius: shadow.radius
+            topLeftRadius: shadow.topLeftRadius; topRightRadius: shadow.topRightRadius
+            bottomLeftRadius: shadow.bottomLeftRadius; bottomRightRadius: shadow.bottomRightRadius
+        }
+    }
+    Component.onCompleted: if (parent) edgeComp.createObject(parent, { shadow: root })
 }

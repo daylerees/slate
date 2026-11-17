@@ -74,7 +74,7 @@ Item {
         textFormat: Text.PlainText        // never markup: a file's name
         text: tile.title || fileName
         color: parent.current ? win.text : win.dim
-        font.family: win.font; font.pixelSize: 11
+        font.family: win.font; font.pixelSize: Config.text(11)
         elide: Text.ElideMiddle
         horizontalAlignment: Text.AlignHCenter
     }

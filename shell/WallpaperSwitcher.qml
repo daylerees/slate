@@ -456,7 +456,7 @@ Scope {
                                 // (dark on the chosen one, which sits on the active colour)
                                 color: card.chosen ? Config.tint("#12151a") : root.bar.textColor
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                                font.family: root.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                                font.family: root.bar.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                                 elide: Text.ElideMiddle
                             }
                             ClickArea {
@@ -499,7 +499,7 @@ Scope {
                         wrapMode: Text.Wrap
                         text: "No wallpapers here yet. Pictures in your wallpaper folder (Settings → Wallpaper) will show up here"
                         color: Config.tint("#8b94a3")
-                        font.family: root.bar.fontFamily; font.pixelSize: 13
+                        font.family: root.bar.fontFamily; font.pixelSize: Config.text(13)
                     }
                     // What the keys do
                     Text {
@@ -511,7 +511,7 @@ Scope {
                         elide: Text.ElideRight
                         text: "Enter keeps it · Esc puts yours back"
                         color: Config.tint("#8b94a3")
-                        font.family: root.bar.fontFamily; font.pixelSize: 12
+                        font.family: root.bar.fontFamily; font.pixelSize: Config.text(12)
                     }
                 }
             }

@@ -34,7 +34,7 @@ Rectangle {
         echoMode: field.secret ? TextInput.Password : TextInput.Normal
         color: pop.text
         font.family: pop.bar.fontFamily
-        font.pixelSize: 13
+        font.pixelSize: Config.text(13)
         focus: field.keepFocus && field.visible
         onVisibleChanged: if (visible) field.opened()
         // (its row can move as a list's order changes: the list lets go of the keyboard as it

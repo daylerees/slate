@@ -171,7 +171,7 @@ PanelWindow {
             anchors.centerIn: parent
             spacing: 6
             Icon { visible: btn.icon !== 0; anchors.verticalCenter: parent.verticalCenter; code: btn.icon; color: btn.fg; font.pixelSize: 15 }
-            Label { visible: btn.label !== ""; anchors.verticalCenter: parent.verticalCenter; text: btn.label; color: btn.fg; font.pixelSize: 12 }
+            Label { visible: btn.label !== ""; anchors.verticalCenter: parent.verticalCenter; text: btn.label; color: btn.fg; font.pixelSize: Config.text(12) }
         }
         HoverHandler { id: btnHover }
         ClickTap { onTapped: btn.clicked() }
@@ -231,7 +231,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         width: Math.min(implicitWidth, choice.width - 12)
                         text: choice.modelData.label || ""
-                        font.pixelSize: 12
+                        font.pixelSize: Config.text(12)
                         font.weight: Font.Normal
                         color: choice.fg
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -246,7 +246,7 @@ PanelWindow {
         wrapMode: Text.WordWrap
         elide: Text.ElideNone
         lineHeight: 1.15
-        font.pixelSize: 12
+        font.pixelSize: Config.text(12)
         font.weight: Font.Normal
     }
     // The bar tried shorter, to see what slims down and what leaves: a dropdown as Settings
@@ -355,7 +355,7 @@ PanelWindow {
                 textFormat: Text.PlainText        // never markup: a tray icon's name is the app's to choose
                 text: barChip.label
                 color: root.text
-                font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
+                font.family: root.bar.fontFamily; font.pixelSize: Config.text(root.bar.fontSize); font.weight: Font.Medium
             }
         }
     }
@@ -908,7 +908,7 @@ PanelWindow {
                                         visible: !Config.barShown(prioRow.modelData)
                                         text: "Not on the bar"
                                         color: root.dim
-                                        font.pixelSize: 12; font.weight: Font.Normal
+                                        font.pixelSize: Config.text(12); font.weight: Font.Normal
                                     }
                                 }
                             }
@@ -1134,7 +1134,7 @@ PanelWindow {
                             textFormat: Text.PlainText        // never markup
                             text: parent.modelData.text || ""
                             color: root.text
-                            font.family: root.bar.fontFamily; font.pixelSize: root.bar.fontSize; font.weight: Font.Medium
+                            font.family: root.bar.fontFamily; font.pixelSize: Config.text(root.bar.fontSize); font.weight: Font.Medium
                         }
                     }
                 }

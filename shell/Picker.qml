@@ -227,7 +227,7 @@ PanelWindow {
                 text: root.mode === "emoji" ? "Search emoji" : "Search clipboard history"
                 color: root.dimTextColor
                 font.family: root.fontFamily
-                font.pixelSize: 15
+                font.pixelSize: Config.text(15)
                 font.weight: Font.Medium
                 visible: search.text === ""
             }
@@ -238,7 +238,7 @@ PanelWindow {
                 selectionColor: root.accent
                 selectedTextColor: root.barColor
                 font.family: root.fontFamily
-                font.pixelSize: 15
+                font.pixelSize: Config.text(15)
                 font.weight: Font.Medium
                 focus: root.shown
                 clip: true
@@ -361,7 +361,7 @@ PanelWindow {
                         color: clipRow.ListView.isCurrentItem ? Config.tint("#12151a") : root.textColor
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: root.fontFamily
-                        font.pixelSize: 14
+                        font.pixelSize: Config.text(14)
                         font.weight: Font.Medium
                         elide: Text.ElideRight
                         maximumLineCount: 1
@@ -375,7 +375,7 @@ PanelWindow {
                         color: clipRow.ListView.isCurrentItem ? Qt.rgba(ink.r, ink.g, ink.b, 0.72) : root.dimTextColor
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: root.fontFamily
-                        font.pixelSize: 12
+                        font.pixelSize: Config.text(12)
                         elide: Text.ElideRight
                     }
                 }
@@ -431,7 +431,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     text: cell.modelData[0]
                     font.family: root.emojiFont
-                    font.pixelSize: 26
+                    font.pixelSize: Config.text(26)
                 }
                 ClickArea {
                     anchors.fill: parent
@@ -477,7 +477,7 @@ PanelWindow {
                 : "Nothing here yet. Things you copy will show up here"
             color: root.dimTextColor
             font.family: root.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: Config.text(14)
         }
 
         // ---- Footer: what's selected / keys, and Clear all -----------------
@@ -493,7 +493,7 @@ PanelWindow {
                     : "Enter to copy  ·  Delete to remove"
                 color: root.dimTextColor
                 font.family: root.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: Config.text(12)
                 font.weight: Font.Medium
                 elide: Text.ElideRight
             }
@@ -512,7 +512,7 @@ PanelWindow {
                     text: "Clear all"
                     color: Config.tint("#f28b8b")
                     font.family: root.fontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: Config.text(12)
                     font.weight: Font.Medium
                 }
             }

@@ -130,7 +130,7 @@ FloatingWindow {
                 width: parent.width; elide: Text.ElideRight
                 textFormat: Text.PlainText        // never markup: someone's own name
                 text: pk.forName ? "Choose a picture for " + pk.forName : "Choose a picture"
-                color: pk.text; font.family: pk.font; font.pixelSize: 17; font.weight: Font.Medium
+                color: pk.text; font.family: pk.font; font.pixelSize: Config.text(17); font.weight: Font.Medium
                 bottomPadding: 12; leftPadding: 6
             }
             Repeater {
@@ -160,7 +160,7 @@ FloatingWindow {
                             text: parent.parent.modelData.label
                             color: parent.parent.on ? Config.tint("#12151a") : pk.text
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                            font.family: pk.font; font.pixelSize: 13; font.weight: Font.Medium
+                            font.family: pk.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                         }
                     }
                     HoverHandler { id: placeHover }
@@ -195,7 +195,7 @@ FloatingWindow {
                 anchors { left: upBtn.right; leftMargin: 8; right: parent.right; verticalCenter: parent.verticalCenter }
                 textFormat: Text.PlainText        // never markup: a folder's name
                 text: pk.nicePath(pk.folder)
-                color: pk.text; font.family: pk.font; font.pixelSize: 13; font.weight: Font.Medium
+                color: pk.text; font.family: pk.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                 elide: Text.ElideMiddle
             }
         }
@@ -203,7 +203,7 @@ FloatingWindow {
             visible: files.status === FolderListModel.Ready && files.count === 0
             anchors.centerIn: parent
             text: "No pictures or folders here. Try another place on the left"
-            color: pk.dim; font.family: pk.font; font.pixelSize: 13
+            color: pk.dim; font.family: pk.font; font.pixelSize: Config.text(13)
         }
         GridView {
             id: grid
@@ -284,7 +284,7 @@ FloatingWindow {
                     textFormat: Text.PlainText        // never markup: a file's name
                     text: cell.fileName
                     color: cell.picked ? pk.text : pk.dim
-                    font.family: pk.font; font.pixelSize: 11; font.weight: cell.picked ? Font.Medium : Font.Normal
+                    font.family: pk.font; font.pixelSize: Config.text(11); font.weight: cell.picked ? Font.Medium : Font.Normal
                     elide: Text.ElideMiddle
                 }
                 HoverHandler { id: cellHover; cursorShape: Qt.PointingHandCursor }
@@ -344,7 +344,7 @@ FloatingWindow {
                 textFormat: Text.PlainText        // never markup: a file's name
                 text: pk.chosen ? pk.chosen.slice(pk.chosen.lastIndexOf("/") + 1) : "Pick a picture"
                 color: pk.chosen ? pk.text : pk.dim
-                font.family: pk.font; font.pixelSize: 12; font.weight: Font.Medium
+                font.family: pk.font; font.pixelSize: Config.text(12); font.weight: Font.Medium
                 elide: Text.ElideMiddle
             }
             Text {
@@ -352,7 +352,7 @@ FloatingWindow {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 text: "Shown on the lock and login screens and in the control center. It's cropped to a circle from the middle."
-                color: pk.dim; font.family: pk.font; font.pixelSize: 11
+                color: pk.dim; font.family: pk.font; font.pixelSize: Config.text(11)
             }
         }
         Row {
@@ -361,7 +361,7 @@ FloatingWindow {
             Rectangle {
                 width: cancelText.implicitWidth + 28; height: 34; radius: Config.corner(9)
                 color: cancelHover.hovered ? Config.hoverOn(Config.raised(Config.tint("#2a313c"))) : Config.raised(Config.tint("#2a313c"))
-                Text { id: cancelText; anchors.centerIn: parent; text: "Cancel"; color: pk.text; font.family: pk.font; font.pixelSize: 12; font.weight: Font.Medium }
+                Text { id: cancelText; anchors.centerIn: parent; text: "Cancel"; color: pk.text; font.family: pk.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
                 HoverHandler { id: cancelHover }
                 ClickTap { onTapped: pk.visible = false }
             }
@@ -369,7 +369,7 @@ FloatingWindow {
                 width: useText.implicitWidth + 28; height: 34; radius: Config.corner(9)
                 opacity: pk.chosen ? 1 : 0.45
                 color: pk.accent
-                Text { id: useText; anchors.centerIn: parent; text: "Use picture"; color: pk.accentText; font.family: pk.font; font.pixelSize: 12; font.weight: Font.DemiBold }
+                Text { id: useText; anchors.centerIn: parent; text: "Use picture"; color: pk.accentText; font.family: pk.font; font.pixelSize: Config.text(12); font.weight: Font.DemiBold }
                 HoverHandler { id: useHover }
                 ClickTap { onTapped: pk.use() }
             }

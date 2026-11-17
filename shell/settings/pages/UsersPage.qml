@@ -102,7 +102,7 @@ Column {
             verticalAlignment: TextInput.AlignVCenter
             clip: true
             color: win.text; selectionColor: win.accent
-            font.family: win.font; font.pixelSize: 12
+            font.family: win.font; font.pixelSize: Config.text(12)
             echoMode: parent.secret ? TextInput.Password : TextInput.Normal
             onAccepted: parent.accepted()
             onTextEdited: parent.edited()
@@ -112,7 +112,7 @@ Column {
             visible: input.text === "" && !input.activeFocus
             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
             text: parent.hint
-            color: win.dim; font.family: win.font; font.pixelSize: 12
+            color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
         }
     }
 
@@ -125,7 +125,7 @@ Column {
         textFormat: Text.PlainText        // never markup: it can quote what AccountsService said
         text: usersPane.note
         color: actProc.running ? win.dim : win.danger
-        font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
+        font.family: win.font; font.pixelSize: Config.text(12); wrapMode: Text.Wrap
     }
 
     GroupLabel { visible: usersPane.state.service === "missing"; text: "Accounts" }
@@ -175,13 +175,13 @@ Column {
                             width: parent.width; elide: Text.ElideRight
                             textFormat: Text.PlainText        // never markup: someone's own name
                             text: userRow.user.name + (userRow.user.me ? " (you)" : "")
-                            color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                            color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                         }
                         Text {
                             width: parent.width; elide: Text.ElideRight
                             textFormat: Text.PlainText
                             text: usersPane.describe(userRow.user)
-                            color: win.dim; font.family: win.font; font.pixelSize: 12
+                            color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
                         }
                     }
                     Row {

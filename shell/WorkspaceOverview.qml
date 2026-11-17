@@ -773,7 +773,7 @@ PanelWindow {
                              + (card.wins.length === 2 ? " and 1 other"
                                 : card.wins.length > 2 ? " and " + (card.wins.length - 1) + " others" : ""))
                     color: ov.bar.textColor
-                    font.family: ov.bar.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
+                    font.family: ov.bar.fontFamily; font.pixelSize: Config.text(14); font.weight: Font.Medium
                 }
 
                 ClickArea {

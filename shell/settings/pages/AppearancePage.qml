@@ -104,7 +104,7 @@ Column {
                                 anchors.centerIn: parent
                                 spacing: 6
                                 Text { anchors.verticalCenter: parent.verticalCenter; text: win.glyph(parent.parent.modelData.icon); color: parent.parent.on ? win.accentText : win.dim; font.family: win.bar.iconFont; font.pixelSize: 14 }
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium }
+                                Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
                             }
                             ClickTap { onTapped: win.pickThemeMode(parent.modelData.mode) }
                         }
@@ -249,7 +249,7 @@ Column {
                             text: Config.s.accent
                             color: win.text
                             selectionColor: win.accent
-                            font.family: win.font; font.pixelSize: 12
+                            font.family: win.font; font.pixelSize: Config.text(12)
                             maximumLength: 7
                             validator: RegularExpressionValidator { regularExpression: /#?[0-9A-Fa-f]{0,6}/ }
                             function apply() {
@@ -303,9 +303,9 @@ Column {
             label: "Glass"
             detail: "The bar, dock, panels, menus, the launcher and Settings turn see-through, with what's behind them blurred"
             key: "glass"
-            needsMet: !Config.s.reduceTransparency
-            needs: "Needs Reduce transparency to be off"
-            needsPage: "accessibility"; needsLabel: "Reduce transparency"
+            needsMet: !Config.s.reduceTransparency && !Config.s.highContrast
+            needs: Config.s.highContrast ? "Needs High contrast to be off" : "Needs Reduce transparency to be off"
+            needsPage: "accessibility"; needsLabel: Config.s.highContrast ? "High contrast" : "Reduce transparency"
         }
         Separator { visible: Config.s.glass }
         SettingRow {
@@ -433,7 +433,7 @@ Column {
                     visible: !Config.shadowsOn
                     anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 10 }
                     text: Config.gameMode ? "Shadows are off while game mode is on" : "Shadows are off"
-                    color: shadowStage.dimColour; font.family: win.font; font.pixelSize: 12
+                    color: shadowStage.dimColour; font.family: win.font; font.pixelSize: Config.text(12)
                 }
                 // Dark or light behind them: two small pills in the corner, the one showing lit
                 Row {
@@ -455,7 +455,7 @@ Column {
                                 anchors.centerIn: parent
                                 text: parent.modelData.label
                                 color: parent.on ? win.accentText : shadowStage.inkColour
-                                font.family: win.font; font.pixelSize: 11; font.weight: Font.Medium
+                                font.family: win.font; font.pixelSize: Config.text(11); font.weight: Font.Medium
                             }
                             HoverHandler { id: pillHover }
                             ClickTap { onTapped: shadowStage.light = parent.modelData.light }

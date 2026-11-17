@@ -9,7 +9,7 @@ Text {
     textFormat: Text.PlainText
     color: pop.text
     font.family: pop.bar.fontFamily
-    font.pixelSize: 13
+    font.pixelSize: Config.text(13)
     font.weight: Font.Medium
     elide: Text.ElideRight
 }

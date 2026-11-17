@@ -588,7 +588,7 @@ Scope {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "Nova"
-                                color: root.textColor; font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
+                                color: root.textColor; font.family: root.fontFamily; font.pixelSize: Config.text(15); font.weight: Font.Medium
                             }
                             // Nova is an experiment still, and says so: a flask and the word, on a soft
                             // green pill (the accent with the Colourful look off). Flat, with glass too
@@ -610,7 +610,7 @@ Scope {
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: "Experiment"
-                                        color: trial.ink; font.family: root.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+                                        color: trial.ink; font.family: root.fontFamily; font.pixelSize: Config.text(11); font.weight: Font.Medium
                                     }
                                 }
                             }
@@ -645,7 +645,7 @@ Scope {
                                 : Config.assistantRisksChanged ? "Something's changed about the assistant. Have a look in Settings → Assistant."
                                 : "The assistant isn't switched on yet. You can switch it on in Settings, which says what that means first."
                             textFormat: Text.PlainText; wrapMode: Text.WordWrap
-                            color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
+                            color: root.textColor; font.family: root.fontFamily; font.pixelSize: Config.text(14); font.weight: Font.Medium
                         }
                         PillButton { visible: !Config.s.privateMode; label: "Open Settings"; primary: true; onPressed: root.openSettings() }
                     }
@@ -702,12 +702,12 @@ Scope {
                                         }
                                         Text {
                                             text: "Nova"
-                                            color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
+                                            color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.DemiBold
                                         }
                                     }
                                     Text {
                                         text: "Hello, I'm Nova. How can I help?"
-                                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14
+                                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: Config.text(14)
                                     }
                                 }
                             }
@@ -741,14 +741,14 @@ Scope {
                                             anchors { right: parent.right; rightMargin: 4; top: parent.bottom; topMargin: 3 }
                                             visible: text !== ""
                                             text: root.ago(turn.t.at)
-                                            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11
+                                            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: Config.text(11)
                                         }
                                         Text {
                                             id: askedText
                                             anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 14; rightMargin: 14 }
                                             text: turn.t.asked
                                             textFormat: Text.PlainText; wrapMode: Text.Wrap
-                                            color: root.accentText; font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.Medium
+                                            color: root.accentText; font.family: root.fontFamily; font.pixelSize: Config.text(14); font.weight: Font.Medium
                                         }
                                     }
                                     // Nova, on the left: the answer as it arrives, or what went wrong, and
@@ -792,14 +792,14 @@ Scope {
                                                 }
                                                 Text {
                                                     text: "Nova"
-                                                    color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold
+                                                    color: Config.pageColour("assistant"); font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.DemiBold
                                                 }
                                                 // When it answered
                                                 Text {
                                                     anchors.baseline: parent.children[1].baseline
                                                     visible: text !== ""
                                                     text: turn.t.doneAt ? "·  " + root.ago(turn.t.doneAt) : ""
-                                                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11
+                                                    color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: Config.text(11)
                                                 }
                                             }
                                             // An answer without blocks (kept from before, or from a
@@ -812,7 +812,7 @@ Scope {
                                                 wrapMode: TextEdit.Wrap
                                                 readOnly: true; selectByMouse: true
                                                 color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
-                                                font.family: root.fontFamily; font.pixelSize: 14
+                                                font.family: root.fontFamily; font.pixelSize: Config.text(14)
                                             }
                                             // The answer as Slate reads it: paragraphs and headings, lists
                                             // with Slate's own bullets and numbers, and code in a box
@@ -854,7 +854,7 @@ Scope {
                                                                         textFormat: Text.PlainText
                                                                         horizontalAlignment: Text.AlignRight
                                                                         color: Config.pageColour("assistant")
-                                                                        font.family: root.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold
+                                                                        font.family: root.fontFamily; font.pixelSize: Config.text(14); font.weight: Font.DemiBold
                                                                     }
                                                                     AnswerWords {
                                                                         runs: item.modelData.runs
@@ -924,14 +924,14 @@ Scope {
                                                 width: Math.min(implicitWidth, replyCol.inner)
                                                 text: turn.t.error ? turn.t.error.message : ""
                                                 textFormat: Text.PlainText; wrapMode: Text.WordWrap
-                                                color: root.textColor; font.family: root.fontFamily; font.pixelSize: 14
+                                                color: root.textColor; font.family: root.fontFamily; font.pixelSize: Config.text(14)
                                             }
                                             Text {
                                                 visible: reply.wrong && !!turn.t.error.detail
                                                 width: Math.min(implicitWidth, replyCol.inner)
                                                 text: turn.t.error ? (turn.t.error.detail || "") : ""
                                                 textFormat: Text.PlainText; wrapMode: Text.WrapAnywhere; maximumLineCount: 3; elide: Text.ElideRight
-                                                color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12
+                                                color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: Config.text(12)
                                             }
                                             Column {
                                                 visible: (turn.t.actions || []).length > 0
@@ -975,7 +975,7 @@ Scope {
                                                             text: actionRow.modelData.text + (actionRow.undone ? " · undone" : actionRow.ok ? "" : (actionRow.waiting ? " · " : ": ") + (root.stateWords[actionRow.modelData.state] || ""))
                                                             textFormat: Text.PlainText; elide: Text.ElideRight
                                                             color: actionRow.ok ? root.dimTextColor : root.textColor
-                                                            font.family: root.fontFamily; font.pixelSize: 13
+                                                            font.family: root.fontFamily; font.pixelSize: Config.text(13)
                                                         }
                                                         // Undo, for a setting it changed: puts back the value it had before
                                                         Rectangle {
@@ -991,7 +991,7 @@ Scope {
                                                                 anchors.centerIn: parent
                                                                 text: "Undo"
                                                                 color: root.textColor
-                                                                font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                                                                font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                                                             }
                                                             HoverHandler { id: undoHover }
                                                             ClickTap { onTapped: root.undo(turn.index, actionRow.index) }
@@ -1063,14 +1063,14 @@ Scope {
                                 : root.listening === "transcribing" ? "Writing down what you said…"
                                 : "What would you like to do?"
                             color: root.listening === "listening" || root.listening === "starting" ? root.textColor : root.dimTextColor
-                            font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
+                            font.family: root.fontFamily; font.pixelSize: Config.text(15); font.weight: Font.Medium
                             visible: field.text === ""
                         }
                         TextInput {
                             id: field
                             anchors { left: parent.left; right: parent.right; leftMargin: 14; rightMargin: root.working || root.micShown ? 50 : 14; verticalCenter: parent.verticalCenter }
                             color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
-                            font.family: root.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
+                            font.family: root.fontFamily; font.pixelSize: Config.text(15); font.weight: Font.Medium
                             focus: root.shown
                             clip: true
                             maximumLength: 2000
@@ -1127,7 +1127,7 @@ Scope {
                         leftPadding: 4; rightPadding: 4
                         text: root.voice ? root.voice.note : ""
                         textFormat: Text.PlainText; wrapMode: Text.WordWrap
-                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: 13
+                        color: root.textColor; font.family: root.fontFamily; font.pixelSize: Config.text(13)
                     }
 
                     // ---- Footer: who's answering, and the one useful button -----------
@@ -1142,7 +1142,7 @@ Scope {
                             textFormat: Text.PlainText        // never markup
                             text: (root.agent ? root.agent.label : root.detectRunning ? "Looking for your agent…" : "No agent yet")
                                 + (root.working ? "  ·  Ctrl+C to stop" : "  ·  Enter to send" + (root.micShown ? "  ·  Hold Super+K to talk" : ""))
-                            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                         }
                         Row {
                             id: footerButtons
@@ -1195,7 +1195,7 @@ Scope {
         wrapMode: TextEdit.Wrap
         readOnly: true; selectByMouse: true
         color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
-        font.family: root.fontFamily; font.pixelSize: 14
+        font.family: root.fontFamily; font.pixelSize: Config.text(14)
     }
 
     // Code in an answer: a box in the monospaced font, not wrapped (it scrolls sideways when
@@ -1220,7 +1220,7 @@ Scope {
             anchors { left: parent.left; leftMargin: 12; verticalCenter: copyBtn.verticalCenter }
             text: box.lang
             textFormat: Text.PlainText
-            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+            color: root.dimTextColor; font.family: root.fontFamily; font.pixelSize: Config.text(11); font.weight: Font.Medium
         }
         Rectangle {
             id: copyBtn
@@ -1243,7 +1243,7 @@ Scope {
                     anchors.verticalCenter: parent.verticalCenter
                     text: box.done ? "Copied" : "Copy"
                     color: copyHover.hovered || box.done ? root.textColor : root.dimTextColor
-                    font.family: root.fontFamily; font.pixelSize: 11; font.weight: Font.Medium
+                    font.family: root.fontFamily; font.pixelSize: Config.text(11); font.weight: Font.Medium
                 }
             }
             HoverHandler { id: copyHover }
@@ -1271,7 +1271,7 @@ Scope {
                 wrapMode: TextEdit.NoWrap
                 readOnly: true; selectByMouse: true
                 color: root.textColor; selectionColor: root.accent; selectedTextColor: root.barColor
-                font.family: root.codeFont; font.pixelSize: 13
+                font.family: root.codeFont; font.pixelSize: Config.text(13)
             }
         }
     }
@@ -1335,7 +1335,7 @@ Scope {
                 anchors.verticalCenter: parent.verticalCenter
                 text: pill.label
                 color: pill.fg
-                font.family: root.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
             }
         }
         HoverHandler { id: pillHover }

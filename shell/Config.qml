@@ -129,7 +129,7 @@ Singleton {
         // (a colour, not the text: surface() and others read its channels; from the text, glass
         // made dark-theme surfaces fully transparent unless the wallpaper tinted them)
         const c = Qt.lighter(hex, 1.0);
-        if (!light && !toned) return c;
+        if (!light && !toned) return contrasted(c);
         const neutral = c.hslSaturation < 0.3;
         const surface = c.hslLightness < 0.5;          // backgrounds (vs text) in the dark theme
         let h = c.hslHue, sat = c.hslSaturation, l = c.hslLightness;
@@ -151,7 +151,25 @@ Singleton {
                 sat = Math.min(0.32, Math.max(sat, t.hslSaturation * 0.22));     // text: a hint, whatever the boldness
             }
         }
-        return Qt.hsla(h < 0 ? 0 : h, sat, l, c.a);
+        return contrasted(Qt.hsla(h < 0 ? 0 : h, sat, l, c.a));
+    }
+    // Accessibility → High contrast: every themed color pushed apart. Backgrounds go much nearer
+    // black (white in light mode), text and icons much nearer white (black), so dim text reads
+    // clearly and surfaces separate from what's on them. (A colorful accent passes through
+    // tint() only where it's asked to; the accent itself is left as chosen)
+    // Accessibility → Text size: a text size in Slate's own pixels, grown by the setting (1, 1.15
+    // or 1.3). Text only: icons, which are font glyphs too, keep their size. Every Text's
+    // font.pixelSize goes through it (a static test checks)
+    // (the nearest of the three, so anything in between, from an assistant say, still works)
+    readonly property real textScale: { const v = Number(s.textScale) || 1; return v >= 1.22 ? 1.3 : v >= 1.07 ? 1.15 : 1; }
+    function text(px) { return Math.round(Number(px) * textScale); }
+    function contrasted(c) {
+        if (!s.highContrast) return c;
+        const l = c.hslLightness, light = s.lightMode;
+        const back = light ? l >= 0.5 : l < 0.5;          // a background (vs text) in this theme
+        const toward = back === light ? 1 : 0;            // where it's pushed: white or black
+        const amount = back ? 0.6 : 0.75;
+        return Qt.hsla(Math.max(0, c.hslHue), c.hslSaturation * 0.6, l + (toward - l) * amount, c.a);
     }
 
     // Sunrise and sunset on a date at Settings' location, in minutes after local midnight
@@ -1880,7 +1898,7 @@ Singleton {
     // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
     // Hyprland blurs what's behind them (a layer rule, pushed with the other settings). Off in
     // game mode: always draw with this, not s.glass
-    readonly property bool glass: s.glass && !gameMode && !s.reduceTransparency
+    readonly property bool glass: s.glass && !gameMode && !s.reduceTransparency && !s.highContrast
 
     // ---- Shared by the bars and the screensaver ------------------------------------------
     // Tray apps that only have a menu (Ayatana indicators): found once, by the main bar (Bar.qml),

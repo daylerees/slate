@@ -72,7 +72,7 @@ Item {
             width: Math.min(implicitWidth, ddButton.width - x - 32)
             textFormat: Text.PlainText        // never markup: an option can be a device's, an app's or a file's name
             text: dropdown.current ? dropdown.current.label : dropdown.noneLabel !== "" ? dropdown.noneLabel : String(dropdown.value)
-            color: win.text; font.family: (dropdown.current && dropdown.current.font) || win.font; font.pixelSize: 12; font.weight: Font.Medium
+            color: win.text; font.family: (dropdown.current && dropdown.current.font) || win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium
             elide: Text.ElideMiddle      // device names differ at the end: keep it in view
         }
         Text {

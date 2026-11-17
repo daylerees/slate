@@ -1197,7 +1197,7 @@ PanelWindow {
                         text: bar.arrangeShown ? "Window" : bar.shownTop ? bar.shownTop.title : ""
                         color: bar.textColor
                         font.family: bar.fontFamily
-                        font.pixelSize: bar.fontSize
+                        font.pixelSize: Config.text(bar.fontSize)
                         font.weight: Font.Medium
                     }
                     // The title's fade: solid, then clear over its last 32 px (in the text's own
@@ -1416,7 +1416,7 @@ PanelWindow {
                     text: wsName.says
                     color: bar.textColor
                     font.family: bar.fontFamily
-                    font.pixelSize: bar.fontSize
+                    font.pixelSize: Config.text(bar.fontSize)
                     font.weight: Font.Medium
                 }
             }
@@ -1687,7 +1687,7 @@ PanelWindow {
                     text: now
                     color: bar.textColor
                     font.family: bar.fontFamily
-                    font.pixelSize: bar.fontSize
+                    font.pixelSize: Config.text(bar.fontSize)
                     font.weight: Font.Medium
                 }
                 // (the label says the whole date, whatever the clock shows)
@@ -1759,6 +1759,7 @@ PanelWindow {
             opacity: cap.hoverTint && capReach.hovered ? bar.hoverStrength : 0   // (at once: CONVENTIONS, the muted hover)
         }
         Gloss { radius: cap.radius; }          // glass: a sheen
+        ContrastEdge { radius: cap.radius }    // high contrast: a clear edge
         // (pointed at across the bar's whole depth, as the things in it are)
         // (a container itself does nothing when pressed: what's in it takes the clicks, so
         // nothing here clicks or turns the pointer into a hand)
@@ -1913,7 +1914,7 @@ PanelWindow {
                 text: seg.drawnLabel
                 color: seg.tint
                 font.family: bar.fontFamily
-                font.pixelSize: bar.fontSize
+                font.pixelSize: Config.text(bar.fontSize)
                 font.weight: Font.Medium
             }
         }

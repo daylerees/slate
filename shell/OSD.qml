@@ -236,7 +236,7 @@ PanelWindow {
             textFormat: Text.PlainText        // never markup
             text: osd.label || Math.round(osd.value * 100) + "%"
             color: osd.dimmed ? osd.bar.errorColor : osd.bar.textColor
-            font.family: osd.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+            font.family: osd.bar.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
         }
 
         // ---- A note: an icon and a few words -----------------------------------
@@ -258,7 +258,7 @@ PanelWindow {
                 textFormat: Text.PlainText        // never markup
                 text: osd.label
                 color: osd.dimmed ? osd.bar.dimTextColor : osd.bar.textColor
-                font.family: osd.bar.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                font.family: osd.bar.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
             }
         }
 
@@ -326,7 +326,7 @@ PanelWindow {
             textFormat: Text.PlainText        // never markup: a workspace's name
             text: ws.name
             color: osd.bar.textColor
-            font.family: osd.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+            font.family: osd.bar.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
         }
 
     }

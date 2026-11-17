@@ -32,8 +32,8 @@ Column {
         id: timeCol
         width: parent.width
         spacing: 2
-        Label { text: Qt.formatTime(cal.today, pop.timeFormat); font.pixelSize: 22 }
-        Label { width: parent.width; elide: Text.ElideRight; text: Config.dateText(cal.today, "long"); color: pop.dim; font.pixelSize: 12 }
+        Label { text: Qt.formatTime(cal.today, pop.timeFormat); font.pixelSize: Config.text(22) }
+        Label { width: parent.width; elide: Text.ElideRight; text: Config.dateText(cal.today, "long"); color: pop.dim; font.pixelSize: Config.text(12) }
     }
     Divider {}
     Item {
@@ -41,7 +41,7 @@ Column {
         Label {
             anchors.verticalCenter: parent.verticalCenter
             text: Qt.formatDate(cal.shownMonth, "MMMM yyyy")
-            font.pixelSize: 14
+            font.pixelSize: Config.text(14)
         }
         Row {
             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
@@ -70,7 +70,7 @@ Column {
                 horizontalAlignment: Text.AlignHCenter
                 text: modelData
                 color: pop.dim
-                font.pixelSize: 11
+                font.pixelSize: Config.text(11)
             }
         }
         Repeater {
@@ -90,7 +90,7 @@ Column {
                     anchors.centerIn: parent
                     text: parent.day.getDate()
                     color: parent.isToday ? pop.accentText : parent.inMonth ? pop.text : Config.tint("#4f5866")
-                    font.pixelSize: 12
+                    font.pixelSize: Config.text(12)
                 }
             }
         }
@@ -118,7 +118,7 @@ Column {
         width: parent.width
         elide: Text.ElideRight
         text: pop.weather ? pop.weatherInfo(pop.weather.weather_code).text + " now · " + Config.s.locationName : ""
-        color: pop.dim; font.pixelSize: 11
+        color: pop.dim; font.pixelSize: Config.text(11)
     }
     // Reset to the current month each time the panel opens
     Connections { target: pop; function onCurrentChanged() { if (pop.current === "calendar") cal.monthOffset = 0; } }

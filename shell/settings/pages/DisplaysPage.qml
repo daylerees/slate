@@ -57,7 +57,7 @@ Column {
                 width: parent.width - revertBtn.width - keepBtn.width - 24
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Keep these display settings? Going back in " + disp.secondsLeft + " s"
-                color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                 wrapMode: Text.Wrap
             }
             Button { id: revertBtn; label: "Go back"; anchors.verticalCenter: parent.verticalCenter; onClicked: disp.revert() }
@@ -108,14 +108,14 @@ Column {
                             textFormat: Text.PlainText        // never markup: the display's own name
                             text: tile.modelData.name
                             color: tile.chosen ? win.accentText : win.text
-                            font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
+                            font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             visible: Config.primaryScreen && Config.primaryScreen.name === tile.modelData.name && disp.monitors.length > 1
                             text: "Main"
                             color: tile.chosen ? win.accentText : win.dim
-                            font.family: win.font; font.pixelSize: 11
+                            font.family: win.font; font.pixelSize: Config.text(11)
                         }
                     }
                     HoverHandler { cursorShape: arrange.live.length > 1 ? Qt.OpenHandCursor : Qt.ArrowCursor }

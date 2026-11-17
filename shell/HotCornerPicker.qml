@@ -75,7 +75,7 @@ Rectangle {
                         anchors.right: corner.atRight ? parent.right : undefined
                         text: corner.modelData.name
                         color: hp.dimColor
-                        font.family: hp.fontFamily; font.pixelSize: 11
+                        font.family: hp.fontFamily; font.pixelSize: Config.text(11)
                     }
                     Text {
                         anchors.right: corner.atRight ? parent.right : undefined
@@ -83,7 +83,7 @@ Rectangle {
                         horizontalAlignment: corner.atRight ? Text.AlignRight : Text.AlignLeft
                         text: hp.labelFor(corner.action)
                         color: corner.on ? hp.textColor : hp.dimColor
-                        font.family: hp.fontFamily; font.pixelSize: 13; font.weight: Font.Medium
+                        font.family: hp.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                         elide: Text.ElideRight
                     }
                 }
@@ -100,6 +100,6 @@ Rectangle {
         horizontalAlignment: Text.AlignHCenter
         color: hp.dimColor
         opacity: 0.7
-        font.family: hp.fontFamily; font.pixelSize: 12
+        font.family: hp.fontFamily; font.pixelSize: Config.text(12)
     }
 }

@@ -34,7 +34,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             text: btn.label
             color: btn.fg
-            font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
+            font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium
         }
     }
     HoverHandler { id: btnHover }

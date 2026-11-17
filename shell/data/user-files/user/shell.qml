@@ -36,7 +36,7 @@ Scope {
     //                 id: clock
     //                 anchors.centerIn: parent
     //                 color: Config.tint("#eef1f5")
-    //                 font.family: Config.s.fontFamily; font.pixelSize: 13
+    //                 font.family: Config.s.fontFamily; font.pixelSize: Config.text(13)
     //                 SystemClock { id: time; precision: SystemClock.Minutes }
     //                 text: Qt.formatTime(time.date, "hh:mm")
     //             }

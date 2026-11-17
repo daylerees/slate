@@ -100,7 +100,7 @@ Item {
 
     component Heading: Text {
         color: board.dim
-        font.family: board.font; font.pixelSize: 12; font.weight: Font.Medium
+        font.family: board.font; font.pixelSize: Config.text(12); font.weight: Font.Medium
         topPadding: 14; bottomPadding: 6; leftPadding: 4
     }
     // A shape in the picture, faded away towards the left behind the switches waiting there
@@ -262,7 +262,7 @@ Item {
                     text: sw.modelData.label
                     color: sw.fg
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                    font.family: board.font; font.pixelSize: 11; font.weight: Font.Medium
+                    font.family: board.font; font.pixelSize: Config.text(11); font.weight: Font.Medium
                 }
             }
             MouseArea {

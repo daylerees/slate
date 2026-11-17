@@ -439,7 +439,7 @@ PanelWindow {
                     // (dark on the selected card, which sits on the active colour)
                     color: Math.abs(card.t) < 0.5 ? Config.tint("#12151a") : sw.bar.textColor
                     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                    font.family: sw.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Medium
+                    font.family: sw.bar.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
                 ClickArea {

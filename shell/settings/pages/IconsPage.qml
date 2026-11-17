@@ -168,7 +168,7 @@ Column {
                         text: shapeCard.modelData.label
                         color: shapeCard.on ? win.accentText : win.dim
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                        font.family: win.font; font.pixelSize: 12; font.weight: Font.Medium
+                        font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium
                     }
                     HoverHandler { id: shapeHover }
                     ClickTap { onTapped: Config.s.iconShape = shapeCard.modelData.value }

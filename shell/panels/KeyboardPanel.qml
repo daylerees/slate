@@ -43,7 +43,7 @@ Column {
                         text: layoutBtn.modelData.code
                         color: layoutBtn.fg
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-                        font.family: pop.bar.fontFamily; font.pixelSize: 11; font.weight: Font.Bold
+                        font.family: pop.bar.fontFamily; font.pixelSize: Config.text(11); font.weight: Font.Bold
                     }
                 }
                 Label {

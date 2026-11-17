@@ -306,6 +306,10 @@ JsonAdapter {
     // Zoom (Settings → Accessibility; Super+Plus/Minus, Super+Alt+Z): the whole screen magnified
     // around the pointer, on or off, how far (1.25–5×), and following the pointer smoothly or
     // keeping it in the middle ("center")
+    // High contrast (Settings → Accessibility): text and edges stand out, surfaces solid
+    property bool highContrast: false
+    // Text size (Settings → Accessibility): Slate's text, not its icons or layout (1, 1.15, 1.3)
+    property real textScale: 1
     property bool zoom: false
     property real zoomLevel: 2
     property string zoomFollow: "smooth"

@@ -29,7 +29,7 @@ Column {
         width: parent.width
         wrapMode: Text.Wrap
         color: pop.dim
-        font.pixelSize: 12
+        font.pixelSize: Config.text(12)
         font.weight: Font.Normal
         text: Config.gameMode ? "On: these are off for smoother games. Turning it off puts them back as you had them"
             : "Turns off what costs the most to draw, for smoother games. Your settings come back when you turn it off"

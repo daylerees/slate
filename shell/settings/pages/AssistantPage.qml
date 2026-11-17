@@ -185,7 +185,7 @@ Column {
                     verticalAlignment: TextInput.AlignVCenter
                     clip: true
                     color: win.text; selectionColor: win.accent
-                    font.family: win.font; font.pixelSize: 12
+                    font.family: win.font; font.pixelSize: Config.text(12)
                     text: Config.s.assistantModel
                     onEditingFinished: Config.s.assistantModel = text.trim().replace(/[^\w.:\-\[\]]/g, "")
                 }
@@ -208,7 +208,7 @@ Column {
                     verticalAlignment: TextInput.AlignVCenter
                     clip: true
                     color: win.text; selectionColor: win.accent
-                    font.family: win.font; font.pixelSize: 12
+                    font.family: win.font; font.pixelSize: Config.text(12)
                     text: Config.s.assistantCommand
                     onEditingFinished: Config.s.assistantCommand = text.trim()
                 }
@@ -356,7 +356,7 @@ Column {
                         text: assistantPane.outcomes[activityRow.modelData.outcome] || ""
                         textFormat: Text.PlainText
                         color: activityRow.modelData.outcome === "done" ? win.dim : win.text
-                        font.family: win.font; font.pixelSize: 13
+                        font.family: win.font; font.pixelSize: Config.text(13)
                     }
                 }
             }
@@ -384,7 +384,7 @@ Column {
             bottomPadding: 12
             text: assistantPane.adds
             textFormat: Text.PlainText; wrapMode: Text.Wrap
-            color: win.dim; font.family: win.font; font.pixelSize: 12
+            color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
         }
     }
     GroupLabel { text: "Use Slate from other apps" }

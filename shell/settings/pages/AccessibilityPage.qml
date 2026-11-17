@@ -40,6 +40,21 @@ Column {
     GroupLabel { text: "Display" }
     Group {
         ToggleSetting {
+            label: "High contrast"
+            detail: "Text and icons stand out against darker (or, in light mode, lighter) surfaces, every surface has a clear edge, and windows a bright border. Apps themed in App Theming follow it"
+            key: "highContrast"
+        }
+        Separator {}
+        DropdownSetting {
+            label: "Text size"
+            settingKey: "textScale"
+            detail: "Slate's text, without the rest growing (Interface size in Appearance grows everything). GTK apps follow it too when App Theming themes them"
+            options: [{ value: 1, label: "Default" }, { value: 1.15, label: "Larger" }, { value: 1.3, label: "Largest" }]
+            value: Config.textScale
+            onPicked: v => Config.s.textScale = v
+        }
+        Separator {}
+        ToggleSetting {
             label: "Reduce transparency"
             detail: "Solid surfaces everywhere: the bar, dock, panels, menus and windows, with nothing blurred or see-through behind them, whatever Glass is set to"
             key: "reduceTransparency"

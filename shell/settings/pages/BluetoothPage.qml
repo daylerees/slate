@@ -67,7 +67,7 @@ Column {
             visible: bluetoothPane.devices.length === 0
             x: 16; height: 48; verticalAlignment: Text.AlignVCenter
             text: "No devices just yet"
-            color: win.dim; font.family: win.font; font.pixelSize: 13
+            color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
         }
         Repeater {
             // (a row for each device, kept while it's there and moved when the order changes)
@@ -94,14 +94,14 @@ Column {
                 Column {
                     anchors { left: devIcon.right; leftMargin: 12; right: devButtons.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                     spacing: 2
-                    Text { width: parent.width; textFormat: Text.PlainText; text: d.name || d.deviceName || d.address; color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+                    Text { width: parent.width; textFormat: Text.PlainText; text: d.name || d.deviceName || d.address; color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium; elide: Text.ElideRight }
                     Text {
                         width: parent.width
                         text: d.pairing ? "Pairing…"
                             : d.connected ? "Connected" + (d.batteryAvailable ? " · " + Math.round(d.battery * 100) + "% battery" : "")
                             : d.paired ? "Paired" : "Not paired"
                         color: d.connected ? win.accent : win.dim
-                        font.family: win.font; font.pixelSize: 12
+                        font.family: win.font; font.pixelSize: Config.text(12)
                     }
                 }
                 Row {

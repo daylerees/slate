@@ -25,6 +25,6 @@ Rectangle {
         text: badge.text
         color: Config.tint("#12151a")
         font.family: Config.s.fontFamily; font.weight: Font.DemiBold
-        font.pixelSize: badge.textSize
+        font.pixelSize: Config.text(badge.textSize)
     }
 }

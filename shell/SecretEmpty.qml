@@ -53,14 +53,14 @@ PanelWindow {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Your secret workspace is empty"
                 color: note.bar.textColor
-                font.family: note.bar.fontFamily; font.pixelSize: 15; font.weight: Font.Medium
+                font.family: note.bar.fontFamily; font.pixelSize: Config.text(15); font.weight: Font.Medium
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 horizontalAlignment: Text.AlignHCenter
                 text: "A quiet spot for anything you'd like kept out of the way.\nOpen an app here, or send a window over with Super+Shift+S."
                 color: note.bar.dimColor
-                font.family: note.bar.fontFamily; font.pixelSize: 12; font.weight: Font.Normal
+                font.family: note.bar.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Normal
                 lineHeight: 1.25
             }
         }

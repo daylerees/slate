@@ -48,7 +48,7 @@ Column {
         width: parent.width
         wrapMode: Text.Wrap
         color: pop.dim
-        font.pixelSize: 12
+        font.pixelSize: Config.text(12)
         font.weight: Font.Normal
         text: !btView.adapter ? "This computer has no Bluetooth" : !btView.on ? "Bluetooth is off"
             : "No paired devices yet. You can pair one in Bluetooth settings"
@@ -89,7 +89,7 @@ Column {
                     }
                     Label {
                         width: parent.width
-                        font.pixelSize: 11; font.weight: Font.Normal
+                        font.pixelSize: Config.text(11); font.weight: Font.Normal
                         color: devRow.fgDim
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         opacity: devRow.selected ? 0.8 : 1

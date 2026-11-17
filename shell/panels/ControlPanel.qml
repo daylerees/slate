@@ -103,9 +103,9 @@ Column {
         Column {
             anchors { left: avatar.right; leftMargin: 14; verticalCenter: parent.verticalCenter; right: ccButtons.left; rightMargin: 8 }
             spacing: 2
-            Label { width: parent.width; text: pop.fullName; font.pixelSize: 16 }
-            Label { width: parent.width; text: Quickshell.env("USER") + "@" + hostFile.text().trim(); color: pop.dim; font.pixelSize: 12 }
-            Label { width: parent.width; text: pop.uptimeText() + (pop.hyprVersion ? " · Hyprland " + pop.hyprVersion : ""); color: pop.dim; font.pixelSize: 12 }
+            Label { width: parent.width; text: pop.fullName; font.pixelSize: Config.text(16) }
+            Label { width: parent.width; text: Quickshell.env("USER") + "@" + hostFile.text().trim(); color: pop.dim; font.pixelSize: Config.text(12) }
+            Label { width: parent.width; text: pop.uptimeText() + (pop.hyprVersion ? " · Hyprland " + pop.hyprVersion : ""); color: pop.dim; font.pixelSize: Config.text(12) }
         }
         Row {
             id: ccButtons
@@ -164,22 +164,22 @@ Column {
                     spacing: 1
                     Label {
                         text: Qt.formatTime(Config.clockDate(ccClock.date), pop.timeFormat)
-                        font.pixelSize: 34; font.weight: Font.DemiBold
+                        font.pixelSize: Config.text(34); font.weight: Font.DemiBold
                     }
-                    Label { width: parent.width; text: Config.dateText(Config.clockDate(ccClock.date), "longDay"); color: pop.dim; font.pixelSize: 12 }
+                    Label { width: parent.width; text: Config.dateText(Config.clockDate(ccClock.date), "longDay"); color: pop.dim; font.pixelSize: Config.text(12) }
                     Item { width: 1; height: 8; visible: pop.weather !== null }
                     Label {
                         visible: pop.weather !== null
                         width: parent.width
                         text: !pop.weather ? "" : pop.weatherInfo(pop.weather.weather_code).text
                             + (pop.weather.apparent_temperature !== undefined ? " · feels " + Math.round(pop.weather.apparent_temperature) + "°" : "")
-                        font.pixelSize: 12
+                        font.pixelSize: Config.text(12)
                     }
                     Label {
                         visible: pop.weather !== null && pop.forecast !== null
                         width: parent.width
                         text: pop.forecast ? "High " + Math.round(pop.forecast.temperature_2m_max[0]) + "° · Low " + Math.round(pop.forecast.temperature_2m_min[0]) + "°" : ""
-                        color: pop.dim; font.pixelSize: 12
+                        color: pop.dim; font.pixelSize: Config.text(12)
                     }
                 }
                 // Now: the weather's icon over the temperature, in the corner
@@ -195,7 +195,7 @@ Column {
                     Label {
                         anchors.right: parent.right
                         text: pop.weather ? Math.round(pop.weather.temperature_2m) + "°" + (Config.fahrenheit ? "F" : "C") : ""
-                        font.pixelSize: 14
+                        font.pixelSize: Config.text(14)
                     }
                 }
                 // Next few days
@@ -236,7 +236,7 @@ Column {
                         anchors { left: art.visible ? art.right : parent.left; leftMargin: art.visible ? 12 : 0; right: parent.right; verticalCenter: parent.verticalCenter }
                         spacing: 2
                         Label { width: parent.width; text: controlView.player ? (controlView.player.trackTitle || controlView.player.identity) : "" }
-                        Label { width: parent.width; text: controlView.player ? (controlView.player.trackArtist || "") : ""; color: pop.dim; font.pixelSize: 12 }
+                        Label { width: parent.width; text: controlView.player ? (controlView.player.trackArtist || "") : ""; color: pop.dim; font.pixelSize: Config.text(12) }
                         Row {
                             spacing: 4
                             topPadding: 6
@@ -381,7 +381,7 @@ Column {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
                             text: controlTile.tile.label
-                            font.pixelSize: 11
+                            font.pixelSize: Config.text(11)
                             color: controlTile.fg
                             Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         }

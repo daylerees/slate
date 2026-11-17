@@ -134,7 +134,7 @@ Column {
                                 readonly property int nApps: Spaces.appCount(spRow.modelData)
                                 text: spRow.busy ? "Opening…"
                                     : (nWs === 1 ? "1 workspace" : nWs + " workspaces") + " · " + (nApps === 1 ? "1 app" : nApps + " apps")
-                                color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12
+                                color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12)
                             }
                         }
                         // Its apps, or, under the pointer, a delete button (asks first, in
@@ -158,7 +158,7 @@ Column {
                                     anchors.verticalCenter: parent.verticalCenter
                                     leftPadding: 8
                                     text: "+" + (spRow.appIds.length - 4)
-                                    color: pop.dim; font.pixelSize: 11
+                                    color: pop.dim; font.pixelSize: Config.text(11)
                                 }
                             }
                             Rectangle {
@@ -230,7 +230,7 @@ Column {
     Label {
         visible: spacesView.mode === "new"
         text: spacesView.picked.length === 0 ? "Pick the workspaces to save" : spacesView.picked.length === 1 ? "1 workspace" : spacesView.picked.length + " workspaces"
-        color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12
+        color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12)
     }
     Label {
         visible: spacesView.mode === "new" && Spaces.live.length === 0
@@ -379,7 +379,7 @@ Column {
                             readonly property int n: wsCard.modelData.windows.length
                             text: Config.workspaceLabel(wsCard.modelData.id) + " · " + (n === 1 ? "1 app" : n + " apps")
                             color: wsCard.on ? pop.text : pop.dim
-                            font.weight: Font.Normal; font.pixelSize: 12
+                            font.weight: Font.Normal; font.pixelSize: Config.text(12)
                         }
                     }
                 }
@@ -392,7 +392,7 @@ Column {
         ThinScrollbar { flick: wsFlick; color: pop.text; anchors { top: parent.top; bottom: parent.bottom; right: parent.right } }
     }
 
-    Label { visible: spacesView.mode === "new"; text: "Name"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+    Label { visible: spacesView.mode === "new"; text: "Name"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12) }
     PanelField {
         id: spName
         visible: spacesView.mode === "new"
@@ -408,10 +408,10 @@ Column {
         visible: spacesView.mode === "new" && spacesView.sameName !== null
         width: parent.width
         text: "Saving replaces the space already called " + (spacesView.sameName ? spacesView.sameName.name : "")
-        color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12; wrapMode: Text.Wrap
+        color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12); wrapMode: Text.Wrap
     }
 
-    Label { visible: spacesView.mode === "new"; text: "Icon"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+    Label { visible: spacesView.mode === "new"; text: "Icon"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12) }
     Grid {
         visible: spacesView.mode === "new"
         columns: 15
@@ -434,7 +434,7 @@ Column {
         }
     }
 
-    Label { visible: spacesView.mode === "new"; text: "Color"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: 12 }
+    Label { visible: spacesView.mode === "new"; text: "Color"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12) }
     Grid {
         visible: spacesView.mode === "new"
         columns: 9

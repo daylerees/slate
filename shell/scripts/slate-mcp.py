@@ -1034,7 +1034,7 @@ VALUES = {
 # What each number takes, as Settings' own sliders and menus allow (Slate doesn't check a
 # number set from outside; some are kept as 0 to 1 where Settings shows a percentage)
 RANGES = {
-    "accentBoldness": (0, 1), "toneBoldness": (0, 1), "zoomLevel": (1.25, 5),
+    "accentBoldness": (0, 1), "toneBoldness": (0, 1), "zoomLevel": (1.25, 5), "textScale": (1, 1.3),
     "tickVolume": (0, 100), "notificationVolume": (0, 100), "clickVolume": (0, 100), "swishVolume": (0, 100),
     "welcomeVolume": (0, 100), "goodbyeVolume": (0, 100), "attentionVolume": (0, 100),
     "answeredVolume": (0, 100),
@@ -1059,7 +1059,7 @@ RANGES = {
 SWITCHES = {
     "accentFromWallpaper", "toneFromWallpaper", "wallpaperHideSmall", "wallpaperShowSlate",
     "nightLight", "airplaneMode", "iconFill", "tintIcons", "gameMode", "iconTileColour",
-    "reduceTransparency", "reduceMotion", "zoom",
+    "reduceTransparency", "reduceMotion", "zoom", "highContrast",
     "roundedScreenCorners", "shadows", "roundedElements", "reopenAppsAfterRestart",
     "keepEmptyWorkspace", "barBlur", "barPanelBlur", "barAutoHide", "barShowControl",
     "barShowClock", "barShowApps", "barShowSpaces", "spaceBorders", "spaceBadges",

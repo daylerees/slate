@@ -22,7 +22,7 @@ Rectangle {
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
             text: forecastDay.today ? "Today" : Qt.formatDate(new Date(pop.forecast.time[forecastDay.day] + "T12:00"), "ddd")
-            color: forecastDay.faint; font.pixelSize: 11
+            color: forecastDay.faint; font.pixelSize: Config.text(11)
         }
         Icon {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -37,7 +37,7 @@ Rectangle {
                   + "<font color='" + forecastDay.faint + "'>" + Math.round(pop.forecast.temperature_2m_min[forecastDay.day]) + "°</font>"
             textFormat: Text.StyledText
             color: forecastDay.fg
-            font.pixelSize: forecastDay.tempSize
+            font.pixelSize: Config.text(forecastDay.tempSize)
         }
     }
 }

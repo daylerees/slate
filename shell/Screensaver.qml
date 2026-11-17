@@ -140,13 +140,13 @@ Scope {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Qt.formatTime(Config.clockDate(clock.date), Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm")
             color: "white"
-            font.family: Config.s.fontFamily; font.pixelSize: 112; font.weight: Font.Light
+            font.family: Config.s.fontFamily; font.pixelSize: Config.text(112); font.weight: Font.Light
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Config.dateText(Config.clockDate(clock.date), "longDay")
             color: Qt.rgba(1, 1, 1, 0.75)
-            font.family: Config.s.fontFamily; font.pixelSize: 22
+            font.family: Config.s.fontFamily; font.pixelSize: Config.text(22)
         }
     }
 
@@ -213,7 +213,7 @@ Scope {
                 wrapMode: Text.Wrap
                 text: noPlayer ? "Videos need Qt Multimedia (the qt6-multimedia package)"
                     : "No videos in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + " yet. Add some, or get scenery videos in Settings → Screensaver"
-                color: Qt.rgba(1, 1, 1, 0.6); font.family: Config.s.fontFamily; font.pixelSize: 15
+                color: Qt.rgba(1, 1, 1, 0.6); font.family: Config.s.fontFamily; font.pixelSize: Config.text(15)
             }
             ClockFace { visible: Config.s.screensaverClock; anchors.centerIn: parent; anchors.verticalCenterOffset: -parent.height * 0.06 }
         }

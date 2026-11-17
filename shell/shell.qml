@@ -454,7 +454,7 @@ ShellRoot {
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
                 // What's in effect after game mode and Accessibility have had their say
-                look: { glass: Config.glass, animate: Config.animate },
+                look: { glass: Config.glass, animate: Config.animate, text13: Config.text(13), dim: String(Config.tint("#8b94a3")) },
                 softwareDaily: { looks: SoftwareUpdates.looks, notices: SoftwareUpdates.notices, waiting: SoftwareUpdates.waiting },
                 software: softwareLoader.item ? (w => ({
                     built: true, open: w.visible, searchFocused: w.searchFocused, page: w.page,

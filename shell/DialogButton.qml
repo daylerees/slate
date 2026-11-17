@@ -46,7 +46,7 @@ Rectangle {
         text: btn.label
         color: btn.primary ? btn.accentText : btn.textColor
         font.family: Config.s.fontFamily
-        font.pixelSize: 13
+        font.pixelSize: Config.text(13)
         font.weight: Font.DemiBold
     }
 }

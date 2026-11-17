@@ -43,8 +43,8 @@ Column {
         }
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            Label { text: Math.round(bat.pct * 100) + "%"; font.pixelSize: 20 }
-            Label { text: bat.stateText; color: pop.dim; font.pixelSize: 12 }
+            Label { text: Math.round(bat.pct * 100) + "%"; font.pixelSize: Config.text(20) }
+            Label { text: bat.stateText; color: pop.dim; font.pixelSize: Config.text(12) }
         }
     }
     // Charge bar
@@ -77,8 +77,8 @@ Column {
             required property var modelData
             visible: modelData.value !== ""
             width: bat.width; height: factLabel.height
-            Label { id: factLabel; text: parent.modelData.label; font.pixelSize: 12 }
-            Label { anchors.right: parent.right; text: parent.modelData.value; color: pop.dim; font.pixelSize: 12 }
+            Label { id: factLabel; text: parent.modelData.label; font.pixelSize: Config.text(12) }
+            Label { anchors.right: parent.right; text: parent.modelData.value; color: pop.dim; font.pixelSize: Config.text(12) }
         }
     }
 
@@ -113,7 +113,7 @@ Column {
                     Label {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: profileButton.modelData.label
-                        font.pixelSize: 12
+                        font.pixelSize: Config.text(12)
                         color: profileButton.fg
                         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     }
@@ -202,11 +202,11 @@ Column {
             spacing: 5
             Item {
                 width: parent.width; height: meterLabel.height
-                Label { id: meterLabel; text: meter.modelData; font.pixelSize: 12 }
+                Label { id: meterLabel; text: meter.modelData; font.pixelSize: Config.text(12) }
                 Label {
                     anchors.right: parent.right
                     text: meter.value
-                    color: pop.dim; font.pixelSize: 12
+                    color: pop.dim; font.pixelSize: Config.text(12)
                 }
             }
             Meter {

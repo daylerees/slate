@@ -9,5 +9,5 @@ Text {
     readonly property var win: SettingsHost.win
     width: parent.width
     topPadding: 10
-    color: win.dim; font.family: win.font; font.pixelSize: 12; wrapMode: Text.Wrap
+    color: win.dim; font.family: win.font; font.pixelSize: Config.text(12); wrapMode: Text.Wrap
 }

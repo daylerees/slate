@@ -758,3 +758,14 @@ SCENES["quicklook-picture"] = {"do": [("!sh", "-c", _LOOK_PICTURE)], "settle": 1
 SCENES["quicklook-details"] = {"do": [("!sh", "-c", _LOOK_OTHER)], "settle": 1.2,
                                "wait": lambda st: st["quicklook"]["open"] and st["quicklook"]["view"] == "details",
                                "undo": [("quicklook", "close")]}
+
+
+# Accessibility: High contrast (surfaces darker, text brighter, a clear edge on each, no glass) and
+# Largest text (Slate's text 30% bigger, its icons and layout as they are), where most is shown
+_HC = {"highContrast": "true", "glass": "true"}
+_BIG = {"textScale": "1.3"}
+SCENES["a11y-contrast-settings"] = dict(SCENES["settings-accessibility"], settings=_HC)
+SCENES["a11y-contrast-control"] = dict(SCENES["panel-control"], settings=dict(SCENES["panel-control"].get("settings", {}), **_HC))
+SCENES["a11y-text-settings"] = dict(SCENES["settings-accessibility"], settings=_BIG)
+SCENES["a11y-text-control"] = dict(SCENES["panel-control"], settings=dict(SCENES["panel-control"].get("settings", {}), **_BIG))
+SCENES["a11y-text-launcher"] = dict(SCENES["launcher"], settings=dict(SCENES["launcher"].get("settings", {}), **_BIG))

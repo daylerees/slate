@@ -101,7 +101,7 @@ Row {
         text: "slate"
         color: logo.textColor
         font.family: Config.s.fontFamily
-        font.pixelSize: logo.size * 0.64
+        font.pixelSize: Config.text(logo.size * 0.64)
         font.weight: Font.Medium
         font.letterSpacing: logo.size * 0.035
     }

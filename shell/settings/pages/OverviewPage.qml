@@ -38,7 +38,7 @@ Column {
             activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
             id: findField
             anchors { left: findIcon.right; leftMargin: 10; right: clearFind.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-            color: win.text; font.family: win.font; font.pixelSize: 14
+            color: win.text; font.family: win.font; font.pixelSize: Config.text(14)
             selectionColor: win.accent; selectedTextColor: win.accentText
             clip: true
             // Ready to type whenever All Settings shows: when the page loads and each time
@@ -101,7 +101,7 @@ Column {
                     visible: findField.text.trim().length >= 2 && ovPage.found.length === 0
                     topPadding: 8; leftPadding: 4
                     text: "No settings match “" + findField.text.trim() + "”"
-                    color: win.dim; font.family: win.font; font.pixelSize: 13
+                    color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
                 }
                 Group {
                     visible: ovPage.found.length > 0
@@ -129,7 +129,7 @@ Column {
                                 Text {
                                     width: parent.width
                                     text: hitRow.modelData.label
-                                    color: hitRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                    color: hitRow.chosen ? win.accentText : win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                                     elide: Text.ElideRight
                                 }
                                 Text {
@@ -137,7 +137,7 @@ Column {
                                     text: (SettingsIndex.pageNames[hitRow.modelData.page] || "")
                                         + (hitRow.modelData.group && hitRow.modelData.group !== hitRow.modelData.label ? " → " + hitRow.modelData.group : "")
                                         + (hitRow.modelData.detail ? " · " + hitRow.modelData.detail : "")
-                                    color: hitRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: 11
+                                    color: hitRow.chosen ? Qt.rgba(win.accentText.r, win.accentText.g, win.accentText.b, 0.72) : win.dim; font.family: win.font; font.pixelSize: Config.text(11)
                                     elide: Text.ElideRight
                                 }
                             }
@@ -183,13 +183,13 @@ Column {
                                 Text {
                                     width: parent.width
                                     text: tile.modelData.label
-                                    color: win.text; font.family: win.font; font.pixelSize: 13; font.weight: Font.Medium
+                                    color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                                     elide: Text.ElideRight
                                 }
                                 Text {
                                     width: parent.width
                                     text: tile.modelData.about
-                                    color: win.dim; font.family: win.font; font.pixelSize: 11
+                                    color: win.dim; font.family: win.font; font.pixelSize: Config.text(11)
                                     wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight
                                 }
                             }
