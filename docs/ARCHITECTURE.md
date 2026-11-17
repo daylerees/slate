@@ -118,7 +118,8 @@ shell.qml               root: creates everything below, plus the dock itself
 │        AppsPage.qml, StartupPage.qml, DateTimePage.qml, ScreenshotsPage.qml, WindowsPage.qml,
 │        NotificationsPage.qml, BluetoothPage.qml, PrintersPage.qml, AboutPage.qml, WifiPage.qml,
 │        HotCornersPage.qml, DebugPage.qml, WebcamPage.qml, LockPage.qml, ScreensaverPage.qml,
-│        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml, UsersPage.qml
+│        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml, UsersPage.qml,
+│        AccessibilityPage.qml
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
 ├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
 ├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)

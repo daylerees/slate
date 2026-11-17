@@ -19,6 +19,9 @@ hl.curve("easy",           { type = "spring", mass = 1, stiffness = 500, dampeni
 -- quicker) or "off". Every speed below goes through sp() so the setting scales them all.
 local ANIM_SCALE = 1
 local ANIM_OFF = false
+-- Accessibility → Reduce motion (setReduceMotion, below): windows and workspaces only fade; no
+-- sliding, growing or moving
+SLATE_REDUCE_MOTION = SLATE_REDUCE_MOTION or false
 -- (SLATE_ANIM_SLOW: the tests slow every animation down by that much, to take pictures partway)
 local function sp(x) return x * ANIM_SCALE * (SLATE_ANIM_SLOW or 1) end
 
@@ -39,6 +42,15 @@ local function defineLeaves()
     -- underneath; closing reverses it
     hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefadevert -100%" })
     hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = sp(5), bezier = "easeOutQuint", style = "slidefadevert -100%" })
+    if SLATE_REDUCE_MOTION then
+        -- No movement: windows open, close and move at once (they still fade in and out:
+        -- the fadeIn/fadeOut leaves under global), and the secret workspace fades
+        for _, leaf in ipairs({ "windows", "windowsIn", "windowsOut", "windowsMove" }) do
+            hl.animation({ leaf = leaf, enabled = false })
+        end
+        hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = sp(3.5), bezier = "easeInOutCubic", style = "fade" })
+        hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = sp(3.5), bezier = "easeInOutCubic", style = "fade" })
+    end
 end
 defineLeaves()
 -- How switching workspace looks (Settings → Workspaces → Workspace switching); Slate sets it
@@ -52,7 +64,7 @@ defineLeaves()
 --   none           straight there
 WORKSPACE_ANIM = WORKSPACE_ANIM or "slidefade"
 local function slideWorkspaces()
-    local a = WORKSPACE_ANIM
+    local a = SLATE_REDUCE_MOTION and "crossfade" or WORKSPACE_ANIM
     local function set(leaf, speed, bezier, style)
         hl.animation({ leaf = leaf, enabled = true, speed = sp(speed), bezier = bezier, style = style })
     end
@@ -115,7 +127,7 @@ end
 -- things have settled
 local switching, switchTimer = false, nil
 function noteWorkspaceSwitch()
-    if ANIM_OFF or (WORKSPACE_ANIM ~= "slidefade" and WORKSPACE_ANIM ~= "slidefadevert") then return end
+    if ANIM_OFF or SLATE_REDUCE_MOTION or (WORKSPACE_ANIM ~= "slidefade" and WORKSPACE_ANIM ~= "slidefadevert") then return end
     if switching then
         hl.animation({ leaf = "workspacesOut", enabled = true, speed = sp(1.5), bezier = "quick", style = "fade" })
     end
@@ -148,7 +160,7 @@ end)
 -- already move the old workspace, so they switch as usual.
 function slideAwayTo(dispatcher)
     local a = WORKSPACE_ANIM
-    if a ~= "slidefade" and a ~= "slidefadevert" then hl.dispatch(dispatcher); return end
+    if SLATE_REDUCE_MOTION or (a ~= "slidefade" and a ~= "slidefadevert") then hl.dispatch(dispatcher); return end
     hl.animation({ leaf = "workspacesOut", enabled = true, speed = sp(5), bezier = "easeOutQuint",
                    style = a == "slidefadevert" and "slidefadevert 100%" or "slidefade 100%" })
     hl.dispatch(dispatcher)
@@ -217,7 +229,17 @@ function slateDragResize(address, x, y, w, h)
 end
 function slateDragEnd()
     dragging = false
+    if SLATE_REDUCE_MOTION then return end      -- (moves stay instant)
     hl.animation({ leaf = "windowsMove", enabled = true, speed = sp(3), spring = "easy", style = "slide" })
+end
+
+-- setReduceMotion(on): Accessibility → Reduce motion (Slate calls it with its other settings)
+function setReduceMotion(on)
+    if SLATE_REDUCE_MOTION == (on == true) then return end
+    SLATE_REDUCE_MOTION = on == true
+    if ANIM_OFF then return end
+    defineLeaves()
+    slideWorkspaces()
 end
 
 -- setAnimationSpeed(mode): "normal", "fast" or "off" (called by slateApply, slate.lua)

@@ -1038,6 +1038,8 @@ Singleton {
         // Set directly (not through slateApply), so a Hyprland config of your own can read it too
         return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}; `
             + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `
+            // Accessibility → Reduce motion: windows and workspaces only fade (animations.lua)
+            + `if setReduceMotion then setReduceMotion(${s.reduceMotion ? "true" : "false"}) end; `
             // Glass: blur behind Slate's surfaces, from just under their own opacity (glassCut).
             // One rule for most, one each for the dock and the menu bar, whose backgrounds have
             // an opacity of their own (Settings → Dock, → Menu Bar). Each is made once, and made
@@ -1058,6 +1060,8 @@ Singleton {
             + `; hl.config({ decoration = { shadow = { enabled = ${hyprShadow.on ? "true" : "false"}, range = ${hyprShadow.range}, render_power = ${hyprShadow.power}, sharp = ${hyprShadow.sharp ? "true" : "false"}, offset = { ${hyprShadow.offsetX}, ${hyprShadow.offsetY} }, color = "${hyprShadow.colour}" } } })`
             // Game mode: no blur or shadows behind anything, and every window fully opaque
             + (gameMode ? `; hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false }, active_opacity = 1, inactive_opacity = 1 } })` : "")
+            // Accessibility → Reduce transparency: no blur, every window fully opaque (shadows stay)
+            + (s.reduceTransparency && !gameMode ? `; hl.config({ decoration = { blur = { enabled = false }, active_opacity = 1, inactive_opacity = 1 } })` : "")
             // ...terminals too, which draw their own see-through background (kitty's
             // background_opacity): with the blur gone that showed the bare wallpaper. Only
             // terminals: apps drawing their own rounded corners or shadows would turn them black.
@@ -1067,7 +1071,7 @@ Singleton {
             // config that isn't Slate's there's no list, and no rule
             + `; if SLATE_GAME_OPAQUE and SLATE_GAME_OPAQUE_FOR ~= TERMINAL_CLASSES then SLATE_GAME_OPAQUE:set_enabled(false); SLATE_GAME_OPAQUE = nil end; `
             + `if TERMINAL_CLASSES and not SLATE_GAME_OPAQUE then SLATE_GAME_OPAQUE_FOR = TERMINAL_CLASSES; SLATE_GAME_OPAQUE = hl.window_rule({ name = "slate-game-opaque", match = { class = "^(" .. TERMINAL_CLASSES .. ")$" }, force_rgbx = true }) end; `
-            + `if SLATE_GAME_OPAQUE then SLATE_GAME_OPAQUE:set_enabled(${gameMode ? "true" : "false"}) end`;
+            + `if SLATE_GAME_OPAQUE then SLATE_GAME_OPAQUE:set_enabled(${gameMode || s.reduceTransparency ? "true" : "false"}) end`;
     }
     onHyprSettingsChanged: hyprPush.restart()
     // The blur rules alone, sent straight away when one changes (an opacity slider being
@@ -1668,7 +1672,7 @@ Singleton {
     readonly property var pagePastels: ({
         overview: "#b9a6e8", general: "#9db4d8", appearance: "#e8a6c8", displays: "#8fc7e8",
         input: "#b9a6e8", sound: "#e8b48f", power: "#a6d3a0", windows: "#8fd0c8",
-        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0", users: "#e8b8c8",
+        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0", users: "#e8b8c8", accessibility: "#9fc6e8",
         bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",
@@ -1864,13 +1868,17 @@ Singleton {
     // Off again: Hyprland reloads its config (quietly), for its own blur, shadows, animations
     // and touchpad setting, then Slate's settings go back on top (hyprPush)
     onGameModeChanged: if (!gameMode) reloadHyprland()
+    // Accessibility → Reduce transparency off again: Hyprland's own blur and window opacity
+    // come back the same way
+    readonly property bool reduceTransparency: s.reduceTransparency
+    onReduceTransparencyChanged: if (!reduceTransparency) reloadHyprland()
     function setGameMode(on) { s.gameMode = on; }
 
     // ---- Glass (Settings → Appearance → Glass; off by default) ---------------------------
     // Surfaces (bar, dock, panels, Settings, the launcher, menus…) turn see-through, and
     // Hyprland blurs what's behind them (a layer rule, pushed with the other settings). Off in
     // game mode: always draw with this, not s.glass
-    readonly property bool glass: s.glass && !gameMode
+    readonly property bool glass: s.glass && !gameMode && !s.reduceTransparency
 
     // ---- Shared by the bars and the screensaver ------------------------------------------
     // Tray apps that only have a menu (Ayatana indicators): found once, by the main bar (Bar.qml),
@@ -1893,7 +1901,9 @@ Singleton {
     //   NumberAnimation { duration: Config.ms(200) }
     // except motion that's the point of the thing (the screensaver's drift, busy spinners, a
     // notification's countdown) and scrolling's glide
-    readonly property real animScale: gameMode || s.animations === "off" ? 0 : s.animations === "fast" ? 0.5 : 1
+    // (Accessibility → Reduce motion: none of Slate's own either, its fades included: they
+    // can't be told apart from movement here. Hyprland's windows and workspaces still fade)
+    readonly property real animScale: gameMode || s.reduceMotion || s.animations === "off" ? 0 : s.animations === "fast" ? 0.5 : 1
     readonly property bool animate: animScale > 0
     function ms(t) { return Math.round(Number(t) * animScale); }
     readonly property real glassOpacity: Math.max(0.3, Math.min(0.95, s.glassOpacity))

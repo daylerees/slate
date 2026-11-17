@@ -298,6 +298,11 @@ JsonAdapter {
     property bool welcomeShown: false
     // Updates (Settings → Updates): look for new versions daily, with a notification
     property bool updateCheck: true
+    // Accessibility (Settings → Accessibility): solid surfaces whatever Glass is set to, and no
+    // movement (Slate's own animations off, Hyprland's windows and workspaces fading only),
+    // whatever Animations is set to. They override the look without changing it
+    property bool reduceTransparency: false
+    property bool reduceMotion: false
     // …and for apps and this computer's system (Software): a notification at most once a day
     property bool softwareUpdateCheck: true
     // Keyboard shortcuts (Settings → Shortcuts): slate, hyprland or hyprland-extras

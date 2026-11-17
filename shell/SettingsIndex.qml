@@ -31,6 +31,7 @@ Singleton {
         { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling, scrolling or floating, gaps, borders, focus and Super+Tab" },
         { id: "workspaces", label: "Workspaces", icon: 0xEDBA, about: "Switching, wrapping round, indicators and the overview" },
         { id: "notifications", label: "Notifications", icon: 0xEA35, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
+        { id: "accessibility", label: "Accessibility", icon: 0xEBA9, about: "Easier to see and use: less transparency and motion" },
         { id: "wifi", label: "Network", icon: 0xF09F, about: "Your connection, wired and Wi-Fi, and networks to join" },
         { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices" },
         { id: "printers", label: "Printers", icon: 0xEB0E, more: true, about: "Adding printers, test pages, and scanning" },
@@ -242,6 +243,9 @@ Singleton {
         ["Network", "wifi", "connection internet ip address gateway dns link speed online offline"],
         ["Wired", "wifi", "ethernet cable lan socket network"],
         ["Bluetooth", "bluetooth", "devices headphones pair"],
+        ["Accessibility", "accessibility", "accessibility a11y vision seeing motion sickness disability help easier"],
+        ["Reduce transparency", "accessibility", "transparent see-through solid opaque blur glass contrast"],
+        ["Reduce motion", "accessibility", "animations movement sliding zooming vestibular dizzy fade calm"],
         ["Users", "users", "users people accounts account add person someone family guest administrator admin remove delete password username"],
         ["Printers", "printers", "printers and scanners print printer printing scanner scan scanning cups sane test page"],
         ["About Slate", "about", "version restart settings file"]

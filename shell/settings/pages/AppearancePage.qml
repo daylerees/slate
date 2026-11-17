@@ -303,6 +303,9 @@ Column {
             label: "Glass"
             detail: "The bar, dock, panels, menus, the launcher and Settings turn see-through, with what's behind them blurred"
             key: "glass"
+            needsMet: !Config.s.reduceTransparency
+            needs: "Needs Reduce transparency to be off"
+            needsPage: "accessibility"; needsLabel: "Reduce transparency"
         }
         Separator { visible: Config.s.glass }
         SettingRow {
@@ -573,6 +576,9 @@ Column {
         DropdownSetting {
             label: "Animations"
             settingKey: "animations"
+            needsMet: !Config.s.reduceMotion
+            needs: "Needs Reduce motion to be off"
+            needsPage: "accessibility"; needsLabel: "Reduce motion"
             detail: "Windows opening, closing and moving, switching workspaces, and Slate's own: panels opening, the bar's groups sliding open, fades and highlights. Faster halves them; Off makes them instant"
             options: [{ value: "normal", label: "Normal" }, { value: "fast", label: "Faster" }, { value: "off", label: "Off" }]
             value: Config.s.animations !== "" ? Config.s.animations : "normal"

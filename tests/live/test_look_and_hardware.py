@@ -304,3 +304,40 @@ class HyprlandGetsSettings(LiveCase):
         self.assertTrue(self.until("CURSOR_THEME", "Adwaita"), f"CURSOR_THEME is {self.lua('CURSOR_THEME')!r}")
         self.config("cursorTheme", "")
         self.assertTrue(self.until("CURSOR_THEME", own), "the session's own pointer didn't come back")
+
+
+class Accessibility(LiveCase):
+    """Settings → Accessibility: Reduce transparency and Reduce motion override Glass and
+    Animations without changing them, reach Hyprland, and put things back when switched off."""
+    def option(self, name):
+        o = self.s.hyprctl("getoption", name, json_out=True)
+        return o.get("int", o.get("float", o.get("bool")))
+
+    def test_reduce_transparency(self):
+        for key in ("glass", "reduceTransparency"):
+            self.keep_setting(key)
+        self.addCleanup(lambda: settings_in_hyprland(self))
+        self.config("glass", "true")
+        self.config("reduceTransparency", "true")
+        self.wait(lambda st: not st["look"]["glass"], "glass off while it's on")
+        settings_in_hyprland(self)
+        self.assertEqual(self.option("decoration:blur:enabled"), 0, "Hyprland still blurs")
+        self.assertEqual(float(self.option("decoration:inactive_opacity")), 1.0, "windows still see-through")
+        self.assertEqual(self.s.ipc("config", "get", "glass"), "true", "Glass itself was changed")
+        self.config("reduceTransparency", "false")
+        self.wait(lambda st: st["look"]["glass"], "glass back")
+
+    def test_reduce_motion(self):
+        for key in ("animations", "reduceMotion"):
+            self.keep_setting(key)
+        self.addCleanup(lambda: settings_in_hyprland(self))
+        self.config("animations", "normal")
+        self.config("reduceMotion", "true")
+        self.wait(lambda st: not st["look"]["animate"], "Slate's own movement off")
+        settings_in_hyprland(self)
+        self.assertEqual(lua(self, "SLATE_REDUCE_MOTION"), "true", "Hyprland still slides")
+        self.assertEqual(self.s.ipc("config", "get", "animations"), "normal", "Animations itself was changed")
+        self.config("reduceMotion", "false")
+        self.wait(lambda st: st["look"]["animate"], "movement back")
+        settings_in_hyprland(self)
+        self.assertEqual(lua(self, "SLATE_REDUCE_MOTION"), "false")
