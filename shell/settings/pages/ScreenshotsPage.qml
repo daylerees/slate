@@ -19,6 +19,8 @@ Column {
     PageTitle { text: "Screenshots" }
     property bool hasSwash: false
     Process { running: true; command: ["sh", "-c", "command -v swash"]; onExited: code => screenshotsPane.hasSwash = code === 0 }
+    property bool hasRecorder: true
+    Process { running: true; command: ["sh", "-c", "command -v wf-recorder"]; onExited: code => screenshotsPane.hasRecorder = code === 0 }
     readonly property string home: Quickshell.env("HOME")
     readonly property string folder: Config.s.screenshotFolder || (home + "/Pictures/Screenshots")
     readonly property date example: Config.clockDate(new Date())
@@ -62,5 +64,19 @@ Column {
             }
         }
     }
-    Footnote { text: "Print Screen takes an area (drag it out), Super+Print Screen the whole screen." }
+    // Screen recordings (scripts/record.sh reads it): saved in the same folder
+    GroupLabel { text: "Recording" }
+    Group {
+        DropdownSetting {
+            label: "Sound"
+            settingKey: "recordSound"
+            detail: screenshotsPane.hasRecorder ? "Recordings are saved in the screenshot folder. Start one from the menu bar's Screenshot button, or with Super+Shift+Print Screen"
+                : "Needs wf-recorder to record the screen (the wf-recorder package)"
+            options: [{ value: "none", label: "No sound" }, { value: "computer", label: "The computer's sound" },
+                      { value: "microphone", label: "The microphone" }]
+            value: Config.s.recordSound
+            onPicked: v => Config.s.recordSound = v
+        }
+    }
+    Footnote { text: "Print Screen takes an area (drag it out), Super+Print Screen the whole screen. Super+Shift+Print Screen records an area, and stops the recording." }
 }

@@ -12,8 +12,8 @@ import QtQuick.Effects
 import qs
 
 // ---- Screenshots ------------------------------------------------------
-// Take one of an area, a window or the screen (scripts/screenshot.sh); the panel closes
-// first so it isn't in the picture
+// Take one of an area, a window or the screen (scripts/screenshot.sh), or record one
+// (scripts/record.sh); the panel closes first so it isn't in the picture
 Column {
     required property var pop
     id: shotView
@@ -25,36 +25,81 @@ Column {
         pop.close();
         Quickshell.execDetached(["sh", "-c", "sleep 0.35; exec \"$0\" \"$1\"", Quickshell.shellPath("scripts/screenshot.sh"), mode]);
     }
+    // (through Slate, a moment after the panel has closed, so it isn't in the recording)
+    function record(mode) {
+        pop.close();
+        Quickshell.execDetached(["sh", "-c", "sleep 0.35; exec \"$0\" ipc call record start \"$1\"", Quickshell.shellPath("bin/slate"), mode]);
+    }
+    readonly property var modes: [{ mode: "region", label: "Area", code: 0xEEAE },
+                                  { mode: "window", label: "Window", code: 0xEFE6 },
+                                  { mode: "screen", label: "Screen", code: 0xEA89 }]
+    // An Area / Window / Screen tile
+    component Tile: Rectangle {
+        id: tile
+        property int code
+        property string text
+        signal picked()
+        width: (shotView.width - 16) / 3; height: 76
+        radius: Config.corner(10)
+        color: "transparent"
+        Accessible.role: Accessible.Button
+        Accessible.name: tile.text
+        Accessible.onPressAction: tile.picked()
+        HoverFill { base: pop.card; hovered: tileHover.hovered; radius: parent.radius }
+        Column {
+            anchors.centerIn: parent
+            spacing: 6
+            Icon { anchors.horizontalCenter: parent.horizontalCenter; code: tile.code; font.pixelSize: 22; color: pop.text }
+            Label { anchors.horizontalCenter: parent.horizontalCenter; text: tile.text; font.weight: Font.Normal }
+        }
+        HoverHandler { id: tileHover }
+        ClickTap { onTapped: tile.picked() }
+    }
     PanelTitle { text: "Screenshot"; height: textHeight }
     Row {
         width: parent.width
         spacing: 8
         Repeater {
-            model: [{ mode: "region", label: "Area", code: 0xEEAE },
-                    { mode: "window", label: "Window", code: 0xEFE6 },
-                    { mode: "screen", label: "Screen", code: 0xEA89 }]
-            delegate: Rectangle {
-                id: shotTile
-                required property var modelData
-                width: (shotView.width - 16) / 3; height: 76
-                radius: Config.corner(10)
-                color: "transparent"
-                HoverFill { base: pop.card; hovered: shotHover.hovered; radius: parent.radius }
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 6
-                    Icon { anchors.horizontalCenter: parent.horizontalCenter; code: shotTile.modelData.code; font.pixelSize: 22; color: pop.text }
-                    Label { anchors.horizontalCenter: parent.horizontalCenter; text: shotTile.modelData.label; font.weight: Font.Normal }
-                }
-                HoverHandler { id: shotHover }
-                ClickTap { onTapped: shotView.take(shotTile.modelData.mode) }
-            }
+            model: shotView.modes
+            delegate: Tile { required property var modelData; code: modelData.code; text: modelData.label; onPicked: shotView.take(modelData.mode) }
         }
     }
     Label {
         width: parent.width
         text: "Saved to " + shotView.folder.replace(Quickshell.env("HOME"), "~") + " and copied"
         color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12); elide: Text.ElideMiddle
+    }
+    // Recording the screen (ScreenRecorder.qml, scripts/record.sh): the same three, or Stop
+    // while one's going
+    Divider {}
+    Heading { text: "Record the screen" }
+    Row {
+        visible: !Config.recording
+        width: parent.width
+        spacing: 8
+        Repeater {
+            model: shotView.modes
+            delegate: Tile { required property var modelData; code: modelData.code; text: modelData.label; onPicked: shotView.record(modelData.mode) }
+        }
+    }
+    RowButton {
+        visible: Config.recording
+        width: parent.width
+        danger: true
+        onClicked: { pop.close(); Quickshell.execDetached([Quickshell.shellPath("scripts/record.sh"), "stop"]); }
+        Icon {
+            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+            code: 0xF695; font.pixelSize: 16; color: Config.tint("#f28b8b")
+        }
+        Label {
+            anchors { left: parent.left; leftMargin: 36; verticalCenter: parent.verticalCenter }
+            text: "Stop recording · " + Config.recordingTime(); font.weight: Font.Normal; color: Config.tint("#f28b8b")
+        }
+    }
+    Label {
+        width: parent.width
+        text: ({ computer: "With the computer's sound", microphone: "With the microphone" })[Config.s.recordSound] || "Without sound"
+        color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12); wrapMode: Text.Wrap
     }
     Divider {}
     LinkRow {

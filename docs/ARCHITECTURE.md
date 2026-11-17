@@ -281,6 +281,8 @@ OnScreenKeyboard.qml          the on-screen keyboard on the desktop ("slate-osk"
                               with wtype; Super+Alt+K
 LocatePointer.qml             Accessibility → Locate the pointer (Super+Alt+P): rings round the pointer for a moment, placed
                               from Hyprland's pointer position (made Slate's units: Config.screenPoint)
+ScreenRecorder.qml            screen recording: reads scripts/record.sh's mark (Config.recording, its clock) for
+                              the bar's indicator and the Screenshot panel; IPC `record`
 PointerTrail.qml              Accessibility → Trailing pointer: fading dots behind the pointer, its place asked of
                               Hyprland's socket about 60 times a second while on (not in game mode)
 ContrastEdge.qml              Accessibility → High contrast: a clear edge round a surface (made by its Shadow, or put in
@@ -509,6 +511,8 @@ opening any of them closes bar panels (wired in `shell.qml`).
 | Target | Functions |
 |---|---|
 | `bar` | `panel <control\|spaces\|notifications\|session\|volume\|wifi\|clipboard\|screenshot\|keyboard\|bluetooth\|battery\|gamemode\|calendar>`, `setFilled <bool>`, `reveal` |
+| `record` | `start <region\|window\|screen>`, `stop`, `toggle <mode>`, `changed` (from scripts/record.sh) |
+| `keys` | `bar`, `dock`, `stop` (the menu bar and dock by keyboard) |
 | `popout` | `toggle <name> <x>`, `close` |
 | `launcher` | `toggle`, `open`, `close`, `search <text>`, `launchSelected`, `launchOnNewWorkspace`, `launchLeft`, `launchRight`, `launch <desktop-id>` (an app only; answers `ok` or `unknown`) |
 | `switcher` | `next`, `prev`, `commit`, `cancel` |
@@ -728,7 +732,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `poppler` (`pdftoppm`; Debian, Fedora, Void, NixOS `poppler-utils`, openSUSE `poppler-tools`, Gentoo `app-text/poppler`) | Quick Look: a PDF's pages drawn (`scripts/quicklook.py`; optional: without it Quick Look shows the PDF's details and says what to install) |
 | `qt6-multimedia` (optional) | the click sound, the screensaver's videos, and Quick Look's player for videos and songs (`QuickLookMedia.qml`, loaded through a Loader: without it Quick Look shows the file's details and says what to install) |
 | `hyprland-guiutils` | Hyprland's own dialogs (an app that's stopped responding, permission prompts); Slate doesn't call it, and on Arch it comes with `hyprland` (optional) |
-| `grim`, `slurp` | screenshots (Print / Super+Print) |
+| `grim`, `slurp` | screenshots (Print / Super+Print), and choosing what to record |
+| `wf-recorder` (optional) | screen recording (the Screenshot panel, Super+Shift+Print); without it Slate says what to install |
 | `hyprpicker` | the color picker (Super+P), and freezing the screen while picking a screenshot area (optional: without it the shortcut says what to install, `scripts/need.sh`) |
 | `btop` | Ctrl+Shift+Esc (system monitor in a terminal; optional, and the shortcut says so the same way) |
 | `ffmpeg` (Fedora `ffmpeg-free`; `ffprobe` comes with it) | takes the sound out of downloaded screensaver videos |
@@ -758,7 +763,9 @@ Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon 
 Other scripts: `scripts/session.sh` (log out via uwsm/Hyprland, restart, shut down; the goodbye sound first;
 before a restart with "Reopen my apps" on, `spaces.py session-save` keeps the windows, and the next login's
 `spaces.py session-restore` reopens them, then the startup apps on workspaces of their own),
-`scripts/screenshot.sh`, `scripts/apply-theme.py` (app theming, and, each behind its own switch, the pointer and the code font
+`scripts/screenshot.sh`, `scripts/record.sh` (screen recording with wf-recorder: an area, a window or the
+screen, with the sound set in Settings → Screenshots, saved in the screenshot folder; it tells Slate when it
+starts and ends, `record changed`), `scripts/apply-theme.py` (app theming, and, each behind its own switch, the pointer and the code font
 in other apps — fontconfig's "monospace", GTK's monospace font, Qt/KDE's fixed font; run by `shell.qml` when
 the theme, accent, code font, those switches or the apps switched on in Settings → App Theming change;
 nothing of another app's is written until something is switched on. An install where an older Slate had

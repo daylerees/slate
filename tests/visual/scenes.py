@@ -173,6 +173,14 @@ for _p in PANELS:
         "do": [("bar", "panel", _p)], "wait": (lambda p: lambda st: st["popout"] == p)(_p), "settle": 1.0,
         "undo": [("popout", "close")],
     }
+# While recording the screen (the mark scripts/record.sh leaves, written here; started in the
+# future so the clock stays at 0:00): the bar's red indicator, and the panel's Stop
+_REC_MARK = 'printf "%s\\n/tmp/a video.mp4\\n%s\\n" "$$" "$(( $(date +%s) + 100000 ))" > "$XDG_RUNTIME_DIR/slate-recording"'
+SCENES["panel-screenshot-recording"] = {
+    "do": [("!sh", "-c", _REC_MARK), ("record", "changed"), ("bar", "panel", "screenshot")],
+    "wait": lambda st: st["popout"] == "screenshot" and st["recording"]["on"], "settle": 1.0,
+    "undo": [("popout", "close"), ("!sh", "-c", 'rm -f "$XDG_RUNTIME_DIR/slate-recording"'), ("record", "changed")],
+}
 # The control centre's "Up 1 h 29 min · Hyprland 0.57.1": the host's uptime
 SCENES["panel-control"]["mask"] = [(90, 105, 220, 20)]
 # The battery panel's System rows (CPU, memory, disk): the host machine's, live

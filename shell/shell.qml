@@ -449,7 +449,7 @@ ShellRoot {
                 mainScreen: Config.primaryScreen ? Config.primaryScreen.name : "",
                 bars: Config.bars.map(b => ({ screen: b.screen ? b.screen.name : "", primary: b.primary, dimmed: b.dimmed,
                                               popoutHere: b.popoutHere, width: Math.round(b.width), height: Math.round(b.height),
-                                              dots: b.dotsState, bell: b.bellText })),
+                                              dots: b.dotsState, bell: b.bellText, shot: b.shotState })),
                 popout: popouts.current,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
@@ -460,6 +460,7 @@ ShellRoot {
                                 screen: pointerTrail.target ? pointerTrail.target.name : "",
                                 x: pointerTrail.dots.length ? Math.round(pointerTrail.dots[pointerTrail.dots.length - 1].x) : -1,
                                 y: pointerTrail.dots.length ? Math.round(pointerTrail.dots[pointerTrail.dots.length - 1].y) : -1 },
+                recording: { on: Config.recording, file: Config.recordingFile, seconds: Config.recordingSeconds, started: screenRecorder.started },
                 keys: { bar: Config.bars.some(b => b.keyNav), dock: win.keyNav, dockIndex: win.keyIndex,
                         barFocus: (Config.bars.find(b => b.keyNav) || { keyAt: "" }).keyAt, barPath: topBar.keyPath, dockPath: win.keyPath },
                 locatePointer: { shows: locatePointer.shows, showing: locatePointer.showing, screen: locatePointer.target ? locatePointer.target.name : "",
@@ -675,6 +676,8 @@ ShellRoot {
     }
     // Locate the pointer (Accessibility; Super+Alt+P): rings round it for a moment
     LocatePointer { id: locatePointer }
+    // Screen recording (the Screenshot panel, Super+Shift+Print)
+    ScreenRecorder { id: screenRecorder }
     // Trailing pointer (Accessibility)
     PointerTrail { id: pointerTrail }
     IpcHandler {

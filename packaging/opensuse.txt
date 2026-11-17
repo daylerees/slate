@@ -96,3 +96,4 @@ accountsservice
 # ollama     (yours to add, if you want Nova to use a model on this computer: a large install, so Slate leaves it to you)
 ?wtype              # The on-screen keyboard (Settings → Accessibility): typing into apps
 ?orca               # The screen reader (Settings → Accessibility): reading the screen aloud
+?wf-recorder        # Screen recording (the Screenshot panel, Super+Shift+Print)

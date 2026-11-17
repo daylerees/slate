@@ -99,6 +99,8 @@ Scope {
         // The mark for Slate's scripts, the portal's screen sharing, and the camera
         Quickshell.execDetached(["sh", "-c", on ? ': > "$0"' : 'rm -f "$0"', mark]);
         Quickshell.execDetached([Quickshell.shellPath("scripts/private-capture.sh"), on ? "off" : "on"]);
+        // (and Slate's own screen recording stops: it's saved as it is)
+        if (on && Config.recording) Quickshell.execDetached([Quickshell.shellPath("scripts/record.sh"), "stop"]);
         camera(on);
     }
     // Only once it's allowed without a password: the helper is there from the day Slate is

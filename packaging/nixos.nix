@@ -40,6 +40,7 @@
     flatpak   # Slate Software: apps from Flathub (also set services.flatpak.enable = true)
     wtype     # The on-screen keyboard (Settings → Accessibility): typing into apps
     orca      # The screen reader (Settings → Accessibility): reading the screen aloud
+    wf-recorder # Screen recording (the Screenshot panel, Super+Shift+Print)
     v4l-utils   # Settings → Webcam: the camera's picture settings (v4l2-ctl)
     ddcutil     # optional: Settings → Displays → Brightness for monitors, over DDC/CI
     poppler-utils   # optional: Quick Look (Space on a file in the launcher or the dock) draws a PDF's pages (pdftoppm)

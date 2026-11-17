@@ -186,6 +186,9 @@ JsonAdapter {
     property bool barShowNotifications: true
     property bool barShowClipboard: false     // clipboard history, with how many items it holds
     property bool barShowScreenshot: false    // screenshot buttons (area, window, screen)
+    // Screen recordings' sound (Settings → Screenshots; scripts/record.sh): "none", "computer"
+    // (what's playing) or "microphone"
+    property string recordSound: "none"
     property bool barShowCamera: false        // the camera: an open eye while an app is using it (off to start with)
     property bool barShowWifi: true
     property bool barShowKeyboard: true       // keyboard layout switcher (when there's more than one layout)

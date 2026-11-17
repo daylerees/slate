@@ -166,6 +166,13 @@ Singleton {
     // Whether wtype is installed (OnScreenKeyboard.qml looks): the on-screen keyboard types into
     // apps with it
     property bool wtypeAvailable: true
+    // A screen recording going (ScreenRecorder.qml): its file, when it started (seconds since
+    // 1970) and how long it's been
+    property bool recording: false
+    property string recordingFile: ""
+    property int recordingSince: 0
+    property int recordingSeconds: 0
+    function recordingTime() { const s = recordingSeconds; return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
     // Accessibility → Screen reader: the words a control shows, gathered from the Text inside it
     // (a few levels down), for its Accessible.name when it has no label of its own: a panel's
     // row, a bar item. Read through a binding, so it follows the words as they change

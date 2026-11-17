@@ -478,6 +478,8 @@ PanelWindow {
     property Item keyReturn: null           // what opened the panel, to go back to
     property string keyAt: ""               // (the tests: the name of the thing focused)
     property var keyPath: []                // (the tests: the names focused, in turn)
+    // (the tests: the Screenshot button, which is the recording's indicator while recording)
+    readonly property var shotState: ({ shown: shotSeg.wanted && shotSeg.visible, label: shotSeg.label, recording: shotSeg.iconCode === 0xF692 })
     WlrLayershell.keyboardFocus: keyNav ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     // The things a key can stop on, in the order they're drawn along the bar
     function keyStops() {
@@ -1625,13 +1627,19 @@ PanelWindow {
                             : Config.clipCount > 1 ? "Clipboard: " + Config.clipCount + " items" : "Clipboard: empty"
                         onClicked: bar.openPopout("clipboard", clipSeg)
                     }
-                    // Screenshots: click for area / window / screen
+                    // Screenshots: click for area / window / screen. While the screen's being
+                    // recorded it's the recording's indicator (shown even when it's turned off):
+                    // a red dot and how long it's been; a click stops it
                     Segment {
                         id: shotSeg
-                        wanted: Config.s.barShowScreenshot
-                        pastel: "screenshot"            // its colour when the look is Colourful
-                        iconCode: 0xF201
-                        onClicked: bar.openPopout("screenshot", shotSeg)
+                        wanted: Config.s.barShowScreenshot || Config.recording
+                        pastel: Config.recording ? "" : "screenshot"     // its colour when the look is Colourful
+                        iconCode: Config.recording ? 0xF692 : 0xF201
+                        tint: Config.recording ? Config.tint("#f28b8b") : bar.textColor
+                        label: Config.recording ? Config.recordingTime() : ""
+                        tipText: Config.recording ? "Recording the screen: click to stop" : ""
+                        onClicked: Config.recording ? Quickshell.execDetached([Quickshell.shellPath("scripts/record.sh"), "stop"])
+                            : bar.openPopout("screenshot", shotSeg)
                     }
                     // The camera: an open eye, lit, while an app is using it (Config.cameraOn); a
                     // closed one otherwise. Only shows: nothing to click

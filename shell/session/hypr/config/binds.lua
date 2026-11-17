@@ -58,6 +58,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + P"]                  = "Slate: Pick a color from the screen (copied)",
     ["Print"]                      = "Slate: Screenshot of an area",
     ["SUPER + Print"]              = "Slate: Screenshot of the screen",
+    ["SUPER + SHIFT + Print"]      = "Slate: Record an area of the screen, or stop recording",
     ["SUPER + Minus"]              = "Slate: Zoom out",
     ["SUPER + Plus"]               = "Slate: Zoom in",
     ["SUPER + code:82"]            = "Slate: Zoom out (keypad -)",
@@ -273,6 +274,7 @@ local shared = {
     colourPicker      = hl.dsp.exec_cmd(needing("hyprpicker", "The color picker", "hyprpicker -a -n")),
     screenshotArea    = hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh region"),
     screenshotScreen  = hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh screen"),
+    recordToggle      = hl.dsp.exec_cmd(slate("record toggle region")),
     wallpaper         = hl.dsp.exec_cmd(slate("settings page wallpaper")),
     wallpaperSwitcher = hl.dsp.exec_cmd(slate("wallpaper switcher")),
 
@@ -655,6 +657,7 @@ if SLATE_KEYS then
     hl.bind(mainMod .. " + P",     shared.colourPicker)
     hl.bind("Print",               shared.screenshotArea)
     hl.bind(mainMod .. " + Print", shared.screenshotScreen)
+    hl.bind(mainMod .. " + SHIFT + Print", shared.recordToggle)
 
     -- Wallpaper (opens Slate Settings → Appearance, at the wallpapers), and the wallpaper switcher
     hl.bind(mainMod .. " + SHIFT + W", shared.wallpaper)
@@ -838,6 +841,7 @@ if EXTRAS then
     hl.bind(mainMod .. " + ALT + W",    shared.wallpaperSwitcher)
     hl.bind("Print",                    shared.screenshotArea)
     hl.bind(mainMod .. " + Print",      shared.screenshotScreen)
+    hl.bind(mainMod .. " + SHIFT + Print", shared.recordToggle)
     -- Moving the window: around its workspace, and to the next or previous workspace
     hl.bind(mainMod .. " + SHIFT + Up",      shared.moveUp)
     hl.bind(mainMod .. " + SHIFT + Down",    shared.moveDown)

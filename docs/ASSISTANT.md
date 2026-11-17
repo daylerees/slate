@@ -225,7 +225,7 @@ to ask about every change.
 | `wifi` | With no action: whether Wi-Fi is on, the network it's on, and your saved networks in range (networks you haven't saved are never listed). Turns it on or off, connects to a saved network, or disconnects. Turning it off and disconnecting always ask, since either can cut off an agent that works over the internet, Nova included. Never a new network: that needs its password, from you |
 | `bluetooth` | With no action: whether Bluetooth is on, and your paired devices (connected or not, and a connected one's battery). Turns it on or off, connects or disconnects a paired device. Never pairs a new one |
 | `dock_pin` | With no arguments: the apps pinned to the dock. Pins an app (by its id from `apps_list`) at the end, or unpins one, as its menu on the dock does |
-| `screenshot` | Takes a screenshot for you, as Print does. The assistant is told "Done": it never gets the picture, or where it was saved |
+| `screenshot` | Takes a screenshot for you, as Print does; with `record`, starts a screen recording (always asking you first) or stops the one going. The assistant is told "Done": it never gets the picture or the video, or where it was saved |
 | `lock_screen`, `screensaver_start` | As named |
 
 **Always asking.** These can't be undone or could lose work, so Slate asks you every time,

@@ -1009,6 +1009,7 @@ VALUES = {
     "profileOnAC": ["", "power-saver", "balanced", "performance"],
     "screenshotName": ["default", "compact", "gnome"],
     "screenshotAfter": ["edit", "save"],
+    "recordSound": ["none", "computer", "microphone"],
     "windowMode": MODES,
     "titleButtons": ["left", "right"],
     "fontFamily": (r"[\w .\-]{1,60}", "a font's name"),
@@ -1768,14 +1769,28 @@ def dock_pin(id="", pinned=None):
 
 @tool("screenshot", "Take a screenshot",
       "Take a screenshot for the person, as the Print key does: of the screen, of an area they drag out, or "
-      "of a window they click. It's saved and copied for them. You are never shown the picture or told "
-      "where it went: this isn't a way to look at the screen.",
-      {"what": {"type": "string", "enum": ["screen", "area", "window"]}}, ["what"], tier="change")
-def screenshot(what):
+      "of a window they click. It's saved and copied for them. With record, start a screen recording of it "
+      "instead (they're always asked), or stop the one going. You are never shown the picture or the video "
+      "or told where it went: this isn't a way to look at the screen.",
+      {"what": {"type": "string", "enum": ["screen", "area", "window"]},
+       "record": {"type": "string", "enum": ["start", "stop"]}}, ["what"], tier="change")
+def screenshot(what, record=None):
+    mode = {"area": "region"}.get(what, what)
+    if record == "stop":
+        doing("Stop recording the screen")
+        changing("Stop recording?", "%s is asking to stop recording your screen. The video is saved." % asker(), "Stop")
+        ipc("record", "stop")
+        return "Done"
+    if record == "start":
+        doing("Record the screen")
+        ask("Record your screen?", "%s is asking to start recording your %s. It's saved for you, and the assistant "
+            "isn't shown it. Stop it from the red button on the menu bar." % (asker(), {"region": "screen (you drag out an area)", "window": "screen (you click a window)"}.get(mode, "screen")), "Record")
+        ipc("record", "start", mode)
+        return "Recording: it stops from the red button on the menu bar"
     changing("Take a screenshot?", "%s is asking to take a screenshot for you. It's saved and copied for you; the "
              "assistant isn't shown it." % asker(), "Take it")
     try:
-        subprocess.Popen([SCREENSHOT, {"area": "region"}.get(what, what)],
+        subprocess.Popen([SCREENSHOT, mode],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
     except OSError:
