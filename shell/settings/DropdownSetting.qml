@@ -9,6 +9,10 @@ Item {
     readonly property var win: SettingsHost.win
     id: dropdown
     property string label
+    // (a screen reader: a list to choose from, by its label, saying what's chosen)
+    Accessible.role: Accessible.ComboBox
+    Accessible.name: label
+    Accessible.description: current ? (current.label || "") : ""
     property string detail: ""
     width: parent ? parent.width : 0
     height: ddRow.height

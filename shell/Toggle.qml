@@ -14,6 +14,12 @@ import QtQuick
 // accent, a little lighter under the pointer: the lit accent rule in docs/CONVENTIONS.md),
 // offColor, knobOn and knobOff. `hoverFill` gives the off track the muted hover over `fillBase`.
 Rectangle {
+    // (a screen reader: a check box, on or off, that it can switch)
+    Accessible.role: Accessible.CheckBox
+    Accessible.checkable: true
+    Accessible.checked: checked
+    Accessible.onToggleAction: toggled(!checked)
+    Accessible.onPressAction: toggled(!checked)
     id: sw
     property bool checked: false
     property bool plain: false

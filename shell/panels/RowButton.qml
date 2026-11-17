@@ -9,6 +9,10 @@ Rectangle {
     property bool toggles: false       // a click turns it off again: lighter under the pointer while it's on
     property bool danger: false        // destructive: the muted hover in red
     signal clicked()
+    // (a screen reader: a button, named by the words on it)
+    Accessible.role: Accessible.Button
+    Accessible.name: Config.textOf(rb)
+    Accessible.onPressAction: clicked()
     // Text and icons on it: the plain colour, or the dark one on the active colour (what the
     // row's own words, and the Icons in it, take, so each needn't say it again)
     readonly property color fg: selected ? pop.accentText : pop.text

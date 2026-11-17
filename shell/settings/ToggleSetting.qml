@@ -10,5 +10,10 @@ SettingRow {
     id: toggleRow
     property string key
     settingKey: key
-    SettingToggle { checked: Config.s[toggleRow.key]; onToggled: v => Config.s[toggleRow.key] = v }
+    SettingToggle {
+        checked: Config.s[toggleRow.key]
+        onToggled: v => Config.s[toggleRow.key] = v
+        Accessible.name: toggleRow.label
+        Accessible.description: toggleRow.detail
+    }
 }

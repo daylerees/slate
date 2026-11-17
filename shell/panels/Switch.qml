@@ -3,6 +3,12 @@ import qs
 
 // An on/off switch, as in the Wi-Fi, Bluetooth, game mode and notifications panels
 Rectangle {
+    // (a screen reader: a check box it can switch)
+    Accessible.role: Accessible.CheckBox
+    Accessible.checkable: true
+    Accessible.checked: checked
+    Accessible.onToggleAction: toggled()
+    Accessible.onPressAction: toggled()
     readonly property var pop: PanelHost.pop
     id: onOff
     property bool checked: false

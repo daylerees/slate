@@ -25,6 +25,12 @@ ui_scale() {
     case "$s" in ""|1|1.0|1.00) ;; *) echo "$s" ;; esac
 }
 
+# Settings → Accessibility → Screen reader (screenReader in settings.json): Slate starts with Qt's
+# accessibility on, so a screen reader (Orca) can read it from the start
+screen_reader() {
+    grep -q '"screenReader": *true' "$SLATE_HOME/settings.json" 2>/dev/null && echo 1
+}
+
 # Settings → Debug → Log detail (logLevel in settings.json): normal, detailed or everything
 log_level() {
     l=$(sed -n 's/.*"logLevel": *"\([a-z]*\)".*/\1/p' "$SLATE_HOME/settings.json" 2>/dev/null | head -n 1)
@@ -86,6 +92,7 @@ launch() {
     # Always timestamped; more of Quickshell's own messages at the higher levels.
     # SLATE_LOG_LEVEL tells Slate which level it started with. -n: don't start a second copy.
     case "$level" in detailed) verbose=-v ;; everything) verbose=-vv ;; *) verbose= ;; esac
+    if [ "$(screen_reader)" = 1 ]; then export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1; else unset QT_LINUX_ACCESSIBILITY_ALWAYS_ON; fi
     if [ -n "$scale" ]; then
         SLATE_LOG_LEVEL="$level" QS_DISABLE_CRASH_HANDLER=1 QT_SCALE_FACTOR="$scale" qs -n -p "$SLATE_DIR" --log-times $verbose >>"$LOG" 2>&1 </dev/null &
     else

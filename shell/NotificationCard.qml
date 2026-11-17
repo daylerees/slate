@@ -12,6 +12,10 @@ Rectangle {
     required property var bar
     property var entry: null           // saved history item
     property var notif: null           // live notification, if the app is still listening
+    // (a screen reader: the notification, from which app, its title and what it says)
+    Accessible.role: Accessible.Notification
+    Accessible.name: title !== "" ? title : (entry && entry.appName ? entry.appName : "Notification")
+    Accessible.description: entry ? [entry.appName || "", entry.body || ""].filter(x => !!x).join(": ") : ""
     property bool critical: false
     property bool inPanel: false       // in the bell panel: flatter look
     property real progress: -1         // pop-ups: time left (1 → 0) for the timeout bar; -1 = none

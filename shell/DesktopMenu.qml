@@ -226,6 +226,10 @@ PanelWindow {
                     readonly property bool opens: !card.sub && !!modelData.submenu
                     readonly property bool open: opens && dm.subIndex === index
                     readonly property bool lit: (card.sub ? dm.subHot : dm.hot) === index
+                    // (a screen reader: a menu item by its label; a separator isn't one)
+                    Accessible.role: modelData.separator ? Accessible.Separator : Accessible.MenuItem
+                    Accessible.name: modelData.label || ""
+                    Accessible.onPressAction: if (!modelData.separator) dm.choose(card.list, index, card.sub)
                     width: col.width
                     height: modelData.separator ? 9 : 30
                     Rectangle {

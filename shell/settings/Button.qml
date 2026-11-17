@@ -8,6 +8,10 @@ Rectangle {
     readonly property var win: SettingsHost.win
     id: btn
     property string label
+    // (a screen reader: a button, by its label)
+    Accessible.role: Accessible.Button
+    Accessible.name: label
+    Accessible.onPressAction: clicked()
     property bool primary: false
     property bool destructive: false
     property int icon: 0          // optional Tabler glyph before the label

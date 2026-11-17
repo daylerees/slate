@@ -1787,6 +1787,10 @@ PanelWindow {
         readonly property bool first: shell ? shell.isFirst(seg) : true
         readonly property bool last: shell ? shell.isLast(seg) : true
         property bool held: false               // (kept unseen for a moment as it's moved: see place())
+        // (a screen reader: a button, named as its tip names it, or by the words on it)
+        Accessible.role: clickable ? Accessible.Button : Accessible.StaticText
+        Accessible.name: tip !== "" ? tip : Config.textOf(seg)
+        Accessible.onPressAction: if (clickable) clicked()
         property bool carried: false            // being dragged (arranging): off the line till it lands
         property bool stretchy: false           // the window's title: as long as the line has room for
         visible: shell && !held ? shell.shows(seg) : false

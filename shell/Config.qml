@@ -166,6 +166,24 @@ Singleton {
     // Whether wtype is installed (OnScreenKeyboard.qml looks): the on-screen keyboard types into
     // apps with it
     property bool wtypeAvailable: true
+    // Accessibility → Screen reader: the words a control shows, gathered from the Text inside it
+    // (a few levels down), for its Accessible.name when it has no label of its own: a panel's
+    // row, a bar item. Read through a binding, so it follows the words as they change
+    function textOf(item, depth) {
+        const d = depth === undefined ? 3 : depth;
+        if (!item || d < 0) return "";
+        if (item.visible === false) return "";
+        const own = item.text !== undefined && typeof item.text === "string" && item.font !== undefined ? item.text : "";
+        // (an icon's glyph isn't a word: only text with a letter or digit in it counts)
+        const parts = /[\p{L}\p{N}]/u.test(own) ? [own] : [];
+        for (const c of item.children || []) {
+            const t = textOf(c, d - 1);
+            if (t) parts.push(t);
+        }
+        return parts.join(", ");
+    }
+    // ...and Orca, the screen reader (ScreenReader.qml looks)
+    property bool orcaAvailable: true
     function contrasted(c) {
         if (!s.highContrast) return c;
         const l = c.hslLightness, light = s.lightMode;

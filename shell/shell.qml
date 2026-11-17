@@ -454,6 +454,7 @@ ShellRoot {
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
                 // What's in effect after game mode and Accessibility have had their say
+                screenReader: { on: screenReader.on, applied: screenReader.applied },
                 onScreenKeyboard: { shown: onScreenKeyboard.shown, sent: onScreenKeyboard.sent, last: onScreenKeyboard.last, wtype: onScreenKeyboard.haveWtype },
                 locatePointer: { shows: locatePointer.shows, showing: locatePointer.showing, screen: locatePointer.target ? locatePointer.target.name : "",
                                  x: Math.round(locatePointer.at.x), y: Math.round(locatePointer.at.y) },
@@ -656,6 +657,8 @@ ShellRoot {
             onClosed: { forgetPlace(); settingsRebuild.restart(); }
         }
     }
+    // Screen reader (Accessibility; Super+Alt+S)
+    ScreenReader { id: screenReader }
     // On-screen keyboard (Accessibility; Super+Alt+K)
     OnScreenKeyboard { id: onScreenKeyboard }
     IpcHandler {

@@ -2102,6 +2102,10 @@ PanelWindow {
                         property var slot: found
                         onFoundChanged: if (found) slot = found
                         readonly property bool isApp: slot.kind === "app"
+                        // (a screen reader: a button, named as its tooltip names it)
+                        Accessible.role: Accessible.Button
+                        Accessible.name: isApp ? (slot.item.entry?.name ?? slot.item.key ?? "")
+                            : ({ launcher: "Apps", more: "More", downloads: "Downloads", trash: "Waste Basket", media: "Now playing" })[slot.kind] || ""
                         readonly property bool isMore: slot.kind === "more"
                         // The app in this slot ({ key, entry, windows, pinned }; none for a divider;
                         // for More, the windows of the apps in it, so its running dot shows)

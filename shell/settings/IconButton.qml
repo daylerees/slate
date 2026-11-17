@@ -11,6 +11,11 @@ Rectangle {
     id: iconButton
     property int icon                  // a Tabler glyph's code point
     signal clicked()
+    // (a screen reader: a button, named for what its icon means)
+    property string name: ({ [0xEB55]: "Close", [0xEA19]: "Back", [0xEA60]: "Previous", [0xEA61]: "Next" })[icon] || ""
+    Accessible.role: Accessible.Button
+    Accessible.name: name
+    Accessible.onPressAction: clicked()
     width: 34; height: 34; radius: Config.corner(17)
     color: iconButtonHover.hovered ? Config.hover : "transparent"
     Text {

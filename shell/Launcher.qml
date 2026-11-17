@@ -1162,6 +1162,11 @@ PanelWindow {
                 required property string rid
                 required property int index
                 readonly property var modelData: root.resultByKey[rid] || ({ name: "", id: "" })
+                // (a screen reader: a result to open, by its name and what it is)
+                Accessible.role: Accessible.ListItem
+                Accessible.name: modelData.name || ""
+                Accessible.description: modelData.comment || modelData.genericName || ""
+                Accessible.onPressAction: root.launch(modelData)
                 readonly property bool calc: !!modelData.calc
                 readonly property bool setting: !!modelData.setting
                 readonly property bool action: !!modelData.action

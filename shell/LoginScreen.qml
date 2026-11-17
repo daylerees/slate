@@ -325,6 +325,10 @@ Item {
                     }
                     TextInput {
                         id: password
+                        // (a screen reader: the password box; what's typed is never read out)
+                        Accessible.role: Accessible.EditableText
+                        Accessible.name: ls.asking ? "Answer" : "Password"
+                        Accessible.passwordEdit: echoMode === TextInput.Password
                         anchors { left: lockIcon.right; leftMargin: 10; right: goBtn.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         echoMode: ls.asking && ls.answerVisible ? TextInput.Normal : TextInput.Password
                         passwordCharacter: "●"
@@ -429,7 +433,11 @@ Item {
         property int icon
         property string label: ""
         property bool active: false
+        property string name: ""                // what a screen reader calls it (else its label)
         signal clicked()
+        Accessible.role: Accessible.Button
+        Accessible.name: name !== "" ? name : label.replace(/\s*▴$/, "")
+        Accessible.onPressAction: clicked()
         height: 44
         width: label ? pillRow.implicitWidth + 30 : 44
         radius: ls.corner(22)
@@ -539,6 +547,7 @@ Item {
         visible: ls.interactive && (ls.mode === "login" || Config.s.onScreenKeyboard)
         anchors { right: powerBtn.visible ? powerBtn.left : parent.right; rightMargin: powerBtn.visible ? 10 : 28; bottom: parent.bottom; bottomMargin: 28 }
         icon: 0xEBD6
+        name: "On-screen keyboard"
         active: ls.keysShown
         onClicked: { ls.keysShown = !ls.keysShown; password.forceActiveFocus(); }
     }
@@ -571,6 +580,7 @@ Item {
     // Bottom-right: power
     Pill {
         id: powerBtn
+        name: "Power"
         visible: ls.interactive && ls.showPowerMenu
         anchors { right: parent.right; bottom: parent.bottom; margins: 28 }
         icon: 0xEB0D

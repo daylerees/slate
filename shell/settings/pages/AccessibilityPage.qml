@@ -13,6 +13,15 @@ Column {
     IntroText {
         text: "Make Slate easier to see and use. These work on top of your other settings without changing them, so you can switch any of them off again and everything is as you had it."
     }
+    GroupLabel { text: "Screen reader" }
+    Group {
+        ToggleSetting {
+            label: "Screen reader"
+            detail: !Config.orcaAvailable ? "Needs Orca, the screen reader (the orca package)"
+                : "Orca reads out what's on the screen and what you're doing, in apps and in Slate. Super+Alt+S turns it on and off from anywhere"
+            key: "screenReader"
+        }
+    }
     GroupLabel { text: "Zoom" }
     Group {
         ToggleSetting {
