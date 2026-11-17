@@ -454,6 +454,8 @@ ShellRoot {
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
                 // What's in effect after game mode and Accessibility have had their say
+                locatePointer: { shows: locatePointer.shows, showing: locatePointer.showing, screen: locatePointer.target ? locatePointer.target.name : "",
+                                 x: Math.round(locatePointer.at.x), y: Math.round(locatePointer.at.y) },
                 look: { glass: Config.glass, animate: Config.animate, text13: Config.text(13), dim: String(Config.tint("#8b94a3")) },
                 softwareDaily: { looks: SoftwareUpdates.looks, notices: SoftwareUpdates.notices, waiting: SoftwareUpdates.waiting },
                 software: softwareLoader.item ? (w => ({
@@ -652,6 +654,12 @@ ShellRoot {
             placeFile: root.settingsPlaceFile
             onClosed: { forgetPlace(); settingsRebuild.restart(); }
         }
+    }
+    // Locate the pointer (Accessibility; Super+Alt+P): rings round it for a moment
+    LocatePointer { id: locatePointer }
+    IpcHandler {
+        target: "pointer"
+        function locate(): void { locatePointer.locate(); }
     }
     // Zoom (Settings → Accessibility): the keys (binds.lua) zoom at once and say where they got
     // to with note; step and toggle are the same from anywhere else

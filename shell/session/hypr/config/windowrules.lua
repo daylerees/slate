@@ -165,7 +165,7 @@ hl.window_rule({ name = "no-shadow-tiled", match = { float = false }, no_shadow 
 -- (tests/unit/test_window_rules.py checks both)
 hl.layer_rule({
   name = "slate-overlays",
-  match = { namespace = "^slate-(bar|bar-editor|bar-label|bar-dim|bar-drag|reloading|dock|dock-drag|dock-previews|launcher|switcher|overview|popout|tray-menu|desktop-menu|notifications|corners|hotcorner|osd|lock-preview|confirm|picker|polkit|wallpaper|wallpaper-preview|wallpaper-switcher|space-badge|welcome|fade-in|fade-out|screensaver|titlebar|quicklook)$" },
+  match = { namespace = "^slate-(bar|bar-editor|bar-label|bar-dim|bar-drag|reloading|dock|dock-drag|dock-previews|launcher|switcher|overview|popout|tray-menu|desktop-menu|notifications|corners|hotcorner|osd|lock-preview|confirm|picker|polkit|wallpaper|wallpaper-preview|wallpaper-switcher|space-badge|welcome|fade-in|fade-out|screensaver|titlebar|quicklook|locate-pointer)$" },
   no_anim = true,
 })
 -- Screenshots (scripts/screenshot.sh) freeze the screen with hyprpicker and choose with slurp

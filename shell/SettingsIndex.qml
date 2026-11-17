@@ -248,6 +248,7 @@ Singleton {
         ["Zoom", "accessibility", "zoom magnifier magnify enlarge bigger closer screen pointer low vision"],
         ["Zoom level", "accessibility", "zoom magnification how far times"],
         ["Follow the pointer", "accessibility", "zoom follow pointer mouse centre center smooth"],
+        ["Locate the pointer", "accessibility", "find pointer cursor mouse where lost locate rings show"],
         ["High contrast", "accessibility", "contrast high visibility bold edges borders low vision readable"],
         ["Text size", "accessibility", "text size font bigger larger large print readable low vision"],
         ["Reduce motion", "accessibility", "animations movement sliding zooming vestibular dizzy fade calm"],

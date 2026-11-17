@@ -37,6 +37,26 @@ Column {
             onPicked: v => Config.s.zoomFollow = v
         }
     }
+    GroupLabel { text: "Pointer and keyboard" }
+    Group {
+        SettingRow {
+            label: "Locate the pointer"
+            detail: "Rings round the pointer for a moment, to find it. Press Super+Alt+P any time"
+            Button { label: "Show me"; icon: 0xF1D4; onClicked: Config.slateCall("pointer", "locate") }
+        }
+        Separator {}
+        SettingRow {
+            label: "Pointer size"
+            detail: "A bigger pointer is easier to see: in Input, with the pointer's style"
+            Button { label: "Input"; icon: 0xEA61; onClicked: win.goTo("input", "Pointer size") }
+        }
+        Separator {}
+        SettingRow {
+            label: "Key repeat"
+            detail: "How long a key is held before it repeats, and how fast: in Input"
+            Button { label: "Input"; icon: 0xEA61; onClicked: win.goTo("input", "Repeat delay") }
+        }
+    }
     GroupLabel { text: "Display" }
     Group {
         ToggleSetting {
