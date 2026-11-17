@@ -64,6 +64,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + code:86"]            = "Slate: Zoom in (keypad +)",
     ["SUPER + ALT + Z"]            = "Slate: Zoom on or off",
     ["SUPER + ALT + P"]            = "Slate: Show where the pointer is",
+    ["SUPER + ALT + K"]            = "Slate: On-screen keyboard",
     ["SUPER + ALT + mouse_up"]     = "Slate: Zoom in (scroll)",
     ["SUPER + ALT + mouse_down"]   = "Slate: Zoom out (scroll)",
     ["SUPER + Q"]                  = "Windows: Close the window",
@@ -523,6 +524,8 @@ if SLATE_KEYS or EXTRAS then
     hl.bind(mainMod .. " + code:86", function() zoomBy(0.25) end, { repeating = true })
     -- Zoom on or off
     hl.bind(mainMod .. " + ALT + Z", zoomToggle)
+    -- The on-screen keyboard: shown or put away (Accessibility)
+    hl.bind(mainMod .. " + ALT + K", hl.dsp.exec_cmd(slate("keyboard toggle")))
     -- Where's the pointer? Rings round it for a moment (Accessibility)
     hl.bind(mainMod .. " + ALT + P", hl.dsp.exec_cmd(slate("pointer locate")))
     -- ...and with the scroll wheel: up to zoom in, down to zoom out

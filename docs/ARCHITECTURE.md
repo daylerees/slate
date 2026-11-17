@@ -273,6 +273,10 @@ Shadow.qml                    the shadow under anything raised (panels, menus, t
                               (Config.shadowColour), drawn by shaders/shadow.frag with the surface's own
                               shape cut out of it, so glass can have shadows too. Floating windows get
                               Hyprland's shadow made to look the same (Config.hyprShadow). Off in game mode
+OnScreenKeys.qml              the on-screen keyboard's keys (Accessibility), the same on the desktop and on the lock and login
+                              screens; they only say what was pressed (typed / key / hide)
+OnScreenKeyboard.qml          the on-screen keyboard on the desktop ("slate-osk", never taking the keyboard), typing into apps
+                              with wtype; Super+Alt+K
 LocatePointer.qml             Accessibility → Locate the pointer (Super+Alt+P): rings round the pointer for a moment, placed
                               from Hyprland's pointer position (made Slate's units: Config.uiScale)
 ContrastEdge.qml              Accessibility → High contrast: a clear edge round a surface (made by its Shadow, or put in
@@ -689,6 +693,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `imagemagick` | accent and tone picked from the wallpaper |
 | Noto Color Emoji (`noto-fonts-emoji`, Debian `fonts-noto-color-emoji`, Fedora `google-noto-color-emoji-fonts`, openSUSE `noto-coloremoji-fonts`) | emoji in the picker and the launcher's `:emoji` |
 | `flatpak` (optional) | Slate Software: apps from Flathub, their catalog and updates (`scripts/software.py`); without it the window says what to install |
+| `wtype` (optional) | The on-screen keyboard (Settings → Accessibility) typing into apps, through Wayland's virtual keyboard; without it the keys still work on the lock and login screens, and Settings says what to install |
 | `pacman-contrib` (Arch, optional) | `checkupdates`: Slate Software's list of system updates, without root |
 | `accountsservice` | your account picture (Settings → General, the lock and login screens); the accounts on Settings → Users (`scripts/accounts.py`) |
 | `dbus` (`dbus-monitor`) | the dock's badges and progress: apps' Unity launcher updates (`scripts/launcher-entries.py`) |

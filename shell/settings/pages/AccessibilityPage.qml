@@ -39,6 +39,13 @@ Column {
     }
     GroupLabel { text: "Pointer and keyboard" }
     Group {
+        ToggleSetting {
+            label: "On-screen keyboard"
+            detail: !Config.wtypeAvailable ? "Needs wtype to type into apps (the wtype package); on the lock screen it works without it"
+                : "Keys at the bottom of the screen that type into the app you're in, and on the lock screen. Its ⌄ key puts it away; Super+Alt+K brings it back"
+            key: "onScreenKeyboard"
+        }
+        Separator {}
         SettingRow {
             label: "Locate the pointer"
             detail: "Rings round the pointer for a moment, to find it. Press Super+Alt+P any time"

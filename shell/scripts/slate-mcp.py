@@ -1059,7 +1059,7 @@ RANGES = {
 SWITCHES = {
     "accentFromWallpaper", "toneFromWallpaper", "wallpaperHideSmall", "wallpaperShowSlate",
     "nightLight", "airplaneMode", "iconFill", "tintIcons", "gameMode", "iconTileColour",
-    "reduceTransparency", "reduceMotion", "zoom", "highContrast",
+    "reduceTransparency", "reduceMotion", "zoom", "highContrast", "onScreenKeyboard",
     "roundedScreenCorners", "shadows", "roundedElements", "reopenAppsAfterRestart",
     "keepEmptyWorkspace", "barBlur", "barPanelBlur", "barAutoHide", "barShowControl",
     "barShowClock", "barShowApps", "barShowSpaces", "spaceBorders", "spaceBadges",

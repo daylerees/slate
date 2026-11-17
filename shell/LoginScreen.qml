@@ -28,6 +28,9 @@ Item {
     property bool lockedOut: false        // too many wrong passwords: input disabled
     property bool showPowerMenu: true
     property bool interactive: true       // false: background only (extra monitors)
+    // The on-screen keyboard's keys, shown (its button, bottom right: always on the login screen,
+    // on the lock screen with Settings → Accessibility → On-screen keyboard on)
+    property bool keysShown: false
 
     // A second question from the login (a one-time code, say): PAM's own words, shown above the
     // field, and the next thing typed answers it. answerVisible: PAM wants it shown as it's typed
@@ -527,6 +530,42 @@ Item {
         width: Math.max(220, sessionBtn.width)
         items: ls.sessions.map((s, i) => ({ id: i, label: s.name, icon: 0xEA89, current: i === ls.sessionIndex }))
         onChosen: item => { ls.sessionIndex = item.id; ls.menu = ""; password.forceActiveFocus(); }
+    }
+
+    // Bottom right, beside power: the on-screen keyboard, typing into the password box (nothing
+    // else can show over the lock screen, so its keys are here, as on the desktop: OnScreenKeys)
+    Pill {
+        id: keysBtn
+        visible: ls.interactive && (ls.mode === "login" || Config.s.onScreenKeyboard)
+        anchors { right: powerBtn.visible ? powerBtn.left : parent.right; rightMargin: powerBtn.visible ? 10 : 28; bottom: parent.bottom; bottomMargin: 28 }
+        icon: 0xEBD6
+        active: ls.keysShown
+        onClicked: { ls.keysShown = !ls.keysShown; password.forceActiveFocus(); }
+    }
+    OnScreenKeys {
+        visible: ls.keysShown && keysBtn.visible
+        anchors.horizontalCenter: parent.horizontalCenter
+        // Just under the password frame, never lower than clear of the buttons along the bottom
+        // (a short screen: then over the space below the frame as far as it goes)
+        y: { box.y; box.height; ls.height; height;
+             return Math.min(box.mapToItem(ls, 0, box.height).y + 16, ls.height - height - 90); }
+        sounds: false                       // (the lock and login screens stay silent)
+        keySize: 40                         // (a little smaller here: room under the password frame)
+        color: ls.frame
+        keyFill: Config.hoverOn(ls.frame)
+        keyText: ls.text
+        accentText: ls.accentText
+        fontFamily: ls.font
+        onTyped: t => { if (!ls.lockedOut && !ls.busy) password.insert(password.cursorPosition, t); }
+        onKey: name => {
+            if (ls.lockedOut || ls.busy) return;
+            const at = password.cursorPosition;
+            if (name === "BackSpace" && at > 0) password.remove(at - 1, at);
+            else if (name === "Return") ls.submit();
+            else if (name === "Left") password.cursorPosition = Math.max(0, at - 1);
+            else if (name === "Right") password.cursorPosition = Math.min(password.length, at + 1);
+        }
+        onHide: ls.keysShown = false
     }
 
     // Bottom-right: power

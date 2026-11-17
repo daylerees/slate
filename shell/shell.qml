@@ -454,6 +454,7 @@ ShellRoot {
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
                 // What's in effect after game mode and Accessibility have had their say
+                onScreenKeyboard: { shown: onScreenKeyboard.shown, sent: onScreenKeyboard.sent, last: onScreenKeyboard.last, wtype: onScreenKeyboard.haveWtype },
                 locatePointer: { shows: locatePointer.shows, showing: locatePointer.showing, screen: locatePointer.target ? locatePointer.target.name : "",
                                  x: Math.round(locatePointer.at.x), y: Math.round(locatePointer.at.y) },
                 look: { glass: Config.glass, animate: Config.animate, text13: Config.text(13), dim: String(Config.tint("#8b94a3")) },
@@ -654,6 +655,14 @@ ShellRoot {
             placeFile: root.settingsPlaceFile
             onClosed: { forgetPlace(); settingsRebuild.restart(); }
         }
+    }
+    // On-screen keyboard (Accessibility; Super+Alt+K)
+    OnScreenKeyboard { id: onScreenKeyboard }
+    IpcHandler {
+        target: "keyboard"
+        function toggle(): void { onScreenKeyboard.toggle(); }
+        // (the tests: a key pressed on it, by its label: a character, or BackSpace, Return…)
+        function press(what: string): void { if (what.length === 1) onScreenKeyboard.send(["--", what]); else onScreenKeyboard.send(["-k", what]); }
     }
     // Locate the pointer (Accessibility; Super+Alt+P): rings round it for a moment
     LocatePointer { id: locatePointer }

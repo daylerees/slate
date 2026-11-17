@@ -386,3 +386,21 @@ class Accessibility(LiveCase):
         for value, want in (("1.3", 17), ("1.15", 15), ("1.2", 15), ("1", 13)):
             self.config("textScale", value)
             self.wait(lambda st: st["look"]["text13"] == want, f"text at {value}")
+
+    def test_on_screen_keyboard(self):
+        """The on-screen keyboard: shown with the setting, its keys typed into the app you're in
+        through wtype (counted here: the tests don't type), put away and back with Super+Alt+K."""
+        self.keep_setting("onScreenKeyboard")
+        self.config("onScreenKeyboard", "true")
+        self.wait(lambda st: st["onScreenKeyboard"]["shown"], "shown")
+        before = self.s.state()["onScreenKeyboard"]["sent"]
+        for what, want in (("a", "-- a"), ("-", "-- -"), ("BackSpace", "-k BackSpace")):
+            self.ipc("keyboard", "press", what)
+            self.wait(lambda st: st["onScreenKeyboard"]["last"] == want, f"{what} sent as {want}")
+        self.assertEqual(self.s.state()["onScreenKeyboard"]["sent"], before + 3)
+        self.ipc("keyboard", "toggle")
+        self.wait(lambda st: not st["onScreenKeyboard"]["shown"], "put away")
+        self.ipc("keyboard", "toggle")
+        self.wait(lambda st: st["onScreenKeyboard"]["shown"], "back")
+        self.config("onScreenKeyboard", "false")
+        self.wait(lambda st: not st["onScreenKeyboard"]["shown"], "off")

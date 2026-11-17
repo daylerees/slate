@@ -163,6 +163,9 @@ Singleton {
     // (the nearest of the three, so anything in between, from an assistant say, still works)
     readonly property real textScale: { const v = Number(s.textScale) || 1; return v >= 1.22 ? 1.3 : v >= 1.07 ? 1.15 : 1; }
     function text(px) { return Math.round(Number(px) * textScale); }
+    // Whether wtype is installed (OnScreenKeyboard.qml looks): the on-screen keyboard types into
+    // apps with it
+    property bool wtypeAvailable: true
     function contrasted(c) {
         if (!s.highContrast) return c;
         const l = c.hslLightness, light = s.lightMode;

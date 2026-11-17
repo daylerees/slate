@@ -769,3 +769,11 @@ SCENES["a11y-contrast-control"] = dict(SCENES["panel-control"], settings=dict(SC
 SCENES["a11y-text-settings"] = dict(SCENES["settings-accessibility"], settings=_BIG)
 SCENES["a11y-text-control"] = dict(SCENES["panel-control"], settings=dict(SCENES["panel-control"].get("settings", {}), **_BIG))
 SCENES["a11y-text-launcher"] = dict(SCENES["launcher"], settings=dict(SCENES["launcher"].get("settings", {}), **_BIG))
+
+# The on-screen keyboard on the login screen (its button beside power, always there on the login
+# screen) and on the desktop (Settings → Accessibility → On-screen keyboard)
+SCENES["login-preview-keys"] = {"do": [("lock", "preview", "login"), ("lock", "previewKeys", "true")],
+                                "wait": lambda st: st["lock"]["previewing"], "settle": 1.5,
+                                "undo": [("lock", "previewKeys", "false"), ("lock", "closePreview")]}
+SCENES["a11y-keyboard"] = {"settings": {"onScreenKeyboard": "true"},
+                           "wait": lambda st: st["onScreenKeyboard"]["shown"], "settle": 1.2}

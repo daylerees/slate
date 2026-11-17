@@ -22,6 +22,7 @@ WallBlur.qml                 WallBlur.qml
 Gloss.qml                    Gloss.qml
 shaders/gloss.frag.qsb       shaders/gloss.frag.qsb
 GlassFill.qml                GlassFill.qml
+OnScreenKeys.qml             OnScreenKeys.qml
 scripts/wallpaper-accent.py  scripts/wallpaper-accent.py
 
 # The emergency login screen, used if the one above fails to load

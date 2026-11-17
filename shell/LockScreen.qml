@@ -510,6 +510,8 @@ Scope {
         function previewCaps(on: bool): void { if (Config.testMode) root.testCaps = on; }
         function previewPeople(people: string): void { if (Config.testMode) root.testPeopleText = people; }
         function previewMenu(name: string): void { if (Config.testMode) previewScreen.menu = name; }
+        // (the tests: the on-screen keyboard's keys shown, as its button does)
+        function previewKeys(on: bool): void { if (Config.testMode) previewScreen.keysShown = on; }
         // Tests: a faillock.conf of their own ("" for the system's), and a password as if typed
         // and Enter pressed. PAM checks it like any other, so it's no way past the lock
         function pamService(dir: string, name: string): void { if (Config.testMode) { root.testPamDir = dir; root.testPamService = name; } }

@@ -105,3 +105,4 @@ accountsservice
 # says what to install when it isn't there. Agent CLIs (Claude Code, Codex, OpenCode,
 # Goose, Antigravity) are your own choice and come from their makers, not from here
 # (Debian and Ubuntu don't package Ollama: https://ollama.com/download/linux has its installer)
+?wtype              # The on-screen keyboard (Settings → Accessibility): typing into apps

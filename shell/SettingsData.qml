@@ -310,6 +310,9 @@ JsonAdapter {
     property bool highContrast: false
     // Text size (Settings → Accessibility): Slate's text, not its icons or layout (1, 1.15, 1.3)
     property real textScale: 1
+    // On-screen keyboard (Settings → Accessibility; Super+Alt+K): Slate's keys at the bottom of the
+    // screen, and on the lock screen
+    property bool onScreenKeyboard: false
     property bool zoom: false
     property real zoomLevel: 2
     property string zoomFollow: "smooth"
