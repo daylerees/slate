@@ -135,7 +135,12 @@ PanelWindow {
             }
         };
         if (content.item) walk(content.item);
-        return stops;
+        // (in the order they're seen, top to bottom, then left to right: the order they were
+        // made isn't it, a list's rows above all, which are made and reused out of order)
+        const at = c => c.mapToItem(content, 0, 0);
+        const places = stops.map(c => ({ c: c, p: at(c) }));
+        places.sort((a, b) => Math.abs(a.p.y - b.p.y) > 4 ? a.p.y - b.p.y : a.p.x - b.p.x);
+        return places.map(o => o.c);
     }
     function keyStep(on) {
         const stops = keyStops(), i = stops.indexOf(panelKeys.Window.activeFocusItem);

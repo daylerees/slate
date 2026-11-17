@@ -6,6 +6,7 @@ ends), and Escape or the shortcut again gives the keyboard back.
 Keys are typed for real with wtype, each sequence in one run (in the background, watched as it
 goes): every wtype run is a new keyboard, and the old one going away takes the keyboard's focus
 with it, which a real keyboard never does."""
+import json
 import shutil
 import subprocess
 
@@ -65,6 +66,28 @@ class KeyboardNavigation(LiveCase):
         self.until(lambda st: st["popoutKeyFocus"] not in ("", first), "Down to the next control")
         self.until(lambda st: st["popoutKeyFocus"] == first, "Up back to the first")
         self.until(lambda st: st["popout"] == "", "Escape closes it")
+
+    def test_down_goes_down_a_list_in_the_order_shown(self):
+        """The Wi-Fi list: Down walks the networks top to bottom, as shown, even after they've
+        been reordered (a list's rows are made and reused out of order, and Down used to follow
+        that: it jumped up and down the list)."""
+        self.keep_setting("barShowWifi")
+        self.config("barShowWifi", "true")
+        self.addCleanup(lambda: self.ipc("test", "wifi", ""))
+        self.ipc("test", "wifi", json.dumps({"Home": 0.9, "Cafe": 0.6, "Library": 0.3, "Station": 0.2}))
+        self.ipc("bar", "panel", "wifi")
+        self.until(lambda st: st["popout"] == "wifi" and st["lists"]["panel"]["count"] == 4, "the four networks")
+        # (reordered while open: Station to the top, Home to the bottom)
+        self.ipc("test", "wifi", json.dumps({"Home": 0.1, "Cafe": 0.6, "Library": 0.3, "Station": 0.95}))
+        order = self.until(lambda st: st["lists"]["panel"]["order"] == ["Station", "Cafe", "Library", "Home"], "the new order")["lists"]["panel"]["order"]
+        self.type_keys(*(["Down"] * 12), gap=250).wait(timeout=30)
+        path = self.s.state()["popoutKeyPath"]
+        seen = []
+        for step in path:
+            for name in order:
+                if name in step and name not in seen:
+                    seen.append(name)
+        self.assertEqual(seen, order, f"Down didn't walk the networks in the order shown: {path}")
 
     def test_no_keys_coming_lets_go(self):
         """If no key reaches the bar or the dock at all, it doesn't keep the keyboard: after ten

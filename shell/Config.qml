@@ -177,12 +177,14 @@ Singleton {
     // (a few levels down), for its Accessible.name when it has no label of its own: a panel's
     // row, a bar item. Read through a binding, so it follows the words as they change
     function textOf(item, depth) {
-        const d = depth === undefined ? 3 : depth;
+        const d = depth === undefined ? 6 : depth;
         if (!item || d < 0) return "";
         if (item.visible === false) return "";
         const own = item.text !== undefined && typeof item.text === "string" && item.font !== undefined ? item.text : "";
-        // (an icon's glyph isn't a word: only text with a letter or digit in it counts)
-        const parts = /[\p{L}\p{N}]/u.test(own) ? [own] : [];
+        // (an icon's glyph isn't a word: only text with something besides spaces and the icon
+        // font's glyphs, which are in Unicode's private use area, counts. Not /\p{L}/u: Qt's
+        // JavaScript doesn't know it, and nothing ever counted)
+        const parts = /[^\s\uE000-\uF8FF]/.test(own) ? [own] : [];
         for (const c of item.children || []) {
             const t = textOf(c, d - 1);
             if (t) parts.push(t);
