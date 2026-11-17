@@ -245,7 +245,7 @@ Singleton {
     // Slate's own: the control centre; Apps with Nova; Spaces with the window mode and the
     // workspace dots; the active window; a flexible space; then the tray, the status icons,
     // More, the clock and the power button
-    readonly property var barStatusItems: ["notifications", "clipboard", "screenshot", "camera", "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery"]
+    readonly property var barStatusItems: ["notifications", "clipboard", "screenshot", "camera", "drink", "focus", "gamemode", "keyboard", "bluetooth", "volume", "wifi", "battery"]
     readonly property var barLayoutDefault: [
         barBox(["control"]), barBox(["apps", "nova"]),
         barBox(["spaces", "windowmode", "workspaces", "workspacename"]),
@@ -269,6 +269,8 @@ Singleton {
         { id: "clipboard", label: "Clipboard", icon: 0xEA6F, key: "barShowClipboard" },
         { id: "screenshot", label: "Screenshot", icon: 0xF201, key: "barShowScreenshot" },
         { id: "camera", label: "Camera", icon: 0xEA9A, key: "barShowCamera" },
+        { id: "drink", label: "Drink reminder", icon: 0xEA97, key: "barShowDrink" },
+        { id: "focus", label: "Focus timer", icon: 0xEA70, key: "barShowFocus" },
         { id: "gamemode", label: "Game Mode", icon: 0xF1D2, key: "barShowGameMode" },
         { id: "keyboard", label: "Keyboard layout", icon: 0xEBD6, key: "barShowKeyboard" },
         { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, key: "barShowBluetooth" },
@@ -345,7 +347,17 @@ Singleton {
             const at = out.findIndex(e => typeof e !== "string" && e.items.indexOf("clock") >= 0);
             out.splice(at >= 0 ? at : out.length, 0, barBox(["more"], null));
         }
-        for (const id of known) if (!seen[id]) out.push(barBox([id], null));
+        // (anything new since it was saved: a status icon joins the other status icons, the rest
+        // a container of its own at the end)
+        for (const id of known) {
+            if (seen[id]) continue;
+            const box = barStatusItems.indexOf(id) >= 0
+                ? out.find(e => typeof e !== "string" && e.items.some(x => x !== id && barStatusItems.indexOf(x) >= 0)) : null;
+            if (box) {
+                const t = box.items.indexOf("tuck");
+                if (t >= 0 && t === box.items.length - 1) box.items.splice(t, 0, id); else box.items.push(id);
+            } else out.push(barBox([id], null));
+        }
         return out;
     }
     // A container as the bar wants it, from its real items and how it was saved. Its collapse
@@ -376,7 +388,8 @@ Singleton {
         barSelected = at;
     }
     // The setting that says whether an item's text shows beside its icon ("" if it has none)
-    readonly property var barTextKeys: ({ clipboard: "barValueClipboard", gamemode: "barValueGameMode", wifi: "barValueWifi",
+    readonly property var barTextKeys: ({ clipboard: "barValueClipboard", gamemode: "barValueGameMode",
+        drink: "barValueDrink", focus: "barValueFocus", wifi: "barValueWifi",
         keyboard: "barValueKeyboard", bluetooth: "barValueBluetooth", volume: "barValueVolume", battery: "barValueBattery" })
     // (should Slate have gone away mid-arranging, its keys would have stayed: the usual ones back)
     Timer { running: !root.isLoginScreen; interval: 0; onTriggered: Quickshell.execDetached(["hyprctl", "eval", `hl.dispatch(hl.dsp.submap("reset"))`]) }
@@ -578,7 +591,7 @@ Singleton {
     }
     // The order things leave a bar that's short of room, first to go first (Slate's own; the
     // last three stay)
-    readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "camera", "gamemode", "keyboard", "bluetooth", "workspacename", "windowtitle", "windowicon",
+    readonly property var barOverflowDefault: ["tray", "clipboard", "screenshot", "camera", "drink", "focus", "gamemode", "keyboard", "bluetooth", "workspacename", "windowtitle", "windowicon",
         "nova", "spaces", "apps", "notifications", "battery", "wifi", "volume", "windowmode", "workspaces"]
     // The order in use: yours (Settings → Menu Bar → Edit layout → If it doesn't fit), with
     // anything it leaves out put in from Slate's own, so every thing has a place; and the
@@ -1745,7 +1758,7 @@ Singleton {
     readonly property var pagePastels: ({
         overview: "#b9a6e8", general: "#9db4d8", appearance: "#e8a6c8", displays: "#8fc7e8",
         input: "#b9a6e8", sound: "#e8b48f", power: "#a6d3a0", windows: "#8fd0c8",
-        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0", users: "#e8b8c8", accessibility: "#9fc6e8",
+        workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0", users: "#e8b8c8", accessibility: "#9fc6e8", timers: "#e8b0a0",
         bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",
@@ -1893,7 +1906,7 @@ Singleton {
     readonly property var statusPastels: ({
         notifications: "#e8c48f", clipboard: "#8fd0c8", screenshot: "#a6e0e8", wifi: "#8fb3e8",
         keyboard: "#b9a6e8", bluetooth: "#7fa8e8", volume: "#e8b48f", battery: "#a6d3a0",
-        gamemode: "#e8a6b4", camera: "#c0dc9a",
+        gamemode: "#e8a6b4", camera: "#c0dc9a", drink: "#9fd0e8", focus: "#e8b0a0",
         windowmode: "#9ed6b4"       // (the workspace's window mode, by the dots: a mint green)
     })
     function statusColour(key, fallback) { return colourful && statusPastels[key] ? tint(statusPastels[key]) : fallback; }

@@ -110,19 +110,20 @@ ENTRIES = {
 
 LOOKS = ["status", "settings_search", "settings_get", "windows_list", "workspaces_list", "spaces_list",
          "apps_list", "wallpapers_list", "media_info"]
-CHANGES = ["settings_set", "settings_show", "look_apply", "panel_open", "bar_arrange", "app_open", "window_focus", "window_move",
+CHANGES = ["settings_set", "settings_show", "look_apply", "panel_open", "timer", "bar_arrange", "app_open", "window_focus", "window_move",
            "window_state", "workspace_go", "workspace_mode", "workspace_rename", "space_restore", "space_save",
            "wallpaper_set", "wallpaper_next", "volume_set", "brightness_set", "media_control", "do_not_disturb",
            "wifi", "bluetooth", "dock_pin", "screenshot", "lock_screen", "screensaver_start"]
 ASKS = ["window_close", "space_delete", "waste_basket_empty", "software", "settings_restore_defaults", "session"]
 # What Slate may be asked while only looking
 READS = (["config", "get"], ["assistant", "status"], ["notifications", "dndGet"], ["notifications", "list"],
-         ["osd", "volumeGet"], ["brightness", "list"], ["media", "info"], ["wifi", "list"], ["bluetooth", "list"], ["dock", "pinned"])
+         ["osd", "volumeGet"], ["brightness", "list"], ["media", "info"], ["wifi", "list"], ["bluetooth", "list"], ["dock", "pinned"],
+         ["timers", "state"])
 # Arguments each tool accepts, for the tests that call every one
 ARGS = {
     "settings_search": {"query": "glass"}, "settings_get": {"key": "glass"},
     "settings_set": {"key": "glass", "value": False}, "settings_show": {"key": "glass"},
-    "look_apply": {"name": "Metro Flat"}, "panel_open": {"name": "control"}, "bar_arrange": {"alwaysStay": ["clock", "power"]}, "app_open": {"id": "com.example.Editor"},
+    "look_apply": {"name": "Metro Flat"}, "panel_open": {"name": "control"}, "timer": {"action": "start"}, "bar_arrange": {"alwaysStay": ["clock", "power"]}, "app_open": {"id": "com.example.Editor"},
     "window_focus": {"address": "0xa1"}, "window_move": {"address": "0xa1", "workspace": 2},
     "window_state": {"address": "0xa1", "state": "float"}, "workspace_go": {"id": 2},
     "workspace_mode": {"id": 2, "mode": "floating"}, "workspace_rename": {"id": 2, "name": "Code"},

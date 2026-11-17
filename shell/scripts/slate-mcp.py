@@ -220,6 +220,8 @@ NAMED = {
     "barShowScreenshot": ("bar", "Screenshot"),
     "barShowCamera": ("bar", "Camera in use (an eye while an app is using the camera)"),
     "barShowGameMode": ("bar", "Game mode"),
+    "barShowDrink": ("timers", "Show on"), "dockShowDrink": ("timers", "Show on"),
+    "barShowFocus": ("timers", "Show on"), "dockShowFocus": ("timers", "Show on"),
     "barShowKeyboard": ("bar", "Keyboard layout"),
     "barShowBluetooth": ("bar", "Bluetooth"),
     "barShowVolume": ("bar", "Volume"),
@@ -227,6 +229,8 @@ NAMED = {
     "barShowBattery": ("bar", "Battery"),
     "barValueClipboard": ("bar", "Clipboard items"),
     "barValueGameMode": ("bar", "Game mode on or off"),
+    "barValueDrink": ("bar", "Drink reminder: the time to the next drink"),
+    "barValueFocus": ("bar", "Focus timer: the time left"),
     "barValueKeyboard": ("bar", "Keyboard layout code"),
     "barValueBluetooth": ("bar", "Connected Bluetooth devices"),
     "barValueVolume": ("bar", "Volume percentage"),
@@ -685,6 +689,12 @@ def status():
     out["appearanceNow"] = "light" if light else "dark"
     out["gameMode"] = bool(STATUS.get("gameMode"))
     out["doNotDisturb"] = ipc("notifications", "dndGet") == "true"
+    try:
+        t = json.loads(ipc("timers", "state") or "{}")
+        out["timers"] = {"drink": {k: t["drink"][k] for k in ("on", "overdue", "left")},
+                         "focus": {k: t["focus"][k] for k in ("on", "phase", "paused", "left", "round")}}
+    except (ValueError, KeyError, TypeError):
+        pass
     out["nightLight"] = ipc("config", "get", "nightLight") == "true"
     for key, value in (("volume", volume()), ("brightness", brightness()), ("displays", displays_brightness() or None),
                        ("battery", battery()), ("network", network())):
@@ -1040,6 +1050,8 @@ VALUES = {
 # number set from outside; some are kept as 0 to 1 where Settings shows a percentage)
 RANGES = {
     "accentBoldness": (0, 1), "toneBoldness": (0, 1), "zoomLevel": (1.25, 5), "textScale": (1, 1.3),
+    "drinkMinutes": (15, 120), "focusMinutes": (5, 90), "focusBreakMinutes": (1, 30),
+    "focusLongBreakMinutes": (5, 60), "focusRounds": (2, 8),
     "tickVolume": (0, 100), "notificationVolume": (0, 100), "clickVolume": (0, 100), "swishVolume": (0, 100),
     "welcomeVolume": (0, 100), "goodbyeVolume": (0, 100), "attentionVolume": (0, 100),
     "answeredVolume": (0, 100),
@@ -1066,6 +1078,7 @@ SWITCHES = {
     "nightLight", "airplaneMode", "iconFill", "tintIcons", "gameMode", "iconTileColour",
     "reduceTransparency", "reduceMotion", "zoom", "highContrast", "onScreenKeyboard", "screenReader", "pointerTrail",
     "dndSchedule", "dndFullscreen", "dndCalls", "recordComputerSound", "recordMicrophone",
+    "drinkReminder", "focusTimer", "focusQuiet", "barShowDrink", "dockShowDrink", "barShowFocus", "dockShowFocus",
     "roundedScreenCorners", "shadows", "roundedElements", "reopenAppsAfterRestart",
     "keepEmptyWorkspace", "barBlur", "barPanelBlur", "barAutoHide", "barShowControl",
     "barShowClock", "barShowApps", "barShowSpaces", "spaceBorders", "spaceBadges",
@@ -1073,7 +1086,7 @@ SWITCHES = {
     "barShowWorkspaceName", "barShowTitle", "barShowTitleIcon", "barShowTray",
     "barShowNotifications", "barShowClipboard", "barShowScreenshot", "barShowCamera", "barShowWifi",
     "barShowKeyboard", "barShowBluetooth", "barShowVolume", "barShowBattery", "barShowGameMode",
-    "barValueClipboard", "barValueGameMode", "barValueWifi", "barValueKeyboard",
+    "barValueClipboard", "barValueGameMode", "barValueDrink", "barValueFocus", "barValueWifi", "barValueKeyboard",
     "barValueBluetooth", "barValueVolume", "barValueBattery", "barTrayCollapsed", "barTrayMono",
     "barStatusCollapsed", "barShowPower", "barClockSeconds", "barClockDate", "launcherBlur",
     "notificationBlur", "dockBlur", "dockAutoHide", "dockShowLauncher", "dockPreviews",
@@ -1225,7 +1238,7 @@ def settings_show(key="", page=""):
 
 LOOKS = ["Liquid Glass", "Metro Flat"]
 PANELS = ["control", "spaces", "notifications", "session", "volume", "wifi", "clipboard", "screenshot",
-          "keyboard", "bluetooth", "battery", "gamemode", "calendar", "windowmode"]
+          "keyboard", "bluetooth", "battery", "gamemode", "calendar", "windowmode", "drink", "focus"]
 
 
 @tool("look_apply", "Apply a look",
@@ -1249,12 +1262,30 @@ def panel_open(name):
     return {"opened": name}
 
 
+@tool("timer", "Use the timers",
+      "The drink reminder and the focus timer (Settings → Timers, switched on there): drank (a drink had: the "
+      "next wait starts), or the focus timer's start, pause, skip (to the break, or past it) or reset.",
+      {"action": {"type": "string", "enum": ["drank", "start", "pause", "skip", "reset"]}}, ["action"], tier="change")
+def timer(action):
+    doing({"drank": "Start the next drink wait", "start": "Start focusing", "pause": "Pause the focus timer",
+           "skip": "Skip to the next part of the focus timer", "reset": "Reset the focus timer"}[action])
+    changing("Use the timer?", "%s is asking to %s." % (asker(), {"drank": "start the next wait for a drink",
+             "start": "start the focus timer", "pause": "pause the focus timer", "skip": "skip to the next part of the focus timer",
+             "reset": "reset the focus timer"}[action]), "OK")
+    if action == "drank":
+        ipc("timers", "drink")
+    else:
+        ipc("timers", "focus", action)
+    return {"done": action}
+
+
 # What can be on the menu bar, by the names its arrangement uses (Config.barItems). "more" holds
 # whatever there isn't room for: it's always on the bar
 BAR_ITEMS = {
     "control": "Control Center", "apps": "Apps", "spaces": "Spaces", "nova": "Nova", "windowmode": "Window mode",
     "workspaces": "Workspaces", "workspacename": "Workspace name", "windowicon": "Window icon", "windowtitle": "Window title", "tray": "Tray",
     "notifications": "Notifications", "clipboard": "Clipboard", "screenshot": "Screenshot", "camera": "Camera",
+    "drink": "Drink reminder", "focus": "Focus timer",
     "gamemode": "Game Mode", "keyboard": "Keyboard layout", "bluetooth": "Bluetooth", "volume": "Volume",
     "wifi": "Wi-Fi", "battery": "Battery", "clock": "Clock", "power": "Power", "more": "More",
 }

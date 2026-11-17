@@ -15,6 +15,8 @@ Item {
     property real dockTop: 0            // where the dock's background starts, in the slot (DockBacking)
     property int glyph: 0               // its symbol (Tabler); 0 for the launcher's three bars
     property var badgeInfo: null        // a badge on its corner ({ count, urgent }), if any
+    property real progress: -1          // a ring round the symbol, full at 1, gone at 0 (-1: none): the timers
+    property bool lit: false            // the symbol and ring in the accent (a timer that wants you)
     readonly property real s: dock.scaleAt(at)
     opacity: standalone ? dock.fadeAt(at) : 1
     width: standalone ? dock.base * s : parent ? parent.width : 0
@@ -64,15 +66,25 @@ Item {
                 }
             }
         }
+        // (a timer's ring, round the symbol: TimerRing)
+        TimerRing {
+            visible: btn.progress >= 0
+            opacity: Config.dockIconOpacity
+            anchors.centerIn: parent
+            size: parent.width * 0.74
+            progress: btn.progress
+            colour: btn.lit ? Config.accentFor(btn.dock.hoveredIndex === btn.at) : btn.dock.textColor
+            trackColour: Qt.rgba(btn.dock.textColor.r, btn.dock.textColor.g, btn.dock.textColor.b, 0.18)
+        }
         // A symbol, scaled with the tile
         Text {
             visible: btn.glyph !== 0
             opacity: Config.dockIconOpacity
             anchors.centerIn: parent
             text: btn.glyph !== 0 ? String.fromCodePoint(btn.glyph) : ""
-            color: btn.dock.textColor
+            color: btn.lit ? Config.accentFor(btn.dock.hoveredIndex === btn.at) : btn.dock.textColor
             font.family: "slate-tabler-icons"
-            font.pixelSize: Math.round(btn.dock.symbolRef * 0.5)
+            font.pixelSize: Math.round(btn.dock.symbolRef * (btn.progress >= 0 ? 0.36 : 0.5))   // (smaller in a ring)
             scale: parent.width / btn.dock.symbolRef
             anchors.alignWhenCentered: false
         }

@@ -396,7 +396,8 @@ PanelWindow {
     function revealNow() { if (autoHiding) holdTimer.restart(); }
     function openPanel(name) {
         const button = ({ control: flameBtn, spaces: spacesBtn, notifications: bellBtn, session: powerBtn, windowmode: wsMode,
-                          volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, gamemode: gameSeg, calendar: clockCap, more: moreBtn })[name];
+                          volume: volSeg, wifi: wifiSeg, clipboard: clipSeg, screenshot: shotSeg, keyboard: kbSeg, bluetooth: btSeg, battery: batSeg, gamemode: gameSeg, calendar: clockCap, more: moreBtn,
+                          drink: drinkSeg, focus: focusSeg })[name];
         if (name === "more" && popouts) popouts.moreBar = bar;
         if (button) openPopout(name, button);
     }
@@ -579,7 +580,7 @@ PanelWindow {
         // Open (or close) one of the bar's panels under its button, e.g.
         //   slate ipc call bar panel control
         // names: control, spaces, notifications, session, volume, wifi, clipboard, screenshot,
-        // keyboard, bluetooth, battery, gamemode, calendar, windowmode
+        // keyboard, bluetooth, battery, gamemode, calendar, windowmode, drink, focus
         function panel(name: string): void { bar.focusedBar().openPanel(name); }
         // The whole arrangement, read and set as JSON (the assistant's bar_arrange; see
         // Config.barArrangement / barArrange)
@@ -1097,7 +1098,7 @@ PanelWindow {
             // Everything that can go in a container, by its name in the arrangement
             readonly property var things: ({
                 control: flameBtn, apps: appsBtn, spaces: spacesBtn, nova: novaBtn, windowmode: wsMode, workspaces: wsCap, workspacename: wsName,
-                tray: trayCapsule, notifications: bellBtn, clipboard: clipSeg, screenshot: shotSeg, camera: camSeg, gamemode: gameSeg,
+                tray: trayCapsule, notifications: bellBtn, clipboard: clipSeg, screenshot: shotSeg, camera: camSeg, gamemode: gameSeg, drink: drinkSeg, focus: focusSeg,
                 keyboard: kbSeg, bluetooth: btSeg, volume: volSeg, wifi: wifiSeg, battery: batSeg, clock: clockCap, power: powerBtn,
                 windowicon: winIcon, windowtitle: winTitle, more: moreBtn })
             property var made: []              // the containers and flexible spaces made for this arrangement
@@ -1679,6 +1680,31 @@ PanelWindow {
                         tint: Config.gameMode ? bar.accent : bar.textColor
                         tipText: Config.gameMode ? "Game Mode: on" : "Game Mode: off"
                         onClicked: bar.openPopout("gamemode", gameSeg)
+                    }
+                    // The drink reminder (Timers.qml): a droplet and the time to the next drink, lit
+                    // (and "Drink") when one's due
+                    Segment {
+                        id: drinkSeg
+                        wanted: Config.s.barShowDrink && Timers.drinkOn
+                        pastel: "drink"
+                        iconCode: 0xEA97
+                        sample: "45 min"; textOn: Config.s.barValueDrink
+                        label: !Config.s.barValueDrink ? "" : Timers.drinkOverdue ? "Drink" : Timers.minutes(Timers.drinkLeft)
+                        tint: Timers.drinkOverdue ? bar.accent : bar.textColor
+                        tipText: Timers.drinkOverdue ? "Time for a drink" : "Next drink in " + Timers.minutes(Timers.drinkLeft)
+                        onClicked: bar.openPopout("drink", drinkSeg)
+                    }
+                    // The focus timer (Timers.qml): a clock (a mug on a break), with the time left
+                    Segment {
+                        id: focusSeg
+                        wanted: Config.s.barShowFocus && Timers.focusOn
+                        pastel: "focus"
+                        iconCode: Timers.phase === "break" || Timers.phase === "long" ? 0xEAFB : 0xEA70
+                        sample: "24:59"; textOn: Config.s.barValueFocus
+                        label: !Config.s.barValueFocus || Timers.phase === "idle" ? "" : Timers.clock(Timers.focusLeft)
+                        tint: Timers.phase === "focus" && !Timers.paused ? bar.accent : bar.textColor
+                        tipText: Timers.phase === "idle" ? "Focus timer" : (Timers.phase === "focus" ? "Focusing" : "On a break") + (Timers.paused ? ", paused" : "")
+                        onClicked: bar.openPopout("focus", focusSeg)
                     }
                     // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
                     Segment {

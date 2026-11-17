@@ -317,7 +317,10 @@ PanelWindow {
             add({ kind: "app", item: it });
         });
         if (more.length > 0) add({ kind: "more", items: more });
-        if (dividers && all.length > 0 && (downloadsShown || trashShown)) add({ kind: "divider" });
+        if (dividers && all.length > 0 && (drinkShown || focusShown || downloadsShown || trashShown)) add({ kind: "divider" });
+        // The timers (Timers.qml; Settings → Timers → Show on), before Downloads
+        if (drinkShown) add({ kind: "drink" });
+        if (focusShown) add({ kind: "focus" });
         if (downloadsShown) add({ kind: "downloads" });
         if (trashShown) add({ kind: "trash" });
         return s;
@@ -529,6 +532,10 @@ PanelWindow {
     readonly property int trashIndex: indexOfKind("trash")         // always last
     readonly property int downloadsIndex: indexOfKind("downloads")
     readonly property int launcherIndex: indexOfKind("launcher")       // (-1: switched off)
+    readonly property bool drinkShown: Config.s.dockShowDrink && Timers.drinkOn
+    readonly property bool focusShown: Config.s.dockShowFocus && Timers.focusOn
+    readonly property int drinkIndex: indexOfKind("drink")
+    readonly property int focusIndex: indexOfKind("focus")
     readonly property string trashDir: (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/Trash/files"
     // What's in it, watched (the folder made first if nothing's been thrown away yet, so
     // there's something to watch)
@@ -1664,7 +1671,8 @@ PanelWindow {
         const i = keyIndex, sl = slotAt(i);
         if (!sl) return "";
         if (sl.kind === "app") return sl.item.entry?.name ?? sl.item.key ?? "";
-        return ({ launcher: "Apps", more: "More", downloads: "Downloads", trash: "Waste Basket", media: "Now playing" })[sl.kind] || "";
+        return ({ launcher: "Apps", more: "More", downloads: "Downloads", trash: "Waste Basket", media: "Now playing",
+                  drink: "Drink reminder", focus: "Focus timer" })[sl.kind] || "";
     }
     onKeyIndexChanged: if (keyIndex >= 0) keyPath = keyPath.concat([keyIndex]).slice(-20)
     // (if no key reaches it at all, the keyboard goes back to the apps by itself: see Bar's)
@@ -1713,6 +1721,15 @@ PanelWindow {
             else mediaClick();
             return;
         }
+        if (i >= 0 && (i === drinkIndex || i === focusIndex)) {
+            // The timers: a click is their one thing (a drink had; focus started or paused),
+            // right-click for the rest
+            const drink = i === drinkIndex;
+            if (right) { timerMenu.drink = drink; timerMenu.openFrom(menuPoint(row.x + cellX(i) + base * scaleAt(i) / 2).x, menuPoint(row.x + cellX(i) + base * scaleAt(i) / 2).y, win.edge, 0); }
+            else if (drink) Timers.drank();
+            else Timers.toggleFocus();
+            return;
+        }
         if (downloadsShown && i === downloadsIndex) {
             // Downloads: the grid of the newest; right-click just to open the folder
             appMenu.openFor(right ? { downloadsMenu: true, key: "", windows: [] } : { downloadsGrid: true, key: "", windows: [] },
@@ -1747,6 +1764,23 @@ PanelWindow {
         wins[(cur + 1) % wins.length].activate();
     }
 
+    // A timer's menu (right-click on its tile)
+    DesktopMenu {
+        id: timerMenu
+        screen: win.screen
+        property bool drink: true
+        items: drink ? [
+            { label: "I've had a drink", icon: 0xEA97, run: () => Timers.drank() },
+            { separator: true },
+            { label: "Timer settings", icon: 0xEB20, run: () => Config.slateCall("settings", "page", "timers") }
+        ] : [
+            { label: Timers.phase === "idle" ? "Start focusing" : Timers.paused ? "Resume" : "Pause", icon: Timers.phase === "idle" || Timers.paused ? 0xF691 : 0xF690, run: () => Timers.toggleFocus() },
+            { label: Timers.phase === "focus" ? "Take a break now" : "Skip", icon: 0xF694, run: () => Timers.nextPhase() },
+            { label: "Reset", icon: 0xEB13, run: () => Timers.resetFocus() },
+            { separator: true },
+            { label: "Timer settings", icon: 0xEB20, run: () => Config.slateCall("settings", "page", "timers") }
+        ]
+    }
     // The dock's own menu, for a right-click on its empty space
     DesktopMenu {
         id: dockMenu
@@ -1762,7 +1796,9 @@ PanelWindow {
             { label: "Icon size", icon: 0xF6B1, submenu: Config.choiceMenu("dockIconSize", [[32, "Small"], [40, "Medium"], [52, "Large"]], -1) },
             { label: "Show", icon: 0xEA9A, submenu: [
                 Config.tickItem("Apps button", "dockShowLauncher"), Config.tickItem("What's playing", "dockShowMedia"),
-                Config.tickItem("Downloads", "dockShowDownloads"), Config.tickItem("Waste Basket", "dockShowTrash")] },
+                Config.tickItem("Downloads", "dockShowDownloads"), Config.tickItem("Waste Basket", "dockShowTrash")]
+                .concat(Timers.drinkOn ? [Config.tickItem("Drink reminder", "dockShowDrink")] : [])
+                .concat(Timers.focusOn ? [Config.tickItem("Focus timer", "dockShowFocus")] : []) },
             { separator: true },
             { label: "Dock settings", icon: 0xEB20, run: () => Config.slateCall("settings", "page", "dock") }
         ]
@@ -2349,6 +2385,26 @@ PanelWindow {
                     height: 1
                     visible: win.dragKey !== ""
                 }
+                // The timers (Timers.qml): a symbol on a tile, in a ring that empties as the time
+                // runs down
+                DockButton {
+                    dock: win
+                    visible: win.drinkShown
+                    at: win.drinkIndex
+                    dockTop: bg.y - row.y
+                    glyph: 0xEA97
+                    progress: Timers.drinkProgress
+                    lit: Timers.drinkOverdue
+                }
+                DockButton {
+                    dock: win
+                    visible: win.focusShown
+                    at: win.focusIndex
+                    dockTop: bg.y - row.y
+                    glyph: Timers.phase === "break" || Timers.phase === "long" ? 0xEAFB : 0xEA70
+                    progress: Timers.phase === "idle" ? -1 : Timers.focusProgress
+                    lit: Timers.phase === "focus" && !Timers.paused
+                }
                 // Downloads: a stack, the folder-and-arrow on a tile like the launcher button's
                 DockButton {
                     dock: win
@@ -2375,6 +2431,10 @@ PanelWindow {
                 shadowed: !Config.glass || !Config.s.dockBlur     // (see Tooltip: the dock blurs behind any shadow)
                 readonly property string says: win.hoveredIndex >= 0 && win.hoveredIndex === win.launcherIndex ? "Apps"
                     : win.downloadsShown && win.hoveredIndex === win.downloadsIndex ? "Downloads"
+                    : win.drinkShown && win.hoveredIndex === win.drinkIndex
+                        ? (Timers.drinkOverdue ? "Time for a drink" : "Next drink in " + Timers.minutes(Timers.drinkLeft))
+                    : win.focusShown && win.hoveredIndex === win.focusIndex
+                        ? (Timers.phase === "idle" ? "Focus timer" : (Timers.phase === "focus" ? "Focusing · " : "Break · ") + Timers.clock(Timers.focusLeft) + (Timers.paused ? " (paused)" : ""))
                     : win.moreIndex >= 0 && win.hoveredIndex === win.moreIndex
                         ? "More · " + win.moreItems.length + (win.moreItems.length === 1 ? " app" : " apps")
                     : win.trashShown && win.hoveredIndex === win.trashIndex

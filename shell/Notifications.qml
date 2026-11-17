@@ -32,7 +32,8 @@ Scope {
     // screen, the call ending); everything else uses `quiet`, never `dnd`.
     readonly property string autoWhy: Config.s.dndSchedule && quietHours ? "schedule"
         : Config.s.dndFullscreen && fullscreenNow ? "fullscreen"
-        : Config.s.dndCalls && onCall ? "call" : ""
+        : Config.s.dndCalls && onCall ? "call"
+        : Timers.focusQuiet ? "focus" : ""
     property string letThrough: ""          // the automatic reason turned off by hand
     onAutoWhyChanged: letThrough = ""
     readonly property bool quiet: dnd || (autoWhy !== "" && letThrough !== autoWhy)
@@ -40,7 +41,8 @@ Scope {
     readonly property string quietWhy: !quiet || dnd ? "" : ({
         schedule: "until " + Config.clockText(clockAt(Config.s.dndTo)),
         fullscreen: "while a window is full screen",
-        call: "while you're on a call" })[autoWhy] || ""
+        call: "while you're on a call",
+        focus: "while you focus" })[autoWhy] || ""
     function setQuiet(on) {
         if (on) { dnd = true; return; }
         dnd = false;

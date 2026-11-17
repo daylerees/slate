@@ -431,6 +431,8 @@ PanelWindow {
                         : pop.displayed === "bluetooth" ? bluetoothPanel
                         : pop.displayed === "battery" ? batteryPanel
                         : pop.displayed === "gamemode" ? gameModePanel
+                        : pop.displayed === "drink" ? drinkPanel
+                        : pop.displayed === "focus" ? focusPanel
                         : pop.displayed === "more" ? morePanel
                         : pop.displayed === "windowmode" ? windowModePanel
                         : pop.displayed === "calendar" ? calendarPanel
@@ -616,6 +618,8 @@ PanelWindow {
     Component { id: bluetoothPanel; BluetoothPanel { pop: PanelHost.pop } }
     Component { id: windowModePanel; WindowModePanel { pop: PanelHost.pop } }
     Component { id: gameModePanel; GameModePanel { pop: PanelHost.pop } }
+    Component { id: drinkPanel; DrinkPanel { pop: PanelHost.pop } }
+    Component { id: focusPanel; FocusPanel { pop: PanelHost.pop } }
     Component { id: batteryPanel; BatteryPanel { pop: PanelHost.pop } }
     Component { id: calendarPanel; CalendarPanel { pop: PanelHost.pop } }
     Component { id: sessionPanel; SessionPanel { pop: PanelHost.pop } }

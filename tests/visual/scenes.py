@@ -173,6 +173,20 @@ for _p in PANELS:
         "do": [("bar", "panel", _p)], "wait": (lambda p: lambda st: st["popout"] == p)(_p), "settle": 1.0,
         "undo": [("popout", "close")],
     }
+# The timers (Settings → Timers): the drink reminder a third of the way through its wait, the focus
+# timer part-way through a round (moved on with testAhead, then paused so the picture holds still)
+_TIMERS = {"drinkReminder": "true", "focusTimer": "true", "dockShowDrink": "true", "dockShowFocus": "true"}
+_TIMERS_DO = [("timers", "focus", "start"), ("timers", "testAhead", "900"), ("timers", "focus", "pause")]
+SCENES["panel-drink"] = {"settings": _TIMERS, "do": _TIMERS_DO + [("bar", "panel", "drink")],
+                         "wait": lambda st: st["popout"] == "drink", "settle": 1.0,
+                         "undo": [("popout", "close"), ("timers", "focus", "reset")]}
+SCENES["panel-focus"] = {"settings": _TIMERS, "do": _TIMERS_DO + [("bar", "panel", "focus")],
+                         "wait": lambda st: st["popout"] == "focus", "settle": 1.0,
+                         "undo": [("popout", "close"), ("timers", "focus", "reset")]}
+SCENES["dock-timers"] = {"settings": _TIMERS, "do": _TIMERS_DO,
+                         "wait": lambda st: {"drink", "focus"} <= {s["kind"] for s in st["dock"]["slots"]}, "settle": 1.2,
+                         "undo": [("timers", "focus", "reset")]}
+
 # While recording the screen (the mark scripts/record.sh leaves, written here; started in the
 # future so the clock stays at 0:00): the bar's red indicator, and the panel's Stop
 _REC_MARK = 'printf "%s\\n/tmp/a video.mp4\\n%s\\n" "$$" "$(( $(date +%s) + 100000 ))" > "$XDG_RUNTIME_DIR/slate-recording"'

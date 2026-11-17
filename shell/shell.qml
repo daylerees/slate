@@ -128,6 +128,8 @@ ShellRoot {
     IpcHandler {
         target: "test"
         enabled: Config.testMode
+        // A click (or right-click) on the dock's slot of this kind (drink, focus, trash…)
+        function dockClick(kind: string, right: bool): void { win.clickItem(win.indexOfKind(kind), right); }
         // Hyprbars (HyprbarsWatch.qml), as Settings → Windows asks for it: check, choose, rebuild,
         // reload, remove. And answering the question that's showing in the confirmation window
         // Arranging the menu bar without a pointer: what a drag, a click on the bar or a button

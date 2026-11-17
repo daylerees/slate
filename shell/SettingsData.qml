@@ -206,9 +206,25 @@ JsonAdapter {
     property bool barShowBluetooth: true      // Bluetooth (on computers with an adapter)
     property bool barShowVolume: true
     property bool barShowBattery: true
+    // The timers (Settings → Timers; Timers.qml): the drink reminder and the focus timer, their
+    // lengths in minutes, and where they show (the menu bar, the dock, or both)
+    property bool drinkReminder: false
+    property int drinkMinutes: 45
+    property bool barShowDrink: true
+    property bool dockShowDrink: false
+    property bool focusTimer: false
+    property int focusMinutes: 25
+    property int focusBreakMinutes: 5
+    property int focusLongBreakMinutes: 15
+    property int focusRounds: 4
+    property bool focusQuiet: false
+    property bool barShowFocus: true
+    property bool dockShowFocus: false
     property bool barShowGameMode: false     // game mode, with the status icons (off to start with)
     property bool barValueClipboard: true     // how many items are in the clipboard history
     property bool barValueGameMode: true      // On or Off beside the game mode icon
+    property bool barValueDrink: true         // the time to the next drink beside the droplet
+    property bool barValueFocus: true         // the focus timer's time left beside its clock
     property bool barValueWifi: true          // the network name beside the Wi-Fi icon
     property bool barValueKeyboard: true      // the active layout's code (GB, FR…) beside the keyboard icon
     property bool barValueBluetooth: true     // how many devices are connected, beside the Bluetooth icon
