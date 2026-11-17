@@ -671,6 +671,13 @@ ShellRoot {
         function page(p: string): void { const w = root.softwareWindow(); w.open(); w.show(p); }
         function app(id: string): void { const w = root.softwareWindow(); w.open(); w.openApp(id); }
         function search(text: string): void { const w = root.softwareWindow(); w.open(); w.app = ""; w.query = text; }
+        // An install, removal or update, as Software's buttons start it (Nova's software tool,
+        // after Slate has asked): what is "install", "remove", "update-apps" or "update-system"
+        function act(what: string, id: string): void {
+            if (["install", "remove", "update-apps", "update-system"].indexOf(what) < 0) return;
+            if ((what === "install" || what === "remove") && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id)) return;
+            SoftwareJobs.act(what, id, id);
+        }
     }
     // Quick Look (QuickLook.qml): a large preview of a file (Space on one in the launcher, the
     // dock's Downloads or the Waste Basket), built the first time it's wanted

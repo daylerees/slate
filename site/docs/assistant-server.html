@@ -74,7 +74,7 @@ codex mcp add slate -- /usr/local/share/slate/bin/slate mcp</code></pre>
       <h2>What it can do</h2>
       <h3>Looking</h3>
       <p>These only read, and never ask: Slate's status (the theme, volume, battery, the focused window and so on),
-        finding and reading settings, your open windows, workspaces, saved Spaces, installed apps, wallpapers, what's
+        finding and reading settings, your open windows, workspaces, saved Spaces, installed apps (and apps on Flathub, and what's waiting to update), wallpapers, what's
         playing, whether Wi-Fi and Bluetooth are on (with your saved networks in range and your paired devices), the
         apps pinned to the dock, and your recent notifications (only while you allow it, below).</p>
 
@@ -100,13 +100,14 @@ codex mcp add slate -- /usr/local/share/slate/bin/slate mcp</code></pre>
 
       <h3>Always asking</h3>
       <p>These can't be undone or could lose work, so Slate asks you every time, in its own confirmation window, and
-        no setting turns the question off: closing a window, deleting a Space, turning Wi-Fi off or disconnecting from a network, emptying the waste basket,
+        no setting turns the question off: closing a window, deleting a Space, turning Wi-Fi off or disconnecting from a network, emptying the waste basket, installing, removing or updating apps (from Flathub, and the system's own updates),
         restoring a Settings page's defaults (except Assistant and Security, which are yours to restore), and logging out, restarting, shutting down or
         sleeping.</p>
 
       <h3>What there's no tool for</h3>
       <p>Running a command, opening a file or web address, typing or clicking for you, reading the clipboard,
-        answering a password prompt, unlocking the screen, or installing or updating anything.</p>
+        answering a password prompt or unlocking the screen. Installing and updating only go through Software, from
+        Flathub and your distro's own updates, and always ask first.</p>
 
       <h2>What it refuses</h2>
       <p>Some settings are yours alone, and Slate refuses to let an assistant change them, saying where you can change

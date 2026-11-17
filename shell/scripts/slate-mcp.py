@@ -59,6 +59,9 @@ SLATE = os.environ.get("SLATE_COMMAND") or os.path.join(SLATE_DIR, "bin", "slate
 IPC_TIMEOUT = 5
 # What takes a screenshot (the override is for tests)
 SCREENSHOT = os.environ.get("SLATE_MCP_SCREENSHOT") or os.path.join(HERE, "screenshot.sh")
+# Slate Software's engine (the override is for tests): Flathub's catalog, what's installed and
+# what's waiting to update
+SOFTWARE = os.environ.get("SLATE_MCP_SOFTWARE") or os.path.join(HERE, "software.py")
 # Where the kernel describes batteries (the override is for tests)
 POWER_DIR = os.environ.get("SLATE_MCP_POWER_DIR") or "/sys/class/power_supply"
 
@@ -817,11 +820,60 @@ def apps():
     return out
 
 
+def software_says(*args, timeout=240):
+    """What Slate Software's engine (scripts/software.py) says, as JSON."""
+    try:
+        p = subprocess.run([SOFTWARE, *args], capture_output=True, text=True, timeout=timeout)
+        return json.loads(p.stdout)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        raise Sorry("Slate couldn't look at its apps from Flathub just now. Software (in the launcher) can.") from None
+
+
+def flathub_apps(query):
+    """Apps on Flathub matching a query, best first, with whether each is installed."""
+    words = norm(query).split()
+    if not words:
+        raise Sorry("Say what to look for on Flathub, e.g. query \"photo editor\".")
+    have = {a.get("id") for a in software_says("installed") if isinstance(a, dict)}
+    found = []
+    for a in software_says("catalogue"):
+        if not isinstance(a, dict) or not a.get("id"):
+            continue
+        name = norm(a.get("name", ""))
+        hay = " ".join([name, norm(a.get("summary", "")), norm(a.get("keywords", "")), norm(a["id"])])
+        if all(w in hay for w in words):
+            q = " ".join(words)
+            found.append((0 if name == q else 1 if name.startswith(q) else 2 if q in name else 3, a))
+    found.sort(key=lambda x: (x[0], x[1].get("name", "").lower()))
+    return {"flathub": [{"id": clean(a["id"], 120), "name": clean(a.get("name", ""), 80), "about": clean(a.get("summary", ""), 160),
+                         "installed": a["id"] in have} for _, a in found[:20]],
+            "more": max(0, len(found) - 20)}
+
+
+def waiting_updates():
+    u = software_says("updates")
+    apps = [{"id": clean(a.get("id", ""), 120), "name": clean(a.get("name", ""), 80), "version": clean(a.get("version", ""), 40)}
+            for a in u.get("apps", []) if isinstance(a, dict)]
+    system = [clean(x.get("name", ""), 60) for x in u.get("system", []) if isinstance(x, dict)]
+    out = {"apps": apps, "system": len(system), "systemPackages": system[:20]}
+    if u.get("systemProblem"):
+        out["systemNote"] = clean(u["systemProblem"], 200)
+    return out
+
+
 @tool("apps_list", "Installed apps",
       "The apps installed here, as the launcher shows them: each one's id and name. Give a query to find "
-      "one by name; without one, the first 50." + OTHERS,
-      {"query": {"type": "string", "description": "Part of an app's name, e.g. firefox"}})
-def apps_list(query=""):
+      "one by name; without one, the first 50. With flathub, apps on Flathub to install instead (query "
+      "required), each with whether it's installed. With updates, what's waiting to update: apps, and the "
+      "system's packages." + OTHERS,
+      {"query": {"type": "string", "description": "Part of an app's name, e.g. firefox"},
+       "flathub": {"type": "boolean", "description": "Search Flathub (apps to install) rather than what's installed"},
+       "updates": {"type": "boolean", "description": "What's waiting to update"}})
+def apps_list(query="", flathub=False, updates=False):
+    if updates:
+        return waiting_updates()
+    if flathub:
+        return flathub_apps(query)
     q = norm(query)
     out = []
     for app_id, v in apps().items():
@@ -1799,6 +1851,58 @@ def waste_basket_empty():
         raise Sorry("Slate couldn't empty the waste basket: %d %s still in it. The person can empty it from their "
                     "file manager." % (left, "thing is" if left == 1 else "things are"))
     return {"emptied": n}
+
+
+SOFTWARE_ACTIONS = {"install": "install", "remove": "remove", "update_apps": "update-apps", "update_system": "update-system"}
+
+
+@tool("software", "Install, remove or update apps",
+      "Install an app from Flathub or remove one (id from apps_list, with flathub for apps to install), "
+      "update apps (one by id, or all), or update the system. For everyone on this computer; it may ask for "
+      "an administrator's password. It starts the job in Slate's Software, which shows its progress." + ASKS,
+      {"action": {"type": "string", "enum": list(SOFTWARE_ACTIONS)},
+       "id": {"type": "string", "description": "The app's id, e.g. org.mozilla.firefox (install, remove; update_apps for one)"}},
+      required=("action",), tier="ask")
+def software(action, id=""):
+    if action not in SOFTWARE_ACTIONS:
+        raise Sorry("action is one of: " + ", ".join(SOFTWARE_ACTIONS))
+    app_id = (id or "").strip()
+    if app_id and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,254}", app_id):
+        raise Sorry("That isn't an app's id: they look like org.mozilla.firefox.")
+    name = app_id
+    if action in ("install", "remove"):
+        if not app_id:
+            raise Sorry("Say which app, by its id (apps_list finds it).")
+        have = {a.get("id"): a for a in software_says("installed") if isinstance(a, dict)}
+        if action == "install":
+            if app_id in have:
+                return {"note": "%s is already installed; nothing changed." % clean(have[app_id].get("name") or app_id, 80)}
+            hit = next((a for a in software_says("catalogue") if isinstance(a, dict) and a.get("id") == app_id), None)
+            if not hit:
+                raise Sorry("There's no app with that id on Flathub (apps_list with flathub finds them).")
+            name = clean(hit.get("name") or app_id, 80)
+        else:
+            if app_id not in have:
+                raise Sorry("That app isn't installed (apps_list lists what is).")
+            name = clean(have[app_id].get("name") or app_id, 80)
+    if action == "install":
+        doing("Install " + name)
+        ask("Install %s?" % name, "%s is asking to install %s from Flathub, for everyone on this computer. It may ask for "
+            "an administrator's password." % (asker(), name), "Install")
+    elif action == "remove":
+        doing("Remove " + name)
+        ask("Remove %s?" % name, "%s is asking to remove %s for everyone on this computer. Your own files from it stay "
+            "where they are, and it can be installed again any time." % (asker(), name), "Remove", danger=True)
+    elif action == "update_apps":
+        doing("Update " + (name if app_id else "your apps"))
+        ask("Update %s?" % (name if app_id else "your apps"), "%s is asking to update %s. Your apps and windows stay "
+            "open while they update." % (asker(), name if app_id else "your apps from Flathub"), "Update")
+    else:
+        doing("Update the system")
+        ask("Update the system?", "%s is asking to update this computer's system. It asks for an administrator's "
+            "password, and you may need to restart afterwards." % asker(), "Update")
+    ipc("software", "act", SOFTWARE_ACTIONS[action], app_id if action != "update_system" else "")
+    return {"started": action, "id": app_id, "note": "Software (in the launcher) shows its progress."}
 
 
 # Pages whose defaults only the person puts back: the assistant's own, and the lock screen's

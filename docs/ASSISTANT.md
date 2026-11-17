@@ -201,7 +201,7 @@ Most other agents take a block like this in their settings (with the whole path 
 | `windows_list` | Open windows: app, title, workspace, floating, full screen, focused |
 | `workspaces_list` | Workspaces in use: name, window mode, how many windows, which screen |
 | `spaces_list` | Your saved Spaces: name, how many workspaces, the apps in each |
-| `apps_list` | Installed apps, by name |
+| `apps_list` | Installed apps, by name; with `flathub`, apps on Flathub to install (with whether each is installed); with `updates`, what's waiting to update (apps, and the system's packages), through Software's engine |
 | `wallpapers_list` | The names of the pictures in your wallpaper folder and Slate's own |
 | `media_info` | What's playing: the app, title and artist |
 | `notifications_list` | Your recent notifications. Only offered while Notifications is on in Settings → Assistant |
@@ -236,13 +236,15 @@ and no setting turns the question off.
 | `window_close` | "Close Firefox?" |
 | `space_delete` | "Delete “Work”?" |
 | `wifi` (off, disconnect) | "Turn Wi-Fi off?" or "Disconnect from “Home”?": your assistant may lose its connection too |
+| `software` | "Install Firefox?" (for everyone on the computer), "Remove Firefox?" (red), "Update your apps?" or "Update the system?"; Slate then starts it in Software, which shows its progress, as its own buttons do |
 | `waste_basket_empty` | "Empty the waste basket?", in the dock's own words (with how many things are in it); Slate empties it as the dock's Empty Waste Basket does |
 | `settings_restore_defaults` | "Restore Dock defaults?": every setting on one Settings page back to how Slate starts out, as the page's Restore defaults does. Not for Assistant or Security: those are yours to restore |
 | `session` | "Shut down?", "Restart?", "Log out?" or "Sleep?" |
 
 There is no tool that runs a command, opens a file or a web address, types or clicks for
-you, reads the clipboard, answers a password prompt, unlocks the screen, or installs or
-updates anything.
+you, reads the clipboard, answers a password prompt or unlocks the screen. Installing and
+updating go only through `software`, which always asks, and only from Flathub and your
+distro's own updates.
 
 ## What Slate does to keep an assistant in bounds
 

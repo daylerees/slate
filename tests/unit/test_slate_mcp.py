@@ -114,7 +114,7 @@ CHANGES = ["settings_set", "settings_show", "look_apply", "panel_open", "bar_arr
            "window_state", "workspace_go", "workspace_mode", "workspace_rename", "space_restore", "space_save",
            "wallpaper_set", "wallpaper_next", "volume_set", "brightness_set", "media_control", "do_not_disturb",
            "wifi", "bluetooth", "dock_pin", "screenshot", "lock_screen", "screensaver_start"]
-ASKS = ["window_close", "space_delete", "waste_basket_empty", "settings_restore_defaults", "session"]
+ASKS = ["window_close", "space_delete", "waste_basket_empty", "software", "settings_restore_defaults", "session"]
 # What Slate may be asked while only looking
 READS = (["config", "get"], ["assistant", "status"], ["notifications", "dndGet"], ["notifications", "list"],
          ["osd", "volumeGet"], ["brightness", "list"], ["media", "info"], ["wifi", "list"], ["bluetooth", "list"], ["dock", "pinned"])
@@ -133,6 +133,16 @@ ARGS = {
     "settings_restore_defaults": {"page": "dock"},
     "wifi": {"action": "connect", "network": "Home"}, "bluetooth": {"action": "connect", "device": "Headphones"},
     "dock_pin": {"id": "com.example.Editor", "pinned": True},
+    "software": {"action": "install", "id": "org.example.Paint"},
+}
+# Slate Software's engine, as a stand-in (scripts/software.py's answers): two apps on Flathub,
+# one installed, and updates waiting for it and the system
+SOFTWARE_SAYS = {
+    "catalogue": [{"id": "org.example.Paint", "name": "Paint", "summary": "Draw pictures", "keywords": "photo draw"},
+                  {"id": "com.example.Chat", "name": "Chat", "summary": "Talk to people", "keywords": ""}],
+    "installed": [{"id": "com.example.Chat", "name": "Chat", "version": "1.0", "installation": "system"}],
+    "updates": {"apps": [{"id": "com.example.Chat", "name": "Chat", "version": "1.1"}],
+                "system": [{"name": "linux", "from": "6.1", "to": "6.2"}], "systemTool": "checkupdates", "systemProblem": ""},
 }
 # Slate's radios, as Radios.qml lists them: Wi-Fi on, at Home, with a saved network and a
 # new one in range (the new one is never listed); Bluetooth on, with paired headphones
@@ -163,6 +173,8 @@ class Base(Case):
         self.s.env["XDG_DATA_DIRS"] = os.path.join(self.h.dir, "no-system-data")
         self.s.env["SLATE_MCP_POWER_DIR"] = os.path.join(self.h.dir, "power")
         self.s.env["SLATE_MCP_SCREENSHOT"] = os.path.join(self.s.dir, "screenshot-taker")
+        self.s.env["SLATE_MCP_SOFTWARE"] = os.path.join(self.s.dir, "software-engine")
+        self.s.add("software-engine", by_args={k: json.dumps(v) + "\n" for k, v in SOFTWARE_SAYS.items()})
         self.s.env["HYPRLAND_INSTANCE_SIGNATURE"] = "test"
         self.s.add("screenshot-taker")
         self.s.add("brightnessctl", stdout="intel_backlight,backlight,300,62%,480\n")
@@ -559,6 +571,17 @@ class Tools(Base):
         self.assertEqual(self.tool("apps_list", {"query": "code"})[0]["apps"][0]["name"], "Editor", "found by a keyword")
         self.assertEqual(self.tool("apps_list", {"query": "zzz"})[0]["apps"], [])
 
+    def test_apps_on_flathub_and_updates(self):
+        """apps_list looks at Flathub (with what's installed) and what's waiting to update,
+        through Software's engine; it never installs anything."""
+        got = self.tool("apps_list", {"flathub": True, "query": "photo"})[0]
+        self.assertEqual(got["flathub"], [{"id": "org.example.Paint", "name": "Paint", "about": "Draw pictures", "installed": False}])
+        self.assertTrue(self.tool("apps_list", {"flathub": True, "query": "chat"})[0]["flathub"][0]["installed"])
+        self.assertTrue(self.tool("apps_list", {"flathub": True})[1], "no query: says what to look for")
+        got = self.tool("apps_list", {"updates": True})[0]
+        self.assertEqual(got, {"apps": [{"id": "com.example.Chat", "name": "Chat", "version": "1.1"}], "system": 1, "systemPackages": ["linux"]})
+        self.assertFalse([c for c in self.s.calls("software-engine") if c and c[0] not in ("catalogue", "installed", "updates")])
+
     def test_wallpapers(self):
         pics = self.h("Pictures")
         for n in ("notes.txt", ".hidden.png", "Hills.PNG"):
@@ -729,6 +752,29 @@ class Gate(Base):
         self.assertEqual(self.dispatched(), ["function() hl.dispatch(hl.dsp.window.close({ window = [=[address:0xa1]=] })) end"])
         self.assertEqual([(a["tool"], a["tier"], a["outcome"], a["who"]) for a in self.activity()],
                          [("window_close", "ask", "done", "TestAgent")])
+
+    def test_software_asks_then_starts_it_in_software(self):
+        """software: Slate asks in its own words, then starts the job in Software (which shows
+        its progress); nothing's started for what isn't on Flathub, isn't installed, or isn't an id."""
+        got, err = self.tool("software", {"action": "install", "id": "org.example.Paint"})
+        self.assertFalse(err, got)
+        q, = self.asked()
+        self.assertEqual((q["title"], q["button"]), ("Install Paint?", "Install"))
+        self.assertIn("for everyone on this computer", q["body"])
+        acted = [c for c in self.qs_calls() if c[:2] not in READS]
+        self.assertEqual(acted[-1], ["software", "act", "install", "org.example.Paint"])
+        got, err = self.tool("software", {"action": "remove", "id": "com.example.Chat"})
+        self.assertFalse(err, got)
+        self.assertTrue(self.asked()[-1]["danger"], "removing isn't asked as a red question")
+        for args in ({"action": "install", "id": "org.example.Nothing"}, {"action": "remove", "id": "org.example.Paint"},
+                     {"action": "install", "id": "org.example.Paint; rm -rf ~"}, {"action": "install"}):
+            with self.subTest(args):
+                before = len([c for c in self.qs_calls() if c[:2] not in READS])
+                got, err = self.tool("software", args)
+                self.assertTrue(err, got)
+                self.assertEqual(len([c for c in self.qs_calls() if c[:2] not in READS]), before, "started anyway")
+        self.assertEqual(self.tool("software", {"action": "install", "id": "com.example.Chat"})[0],
+                         {"note": "Chat is already installed; nothing changed."})
 
     def test_a_no(self):
         """No: nothing happens, the model is told so, and the same tool isn't asked about again."""

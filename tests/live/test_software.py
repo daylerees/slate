@@ -236,3 +236,15 @@ class Software(LiveCase):
         self.ipc("quicklook", "close")
         self.ipc("test", "softwareShot", "0")
         self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["name"] == "The main window", "the first, with its caption")
+
+    def test_the_assistants_way_in(self):
+        """slate ipc call software act (what the assistant's software tool calls, after Slate
+        has asked): the job starts in Software, as its buttons start it; anything else is ignored."""
+        self.ipc("software", "act", "install", "org.mozilla.firefox")
+        self.wait(lambda st: st["software"]["busy"] == "install org.mozilla.firefox", "the install started")
+        self.wait(lambda st: st["software"]["busy"] == "", "and finished")
+        for what, app in (("rm", "everything"), ("install", "bad id;x"), ("remove", "")):
+            self.ipc("software", "act", what, app)
+        self.s.settle(0.8)
+        st = self.s.state()["software"]
+        self.assertEqual((st["busy"], st["queued"]), ("", 0), "something not on the list was started")
