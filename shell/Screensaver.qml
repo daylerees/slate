@@ -136,6 +136,7 @@ Scope {
     component ClockFace: Column {
         spacing: 4
         SystemClock { id: clock; precision: SystemClock.Minutes }
+        Connections { target: Config; function onWoke() { clock.enabled = false; clock.enabled = true; } }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Qt.formatTime(Config.clockDate(clock.date), Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm")

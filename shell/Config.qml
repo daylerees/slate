@@ -1009,6 +1009,12 @@ Singleton {
     // fires a moment after Slate starts, once its settings have loaded (the wallpaper can
     // change, startup apps open).
     signal atLogin()
+    // Back from sleep, or unlocked (LockScreen.qml): clocks that last read the time again.
+    // Their minute tick is timed on a clock that stops while the computer sleeps, so after waking
+    // the menu bar's showed the old time for up to a minute
+    signal woke()
+    property int wakes: 0                       // (the tests: how many times)
+    onWoke: wakes++
     readonly property string loginMarker: root.runtimeDir + "/slate-started-"
         + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "session")
     Process {

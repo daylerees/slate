@@ -343,6 +343,7 @@ Scope {
     }
     function unlock() {
         if (!locked || unlocking) return;
+        Config.woke();                        // (after sleep it's this, more often than not)
         fadeIn.stop();
         if (Config.animate) {
             unlocking = true;
@@ -383,6 +384,8 @@ Scope {
             onRead: line => {
                 if (line.includes("PrepareForSleep (true")) {
                     if (Config.s.lockBeforeSleep) { root.sleepPending = true; root.lockNow(false); sleepFallback.restart(); root.releaseIfSecure(); }
+                } else if (line.includes("PrepareForSleep (false")) {
+                    Config.woke();
                 } else if (line.includes("org.freedesktop.login1.Session.Lock ")) {
                     root.lockNow();
                 }

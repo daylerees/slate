@@ -79,8 +79,12 @@ class Lock(LiveCase):
         st = self.answer("not the password")
         self.assertTrue(st["locked"], "a wrong password unlocked the screen")
         self.assertEqual(st["message"], "That password didn't match · 2 tries left")
+        wakes = self.s.state()["wakes"]
         self.ipc("lock", "submit", PASSWORD)
-        self.wait(lambda st: not st["lock"]["locked"], "the right password to unlock", timeout=15)
+        st = self.wait(lambda st: not st["lock"]["locked"], "the right password to unlock", timeout=15)
+        # Unlocked: the clocks that last read the time again (after sleep, the menu bar's showed
+        # the old time for up to a minute: its tick is timed on a clock that stops in sleep)
+        self.assertGreater(st["wakes"], wakes, "unlocking didn't tell the clocks")
 
     def test_a_second_question_is_asked_and_answered(self):
         """A login that asks again after the password (a one-time code): the lock shows the

@@ -1771,6 +1771,8 @@ PanelWindow {
                 wanted: Config.s.barShowClock
                 length: clock.implicitWidth + 20
                 SystemClock { id: sysClock; precision: Config.s.barClockSeconds ? SystemClock.Seconds : SystemClock.Minutes }
+                // (woken or unlocked: the time read again, not up to a minute later: Config.woke)
+                Connections { target: Config; function onWoke() { sysClock.enabled = false; sysClock.enabled = true; } }
                 Text {
                     id: clock
                     anchors.centerIn: parent
