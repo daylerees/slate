@@ -14,7 +14,10 @@ Scope {
     id: root
     readonly property bool on: Config.s.screenReader
     property int applied: 0                 // (the tests: how many times it acted)
+    // (looked for at startup, and again each time it's switched, so installing Orca while Slate
+    // runs is noticed without a restart)
     Process {
+        id: look
         running: true
         command: ["sh", "-c", "command -v orca"]
         onExited: code => Config.orcaAvailable = code === 0
@@ -23,6 +26,7 @@ Scope {
     Component.onCompleted: if (on) apply()
     function apply() {
         applied++;
+        look.running = false; look.running = true;
         if (Config.testMode || Config.isLoginScreen) return;
         Quickshell.execDetached(["gsettings", "set", "org.gnome.desktop.a11y.applications", "screen-reader-enabled", on ? "true" : "false"]);
         if (on) Quickshell.execDetached(["sh", "-c", "command -v orca >/dev/null && { pgrep -x orca >/dev/null || exec setsid -f orca; }"]);
