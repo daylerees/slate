@@ -199,8 +199,12 @@ PanelWindow {
     // goes (the drag's whole range is 36 px)
     readonly property real thickness: restThickness
     anchors { top: edge !== "bottom"; bottom: edge !== "top"; left: edge !== "right"; right: edge !== "left" }
-    implicitHeight: vertical ? 0 : thickness
-    implicitWidth: vertical ? thickness : 0
+    // (the stretched way: the screen's own length, never 0. A 0 means "stretch between the
+    // anchors", and moving to another edge changes the anchors and the size one after the
+    // other: Hyprland saw a 0 width on a window no longer anchored left and right, and dropped
+    // Slate with a protocol error)
+    implicitHeight: vertical ? (screen ? screen.height : 1) : thickness
+    implicitWidth: vertical ? thickness : (screen ? screen.width : 1)
     readonly property real stripLength: vertical ? height : width
     // The room the dock's things have to fit in: the edge's length, or less in tests
     // (test dockRoom), so a few windows are enough to see what happens when it's full

@@ -96,8 +96,12 @@ PanelWindow {
         left: side === "left" ? bar.barHeight : 0
         right: side === "right" ? bar.barHeight : 0
     }
-    implicitHeight: vert ? 0 : gap + box.height + room
-    implicitWidth: vert ? gap + maxWidth + room : 0
+    // (the stretched way: the screen's own length, never 0. A 0 means "stretch between the
+    // anchors", and moving to another edge changes the anchors and the size one after the
+    // other: Hyprland saw a 0 width on a window no longer anchored left and right, and dropped
+    // Slate with a protocol error)
+    implicitHeight: vert ? (screen ? screen.height : 1) : gap + box.height + room
+    implicitWidth: vert ? gap + maxWidth + room : (screen ? screen.width : 1)
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     mask: Region {}                                   // never takes the pointer

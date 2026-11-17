@@ -334,8 +334,12 @@ PanelWindow {
     // Text along a side bar is turned to read top to bottom on the right, bottom to top on the left
     readonly property real textRotation: vert ? (atRight ? 90 : -90) : 0
     anchors { top: side !== "bottom"; bottom: side !== "top"; left: side !== "right"; right: side !== "left" }
-    implicitHeight: vert ? 0 : thickness + shadowPad
-    implicitWidth: vert ? thickness + shadowPad : 0
+    // (the stretched way: the screen's own length, never 0. A 0 means "stretch between the
+    // anchors", and moving to another edge changes the anchors and the size one after the
+    // other: Hyprland saw a 0 width on a window no longer anchored left and right, and dropped
+    // Slate with a protocol error)
+    implicitHeight: vert ? (screen ? screen.height : 1) : thickness + shadowPad
+    implicitWidth: vert ? thickness + shadowPad : (screen ? screen.width : 1)
     color: "transparent"
     WlrLayershell.namespace: "slate-bar"
     // (above the dimming laid over the windows while the bar's being arranged: BarEditor.qml;

@@ -1,5 +1,6 @@
 """Things that must agree across files: settings keys, Settings pages, lists kept in two
 places, the site's links, shaders built from their sources."""
+import glob
 import hashlib
 import html.parser
 import json
@@ -1346,3 +1347,23 @@ class NothingOfYoursRunsAsRoot(Case):
         rm = block.index('sudo rm -rf "$HELPERS" "$HELPERS-private-camera" /etc/polkit-1/rules.d/49-slate-private-camera.rules')
         self.assertLess(ask, rm)
         self.assertIn("HELPERS=/usr/local/libexec/slate ", slate.read("install.sh"))
+
+
+class WindowsNeverAskForNothing(Case):
+    """A layer window's size of 0 means "stretch between the anchors". The menu bar, the dock and
+    the bar's label used 0 for the stretched way and changed their anchors and size one after
+    the other when moved to another edge: once, Hyprland saw a 0 width on a window no longer
+    anchored left and right ("x == 0 but anchor doesn't have left and right") and dropped Slate.
+    A window's own size is never a plain 0: the stretched way is the screen's length."""
+
+    def test_no_window_sizes_itself_to_nothing(self):
+        bad = []
+        for path in sorted(glob.glob(slate.path("shell", "**", "*.qml"), recursive=True)):
+            src = open(path).read()
+            body = [l for l in src.splitlines() if l.strip() and not l.lstrip().startswith(("//", "import"))]
+            if not body or not body[0].startswith("PanelWindow {"):
+                continue
+            for n, line in enumerate(src.splitlines(), 1):
+                if re.match(r"    implicit(Width|Height):", line) and re.search(r"\? 0 :|: 0\s*(//.*)?$", line):
+                    bad.append(f"{os.path.relpath(path, slate.path('shell'))}:{n}: {line.strip()}")
+        self.assertEqual(bad, [], "a window that can ask for a size of 0")
