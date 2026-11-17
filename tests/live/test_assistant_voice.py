@@ -88,7 +88,8 @@ class NovaVoice(LiveCase):
         binds = [b for b in self.s.hyprctl("binds", json_out=True) if (b.get("key") or "").upper() == "K"]
         press = [b for b in binds if not b["release"]]
         let_go = [b for b in binds if b["release"]]
-        self.assertEqual([(b["modmask"], b["description"]) for b in press], [(64, "Slate: Ask Nova (hold to talk)")])
+        # (Super alone: Super+Alt+K is the on-screen keyboard's, a shortcut of its own)
+        self.assertEqual([(b["modmask"], b["description"]) for b in press if b["modmask"] == 64], [(64, "Slate: Ask Nova (hold to talk)")])
         self.assertEqual([(b["modmask"], b["non_consuming"], b["has_description"]) for b in let_go], [(0, True, False)])
 
     def test_hold_the_key(self):
