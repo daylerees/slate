@@ -114,6 +114,42 @@ PanelWindow {
     // straight away, the slide had already run part-way when it first appeared)
     property bool revealed: false
     property bool revealWaiting: false
+    // The panel's first (or last) control the keyboard can stop on, given the keyboard: for a
+    // panel opened from the bar by keyboard (Bar.qml: popouts.fromKeys), as it opens
+    property bool fromKeys: false
+    // (the tests: the words on the control that has the keyboard in the panel, "" for none)
+    readonly property string keyFocusText: { const f = panelKeys.Window.activeFocusItem; return f && f !== panelKeys && f !== content ? keyStops().indexOf(f) + ":" + (Config.textOf(f) || "?") : ""; }
+    property var keyFocusPath: []
+    // (the window given the keyboard, opened from the keyboard, nothing chosen yet: the first)
+    readonly property bool windowActive: contentItem.Window.active
+    onWindowActiveChanged: if (windowActive && fromKeys && current !== "" && keyStops().indexOf(panelKeys.Window.activeFocusItem) < 0) focusFirst(true)
+    onKeyFocusTextChanged: keyFocusPath = keyFocusPath.concat([keyFocusText]).slice(-12)
+    // The panel's controls the keyboard stops on, in the order they're laid out
+    function keyStops() {
+        const stops = [];
+        const walk = it => {
+            for (const c of it.children) {
+                if (!c.visible || !c.enabled) continue;
+                if (c.activeFocusOnTab) stops.push(c);
+                walk(c);
+            }
+        };
+        if (content.item) walk(content.item);
+        return stops;
+    }
+    function keyStep(on) {
+        const stops = keyStops(), i = stops.indexOf(panelKeys.Window.activeFocusItem);
+        if (i < 0) { focusFirst(on); return; }
+        const next = stops[Math.max(0, Math.min(stops.length - 1, i + (on ? 1 : -1)))];
+        if (next) next.forceActiveFocus(on ? Qt.TabFocusReason : Qt.BacktabFocusReason);
+    }
+    function focusFirst(first) {
+        const stops = keyStops();
+        const pick = first ? stops[0] : stops[stops.length - 1];
+        if (!pick) return false;
+        pick.forceActiveFocus(first ? Qt.TabFocusReason : Qt.BacktabFocusReason);
+        return true;
+    }
     function startOpening() {
         if (pending === "") return;
         const name = pending;
@@ -126,6 +162,7 @@ PanelWindow {
         if (!revealWaiting) return;
         revealWaiting = false;
         if (current !== "") revealed = true;
+        if (current !== "" && fromKeys && keyStops().indexOf(panelKeys.Window.activeFocusItem) < 0) Qt.callLater(() => focusFirst(true));
     }
     function close() { current = ""; pending = ""; revealed = false; revealWaiting = false; }
     // Going to another workspace (a shortcut, the wheel, a dot on the bar) closes it, as opening
@@ -357,13 +394,27 @@ PanelWindow {
             opacity: pop.active ? Math.max(0.01, pop.fade) : 0
 
             FocusScope {
+                id: panelKeys
                 anchors.fill: parent
                 anchors.margins: pop.pad
                 focus: pop.shown
                 Keys.onEscapePressed: pop.close()
+                // Down / Tab and Up / Shift+Tab move between the panel's controls in the order
+                // they're laid out (keyStops), from wherever the keyboard is: none chosen yet
+                // goes to the first or the last. Qt's own Tab order follows how the panel was
+                // built, not how it looks: it skipped controls and wandered onto the panel itself
+                Keys.onPressed: e => {
+                    const on = e.key === Qt.Key_Down || e.key === Qt.Key_Tab;
+                    const back = e.key === Qt.Key_Up || e.key === Qt.Key_Backtab;
+                    if (!on && !back) return;
+                    e.accepted = true;
+                    pop.keyStep(on);
+                }
                 Loader {
                     id: content
                     focus: true
+                    // (opened from the keyboard: its first control chosen once it's made)
+                    onLoaded: if (pop.fromKeys) Qt.callLater(() => pop.focusFirst(true))
                     // Made fresh for each opening (in the prep stage), and gone when closed so
                     // nothing in it (meters, clocks…) makes the idle window redraw
                     active: pop.active
@@ -463,6 +514,7 @@ PanelWindow {
     IdleInhibitor { window: pop.bar; enabled: Config.caffeine }
     readonly property bool nightLight: Config.s.nightLight   // NightLight.qml applies it
     onCurrentChanged: {
+        if (current === "") fromKeys = false;       // (a panel opened from the keyboard: done)
         if (current === "control") uptimeFile.reload();
         if (current === "notifications" && notifs) notifs.markRead();
     }

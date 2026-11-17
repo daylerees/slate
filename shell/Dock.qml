@@ -1667,12 +1667,24 @@ PanelWindow {
         return ({ launcher: "Apps", more: "More", downloads: "Downloads", trash: "Waste Basket", media: "Now playing" })[sl.kind] || "";
     }
     onKeyIndexChanged: if (keyIndex >= 0) keyPath = keyPath.concat([keyIndex]).slice(-20)
-    function startKeys() { keyPath = []; keyIndex = -1; keyStep(1); keyNav = keyIndex >= 0; }
+    // (if no key reaches it at all, the keyboard goes back to the apps by itself: see Bar's)
+    property bool keysHeard: false
+    Timer { id: keysNeverCame; interval: 10000; onTriggered: if (win.keyNav && !win.keysHeard) win.keyNav = false }
+    function startKeys() {
+        keysHeard = false;
+        keysNeverCame.restart();
+        keyPath = []; keyIndex = -1; keyStep(1); keyNav = keyIndex >= 0;
+        if (keyNav) Qt.callLater(() => keyFocus.forceActiveFocus());
+    }
+    // (the window given the keyboard: the holder has it, whatever Qt's focus did meanwhile)
+    readonly property bool windowActive: contentItem.Window.active
+    onWindowActiveChanged: if (windowActive && keyNav) keyFocus.forceActiveFocus()
     function keyStep(by) {
         for (let i = keyIndex + by; i >= 0 && i < count; i += by)
             if (!isDivider(i)) { keyIndex = i; return; }
     }
     function dockKey(e) {
+        keysHeard = true;
         const back = e.key === Qt.Key_Left || e.key === Qt.Key_Up || e.key === Qt.Key_Backtab;
         const on = e.key === Qt.Key_Right || e.key === Qt.Key_Down || e.key === Qt.Key_Tab;
         if (back || on) keyStep(on ? 1 : -1);
@@ -1681,7 +1693,7 @@ PanelWindow {
         else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { const i = keyIndex; keyNav = false; clickItem(i, false); }
         else if (e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier))) { const i = keyIndex; keyNav = false; clickItem(i, true); }
         else if (e.key === Qt.Key_Escape) keyNav = false;
-        else return;
+        // (every key is taken while the dock has the keyboard: none fall through to nothing)
         e.accepted = true;
     }
     function clickItem(i, right) {
@@ -1875,12 +1887,14 @@ PanelWindow {
             Rectangle {
                 z: 20
                 visible: win.keyNav && win.keyIndex >= 0
+                // (round the icon's tile, following its shape: Settings → Appearance → Icon shape)
+                readonly property real tile: visible ? win.base * win.scaleAt(win.keyIndex) : 0
                 x: row.x + (visible ? win.cellX(win.keyIndex) : 0) - 3
                 y: row.y + row.height - height + 3
                 width: (visible ? win.base * win.slotWidth(win.keyIndex) * win.scaleAt(win.keyIndex) : 0) + 6
-                height: (visible ? win.base * win.scaleAt(win.keyIndex) : 0) + 6
+                height: tile + 6
                 color: "transparent"
-                radius: Config.corner(14)
+                radius: Config.iconCornerFor(tile) + 3
                 border.width: 2
                 border.color: Config.accent
             }

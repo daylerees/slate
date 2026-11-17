@@ -259,6 +259,7 @@ PanelWindow {
     }
     function openPopout(name, item) {
         if (!popouts) return;
+        if (keyNav) stopKeys();                     // (a panel opened: the bar's selection ends)
         if (item.overflowed) item = moreBtn;        // (asked for from the More panel: it opens from More's place)
         const p = item.mapToItem(content, item.width / 2, item.height / 2);   // from the screen edge
         // (a button that isn't showing has no place to go by: the panel opens as it always did)
@@ -474,14 +475,17 @@ PanelWindow {
     }
     function focusedBar() { return Config.barFor(Config.focusedScreen) || bar; }
 
-    // ---- The keyboard (Accessibility; Super+Alt+B) ----
-    // The bar takes the keyboard and its first thing is focused; the arrow keys and Tab move
-    // along it (Qt's tab chain: each Segment's activeFocusOnTab), Enter or Space presses. A panel
-    // opened from it takes the keyboard (Popouts), and the bar has it back when that closes.
+    // ---- The keyboard (Accessibility; Super+Alt+B, again to leave) ----
+    // The bar takes the keyboard and a ring goes round its first thing; the arrow keys and Tab
+    // move it along, Enter or Space presses, Escape leaves. One item holds the keyboard and
+    // takes every key (keyHolder), so Escape always works: the selection is a property, never
+    // Qt's focus on the thing itself (that went missing, and the bar kept the keyboard with
+    // nothing to take a key). Opening a panel from it ends it: the panel has the keyboard.
     property bool keyNav: false
-    property Item keyReturn: null           // what opened the panel, to go back to
-    property string keyAt: ""               // (the tests: the name of the thing focused)
-    property var keyPath: []                // (the tests: the names focused, in turn)
+    property Item keySeg: null              // the thing the ring is round
+    property string keyAt: ""               // (the tests: the name of the thing selected)
+    property var keyPath: []                // (the tests: the names selected, in turn)
+    onKeySegChanged: if (keySeg) { keyAt = keySeg.name; keyPath = keyPath.concat([keySeg.name]).slice(-20); }
     // (the tests: the Screenshot button, which is the recording's indicator while recording)
     readonly property var shotState: ({ shown: shotSeg.wanted && shotSeg.visible, label: shotSeg.label, recording: shotSeg.iconCode === 0xF692 })
     WlrLayershell.keyboardFocus: keyNav ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
@@ -491,7 +495,7 @@ PanelWindow {
         const walk = it => {
             for (const c of it.children) {
                 if (!c.visible) continue;
-                if (c.activeFocusOnTab && c.clickable !== undefined && c.name !== undefined) out.push(c);
+                if (c.keyStop === true) out.push(c);
                 else walk(c);
             }
         };
@@ -499,58 +503,66 @@ PanelWindow {
         const at = c => { const p = c.mapToItem(bar.contentItem, 0, 0); return bar.vert ? p.y : p.x; };
         return out.sort((a, b) => at(a) - at(b));
     }
-    function startKeys(at) {
-        if (!at) keyPath = [];
+    // (if no key reaches it at all, the keyboard goes back to the apps by itself: never left
+    // holding the keyboard with nothing coming in. Once keys arrive, there's no time limit)
+    property bool keysHeard: false
+    Timer { id: keysNeverCame; interval: 10000; onTriggered: if (bar.keyNav && !bar.keysHeard) bar.stopKeys() }
+    function startKeys() {
+        keyPath = [];
+        keysHeard = false;
+        keysNeverCame.restart();
         keyNav = true;
-        Qt.callLater(() => {
-            const first = at && at.visible ? at : keyStops()[0];
-            if (first) first.forceActiveFocus(Qt.TabFocusReason);
-        });
+        keySeg = null;
+        Qt.callLater(() => { keySeg = keyStops()[0] || null; keyHolder.forceActiveFocus(); });
     }
-    function stopKeys() { keyNav = false; keyReturn = null; }
-    function keysBack() {
-        if (!keyReturn || (popouts && popouts.engaged)) return;
-        const back = keyReturn;
-        keyReturn = null;
-        startKeys(back);
-    }
-    function segKey(seg, e) {
-        const back = e.key === Qt.Key_Left || e.key === Qt.Key_Up || e.key === Qt.Key_Backtab;
-        const on = e.key === Qt.Key_Right || e.key === Qt.Key_Down || e.key === Qt.Key_Tab;
-        if (back || on) {
-            const stops = keyStops(), i = stops.indexOf(seg);
-            const next = stops[Math.max(0, Math.min(stops.length - 1, i + (on ? 1 : -1)))];
-            if (next) next.forceActiveFocus(on ? Qt.TabFocusReason : Qt.BacktabFocusReason);
-        } else if (e.key === Qt.Key_Home || e.key === Qt.Key_End) {
-            const stops = keyStops();
-            const next = stops[e.key === Qt.Key_Home ? 0 : stops.length - 1];
-            if (next) next.forceActiveFocus(Qt.TabFocusReason);
-        } else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) {
-            keyReturn = seg;
-            keyNav = false;
-            seg.clicked();
-            // (nothing opened from it, a switch say: keep the keyboard)
-            Qt.callLater(() => { if (keyReturn === seg && !(popouts && popouts.engaged)) startKeys(seg); });
-        } else if (e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier))) {
-            keyReturn = null;
-            keyNav = false;
-            seg.rightClicked();
-        } else if (e.key === Qt.Key_Escape) {
-            stopKeys();
-        } else return;
-        e.accepted = true;
-    }
-    Connections {
-        target: bar.popouts
-        // (checked once things settle: a panel opening is "pending", then "current", and in
-        // between it's briefly neither)
-        function onEngagedChanged() {
-            if (!bar.popouts.engaged && bar.keyReturn) keysBackSoon.restart();
+    function stopKeys() { keyNav = false; keySeg = null; }
+    function toggleKeys() { if (keyNav) stopKeys(); else startKeys(); }
+    // (a switch or a menu: nothing took the keyboard, so the bar takes it back a moment after)
+    Timer {
+        id: keysAgain; interval: 150
+        onTriggered: {
+            if (bar.keySeg && !(bar.popouts && bar.popouts.engaged)) {
+                if (bar.popouts) bar.popouts.fromKeys = false;
+                bar.keyNav = true; keyHolder.forceActiveFocus();
+            } else bar.stopKeys();
         }
     }
-    // (a moment after the panel's window lets go of the keyboard, or Hyprland may not give it
-    // to the bar)
-    Timer { id: keysBackSoon; interval: 150; onTriggered: bar.keysBack() }
+    Item {
+        id: keyHolder
+        focus: bar.keyNav
+        // (a screen reader: what the ring is round)
+        Accessible.role: Accessible.Button
+        Accessible.name: bar.keyNav && bar.keySeg ? (bar.keySeg.tip !== "" ? bar.keySeg.tip : Config.textOf(bar.keySeg)) : ""
+        Accessible.onPressAction: if (bar.keySeg) bar.keySeg.clicked()
+        Keys.onPressed: e => {
+            bar.keysHeard = true;
+            const seg = bar.keySeg;
+            const back = e.key === Qt.Key_Left || e.key === Qt.Key_Up || e.key === Qt.Key_Backtab;
+            const on = e.key === Qt.Key_Right || e.key === Qt.Key_Down || e.key === Qt.Key_Tab;
+            const stops = bar.keyStops();
+            if (back || on) {
+                const i = stops.indexOf(seg);
+                bar.keySeg = stops[Math.max(0, Math.min(stops.length - 1, i < 0 ? 0 : i + (on ? 1 : -1)))] || null;
+            } else if (e.key === Qt.Key_Home || e.key === Qt.Key_End) {
+                bar.keySeg = stops[e.key === Qt.Key_Home ? 0 : stops.length - 1] || null;
+            } else if (seg && (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space)) {
+                bar.keyNav = false;             // (the keyboard to whatever it opens)
+                if (bar.popouts) bar.popouts.fromKeys = true;     // (its first control chosen as it opens)
+                seg.clicked();
+                keysAgain.restart();
+            } else if (seg && (e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier)))) {
+                bar.stopKeys();
+                seg.rightClicked();
+            } else if (e.key === Qt.Key_Escape) {
+                bar.stopKeys();
+            }
+            // (every key is taken while the bar has the keyboard: none fall through to nothing)
+            e.accepted = true;
+        }
+    }
+    // (the window given the keyboard: the holder has it, whatever Qt's focus did meanwhile)
+    readonly property bool windowActive: contentItem.Window.active
+    onWindowActiveChanged: if (windowActive && keyNav) keyHolder.forceActiveFocus()
     IpcHandler {
         target: "bar"
         enabled: bar.primary
@@ -1880,15 +1892,12 @@ PanelWindow {
         Accessible.name: tip !== "" ? tip : Config.textOf(seg)
         Accessible.onPressAction: if (clickable) clicked()
         // Keyboard (Super+Alt+B: bar.startKeys): each thing you can press is a stop for the arrow
-        // keys and Tab while the bar has the keyboard; Enter or Space presses it, the menu key
-        // (or Shift+F10) is its right-click, Escape gives the keyboard back
-        activeFocusOnTab: bar.keyNav && clickable && wanted && visible
-        Keys.onPressed: e => bar.segKey(seg, e)
-        onActiveFocusChanged: if (activeFocus && bar.keyNav) { bar.keyAt = seg.name; bar.keyPath = bar.keyPath.concat([seg.name]).slice(-20); }
+        // keys and Tab (keyStop); the ring is round the one selected (bar.keySeg)
+        readonly property bool keyStop: clickable && wanted && visible
         // (the focus ring: an accent outline round it, inside the container's edge)
         Rectangle {
             z: 5
-            visible: bar.keyNav && seg.activeFocus
+            visible: bar.keyNav && bar.keySeg === seg
             anchors { fill: parent; margins: bar.fillInset }
             color: "transparent"
             radius: Config.corner(6)

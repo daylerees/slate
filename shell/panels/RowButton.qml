@@ -13,14 +13,12 @@ Rectangle {
     Accessible.role: Accessible.Button
     Accessible.name: Config.textOf(rb)
     Accessible.onPressAction: clicked()
-    // (the keyboard: a stop for Tab and the arrow keys; Enter or Space presses; its ring)
+    // (the keyboard: a stop for Tab and the arrow keys, which the panel moves between:
+    // Popouts.keyStep; Enter or Space presses; its ring)
     activeFocusOnTab: visible && enabled
     Keys.onPressed: e => {
-        if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) clicked();
-        else if (e.key === Qt.Key_Down || e.key === Qt.Key_Up) {
-            const next = nextItemInFocusChain(e.key === Qt.Key_Down);
-            if (next) next.forceActiveFocus(Qt.TabFocusReason);
-        } else return;
+        if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+        clicked();
         e.accepted = true;
     }
     Rectangle {

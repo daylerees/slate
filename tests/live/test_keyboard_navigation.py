@@ -1,7 +1,7 @@
 """Accessibility → the menu bar and the dock by keyboard (Super+Alt+B, Super+Alt+D; slate ipc
 call keys bar|dock): the bar or the dock takes the keyboard, the arrow keys move along it, Enter
-presses what's focused (a panel opened from the bar has the keyboard; Escape closes it and the
-bar has it back) and Escape gives the keyboard back.
+presses what's selected (a panel opened from the bar has the keyboard, and the bar's selection
+ends), and Escape or the shortcut again gives the keyboard back.
 
 Keys are typed for real with wtype, each sequence in one run (in the background, watched as it
 goes): every wtype run is a new keyboard, and the old one going away takes the keyboard's focus
@@ -28,7 +28,7 @@ class KeyboardNavigation(LiveCase):
             return self.wait(cond, what, timeout=timeout)
         except AssertionError:
             st = self.s.state()
-            self.fail(f"{what}: keys {st['keys']}, panel {st['popout']!r}")
+            self.fail(f"{what}: keys {st['keys']}, panel {st['popout']!r}, panel keys {st.get('popoutKeyPath')}")
 
     def setUp(self):
         super().setUp()
@@ -38,22 +38,63 @@ class KeyboardNavigation(LiveCase):
 
     def test_the_bar_moves_along(self):
         self.ipc("keys", "bar")
-        first = self.wait(lambda st: st["keys"]["bar"] and st["keys"]["barFocus"] != "", "the bar's first thing focused")["keys"]["barFocus"]
-        self.type_keys("Right", "Right", "Left").wait(timeout=15)
-        path = self.wait(lambda st: len(st["keys"]["barPath"]) >= 4, "three moves")["keys"]["barPath"]
+        first = self.until(lambda st: st["keys"]["bar"] and st["keys"]["barFocus"] != "", "the first thing selected")["keys"]["barFocus"]
+        self.type_keys("Right", "Right", "Left", "Escape").wait(timeout=15)
+        path = self.until(lambda st: len(st["keys"]["barPath"]) >= 4, "three moves")["keys"]["barPath"]
         self.assertEqual(path[0], first)
         self.assertEqual(path[1], path[3], f"Left didn't go back: {path}")
         self.assertEqual(len(set(path[:3])), 3, f"Right didn't move along: {path}")
 
-    def test_enter_opens_its_panel_and_escape_comes_back(self):
+    def test_enter_opens_its_panel_and_the_selection_ends(self):
         self.ipc("keys", "bar")
-        first = self.wait(lambda st: st["keys"]["bar"] and st["keys"]["barFocus"] != "", "the bar's first thing focused")["keys"]["barFocus"]
+        first = self.until(lambda st: st["keys"]["bar"] and st["keys"]["barFocus"] != "", "the bar's first thing selected")["keys"]["barFocus"]
         self.assertEqual(first, "control", "the bar's first stop isn't the control center")
-        self.type_keys("Return", "Escape", "Escape", gap=1500)
+        self.type_keys("Return", "Escape", gap=1500)
         self.until(lambda st: st["popout"] == "control" and not st["keys"]["bar"], "Enter to open the control center")
-        st = self.until(lambda st: st["popout"] == "" and st["keys"]["bar"], "Escape closes it, back on the bar")
-        self.assertEqual(st["keys"]["barFocus"], "control", "not back on what opened it")
-        self.until(lambda st: not st["keys"]["bar"], "Escape gives the keyboard back")
+        self.until(lambda st: st["popout"] == "", "Escape closes it")
+        self.s.settle(0.5)
+        self.assertFalse(self.s.state()["keys"]["bar"], "the bar took the keyboard back after its panel closed")
+
+    def test_a_panel_opened_by_keyboard_has_its_first_control_chosen(self):
+        """Super+Alt+B, Enter on the control center: its first control has the keyboard, and Down
+        moves on, without Tab first (the arrow keys did nothing until then)."""
+        self.ipc("keys", "bar")
+        self.until(lambda st: st["keys"]["barFocus"] == "control", "the control center selected")
+        self.type_keys("Return", "Down", "Up", "Escape", gap=1200)
+        first = self.until(lambda st: st["popout"] == "control" and st["popoutKeyFocus"] != "", "its first control chosen as it opens")["popoutKeyFocus"]
+        self.until(lambda st: st["popoutKeyFocus"] not in ("", first), "Down to the next control")
+        self.until(lambda st: st["popoutKeyFocus"] == first, "Up back to the first")
+        self.until(lambda st: st["popout"] == "", "Escape closes it")
+
+    def test_no_keys_coming_lets_go(self):
+        """If no key reaches the bar or the dock at all, it doesn't keep the keyboard: after ten
+        seconds the apps have it back by themselves."""
+        for target in ("bar", "dock"):
+            with self.subTest(target):
+                self.ipc("keys", target)
+                self.until(lambda st: st["keys"][target], "the keyboard to the " + target)
+                self.s.settle(8)
+                self.assertTrue(self.s.state()["keys"][target], "let go too soon")
+                self.until(lambda st: not st["keys"][target], "let go with no keys coming", timeout=5)
+
+    def test_zz_keys_coming_keep_it(self):
+        # (last: it ends with its wtype keyboard gone while the bar holds the keyboard, and in the
+        # test session no later wtype keyboard reaches the bar after that; a real keyboard stays)
+        """Once keys arrive there's no time limit."""
+        self.ipc("keys", "bar")
+        self.until(lambda st: st["keys"]["bar"] and st["keys"]["barFocus"] != "", "the bar's first thing selected")
+        self.type_keys("Right").wait(timeout=15)
+        self.until(lambda st: len(st["keys"]["barPath"]) >= 2, "the key to arrive")
+        self.s.settle(11)
+        self.assertTrue(self.s.state()["keys"]["bar"], "let go while being used")
+
+    def test_the_shortcut_again_leaves(self):
+        for target in ("bar", "dock"):
+            with self.subTest(target):
+                self.ipc("keys", target)
+                self.until(lambda st: st["keys"][target], "the keyboard to the " + target)
+                self.ipc("keys", target)
+                self.until(lambda st: not st["keys"][target], "the shortcut again to leave")
 
     def test_the_dock(self):
         self.ipc("keys", "dock")

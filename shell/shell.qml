@@ -450,7 +450,7 @@ ShellRoot {
                 bars: Config.bars.map(b => ({ screen: b.screen ? b.screen.name : "", primary: b.primary, dimmed: b.dimmed,
                                               popoutHere: b.popoutHere, width: Math.round(b.width), height: Math.round(b.height),
                                               dots: b.dotsState, bell: b.bellText, shot: b.shotState })),
-                popout: popouts.current,
+                popout: popouts.current, popoutKeyFocus: popouts.keyFocusText, popoutKeyPath: popouts.keyFocusPath,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
                 // What's in effect after game mode and Accessibility have had their say
@@ -688,8 +688,8 @@ ShellRoot {
     // the screen you're on, or the dock, takes the keyboard
     IpcHandler {
         target: "keys"
-        function bar(): void { (Config.barFor(Config.focusedScreen) || topBar).startKeys(); }
-        function dock(): void { win.startKeys(); }
+        function bar(): void { (Config.barFor(Config.focusedScreen) || topBar).toggleKeys(); }
+        function dock(): void { if (win.keyNav) win.keyNav = false; else win.startKeys(); }
         function stop(): void { for (const b of Config.bars) b.stopKeys(); win.keyNav = false; }
     }
     // Zoom (Settings → Accessibility): the keys (binds.lua) zoom at once and say where they got
