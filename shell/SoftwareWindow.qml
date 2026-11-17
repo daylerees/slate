@@ -129,7 +129,15 @@ FloatingWindow {
     Process {
         id: updatesRun
         command: [sw.script, "updates"]
-        stdout: StdioCollector { onStreamFinished: { sw.take("updates", text, v => sw.updates = v); sw.checkingUpdates = false; sw.checkedAt = new Date(); } }
+        stdout: StdioCollector {
+            onStreamFinished: {
+                sw.take("updates", text, v => sw.updates = v);
+                sw.checkingUpdates = false;
+                sw.checkedAt = new Date();
+                // (so Settings → Updates shows the same, and the daily look needn't look again soon)
+                if (sw.pretend.updates === undefined) SoftwareUpdates.tookFromSoftware(sw.updates.apps.length, sw.updates.system.length);
+            }
+        }
     }
     Process { id: appRun; stdout: StdioCollector { onStreamFinished: sw.take("app", text, v => sw.detail = v) } }
 

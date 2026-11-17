@@ -1396,6 +1396,7 @@ Singleton {
         if (o.urgent) c.push("--urgency=critical");
         if (o.page) c.push("--hint=string:x-slate-page:" + o.page);
         for (const a of (o.actions || [])) c.push("--action=" + a);
+        if (o.wait) c.push("--wait");          // (stays running until it's clicked or closed: actions answer on stdout)
         return c.concat(["--", title, body]);
     }
     // "2 min ago", worded as on notifications ("now", then a date after a day). `t` is in

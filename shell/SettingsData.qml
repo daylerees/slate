@@ -298,6 +298,8 @@ JsonAdapter {
     property bool welcomeShown: false
     // Updates (Settings → Updates): look for new versions daily, with a notification
     property bool updateCheck: true
+    // …and for apps and this computer's system (Software): a notification at most once a day
+    property bool softwareUpdateCheck: true
     // Keyboard shortcuts (Settings → Shortcuts): slate, hyprland or hyprland-extras
     property string keyset: "slate"
     // Lock & idle (minutes; 0 = never)

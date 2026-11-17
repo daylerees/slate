@@ -63,6 +63,23 @@ Column {
         }
     }
 
+    // ---- Apps and the system (Software): what's waiting, and the daily notification ----
+    GroupLabel { text: "Apps and this computer's system" }
+    Group {
+        SettingRow {
+            label: SoftwareUpdates.waiting === 0 ? "Apps and system updates" : SoftwareUpdates.words() + " waiting"
+            detail: (SoftwareUpdates.checkedAt === 0 ? "Not checked yet" : SoftwareUpdates.waiting === 0 ? "You're up to date" : "Ready to install in Software")
+                + (SoftwareUpdates.checkedAt > 0 ? " · checked " + updatesPane.ago(SoftwareUpdates.checkedAt) : "")
+            Button { label: "Open Software"; icon: 0xEA96; onClicked: Config.slateCall("software", "page", "updates") }
+        }
+        Separator {}
+        ToggleSetting {
+            label: "Tell me about app and system updates"
+            detail: "Once a day, a notification when updates are waiting for your apps or this computer's system (never in game mode or on a metered connection)"
+            key: "softwareUpdateCheck"
+        }
+    }
+
     // ---- A new version: what's new, and updating ----
     GroupLabel {
         visible: Updates.available || Updates.busy || Updates.status === "failed"

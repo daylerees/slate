@@ -333,6 +333,25 @@ def updates():
             "systemTool": tool, "systemProblem": problem}
 
 
+def metered():
+    """Whether NetworkManager says this connection is metered (charged by the amount): a phone's
+    hotspot, say. Then the daily look for updates waits for another one."""
+    out = run(["gdbus", "call", "--system", "--dest", "org.freedesktop.NetworkManager",
+               "--object-path", "/org/freedesktop/NetworkManager", "--method", "org.freedesktop.DBus.Properties.Get",
+               "org.freedesktop.NetworkManager", "Metered"], timeout=10)
+    m = re.search(r"uint32 (\d+)", out or "")
+    return bool(m) and int(m.group(1)) in (1, 3)       # (yes, or guessed yes)
+
+
+def daily():
+    """The once-a-day look (SoftwareUpdates.qml): how many app and system updates are waiting,
+    or {"metered": true} without looking."""
+    if metered():
+        return {"metered": True}
+    u = updates()
+    return {"apps": len(u["apps"]), "system": len(u["system"])}
+
+
 def status():
     have = shutil.which("flatpak") is not None
     remotes = run(["flatpak", "remotes", "--columns=name"]) if have else None
@@ -557,7 +576,8 @@ def main(argv):
     if not argv:
         sys.exit(__doc__)
     what, args = argv[0], argv[1:]
-    looks = {"status": status, "catalogue": catalogue, "discover": discover, "installed": installed, "updates": updates}
+    looks = {"status": status, "catalogue": catalogue, "discover": discover, "installed": installed, "updates": updates,
+             "daily": daily}
     if what in looks and not args:
         print(json.dumps(looks[what]()))
         return 0

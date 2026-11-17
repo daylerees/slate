@@ -103,6 +103,8 @@ Singleton {
         ["Speech model", "assistant", "voice speech model whisper download delete microphone talk nova"],
         ["Updates", "updates", "update upgrade new version release what's new check latest go back revert downgrade"],
         ["Check for updates", "updates", "update notification daily automatic new version"],
+        ["Apps and this computer's system", "updates", "software flathub flatpak system packages pacman upgrade"],
+        ["Tell me about app and system updates", "updates", "software notification daily flathub system packages"],
         ["Spaces", "spaces", "saved workspaces presets layouts sessions restore badges borders"],
         ["Theme", "appearance", "dark light auto automatic dark mode light mode appearance"],
         ["Accent color", "appearance", "color highlight"],

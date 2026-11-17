@@ -248,3 +248,40 @@ class Software(LiveCase):
         self.s.settle(0.8)
         st = self.s.state()["software"]
         self.assertEqual((st["busy"], st["queued"]), ("", 0), "something not on the list was started")
+
+
+
+class DailyLook(LiveCase):
+    """The once-a-day look for app and system updates (SoftwareUpdates.qml): a calm notification
+    when anything's waiting, at most once a day, and none with the setting off. (Under the
+    tests it never looks by itself: it's handed what the engine would say.)"""
+    def setUp(self):
+        super().setUp()
+        self.keep_setting("softwareUpdateCheck")
+        self.ipc("test", "softwareDailyReset")
+
+    def daily(self):
+        return self.s.state()["softwareDaily"]
+
+    def test_tells_once_a_day(self):
+        before = self.daily()
+        self.ipc("test", "softwareDaily", json.dumps({"apps": 2, "system": 3}))
+        st = self.wait(lambda st: st["softwareDaily"]["notices"] == before["notices"] + 1, "a notification")["softwareDaily"]
+        self.assertEqual(st["waiting"], 5)
+        # Again the same day: counted, not told again
+        self.ipc("test", "softwareDaily", json.dumps({"apps": 2, "system": 4}))
+        st = self.wait(lambda st: st["softwareDaily"]["waiting"] == 6, "the new count")["softwareDaily"]
+        self.assertEqual(st["notices"], before["notices"] + 1, "told twice in a day")
+
+    def test_nothing_with_it_off_or_metered(self):
+        before = self.daily()
+        self.config("softwareUpdateCheck", "false")
+        self.ipc("test", "softwareDaily", json.dumps({"apps": 1, "system": 0}))
+        self.wait(lambda st: st["softwareDaily"]["looks"] == before["looks"] + 1, "the look")
+        self.ipc("test", "softwareDailyReset")
+        self.config("softwareUpdateCheck", "true")
+        self.ipc("test", "softwareDaily", json.dumps({"metered": True}))
+        self.s.settle(0.8)
+        st = self.daily()
+        self.assertEqual(st["notices"], before["notices"], "told with it off, or on a metered connection")
+        self.assertEqual(st["looks"], before["looks"] + 1, "a metered connection counted as a look")

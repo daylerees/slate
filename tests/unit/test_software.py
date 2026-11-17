@@ -320,3 +320,27 @@ class Jobs(SoftwareCase):
     def test_only_known_actions(self):
         code, out = run([sys.executable, SCRIPT, "job", "t1", "rm", "-rf"], env=dict(os.environ, XDG_RUNTIME_DIR=self.h.dir))
         self.assertNotEqual(code, 0)
+
+
+class Daily(SoftwareCase):
+    """`daily`: what the once-a-day look finds, and never on a metered connection."""
+    def nm(self, value):
+        self.s.add("gdbus", stdout="(<uint32 %d>,)\n" % value)
+
+    def test_counts(self):
+        self.nm(2)          # not metered
+        self.flatpak({"--system --updates": "org.example.Paint\tPaint\t2.1\n", "--user --updates": ""})
+        self.mod.system_updates = lambda: ("checkupdates", [{"name": "linux", "from": "1", "to": "2"}, {"name": "mesa", "from": "1", "to": "2"}], "")
+        self.assertEqual(self.mod.daily(), {"apps": 1, "system": 2})
+
+    def test_metered_waits(self):
+        for value in (1, 3):            # metered, or guessed so
+            with self.subTest(value):
+                self.nm(value)
+                self.mod.system_updates = lambda: self.fail("looked on a metered connection")
+                self.assertEqual(self.mod.daily(), {"metered": True})
+
+    def test_without_networkmanager(self):
+        self.hide("gdbus")
+        self.mod.system_updates = lambda: ("", [], "")
+        self.assertEqual(self.mod.daily(), {"apps": 0, "system": 0})

@@ -236,6 +236,10 @@ ShellRoot {
         // Quick Look on a list, as the launcher and the dock's Downloads open it ({"paths": […], "at": n}:
         // an object, since qs ipc takes the brackets off an argument that starts with one)
         function quickLookList(json: string): void { const o = JSON.parse(json); root.lookAt(o.paths, o.at || 0); }
+        // Software's daily look found this (what scripts/software.py daily says: {"apps": n,
+        // "system": n}): it notifies as it would (SoftwareUpdates)
+        function softwareDaily(json: string): void { SoftwareUpdates.found(JSON.parse(json)); }
+        function softwareDailyReset(): void { SoftwareUpdates.known = ({}); }
         // Slate Software: a screenshot on the app's page clicked (it shows large, in Quick Look)
         function softwareShot(at: int): void { root.softwareWindow().showShots(at); }
         // Slate Software's Remove on an app's page (it asks first)
@@ -449,6 +453,7 @@ ShellRoot {
                 popout: popouts.current,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
+                softwareDaily: { looks: SoftwareUpdates.looks, notices: SoftwareUpdates.notices, waiting: SoftwareUpdates.waiting },
                 software: softwareLoader.item ? (w => ({
                     built: true, open: w.visible, searchFocused: w.searchFocused, page: w.page,
                     flathubTiles: Config.tileDir + "/flathub", tilesDrawn: w.tilesVersion,

@@ -968,7 +968,7 @@ REFUSE = {
     "kbLayouts", "kbVariants", "keyset", "kbSwitch", "capsLock",
     # sleep and the screensaver (both can be when the screen locks), the power button and the
     # lid, and checking for updates
-    "idleSuspendMinutes", "screensaverMinutes", "powerKeyAction", "lidAction", "updateCheck",
+    "idleSuspendMinutes", "screensaverMinutes", "powerKeyAction", "lidAction", "updateCheck", "softwareUpdateCheck",
     # where you are
     "locationName", "latitude", "longitude",
     # needs something built or chosen by hand (Hyprbars; which screen)

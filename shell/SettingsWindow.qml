@@ -339,7 +339,7 @@ FloatingWindow {
         notifications: ["notificationPosition", "notificationSeconds", "notificationMaxToasts", "notificationBlur", "notificationOpacity", "notificationHoverOpacity"],
         screensaver: ["screensaverMinutes", "screensaverStyle", "screensaverVideoQuality", "screensaverClock", "screensaverSlideSeconds", "screensaverLock"],
         shortcuts: ["keyset"],
-        updates: ["updateCheck"],
+        updates: ["updateCheck", "softwareUpdateCheck"],
         assistant: ["assistantBlur", "assistantOpacity", "assistantEnabled", "assistantRisksAccepted", "assistantAgent", "assistantModel", "assistantLocalModel", "assistantCommand", "assistantCommandBare", "assistantAgentsAccepted", "assistantKeepChat", "assistantAskChanges", "assistantSeeTitles", "assistantSeeNotifications", "assistantVoice"],
         lock: ["lockBeforeSleep", "lockScreenPowerMenu", "idleLockMinutes", "idleScreenOffMinutes", "idleSuspendMinutes",
             "idleRespectInhibitors"]
