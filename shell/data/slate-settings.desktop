@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Slate Settings
+Name=Settings
 Comment=Theme, wallpaper, menu bar, dock, notifications and more
 Icon=slate-settings
 Exec=@SLATE@ ipc call settings open

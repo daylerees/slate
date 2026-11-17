@@ -89,8 +89,8 @@ shell.qml               root: creates everything below, plus the dock itself
 │                       Dolphin's and Thunar's menu items: apply-theme.py's "quick-look", opt-in
 ├─ Switcher.qml         Super+Tab window switcher ("slate-switcher")
 ├─ WorkspaceOverview.qml Super+Down workspace overview ("slate-overview")
-├─ SettingsWindow.qml   settings app (floating window "Slate Settings")
-├─ SoftwareWindow.qml   Slate Software (floating window "Slate Software"): install, remove and update Flathub apps, update the system (scripts/software.py)
+├─ SettingsWindow.qml   settings app (floating window "Settings", app id slate-settings)
+├─ SoftwareWindow.qml   Software (floating window "Software", app id slate-settings): install, remove and update Flathub apps, update the system (scripts/software.py)
 ├─ SoftwareJobs.qml     Slate Software's installs, removals and updates, one at a time (outlives its window)
 │  ├─ AvatarPicker.qml    choosing your account picture: a window of its own (scripts/set-avatar.sh)
 │  ├─ Displays.qml        Settings → Displays: reads the monitors from Hyprland, applies and saves
@@ -567,7 +567,7 @@ instead, made mode 0700, never a fixed name in `/tmp`.
 - `workspaces.lua` — `newWorkspace(movingAddr)` (the number after the last workspace with
   windows: Super+W, Super+Return in the launcher) and `besideWorkspace(dir)` for "open on a
   new workspace left/right".
-- `windowrules.lua` — `no_anim` for Slate overlay layers; "Slate Settings" floats, centered and
+- `windowrules.lua` — `no_anim` for Slate overlay layers; Settings (class slate-settings, title "Settings") floats, centered and
   pinned (with you on every workspace, as is its picture chooser); Nova's window floats,
   centered and pinned (`slateIsNova`).
 - `misc.lua` — `allow_session_lock_restore = true` (a restarted Slate re-takes a lock);

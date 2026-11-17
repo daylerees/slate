@@ -123,13 +123,13 @@ class Software(LiveCase):
     def test_opens_again_after_closing_from_outside(self):
         """Closed from outside Slate (Super+Q, or a title bar's close button), it opens again
         the next time it's asked for, rather than staying gone until Slate restarts."""
-        self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.close({ window = "title:^(Slate Software)$" })) end')
+        self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.close({ window = slateWindowAddress("Software") })) end')
         self.wait(lambda st: not st["software"]["open"], "closed from outside")
         self.ipc("test", "softwarePretend", json.dumps(PRETEND))
         self.ipc("software", "open")
         self.wait(lambda st: st["software"]["open"], "open again")
         self.s.settle(1.0)
-        clients = [c for c in self.s.hyprctl("clients", json_out=True) if c.get("title") == "Slate Software"]
+        clients = [c for c in self.s.hyprctl("clients", json_out=True) if c.get("title") == "Software"]
         self.assertTrue(clients and clients[0].get("mapped", True), "on screen again")
 
     def test_a_job_carries_on_when_the_window_goes(self):
@@ -138,7 +138,7 @@ class Software(LiveCase):
         self.ipc("test", "softwarePretend", json.dumps(dict(PRETEND, actMs=4000)))
         self.ipc("test", "softwareAct", "install", "org.mozilla.firefox")
         self.wait(lambda st: st["software"]["busy"] == "install org.mozilla.firefox", "Firefox installing")
-        self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.close({ window = "title:^(Slate Software)$" })) end')
+        self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.close({ window = slateWindowAddress("Software") })) end')
         self.wait(lambda st: not st["software"]["open"], "closed from outside")
         self.ipc("software", "open")
         st = self.wait(lambda st: st["software"]["open"], "open again")["software"]

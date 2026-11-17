@@ -278,13 +278,13 @@ PanelWindow {
 
     // Slate's settings, listed and searched like an installed app
     readonly property var slateSettingsApp: ({
-        setting: true, app: true, id: "slate-settings", name: "Slate Settings", page: "overview",
+        setting: true, app: true, id: "slate-settings", name: "Settings", page: "overview",
         genericName: "Settings", comment: "Theme, wallpaper, menu bar, dock, notifications and more",
         keywords: ["settings", "preferences", "configuration", "control panel", "options", "slate"]
     })
     // Slate Software (SoftwareWindow.qml), the same way
     readonly property var slateSoftwareApp: ({
-        setting: true, app: true, software: true, id: "slate-software", name: "Slate Software", page: "updates",
+        setting: true, app: true, software: true, id: "slate-software", name: "Software", page: "updates",
         genericName: "Software", comment: "Install, remove and update apps, and update the system",
         keywords: ["software", "store", "app store", "install", "flatpak", "flathub", "updates", "apps", "slate"]
     })

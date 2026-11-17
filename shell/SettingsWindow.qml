@@ -38,7 +38,7 @@ FloatingWindow {
     readonly property alias drop: dropLayer
     readonly property alias scrollView: scroller
     readonly property alias scrollWheel: scrollWheel     // (tests: a wheel turned over the page)
-    title: "Slate Settings"
+    title: "Settings"
     // 880×620, or less on a small screen (Hyprland centres it at the size it asks for)
     readonly property var fitScreen: Config.focusedScreen
     // The window's size on a screen, in Slate's units (before rounding)
@@ -59,9 +59,9 @@ FloatingWindow {
             const size = win.fitSize(win.screen);
             const w = Math.round(size.width * Config.uiScale);
             const h = Math.round(size.height * Config.uiScale);
-            const sel = "title:^(Slate Settings)$";
+            // (found by its app id and title: slateWindowAddress, windowrules.lua)
             Quickshell.execDetached(["hyprctl", "dispatch",
-                `function() hl.dispatch(hl.dsp.window.resize({ x = ${w}, y = ${h}, window = "${sel}" })); hl.dispatch(hl.dsp.window.center({ window = "${sel}" })) end`]);
+                `function() local sel = slateWindowAddress("Settings"); if sel then hl.dispatch(hl.dsp.window.resize({ x = ${w}, y = ${h}, window = sel })); hl.dispatch(hl.dsp.window.center({ window = sel })) end end`]);
         }
     }
     // Narrow window (a small screen): the sidebar shows just its icons
@@ -200,12 +200,14 @@ FloatingWindow {
     function show() {
         if (!visible) { visible = true; return; }
         if (isFocused()) return;
-        Quickshell.execDetached(["hyprctl", "dispatch", `function() hl.dispatch(hl.dsp.focus({ window = "title:^(Slate Settings)$" })) end`]);
+        Quickshell.execDetached(["hyprctl", "dispatch", `function() local sel = slateWindowAddress("Settings"); if sel then hl.dispatch(hl.dsp.focus({ window = sel })) end end`]);
     }
     // Whether Settings is the window you're in
     function isFocused() {
         const t = Hyprland.activeToplevel;
-        return !!t && t.title === "Slate Settings";
+        if (!t || t.title !== "Settings") return false;
+        const cls = t.wayland ? t.wayland.appId : t.lastIpcObject ? t.lastIpcObject.class : "";
+        return cls === "slate-settings";
     }
     function showFound() {
         const label = findLabel || foundRetryLabel;

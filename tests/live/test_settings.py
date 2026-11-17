@@ -140,7 +140,7 @@ class SettingsWindowGoesWithYou(LiveCase):
 
     def client(self):
         for c in self.s.hyprctl("clients", json_out=True):
-            if c.get("title") == "Slate Settings" and c.get("mapped"):
+            if c.get("title") == "Settings" and c.get("mapped"):
                 return c
         return None
 
@@ -149,7 +149,7 @@ class SettingsWindowGoesWithYou(LiveCase):
         self.s._until(lambda: self.s.monitor()["activeWorkspace"]["id"] == ws, 5, f"workspace {ws}")
 
     def focused(self):
-        return (self.s.hyprctl("activewindow", json_out=True) or {}).get("title") == "Slate Settings"
+        return (self.s.hyprctl("activewindow", json_out=True) or {}).get("title") == "Settings"
 
     def test_pinned_and_with_you(self):
         self.go(1)
@@ -166,7 +166,7 @@ class SettingsWindowGoesWithYou(LiveCase):
         self.assertTrue(self.s.state()["settings"]["open"], "Settings closed going to another workspace")
         # ...and like Nova, it doesn't make the workspace it's on look in use (its dot), nor
         # count there (a new or spare workspace)
-        if not self.s.hyprctl("clients", json_out=True) or all(c.get("workspace", {}).get("id") != 2 or c.get("title") == "Slate Settings"
+        if not self.s.hyprctl("clients", json_out=True) or all(c.get("workspace", {}).get("id") != 2 or c.get("title") == "Settings"
                                                                for c in self.s.hyprctl("clients", json_out=True)):
             self.assertNotIn(2, self.s.state()["bar"]["dots"]["occupied"], "Settings made the workspace it's on look in use")
         # Asked for again when it's open: brought to the front with the keyboard, not closed;

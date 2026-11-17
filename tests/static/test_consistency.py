@@ -257,7 +257,7 @@ class Settings(Case):
         spaces = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(spaces)
         for client, nova in (({"class": "slate-settings", "title": "Nova"}, True),
-                             ({"class": "slate-settings", "title": "Slate Settings"}, False),
+                             ({"class": "slate-settings", "title": "Settings"}, False),
                              ({"class": "nova-editor", "title": "Nova"}, False),
                              ({"class": "foot", "title": "~"}, False)):
             with self.subTest(client):

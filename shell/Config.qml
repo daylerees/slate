@@ -2087,7 +2087,7 @@ Singleton {
     // None of them makes a workspace in use or is counted on one (the dots, new and spare
     // workspaces, which workspaces a mode change reaches); Settings is still yours to switch to.
     // (The same titles are slateIsPinned's in windowrules.lua)
-    readonly property var pinnedTitles: [novaTitle, "Slate Settings", "Choose a picture"]
+    readonly property var pinnedTitles: [novaTitle, "Settings", "Choose a picture"]
     function isPinnedSlate(t) {
         if (!t || pinnedTitles.indexOf(t.title) < 0) return false;
         const o = t.lastIpcObject;
@@ -2098,7 +2098,7 @@ Singleton {
     // Which app a window is, by its app ID, with Slate's own sorted out: Slate's windows all share
     // Slate's app ID (slate-settings), and Slate Software is an app of its own (its own place in the
     // dock and the switcher, its own icon), told apart by its title, as Nova is
-    readonly property string softwareTitle: "Slate Software"
+    readonly property string softwareTitle: "Software"
     function appIdOf(t) {
         if (!t) return "";
         const id = t.appId || "";

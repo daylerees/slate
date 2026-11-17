@@ -387,7 +387,7 @@ FloatingWindow {
                             Text {
                                 anchors { left: parent.left; right: parent.right; margins: 16; verticalCenter: parent.verticalCenter }
                                 wrapMode: Text.Wrap
-                                text: !sw.status.flatpak ? "Flatpak isn't installed, so Slate Software can't install apps yet. Install the flatpak package, then open this again."
+                                text: !sw.status.flatpak ? "Flatpak isn't installed, so Software can't install apps yet. Install the flatpak package, then open this again."
                                     : "Flathub isn't set up for Flatpak yet. In a terminal: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
                                 color: sw.dim; font.family: sw.font; font.pixelSize: 13
                             }
@@ -424,7 +424,7 @@ FloatingWindow {
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: Math.min(parent.width, 520); wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter
-                            text: "Slate Software installs apps from Flathub, where thousands of free apps run safely in a space of their own. "
+                            text: "Apps here come from Flathub, where thousands of free apps run safely in a space of their own. "
                                 + "What you install here is there for everyone who uses this computer, and its updates show under Updates."
                             color: sw.dim; font.family: sw.font; font.pixelSize: 13; lineHeight: 1.15
                         }
@@ -569,7 +569,10 @@ FloatingWindow {
                             Button {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 label: "Check again"; icon: 0xEB13
-                                opacity: upToDate.looking ? 0.5 : 1
+                                // (gone while it looks: there's nothing to do until it's done)
+                                opacity: upToDate.looking ? 0 : 1
+                                visible: opacity > 0
+                                Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                                 onClicked: if (!upToDate.looking) sw.checkUpdates()
                             }
                         }
@@ -720,17 +723,17 @@ FloatingWindow {
                 spacing: 8
                 visible: !row.busyHere
                 Button {
-                    visible: row.removable && row.isInstalled
-                    label: "Remove"; destructive: true
-                    onClicked: sw.askRemove(row.entry)
-                }
-                Button {
                     id: rowButton
                     label: row.updating ? (sw.waiting("update-apps", row.entry.id) ? "Waiting…" : "Update")
                         : sw.waiting("install", row.entry.id) ? "Waiting…" : row.isInstalled ? "Open" : "Install"
                     primary: !row.updating && !row.isInstalled
                     onClicked: row.updating ? sw.act("update-apps", row.entry.id, row.entry.name)
                         : row.isInstalled ? sw.launch(row.entry.id) : sw.act("install", row.entry.id, row.entry.name)
+                }
+                Button {
+                    visible: row.removable && row.isInstalled
+                    label: "Remove"; destructive: true; icon: 0xEB41
+                    onClicked: sw.askRemove(row.entry)
                 }
             }
         }
@@ -753,15 +756,37 @@ FloatingWindow {
         readonly property real density: sw.screen ? sw.screen.devicePixelRatio : 1
         property bool noDockTile: false
         property bool gaveUp: false
-        onAppIdChanged: { noDockTile = false; gaveUp = false; }
+        onAppIdChanged: { noDockTile = false; gaveUp = false; slowIcon.restart(); }
         readonly property string tile: !appId ? "" : installedApp && !noDockTile ? Config.tilePath(appId) : sw.flathubTile(appId)
         width: size; height: size
+        // Until it's ready: a soft shape where it'll be (the icons' own shape, Settings → Icons),
+        // with Slate's spinner once it's taking a while; the icon then fades in over it
+        Timer { id: slowIcon; interval: 350; running: true }
+        Rectangle {
+            id: aiPlace
+            anchors.fill: parent
+            radius: Config.iconCornerFor(ai.size)
+            color: sw.faint
+            opacity: aiTile.status === Image.Ready || ai.gaveUp ? 0 : 1
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
+            Text {
+                id: aiSpinner
+                anchors.centerIn: parent
+                opacity: aiPlace.opacity === 1 && !slowIcon.running ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+                text: sw.glyph(0xF226); color: sw.accent
+                font.family: sw.bar.iconFont; font.pixelSize: Math.round(ai.size * 0.38)
+                RotationAnimation on rotation { running: aiSpinner.visible && Config.animate; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+            }
+        }
         Image {
             id: aiTile
             anchors.fill: parent
             visible: status === Image.Ready
             opacity: status === Image.Ready ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
+            Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
             source: ai.tile ? "file://" + ai.tile + "?v=" + Config.tileVersion + "." + sw.tilesVersion : ""
             // Shrunk once to exactly the pixels it's drawn at (as the launcher's are): mipmapped
             // from a larger picture, it came out soft on a 2× screen
@@ -1012,7 +1037,7 @@ FloatingWindow {
                         }
                         Button {
                             visible: !pg.busyHere && pg.isInstalled
-                            label: "Remove"; destructive: true
+                            label: "Remove"; destructive: true; icon: 0xEB41
                             onClicked: sw.askRemove(pg.d)
                         }
                     }

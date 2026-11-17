@@ -177,12 +177,21 @@ hl.layer_rule({ name = "screenshot-freeze", match = { namespace = "^(hyprpicker|
 -- the rest of it clear)
 hl.layer_rule({ name = "slate-titlebar-blur", match = { namespace = "^slate-titlebar$" }, blur = true, ignore_alpha = 0.3 })
 
--- Slate Settings (Super+Z): floats in the middle of the screen, at the size it asks for
+-- Settings (Super+Z), Slate's own (by its app id and title: "Settings" alone is a title other
+-- apps use): floats in the middle of the screen, at the size it asks for
 -- (880×620 times the interface size), kept within the screen by the floating-window limit
 -- above, and pinned: open, it stays with you on every workspace, as Nova does (below)
-hl.window_rule({ match = { title = "^(Slate Settings)$" }, float = true, center = true, pin = true })
--- Slate Software: floats in the middle too, at its own size, but stays on its workspace (an app)
-hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Slate Software)$" }, float = true, center = true })
+hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Settings)$" }, float = true, center = true, pin = true })
+-- Software, Slate's: floats in the middle too, at its own size, but stays on its workspace (an app)
+hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Software)$" }, float = true, center = true })
+-- One of Slate's own windows, by its title ("Settings", "Software"), as a window to hand a
+-- dispatcher ("address:…"), or nil: a title alone would also find another app's "Settings"
+function slateWindowAddress(title)
+    for _, w in ipairs(hl.get_windows({})) do
+        if w.class == "slate-settings" and w.title == title then return "address:" .. w.address end
+    end
+    return nil
+end
 -- Nova, Slate's assistant (Super+K, Assistant.qml): a window of Slate's own, by its app id and
 -- title. Floats in the middle of the screen at the size it asks for (the size you last left
 -- it at), pinned so it's on whichever workspace you're looking at. It has its own header to
@@ -194,7 +203,7 @@ function slateIsNova(w)
 end
 -- Slate's own windows pinned to every workspace (Nova, Settings, its picture chooser): none
 -- counts on a workspace (the same titles are Config.pinnedTitles)
-SLATE_PINNED_TITLES = { ["Nova"] = true, ["Slate Settings"] = true, ["Choose a picture"] = true }
+SLATE_PINNED_TITLES = { ["Nova"] = true, ["Settings"] = true, ["Choose a picture"] = true }
 function slateIsPinned(w)
     return w ~= nil and w.class == "slate-settings" and SLATE_PINNED_TITLES[w.title] == true
 end
