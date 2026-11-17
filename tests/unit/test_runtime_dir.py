@@ -11,7 +11,8 @@ import slate
 from slate import Case, run
 
 SHELL_SCRIPTS = (("shell", "bin", "slate"), ("shell", "bin", "slate-build-hyprbars"), ("shell", "scripts", "screenshot.sh"))
-PYTHON_SCRIPTS = (("shell", "scripts", "spaces.py"), ("shell", "scripts", "voice.py"), ("shell", "scripts", "launcher-entries.py"))
+PYTHON_SCRIPTS = (("shell", "scripts", "spaces.py"), ("shell", "scripts", "voice.py"), ("shell", "scripts", "launcher-entries.py"),
+                  ("shell", "scripts", "software.py"))
 QML = ("Config.qml", "UserFiles.qml", "SettingsWindow.qml", "Spaces.qml", "PrivateMode.qml", "shell.qml")
 
 

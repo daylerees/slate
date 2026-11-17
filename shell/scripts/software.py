@@ -211,7 +211,9 @@ def app(app_id):
             links = {u.get("type"): (u.text or "").strip() for u in comp.findall("url") if u.get("type")}
             rel = comp.find("releases/release")
             mine = next((i for i in installed() if i["id"] == app_id), None)
-            a.update(description=paragraphs(comp.find("description")), screenshots=shots[:8],
+            # (the untranslated one: Flathub's catalog lists some apps' translations first)
+            desc = next((d for d in comp.findall("description") if d.get(LANG) is None), None)
+            a.update(description=paragraphs(desc), screenshots=shots[:8],
                      homepage=links.get("homepage", ""), license=(comp.findtext("project_license") or "").strip(),
                      latest=rel.get("version", "") if rel is not None else "",
                      installed=mine is not None, version=mine["version"] if mine else "",
@@ -503,9 +505,20 @@ def update_system():
 # process of its own (so a reload or restart of Slate can't cut it off), which keeps how it's going
 # in a file Slate follows: {token, what, id, pid, progress, done, result}. Slate picks up a job
 # still running when it starts, from the same file.
+def runtime_dir():
+    """Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only
+    you can open, never /tmp (the rule is Config.qml's runtimeDir)."""
+    d = os.environ.get("XDG_RUNTIME_DIR")
+    if d:
+        return d
+    d = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate", "run")
+    os.makedirs(d, mode=0o700, exist_ok=True)
+    os.chmod(d, 0o700)
+    return d
+
+
 def job_file():
-    run_dir = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
-    return os.path.join(run_dir, "slate", "software-job.json")
+    return os.path.join(runtime_dir(), "slate", "software-job.json")
 
 
 def write_job(state):

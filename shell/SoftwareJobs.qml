@@ -1,6 +1,6 @@
 // Slate Software's installs, removals and updates (scripts/software.py), one at a time, in order.
 // Each runs as a process of its own (`software.py job …`), not inside Slate, and keeps how it's
-// going in a file this follows ($XDG_RUNTIME_DIR/slate/software-job.json): a reload or restart of
+// going in a file this follows (Slate's runtime folder: slate/software-job.json): a reload or restart of
 // Slate (or the window closed with Super+Q) can't cut a job off, and Slate picks up one still
 // running when it starts again, with its progress. (What's queued behind it is Slate's own, and
 // starts again from the window.)
@@ -14,7 +14,7 @@ import Quickshell.Io
 Singleton {
     id: jobs
     readonly property string script: Quickshell.shellPath("scripts/software.py")
-    readonly property string jobFile: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/slate/software-job.json"
+    readonly property string jobFile: Config.runtimeDir + "/slate/software-job.json"
     // queue: [{ what: "install"|"remove"|"update-apps"|"update-system", id, name }]; busy: the
     // one running (and its progress, 0–100); note: how the last one went, when it didn't
     property var queue: []

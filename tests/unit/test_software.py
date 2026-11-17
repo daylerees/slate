@@ -21,8 +21,9 @@ CATALOGUE = """<?xml version="1.0" encoding="UTF-8"?>
   <component type="desktop-application">
     <id>org.example.Paint</id>
     <name>Paint</name><name xml:lang="de">Malen</name>
-    <summary>Draw pictures</summary>
+    <summary xml:lang="de">Bilder malen</summary><summary>Draw pictures</summary>
     <developer><name>Example Folk</name></developer>
+    <description xml:lang="de"><p>Ein Malprogramm.</p></description>
     <description><p>A painting app.</p><p>With <em>layers</em>.</p><ul><li>Brushes</li><li>Colours</li></ul></description>
     <icon type="cached" width="64" height="64">org.example.Paint.png</icon>
     <icon type="cached" width="128" height="128">org.example.Paint.png</icon>
@@ -30,7 +31,7 @@ CATALOGUE = """<?xml version="1.0" encoding="UTF-8"?>
     <keywords><keyword>Draw</keyword><keyword xml:lang="de">Zeichnen</keyword></keywords>
     <url type="homepage">https://paint.example</url>
     <project_license>GPL-3.0</project_license>
-    <screenshots><screenshot type="default"><caption>The canvas</caption>
+    <screenshots><screenshot type="default"><caption xml:lang="de">Die Leinwand</caption><caption>The canvas</caption>
       <image type="source">https://shots.example/full.png</image>
       <image type="thumbnail" width="624" height="351">https://shots.example/624.png</image>
       <image type="thumbnail" width="752" height="423">https://shots.example/752.png</image>
@@ -125,6 +126,8 @@ class Catalogue(SoftwareCase):
     def test_one_app(self):
         self.flatpak({"list": "org.example.Paint\tPaint\t2.0\tsystem\n"})
         a = self.mod.app("org.example.Paint")
+        # (in the catalog's own language: Flathub's lists some apps' translations first)
+        self.assertEqual(a["summary"], "Draw pictures")
         self.assertEqual(a["description"], ["A painting app.", "With layers.", "• Brushes\n• Colours"])
         self.assertEqual(a["screenshots"], [{"thumb": "https://shots.example/752.png", "full": "https://shots.example/full.png",
                                              "caption": "The canvas"}])
