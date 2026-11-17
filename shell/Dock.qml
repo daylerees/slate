@@ -227,7 +227,7 @@ PanelWindow {
     WlrLayershell.namespace: "slate-dock"
     // (above the wallpaper switcher, which covers the windows: seen, but taking no clicks)
     WlrLayershell.layer: Config.wallpaperSwitching ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: keyNav ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     mask: Config.wallpaperSwitching ? noInput : dockInput
     readonly property Region dockInput: Region { item: maskBox }
     readonly property Region noInput: Region {}
@@ -697,7 +697,7 @@ PanelWindow {
     Timer { id: floatCheck; interval: 30; running: true; onTriggered: Hyprland.refreshToplevels() }
     // (resting on a divider or dragging one keeps it shown: the resize area takes the pointer
     // from the dock's own then, and an auto-hiding dock slid away mid-drag and dropped it)
-    property bool shown: !movingOut && (!Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || resizing || dividerCursor || holdTimer.running || movedHold.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag || Config.wallpaperSwitching)
+    property bool shown: !movingOut && (keyNav || !Config.s.dockAutoHide || (!workspaceBusy && !appLauncher.launchingNew) || mouse.containsMouse || resizing || dividerCursor || holdTimer.running || movedHold.running || appMenu.visible || previewPop.visible || dragKey !== "" || fileDrag || Config.wallpaperSwitching)
     Timer { id: holdTimer; interval: win.hideDelay }
     // Moved to another edge: it shows there for a moment (even with auto-hide), so you see
     // where it went. Meanwhile it's kept out of sight until its window has moved: drawn for
@@ -1647,6 +1647,39 @@ PanelWindow {
         return 0;
     }
 
+    // ---- The keyboard (Accessibility; Super+Alt+D) ----
+    // The dock takes the keyboard (showing, even when it hides by itself); the arrow keys and
+    // Tab move along its icons (dividers skipped), Enter or Space is a click, the menu key (or
+    // Shift+F10) a right-click, Escape gives the keyboard back. Pressing one hands the keyboard
+    // to whatever it opens.
+    property bool keyNav: false
+    property int keyIndex: -1
+    property var keyPath: []                // (the tests: the places the keys went, in turn)
+    // What the icon the keys are on is called (as its tooltip calls it)
+    readonly property string keyName: {
+        const i = keyIndex, sl = slotAt(i);
+        if (!sl) return "";
+        if (sl.kind === "app") return sl.item.entry?.name ?? sl.item.key ?? "";
+        return ({ launcher: "Apps", more: "More", downloads: "Downloads", trash: "Waste Basket", media: "Now playing" })[sl.kind] || "";
+    }
+    onKeyIndexChanged: if (keyIndex >= 0) keyPath = keyPath.concat([keyIndex]).slice(-20)
+    function startKeys() { keyPath = []; keyIndex = -1; keyStep(1); keyNav = keyIndex >= 0; }
+    function keyStep(by) {
+        for (let i = keyIndex + by; i >= 0 && i < count; i += by)
+            if (!isDivider(i)) { keyIndex = i; return; }
+    }
+    function dockKey(e) {
+        const back = e.key === Qt.Key_Left || e.key === Qt.Key_Up || e.key === Qt.Key_Backtab;
+        const on = e.key === Qt.Key_Right || e.key === Qt.Key_Down || e.key === Qt.Key_Tab;
+        if (back || on) keyStep(on ? 1 : -1);
+        else if (e.key === Qt.Key_Home) { keyIndex = -1; keyStep(1); }
+        else if (e.key === Qt.Key_End) { keyIndex = count; keyStep(-1); }
+        else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { const i = keyIndex; keyNav = false; clickItem(i, false); }
+        else if (e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier))) { const i = keyIndex; keyNav = false; clickItem(i, true); }
+        else if (e.key === Qt.Key_Escape) keyNav = false;
+        else return;
+        e.accepted = true;
+    }
     function clickItem(i, right) {
         if (dragKey !== "") return;                     // (a right-click mid-drag opens no menu)
         // The dock's empty space (its ends, between icons, a divider): right-click for the
@@ -1824,6 +1857,29 @@ PanelWindow {
                 }
             }
 
+            // The keyboard (win.startKeys): one item holds it for the whole dock, named for the
+            // icon the arrow keys are on (what a screen reader reads), with a ring round that icon
+            Item {
+                id: keyFocus
+                focus: win.keyNav
+                onFocusChanged: if (focus) forceActiveFocus(Qt.TabFocusReason)
+                Keys.onPressed: e => win.dockKey(e)
+                Accessible.role: Accessible.Button
+                Accessible.name: win.keyNav ? win.keyName : ""
+                Accessible.onPressAction: win.clickItem(win.keyIndex, false)
+            }
+            Rectangle {
+                z: 20
+                visible: win.keyNav && win.keyIndex >= 0
+                x: row.x + (visible ? win.cellX(win.keyIndex) : 0) - 3
+                y: row.y + row.height - height + 3
+                width: (visible ? win.base * win.slotWidth(win.keyIndex) * win.scaleAt(win.keyIndex) : 0) + 6
+                height: (visible ? win.base * win.scaleAt(win.keyIndex) : 0) + 6
+                color: "transparent"
+                radius: Config.corner(14)
+                border.width: 2
+                border.color: Config.accent
+            }
             Row {
                 id: row
                 spacing: win.spacing

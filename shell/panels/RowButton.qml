@@ -13,6 +13,25 @@ Rectangle {
     Accessible.role: Accessible.Button
     Accessible.name: Config.textOf(rb)
     Accessible.onPressAction: clicked()
+    // (the keyboard: a stop for Tab and the arrow keys; Enter or Space presses; its ring)
+    activeFocusOnTab: visible && enabled
+    Keys.onPressed: e => {
+        if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) clicked();
+        else if (e.key === Qt.Key_Down || e.key === Qt.Key_Up) {
+            const next = nextItemInFocusChain(e.key === Qt.Key_Down);
+            if (next) next.forceActiveFocus(Qt.TabFocusReason);
+        } else return;
+        e.accepted = true;
+    }
+    Rectangle {
+        z: 5
+        visible: parent.activeFocus
+        anchors { fill: parent; margins: -2 }
+        color: "transparent"
+        radius: Config.corner(10)
+        border.width: 2
+        border.color: Config.accent
+    }
     // Text and icons on it: the plain colour, or the dark one on the active colour (what the
     // row's own words, and the Icons in it, take, so each needn't say it again)
     readonly property color fg: selected ? pop.accentText : pop.text

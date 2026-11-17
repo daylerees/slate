@@ -460,6 +460,8 @@ ShellRoot {
                                 screen: pointerTrail.target ? pointerTrail.target.name : "",
                                 x: pointerTrail.dots.length ? Math.round(pointerTrail.dots[pointerTrail.dots.length - 1].x) : -1,
                                 y: pointerTrail.dots.length ? Math.round(pointerTrail.dots[pointerTrail.dots.length - 1].y) : -1 },
+                keys: { bar: Config.bars.some(b => b.keyNav), dock: win.keyNav, dockIndex: win.keyIndex,
+                        barFocus: (Config.bars.find(b => b.keyNav) || { keyAt: "" }).keyAt, barPath: topBar.keyPath, dockPath: win.keyPath },
                 locatePointer: { shows: locatePointer.shows, showing: locatePointer.showing, screen: locatePointer.target ? locatePointer.target.name : "",
                                  x: Math.round(locatePointer.at.x), y: Math.round(locatePointer.at.y) },
                 look: { glass: Config.glass, animate: Config.animate, text13: Config.text(13), dim: String(Config.tint("#8b94a3")) },
@@ -678,6 +680,14 @@ ShellRoot {
     IpcHandler {
         target: "pointer"
         function locate(): void { locatePointer.locate(); }
+    }
+    // The menu bar and the dock by keyboard (Accessibility; Super+Alt+B, Super+Alt+D): the bar on
+    // the screen you're on, or the dock, takes the keyboard
+    IpcHandler {
+        target: "keys"
+        function bar(): void { (Config.barFor(Config.focusedScreen) || topBar).startKeys(); }
+        function dock(): void { win.startKeys(); }
+        function stop(): void { for (const b of Config.bars) b.stopKeys(); win.keyNav = false; }
     }
     // Zoom (Settings → Accessibility): the keys (binds.lua) zoom at once and say where they got
     // to with note; step and toggle are the same from anywhere else

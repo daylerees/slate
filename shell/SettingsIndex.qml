@@ -249,6 +249,7 @@ Singleton {
         ["Zoom level", "accessibility", "zoom magnification how far times"],
         ["Follow the pointer", "accessibility", "zoom follow pointer mouse centre center smooth"],
         ["Screen reader", "accessibility", "screen reader orca blind read aloud speech narrator talk"],
+        ["The menu bar and dock by keyboard", "accessibility", "keyboard navigation tab focus bar dock without a mouse arrow keys"],
         ["Trailing pointer", "accessibility", "pointer trail mouse trails cursor follow find track"],
         ["On-screen keyboard", "accessibility", "on-screen keyboard osk virtual touch screen tablet type without keyboard"],
         ["Locate the pointer", "accessibility", "find pointer cursor mouse where lost locate rings show"],

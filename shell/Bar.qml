@@ -469,6 +469,82 @@ PanelWindow {
         ]
     }
     function focusedBar() { return Config.barFor(Config.focusedScreen) || bar; }
+
+    // ---- The keyboard (Accessibility; Super+Alt+B) ----
+    // The bar takes the keyboard and its first thing is focused; the arrow keys and Tab move
+    // along it (Qt's tab chain: each Segment's activeFocusOnTab), Enter or Space presses. A panel
+    // opened from it takes the keyboard (Popouts), and the bar has it back when that closes.
+    property bool keyNav: false
+    property Item keyReturn: null           // what opened the panel, to go back to
+    property string keyAt: ""               // (the tests: the name of the thing focused)
+    property var keyPath: []                // (the tests: the names focused, in turn)
+    WlrLayershell.keyboardFocus: keyNav ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // The things a key can stop on, in the order they're drawn along the bar
+    function keyStops() {
+        const out = [];
+        const walk = it => {
+            for (const c of it.children) {
+                if (!c.visible) continue;
+                if (c.activeFocusOnTab && c.clickable !== undefined && c.name !== undefined) out.push(c);
+                else walk(c);
+            }
+        };
+        walk(left);
+        const at = c => { const p = c.mapToItem(bar.contentItem, 0, 0); return bar.vert ? p.y : p.x; };
+        return out.sort((a, b) => at(a) - at(b));
+    }
+    function startKeys(at) {
+        if (!at) keyPath = [];
+        keyNav = true;
+        Qt.callLater(() => {
+            const first = at && at.visible ? at : keyStops()[0];
+            if (first) first.forceActiveFocus(Qt.TabFocusReason);
+        });
+    }
+    function stopKeys() { keyNav = false; keyReturn = null; }
+    function keysBack() {
+        if (!keyReturn || (popouts && popouts.engaged)) return;
+        const back = keyReturn;
+        keyReturn = null;
+        startKeys(back);
+    }
+    function segKey(seg, e) {
+        const back = e.key === Qt.Key_Left || e.key === Qt.Key_Up || e.key === Qt.Key_Backtab;
+        const on = e.key === Qt.Key_Right || e.key === Qt.Key_Down || e.key === Qt.Key_Tab;
+        if (back || on) {
+            const stops = keyStops(), i = stops.indexOf(seg);
+            const next = stops[Math.max(0, Math.min(stops.length - 1, i + (on ? 1 : -1)))];
+            if (next) next.forceActiveFocus(on ? Qt.TabFocusReason : Qt.BacktabFocusReason);
+        } else if (e.key === Qt.Key_Home || e.key === Qt.Key_End) {
+            const stops = keyStops();
+            const next = stops[e.key === Qt.Key_Home ? 0 : stops.length - 1];
+            if (next) next.forceActiveFocus(Qt.TabFocusReason);
+        } else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) {
+            keyReturn = seg;
+            keyNav = false;
+            seg.clicked();
+            // (nothing opened from it, a switch say: keep the keyboard)
+            Qt.callLater(() => { if (keyReturn === seg && !(popouts && popouts.engaged)) startKeys(seg); });
+        } else if (e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier))) {
+            keyReturn = null;
+            keyNav = false;
+            seg.rightClicked();
+        } else if (e.key === Qt.Key_Escape) {
+            stopKeys();
+        } else return;
+        e.accepted = true;
+    }
+    Connections {
+        target: bar.popouts
+        // (checked once things settle: a panel opening is "pending", then "current", and in
+        // between it's briefly neither)
+        function onEngagedChanged() {
+            if (!bar.popouts.engaged && bar.keyReturn) keysBackSoon.restart();
+        }
+    }
+    // (a moment after the panel's window lets go of the keyboard, or Hyprland may not give it
+    // to the bar)
+    Timer { id: keysBackSoon; interval: 150; onTriggered: bar.keysBack() }
     IpcHandler {
         target: "bar"
         enabled: bar.primary
@@ -1791,6 +1867,22 @@ PanelWindow {
         Accessible.role: clickable ? Accessible.Button : Accessible.StaticText
         Accessible.name: tip !== "" ? tip : Config.textOf(seg)
         Accessible.onPressAction: if (clickable) clicked()
+        // Keyboard (Super+Alt+B: bar.startKeys): each thing you can press is a stop for the arrow
+        // keys and Tab while the bar has the keyboard; Enter or Space presses it, the menu key
+        // (or Shift+F10) is its right-click, Escape gives the keyboard back
+        activeFocusOnTab: bar.keyNav && clickable && wanted && visible
+        Keys.onPressed: e => bar.segKey(seg, e)
+        onActiveFocusChanged: if (activeFocus && bar.keyNav) { bar.keyAt = seg.name; bar.keyPath = bar.keyPath.concat([seg.name]).slice(-20); }
+        // (the focus ring: an accent outline round it, inside the container's edge)
+        Rectangle {
+            z: 5
+            visible: bar.keyNav && seg.activeFocus
+            anchors { fill: parent; margins: bar.fillInset }
+            color: "transparent"
+            radius: Config.corner(6)
+            border.width: 2
+            border.color: Config.accent
+        }
         property bool carried: false            // being dragged (arranging): off the line till it lands
         property bool stretchy: false           // the window's title: as long as the line has room for
         visible: shell && !held ? shell.shows(seg) : false

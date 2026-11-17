@@ -66,6 +66,8 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + ALT + P"]            = "Slate: Show where the pointer is",
     ["SUPER + ALT + K"]            = "Slate: On-screen keyboard",
     ["SUPER + ALT + S"]            = "Slate: Screen reader on or off",
+    ["SUPER + ALT + B"]            = "Slate: The menu bar by keyboard",
+    ["SUPER + ALT + D"]            = "Slate: The dock by keyboard",
     ["SUPER + ALT + mouse_up"]     = "Slate: Zoom in (scroll)",
     ["SUPER + ALT + mouse_down"]   = "Slate: Zoom out (scroll)",
     ["SUPER + Q"]                  = "Windows: Close the window",
@@ -529,6 +531,9 @@ if SLATE_KEYS or EXTRAS then
     hl.bind(mainMod .. " + ALT + S", hl.dsp.exec_cmd(slate("screenreader toggle")))
     -- The on-screen keyboard: shown or put away (Accessibility)
     hl.bind(mainMod .. " + ALT + K", hl.dsp.exec_cmd(slate("keyboard toggle")))
+    -- The menu bar or the dock by keyboard: the arrow keys move, Enter presses, Escape leaves
+    hl.bind(mainMod .. " + ALT + B", hl.dsp.exec_cmd(slate("keys bar")))
+    hl.bind(mainMod .. " + ALT + D", hl.dsp.exec_cmd(slate("keys dock")))
     -- Where's the pointer? Rings round it for a moment (Accessibility)
     hl.bind(mainMod .. " + ALT + P", hl.dsp.exec_cmd(slate("pointer locate")))
     -- ...and with the scroll wheel: up to zoom in, down to zoom out

@@ -56,6 +56,11 @@ Column {
         }
         Separator {}
         SettingRow {
+            label: "The menu bar and dock by keyboard"
+            detail: "Super+Alt+B for the menu bar, Super+Alt+D for the dock: the arrow keys move along it, Enter opens what you're on and Escape leaves. In a panel, Tab and the arrow keys move too"
+        }
+        Separator {}
+        SettingRow {
             label: "Locate the pointer"
             detail: "Rings round the pointer for a moment, to find it. Press Super+Alt+P any time"
             Button { label: "Show me"; icon: 0xF1D4; onClicked: Config.slateCall("pointer", "locate") }
