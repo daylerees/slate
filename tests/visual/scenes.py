@@ -200,6 +200,12 @@ SCENES["panel-control"]["mask"] = [(90, 105, 220, 20)]
 # The battery panel's System rows (CPU, memory, disk): the host machine's, live
 # (where they are now the panel has no battery above them: it opens from the bar's power button)
 SCENES["panel-battery"]["mask"] = [(1080, 172, 350, 130)]
+# All Settings: the grid of every page's tile
+SCENES["settings-overview"] = {
+    "do": [("settings", "page", "overview")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "overview",
+    "settle": 1.2, "undo": [("settings", "close")],
+}
 for _p in settings_pages():
     SCENES[f"settings-{_p}"] = {
         "do": [("settings", "page", _p)],

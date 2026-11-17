@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backups · Slate docs</title>
+<meta name="description" content="Backups in Slate: encrypted copies of your files on another drive, on a schedule, and restoring them.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../style.css?v=31">
+<link rel="stylesheet" href="docs.css?v=2">
+</head>
+<body class="docs" data-page="backups">
+
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../assets/logo.png?v=7" alt="Slate" height="34"></a>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+  <nav id="site-nav" aria-label="Site">
+    <a href="../index.html">Home</a>
+    <a href="install.html">Install</a>
+    <a class="here" href="index.html">Docs</a>
+    <a href="../changelog.html">Changelog</a>
+    <a class="button small" href="https://github.com/daylerees/slate"><i class="ti">&#xEC1C;</i> GitHub</a>
+  </nav>
+</header>
+
+<div class="docs-layout">
+  <aside class="docs-nav" id="docs-nav" aria-label="Docs"></aside>
+  <main class="docs-main">
+    <button class="docs-menu" type="button"><i class="ti">&#xEC42;</i> All pages</button>
+    <article class="doc">
+      <p class="crumb">Your computer</p>
+      <h1>Backups</h1>
+      <p class="lead">Copies of your files on another drive, encrypted, with past versions to go back to:
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Backups</span>. Once it's set up, Slate backs up by
+        itself, quietly.</p>
+
+      <h2>Setting up</h2>
+      <p>Plug in a drive and choose it under <strong>Back up to</strong>, or type a folder (a network folder that's
+        mounted works too), then press <strong>Set up</strong>. Slate makes an encrypted backup there with
+        <a href="https://restic.net">restic</a>, and a key to open it, kept in your keyring. The first backup starts
+        straight away.</p>
+      <div class="callout"><i class="ti">&#xEA51;</i>
+        <p>Keep a copy of <strong>Your backup key</strong> somewhere safe (<strong>Show</strong>, then
+          <strong>Copy</strong>). Without it, your backups can't be opened on another computer. Backups need restic
+          (the <code>restic</code> package); without it, the page says so.</p></div>
+
+      <h2>What and when</h2>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>What to back up</td><td><strong>Your home folder</strong> (to start with): everything in it except
+          caches, the Waste Basket and installed apps. Or just <strong>Documents, pictures, music and
+          videos</strong>.</td></tr>
+        <tr><td>How often</td><td><strong>Every day</strong> (to start with), <strong>Every week</strong>, or
+          <strong>Only when I ask</strong>. Backups run quietly in the background, never in game mode. When the
+          drive's unplugged, Slate catches up once it's back, and after a week without a backup it reminds you
+          once.</td></tr>
+      </table>
+      <p><strong>Back up now</strong> runs one straight away. Slate only sends a notification if a backup didn't
+        finish.</p>
+
+      <h2>Restoring</h2>
+      <p>Under <strong>Restore</strong>, press <strong>Look</strong>, choose a backup by its date, and open folders to
+        find what you want. <strong>Restore</strong> brings a file or folder back into a new folder in your home,
+        <code>Restored from backup</code>, beside your files and never over them, and opens it.</p>
+    </article>
+    <nav class="docs-pager" id="docs-pager"></nav>
+  </main>
+  <aside class="docs-toc" id="docs-toc"></aside>
+</div>
+
+<script src="../site.js?v=4"></script>
+<script src="docs.js?v=2"></script>
+</body>
+</html>

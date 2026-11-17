@@ -206,6 +206,12 @@ JsonAdapter {
     property bool barShowBluetooth: true      // Bluetooth (on computers with an adapter)
     property bool barShowVolume: true
     property bool barShowBattery: true
+    // Settings → Backups (Backups.qml, scripts/backup.py: restic): where they go ("" until set up),
+    // what ("home": your home folder, without caches and the Waste Basket; "personal": Desktop,
+    // Documents, Pictures, Music and Videos) and how often ("daily", "weekly" or "manual")
+    property string backupTo: ""
+    property string backupWhat: "home"
+    property string backupSchedule: "daily"
     // Settings → Storage: a calm notification when a drive is nearly full (StorageWatch.qml)
     property bool storageWarning: true
     // The timers (Settings → Timers; Timers.qml): the drink reminder and the focus timer, their

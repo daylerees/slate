@@ -680,6 +680,8 @@ ShellRoot {
     }
     // Locate the pointer (Accessibility; Super+Alt+P): rings round it for a moment
     LocatePointer { id: locatePointer }
+    // Backups on a schedule (Settings → Backups)
+    Backups { id: backups }
     // A drive nearly full (Settings → Storage)
     StorageWatch { id: storageWatch }
     // Screen recording (the Screenshot panel, Super+Shift+Print)
