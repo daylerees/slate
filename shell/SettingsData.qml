@@ -313,6 +313,8 @@ JsonAdapter {
     // On-screen keyboard (Settings → Accessibility; Super+Alt+K): Slate's keys at the bottom of the
     // screen, and on the lock screen
     property bool onScreenKeyboard: false
+    // Trailing pointer (Settings → Accessibility): fading dots behind the pointer as it moves
+    property bool pointerTrail: false
     // Screen reader (Settings → Accessibility; Super+Alt+S): Orca reads the screen aloud
     property bool screenReader: false
     property bool zoom: false

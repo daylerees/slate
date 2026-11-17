@@ -61,6 +61,12 @@ Column {
             Button { label: "Show me"; icon: 0xF1D4; onClicked: Config.slateCall("pointer", "locate") }
         }
         Separator {}
+        ToggleSetting {
+            label: "Trailing pointer"
+            detail: "A short trail of fading dots behind the pointer as it moves, to keep track of it. Off in game mode"
+            key: "pointerTrail"
+        }
+        Separator {}
         SettingRow {
             label: "Pointer size"
             detail: "A bigger pointer is easier to see: in Input, with the pointer's style"

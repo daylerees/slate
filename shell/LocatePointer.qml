@@ -27,26 +27,16 @@ Scope {
             onStreamFinished: { try { const p = JSON.parse(text); root.place(p.x, p.y); } catch (e) {} }
         }
     }
-    // (x, y): Hyprland's pixels on the desktop. The monitor holding them, by Hyprland's own
-    // layout (its x, y and its size divided by its scale), then Slate's units within it
+    // (x, y): Hyprland's pixels on the desktop, made Slate's on its screen (Config.screenPoint)
     function place(x, y) {
-        const k = Config.uiScale || 1;
-        for (const m of Hyprland.monitors.values) {
-            const o = m.lastIpcObject || {};
-            const mx = o.x !== undefined ? o.x : m.x, my = o.y !== undefined ? o.y : m.y;
-            const sc = o.scale || m.scale || 1;
-            const w = (o.width || m.width) / sc, h = (o.height || m.height) / sc;
-            if (x < mx || y < my || x >= mx + w || y >= my + h) continue;
-            const scr = Quickshell.screens.find(s => s.name === m.name);
-            if (!scr) return;
-            target = scr;
-            at = Qt.point((x - mx) / k, (y - my) / k);
-            shows++;
-            showing = false;
-            showing = true;
-            done.restart();
-            return;
-        }
+        const p = Config.screenPoint(x, y);
+        if (!p) return;
+        target = p.screen;
+        at = Qt.point(p.x, p.y);
+        shows++;
+        showing = false;
+        showing = true;
+        done.restart();
     }
     Timer { id: done; interval: Config.animate ? 1200 : 900; onTriggered: root.showing = false }
 

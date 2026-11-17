@@ -280,7 +280,9 @@ OnScreenKeys.qml              the on-screen keyboard's keys (Accessibility), the
 OnScreenKeyboard.qml          the on-screen keyboard on the desktop ("slate-osk", never taking the keyboard), typing into apps
                               with wtype; Super+Alt+K
 LocatePointer.qml             Accessibility → Locate the pointer (Super+Alt+P): rings round the pointer for a moment, placed
-                              from Hyprland's pointer position (made Slate's units: Config.uiScale)
+                              from Hyprland's pointer position (made Slate's units: Config.screenPoint)
+PointerTrail.qml              Accessibility → Trailing pointer: fading dots behind the pointer, its place asked of
+                              Hyprland's socket about 60 times a second while on (not in game mode)
 ContrastEdge.qml              Accessibility → High contrast: a clear edge round a surface (made by its Shadow, or put in
                               a surface without one: Settings' cards, the bar's containers)
 BarEditor.qml                 Arranging the menu bar (Settings → Menu Bar → Edit layout): the panel by the bar ("slate-bar-editor", drawn with the bar panels' pieces in panels/: the pool, the picked thing's options, and a second view for what leaves first when it doesn't fit), the dimming over the windows ("slate-bar-dim") and what's carried under the pointer ("slate-bar-drag"). The dragging itself is in Bar.qml; the arrangement and what changes it are Config's bar… functions

@@ -456,6 +456,10 @@ ShellRoot {
                 // What's in effect after game mode and Accessibility have had their say
                 screenReader: { on: screenReader.on, applied: screenReader.applied },
                 onScreenKeyboard: { shown: onScreenKeyboard.shown, sent: onScreenKeyboard.sent, last: onScreenKeyboard.last, wtype: onScreenKeyboard.haveWtype },
+                pointerTrail: { on: pointerTrail.on, moves: pointerTrail.moves, dots: pointerTrail.dots.length,
+                                screen: pointerTrail.target ? pointerTrail.target.name : "",
+                                x: pointerTrail.dots.length ? Math.round(pointerTrail.dots[pointerTrail.dots.length - 1].x) : -1,
+                                y: pointerTrail.dots.length ? Math.round(pointerTrail.dots[pointerTrail.dots.length - 1].y) : -1 },
                 locatePointer: { shows: locatePointer.shows, showing: locatePointer.showing, screen: locatePointer.target ? locatePointer.target.name : "",
                                  x: Math.round(locatePointer.at.x), y: Math.round(locatePointer.at.y) },
                 look: { glass: Config.glass, animate: Config.animate, text13: Config.text(13), dim: String(Config.tint("#8b94a3")) },
@@ -669,6 +673,8 @@ ShellRoot {
     }
     // Locate the pointer (Accessibility; Super+Alt+P): rings round it for a moment
     LocatePointer { id: locatePointer }
+    // Trailing pointer (Accessibility)
+    PointerTrail { id: pointerTrail }
     IpcHandler {
         target: "pointer"
         function locate(): void { locatePointer.locate(); }

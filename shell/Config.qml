@@ -182,6 +182,23 @@ Singleton {
         }
         return parts.join(", ");
     }
+    // A point on the desktop in Hyprland's pixels (hyprctl cursorpos) → { screen, x, y }: the
+    // screen holding it and the point within it in Slate's units (Interface size divided out), or
+    // null off every screen. Hyprland's layout: each monitor's x, y and its size over its scale.
+    // (LocatePointer.qml, PointerTrail.qml)
+    function screenPoint(x, y) {
+        const k = uiScale || 1;
+        for (const m of Hyprland.monitors.values) {
+            const o = m.lastIpcObject || {};
+            const mx = o.x !== undefined ? o.x : m.x, my = o.y !== undefined ? o.y : m.y;
+            const sc = o.scale || m.scale || 1;
+            const w = (o.width || m.width) / sc, h = (o.height || m.height) / sc;
+            if (x < mx || y < my || x >= mx + w || y >= my + h) continue;
+            const scr = Quickshell.screens.find(s => s.name === m.name);
+            return scr ? { screen: scr, x: (x - mx) / k, y: (y - my) / k } : null;
+        }
+        return null;
+    }
     // ...and Orca, the screen reader (ScreenReader.qml looks)
     property bool orcaAvailable: true
     function contrasted(c) {
