@@ -71,10 +71,41 @@ Column {
         stdout: StdioCollector { onStreamFinished: keyShow.key = text.trim() }
     }
 
-    // ---- Not there yet: restic, then where to ----
+    // ---- Not there yet: restic (installed from here, after asking: bin/slate-system --install,
+    // with your password, as App Theming's apps are), then where to ----
+    property bool installing: false
+    property string installSaid: ""
+    Process {
+        id: installer
+        command: [Quickshell.shellPath("bin/slate-system"), "--install", "restic"]
+        stderr: StdioCollector { id: installErr }
+        onExited: code => {
+            backupsPage.installing = false;
+            // (126/127: the password prompt was closed or failed, so nothing started)
+            if (code === 126 || code === 127) { backupsPage.installSaid = ""; return; }
+            const err = (installErr.text || "").trim().split("\n").filter(l => l.trim() !== "").pop() || "";
+            backupsPage.installSaid = code === 0 ? "" : "Slate couldn't install restic" + (err ? " (" + err + ")" : "") + ". You can install the restic package yourself, too";
+            backupsPage.refresh();
+        }
+    }
     Group {
         visible: !backupsPage.ready && backupsPage.st.restic !== undefined
-        SettingRow { label: "Backups need restic"; detail: "Install the restic package, then come back here to set them up" }
+        SettingRow {
+            label: "Backups need restic"
+            detail: backupsPage.installSaid !== "" ? backupsPage.installSaid
+                : backupsPage.installing ? "Installing restic…"
+                : "restic makes the encrypted backups. Slate can install it from your distribution's software, which asks for your password"
+            Button {
+                label: backupsPage.installing ? "Installing…" : "Install"; icon: 0xEA96; primary: true
+                enabled: !backupsPage.installing
+                onClicked: win.ask = {
+                    title: "Install restic?",
+                    body: "Slate installs restic, which makes your backups, from your distribution's software. It asks for your password. Once it's in, you can set up your backups right here.",
+                    button: "Install", code: 0xEA96,
+                    run: () => { backupsPage.installing = true; backupsPage.installSaid = ""; installer.running = true; }
+                }
+            }
+        }
     }
     GroupLabel { visible: backupsPage.ready && !backupsPage.isSet; text: "Set up" }
     Group {
