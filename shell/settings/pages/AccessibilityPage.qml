@@ -17,7 +17,7 @@ Column {
     Group {
         ToggleSetting {
             label: "Zoom"
-            detail: "Magnify the whole screen around the pointer. Super+Alt+Z turns it on and off, and Super+Plus and Super+Minus zoom in and out"
+            detail: "Magnify the whole screen around the pointer. Super+Alt+Z turns it on and off; Super+Plus and Super+Minus, or Super+Alt with the scroll wheel, zoom in and out"
             key: "zoom"
         }
         Separator {}

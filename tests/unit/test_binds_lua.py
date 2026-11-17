@@ -283,6 +283,17 @@ class BindsLua(Case):
                 if m and not 10 <= int(m.group(1)) <= 19:
                     self.assertNotRegex(binds[0][0] or "", r"\d", f"{keyset}: {keys} is numbered")
 
+    def test_zoom_on_off_and_with_the_wheel(self):
+        """Accessibility → Zoom's keys: Super+Alt+Z, and Super+Alt with the scroll wheel, in
+        both sets that zoom, each described as zoom (Settings → Shortcuts lists them)."""
+        for keyset in ("slate", "hyprland-extras"):
+            shortcuts = self.shortcuts(keyset)
+            for keys, word in (("SUPER + ALT + Z", "Zoom on or off"), ("SUPER + ALT + mouse_up", "Zoom in"),
+                               ("SUPER + ALT + mouse_down", "Zoom out")):
+                with self.subTest(keyset=keyset, keys=keys):
+                    self.assertIn(keys, shortcuts, "not bound")
+                    self.assertIn(word, shortcuts[keys][0][0])
+
     def test_a_shortcut_in_two_sets_does_the_same_in_both(self):
         """Hyprland + Slate Extras is Hyprland's shortcuts plus Slate's on the keys they leave
         free: what a shared shortcut does is written once in binds.lua, and this keeps a

@@ -63,6 +63,8 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + code:82"]            = "Slate: Zoom out (keypad -)",
     ["SUPER + code:86"]            = "Slate: Zoom in (keypad +)",
     ["SUPER + ALT + Z"]            = "Slate: Zoom on or off",
+    ["SUPER + ALT + mouse_up"]     = "Slate: Zoom in (scroll)",
+    ["SUPER + ALT + mouse_down"]   = "Slate: Zoom out (scroll)",
     ["SUPER + Q"]                  = "Windows: Close the window",
     ["SUPER + Escape"]             = "Windows: Force-quit an app (click its window)",
     ["SUPER + Tab"]                = "Windows: Switch windows (hold Super)",
@@ -520,6 +522,9 @@ if SLATE_KEYS or EXTRAS then
     hl.bind(mainMod .. " + code:86", function() zoomBy(0.25) end, { repeating = true })
     -- Zoom on or off
     hl.bind(mainMod .. " + ALT + Z", zoomToggle)
+    -- ...and with the scroll wheel: up to zoom in, down to zoom out
+    hl.bind(mainMod .. " + ALT + mouse_up", function() zoomBy(0.25) end)
+    hl.bind(mainMod .. " + ALT + mouse_down", function() zoomBy(-0.25) end)
 end
 
 --------------------------------
