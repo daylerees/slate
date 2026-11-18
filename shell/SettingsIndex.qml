@@ -334,7 +334,9 @@ Singleton {
                 const qs = q.split(" ");
                 const inLabel = w => p.nWords.some(x => x.startsWith(w));
                 if (qs.every(w => inLabel(w) || p.moreWords.some(x => x.startsWith(w))))
-                    s = qs.every(inLabel) ? 2.5 : 3.5;
+                    // (words scattered through the extras come after the whole phrase found
+                    // there: "dark mode" is Theme's before High contrast's "darker … light mode")
+                    s = qs.every(inLabel) ? 2.5 : 4.5;
             }
             // On the page it names ("wifi" → the Wi-Fi page before the bar's Wi-Fi switch)
             const home = p.page.startsWith(q) ? 0 : 1;
