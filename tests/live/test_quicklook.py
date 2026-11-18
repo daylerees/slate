@@ -38,9 +38,13 @@ class QuickLook(LiveCase):
         return p
 
     def look(self, path):
+        # (a text file's words come in a line after its details, which already make the view
+        # "text": waited for too, or code and cut were now and then read before they'd arrived)
         self.ipc("quicklook", "open", path)
         return self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["path"] == path
-                         and st["quicklook"]["view"] != "loading", f"Quick Look on {os.path.basename(path)}")["quicklook"]
+                         and st["quicklook"]["view"] != "loading"
+                         and (st["quicklook"]["view"] != "text" or st["quicklook"]["textLength"] > 0),
+                         f"Quick Look on {os.path.basename(path)}")["quicklook"]
 
     def key(self, *args):
         """A real key press (wtype: -s waits a moment for its keymap). Each wtype is a new

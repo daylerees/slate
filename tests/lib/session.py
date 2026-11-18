@@ -73,6 +73,11 @@ class SessionError(Exception):
     pass
 
 
+class NotReady(SessionError):
+    """Slate is part way through loading (again): its IPC answers "Not ready to accept queries
+    yet". wait() looks again; anything else asking for the state still fails."""
+
+
 class Session:
     _shared = None
 
@@ -295,6 +300,8 @@ class Session:
         try:
             return json.loads(out)
         except ValueError:
+            if out.startswith("Not ready to accept queries yet"):
+                raise NotReady(out[:200])
             raise SessionError(f"test state wasn't JSON: {out[:200]}")
 
     def wait(self, check, timeout=8, what="the expected state"):
@@ -308,6 +315,8 @@ class Session:
                     return st
             except (KeyError, IndexError, TypeError):
                 pass
+            except NotReady:
+                pass            # (Slate part way through loading again: a test that saves its files makes it)
             time.sleep(0.15)
         raise AssertionError(f"timed out waiting for {what}; state was: {json.dumps(st)[:400]}")
 

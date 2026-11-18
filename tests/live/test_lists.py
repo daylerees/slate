@@ -217,9 +217,13 @@ class SettingsPolls(Lists):
     def rows(self):
         return self.lists()["settings"]
 
-    def looks(self, name, more, timeout=20):
-        """Wait for `more` more looks of this kind; returns the rows made by then."""
+    def looks(self, name, more, *ipc, timeout=20):
+        """Wait for `more` more looks of this kind, after the IPC call `ipc` (if any) that brings
+        them on; returns the rows made by then. (The count is read before the call: read after,
+        a quick look was already counted, and the wait for it timed out now and then)"""
         start = self.rows().get(name, 0)
+        if ipc:
+            self.ipc(*ipc)
         self.wait(lambda st: st["lists"]["settings"].get(name, 0) >= start + more, f"{more} more of {name}", timeout=timeout)
         return self.rows()
 
@@ -242,14 +246,11 @@ class SettingsPolls(Lists):
         with self.subTest("the same again"):
             self.assertEqual(self.looks("printerLooks", 2)["printers"], made, "rows were made again though nothing changed")
         with self.subTest("one printer changes"):
-            self.ipc("test", "settingsPoll", "printers", self.printers("office", "study", jobs=2))
-            self.assertEqual(self.looks("printerLooks", 2)["printers"], made, "a job waiting made the rows again")
+            self.assertEqual(self.looks("printerLooks", 2, "test", "settingsPoll", "printers", self.printers("office", "study", jobs=2))["printers"], made, "a job waiting made the rows again")
         with self.subTest("one more printer"):
-            self.ipc("test", "settingsPoll", "printers", self.printers("office", "study", "attic"))
-            self.assertEqual(self.looks("printerLooks", 2)["printers"], made + 1, "the rows there already were made again")
+            self.assertEqual(self.looks("printerLooks", 2, "test", "settingsPoll", "printers", self.printers("office", "study", "attic"))["printers"], made + 1, "the rows there already were made again")
         with self.subTest("one fewer"):
-            self.ipc("test", "settingsPoll", "printers", self.printers("study", "attic"))
-            self.assertEqual(self.looks("printerLooks", 2)["printers"], made + 1)
+            self.assertEqual(self.looks("printerLooks", 2, "test", "settingsPoll", "printers", self.printers("study", "attic"))["printers"], made + 1)
 
     def people(self, *names, admin=()):
         return json.dumps({"service": "on", "me": 1000, "admin": True, "users": [
@@ -265,11 +266,14 @@ class SettingsPolls(Lists):
         self.wait(lambda st: st["lists"]["settings"].get("users", 0) >= 2, "the two people's rows", timeout=15)
         made = self.rows()["users"]
         with self.subTest("someone made an administrator"):
-            self.ipc("test", "settingsPoll", "users", self.people("alex", "sam", admin=("sam",)))
-            self.assertEqual(self.looks("userLooks", 1)["users"], made, "a change of account type made the rows again")
+            self.assertEqual(self.looks("userLooks", 1, "test", "settingsPoll", "users", self.people("alex", "sam", admin=("sam",)))["users"], made, "a change of account type made the rows again")
         with self.subTest("someone added"):
+            # (waited for by the new row itself: a look left over from the step before, with
+            # the old list, once arrived just after the count was read and passed for this one)
             self.ipc("test", "settingsPoll", "users", self.people("alex", "sam", "robin", admin=("sam",)))
-            self.assertEqual(self.looks("userLooks", 1)["users"], made + 1, "the rows there already were made again")
+            self.wait(lambda st: st["lists"]["settings"].get("users", 0) >= made + 1, "Robin's row", timeout=20)
+            self.s.settle(1.0)
+            self.assertEqual(self.rows()["users"], made + 1, "the rows there already were made again")
 
     def test_network(self):
         self.addCleanup(lambda: self.ipc("test", "settingsPoll", "network", ""))
@@ -281,5 +285,4 @@ class SettingsPolls(Lists):
         with self.subTest("the same again"):
             self.assertEqual(self.looks("networkLooks", 2)["facts"], made, "rows were made again though nothing changed")
         with self.subTest("one more fact"):
-            self.ipc("test", "settingsPoll", "network", "wired=eth0\nip=10.0.0.5/24\ngateway=10.0.0.1\nrate=1000 Mb/s\n")
-            self.assertEqual(self.looks("networkLooks", 2)["facts"], made + 1, "the rows there already were made again")
+            self.assertEqual(self.looks("networkLooks", 2, "test", "settingsPoll", "network", "wired=eth0\nip=10.0.0.5/24\ngateway=10.0.0.1\nrate=1000 Mb/s\n")["facts"], made + 1, "the rows there already were made again")

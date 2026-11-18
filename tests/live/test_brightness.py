@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 from live import LiveCase
 
@@ -95,6 +96,19 @@ class AutoBrightnessCase(LiveCase):
             self.s.settle(0.2)
         self.fail(f"{what}: the screen is at {self.screen()}/1000, not about {want}")
 
+    def wait_still(self, what, timeout=10):
+        """Until the easing has finished: no new step for half a second (five steps' time)."""
+        last, since = None, time.monotonic()
+        end = since + timeout
+        while time.monotonic() < end:
+            calls = len(self.set_calls())
+            if calls != last:
+                last, since = calls, time.monotonic()
+            elif time.monotonic() - since >= 0.5:
+                return
+            self.s.settle(0.1)
+        self.fail(f"{what}: it was still stepping after {timeout}s")
+
     def switch_on(self):
         self.config("autoBrightness", "true")
         return self.wait(lambda st: st["autoBrightness"]["running"] and st["autoBrightness"]["now"]
@@ -153,7 +167,9 @@ class Follows(AutoBrightnessCase):
         self.assertEqual(steps, sorted(steps), f"it didn't go one way: {steps}")
         self.assertTrue(all(b - a <= 150 for a, b in zip([500] + steps, steps)), f"too big a step: {steps}")
 
-        # A flicker (a little more light) isn't followed
+        # A flicker (a little more light) isn't followed. (Once the easing has finished: near
+        # 860 can be a step short of it, and that last step was once taken for following it)
+        self.wait_still("easing to 2000 lux")
         before = len(self.set_calls())
         self.lux(2300)
         self.s.settle(3.0)
