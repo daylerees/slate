@@ -1200,9 +1200,13 @@ PanelWindow {
                     y: Math.round((parent.height - height) / 2)
                     visible: row.appTile
                     source: row.appTile ? "file://" + row.tilePath + "?v=" + row.version + "." + Config.tileVersion : ""
-                    sourceSize: Qt.size(192, 192)
+                    // Shrunk once to the size it's drawn at (as Slate's own icons are, above).
+                    // Mipmapped from 192 px, it was smooth or jagged by turns: Qt Quick puts small
+                    // pictures in a shared atlas with no mipmaps, and whether a tile went there
+                    // depended on what had been drawn before
+                    readonly property real dpr: root.screen ? root.screen.devicePixelRatio : 1
+                    sourceSize: width > 0 ? Qt.size(Math.ceil(width * dpr), Math.ceil(height * dpr)) : Qt.size(192, 192)
                     smooth: true
-                    mipmap: true
                     asynchronous: true
                     layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
                     onStatusChanged: if (row.appTile && status === Image.Error && !gen.running && row.tried !== row.tilePath) { row.tried = row.tilePath; gen.running = true; }
