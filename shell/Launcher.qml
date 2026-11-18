@@ -1204,8 +1204,12 @@ PanelWindow {
                     // Mipmapped from 192 px, it was smooth or jagged by turns: Qt Quick puts small
                     // pictures in a shared atlas with no mipmaps, and whether a tile went there
                     // depended on what had been drawn before
+                    // (from the layout's own size, not width: a row just made can read width 0 for
+                    // a moment, and a tile loaded at one size and then again at another wasn't
+                    // there yet as its row scrolled into view)
+                    readonly property real drawn: root.gridMode ? root.gridTile : root.tileSize
                     readonly property real dpr: root.screen ? root.screen.devicePixelRatio : 1
-                    sourceSize: width > 0 ? Qt.size(Math.ceil(width * dpr), Math.ceil(height * dpr)) : Qt.size(192, 192)
+                    sourceSize: Qt.size(Math.ceil(drawn * dpr), Math.ceil(drawn * dpr))
                     smooth: true
                     asynchronous: true
                     layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
