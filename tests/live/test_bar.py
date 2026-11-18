@@ -51,6 +51,28 @@ class Bar(LiveCase):
         self.ipc("popout", "close")
         self.wait(lambda st: st["popout"] == "" and not any(t["active"] for t in line(st).values()), "pressed to go with the panel")
 
+    def test_an_open_panel_stays_under_its_thing_as_it_changes_width(self):
+        """A panel stays centred on the thing that opened it while it's open, though the thing's
+        words change its width ("10 min" to "9 min", "Drink") and move it. It stayed where the
+        thing was when it opened, which once showed in the timers' pictures as a panel off to
+        one side, depending on whether the time had arrived before the panel opened."""
+        for key in ("drinkReminder", "barShowDrink", "barValueDrink"):
+            self.keep_setting(key)
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.config("drinkReminder", "true")
+        self.config("barShowDrink", "true")
+        self.config("barValueDrink", "false")
+        drink = lambda st: st["bar"]["line"]["drink"]
+        st = self.wait(lambda st: drink(st)["visible"] and drink(st)["w"] > 0, "the drink reminder on the bar")
+        self.ipc("bar", "panel", "drink")
+        st = self.wait(lambda st: st["popout"] == "drink", "the drink panel to open")
+        centre = lambda st: drink(st)["x"] + drink(st)["w"] / 2
+        offset, narrow = st["popoutAnchor"] - centre(st), drink(st)["w"]
+        self.config("barValueDrink", "true")                    # the time beside the droplet: wider
+        st = self.wait(lambda st: drink(st)["w"] > narrow + 10, "the drink reminder to show its time")
+        self.wait(lambda st: st["popout"] == "drink" and abs(st["popoutAnchor"] - centre(st) - offset) <= 1,
+                  "the panel to stay centred on the drink reminder")
+
     def test_bar_positions(self):
         """The bar moves to each edge and back, staying on screen as a layer."""
         old = self.keep_setting("barPosition")

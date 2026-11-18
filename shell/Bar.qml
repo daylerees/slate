@@ -267,6 +267,18 @@ PanelWindow {
         openedFrom = item;
         openedName = name;
     }
+    // While its panel is open, the panel stays centred on the thing that opened it: a thing's
+    // words change its width ("10 min" to "9 min", "Drink"), which moves it and its neighbours.
+    // Asked for (Qt.callLater, once per frame) whenever a thing or a container moves or resizes
+    function followOpened() {
+        if (!popouts || !openedFrom || openedName === "" || popouts.screen !== bar.screen) return;
+        if (popouts.current !== openedName && popouts.pending !== openedName) return;
+        const item = openedFrom.overflowed ? moreBtn : openedFrom;
+        if (!item.visible) return;
+        const p = item.mapToItem(content, item.width / 2, item.height / 2);
+        popouts.anchorX = p.x;
+        popouts.anchorY = p.y;
+    }
     // The thing whose panel is open (it shows pressed for as long as it is: Segment.active)
     property Item openedFrom: null
     property string openedName: ""
@@ -1903,6 +1915,11 @@ PanelWindow {
     // along the bar, when that isn't just its icon and value.
     component Segment: Item {
         id: seg
+        // (its panel follows it: bar.followOpened)
+        onXChanged: if (bar.openedFrom === seg) Qt.callLater(bar.followOpened)
+        onYChanged: if (bar.openedFrom === seg) Qt.callLater(bar.followOpened)
+        onWidthChanged: if (bar.openedFrom === seg) Qt.callLater(bar.followOpened)
+        onHeightChanged: if (bar.openedFrom === seg) Qt.callLater(bar.followOpened)
         property Item shell: null
         property string name: ""                // what it's called in the arrangement (set as it's placed)
         property bool wanted: true
@@ -2104,6 +2121,9 @@ PanelWindow {
     // them open, closing again a few seconds after the pointer leaves (or when clicked).
     component Container: Capsule {
         id: box
+        // (an open panel follows its thing, which moves with its container: bar.followOpened)
+        onXChanged: if (bar.openedFrom) Qt.callLater(bar.followOpened)
+        onYChanged: if (bar.openedFrom) Qt.callLater(bar.followOpened)
         readonly property bool isBox: true
         property int index: -1                  // its place in the arrangement
         property var cells: []                  // its things, in order
