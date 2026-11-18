@@ -311,9 +311,9 @@ Settings → About):
 - As automatic as possible.
 
 Never "premium" on its own (it suggests it costs money): say "a premium feel" or
-"premium-feeling". Don't name macOS in openings (the homepage's first paragraph): say "modern
-operating systems"; naming it where the inspirations are listed is fine. CLAUDE.md's Voice
-rules apply on top.
+"premium-feeling". Don't name macOS in openings (the homepage's first paragraph): say
+"premium-feeling operating systems"; naming it where the inspirations are listed is fine.
+CLAUDE.md's Voice rules apply on top.
 
 ## Building and shipping
 
