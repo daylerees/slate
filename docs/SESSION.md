@@ -86,6 +86,10 @@ inside the Slate session.
 - App launches use `uwsm app --` only when the session runs under uwsm.
 - If the Slate session fails to start, pick another session at login, or check
   `journalctl --user -b -u 'wayland-wm@*'` (uwsm) for errors.
+- `slate` (and `slate restart --full`) asks Hyprland to start Slate, as the session does at
+  login, so Slate always gets the session's environment, never that of the terminal it was
+  typed in (whose variables would otherwise reach every app opened from Slate). Only when
+  Hyprland can't be asked does `slate` start it itself.
 - Slate itself (Quickshell) runs under a small keeper that `slate` starts: a shell waiting on
   it, so it costs nothing while Slate runs, and with no systemd unit, so it works the same
   everywhere. If Slate crashes (a crash signal, SIGKILL from running out of memory, or an error

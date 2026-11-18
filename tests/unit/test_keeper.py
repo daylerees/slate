@@ -3,8 +3,14 @@ the keeper, which starts Quickshell and waits on it. A crash starts it again and
 it's back; what was asked for (slate stop, restart --full, a clean exit, SIGTERM, the session
 ending) doesn't; and a crash loop stops after a few tries with a message on screen.
 
+`slate` hands the start to Hyprland, as at login, so Slate gets the session's environment rather
+than the terminal's it was started from; without Hyprland it starts Slate itself.
+
 Quickshell, hyprctl and notify-send are stand-ins here (a script that does what the test's
-plan says, one line per start: run, kill, segv, exit N), so nothing real is started."""
+plan says, one line per start: run, kill, segv, exit N), so nothing real is started. The
+hyprctl stand-in runs what's handed to it the way Hyprland does: in the session's own
+environment (session-env.json), not the caller's."""
+import json
 import os
 import shutil
 import signal
@@ -26,7 +32,7 @@ case "$1" in
 esac
 case " $* " in *" ipc "*) exit 0 ;; esac
 n=$(cat "$d/launches" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" >"$d/launches"
-env | grep -E '^(QT_SCALE_FACTOR|QS_DISABLE_CRASH_HANDLER)=' >"$d/env.$n"
+env | grep -E '^(QT_SCALE_FACTOR|QS_DISABLE_CRASH_HANDLER|CALLERS_OWN)=' >"$d/env.$n"
 step=$(sed -n "${n}p" "$d/plan" 2>/dev/null); step=${step:-run}
 ulimit -c 0
 case "$step" in
@@ -43,7 +49,21 @@ printf '%s\n' "$*" >>"$d/hyprctl.log"
 case "$1" in
     version) [ ! -e "$d/session-gone" ] ;;
     notify) [ ! -e "$d/no-hyprland-notify" ] ;;
+    dispatch) [ ! -e "$d/session-gone" ] && [ ! -e "$d/no-dispatch" ] && exec python3 "$d/hyprland-exec.py" "$2" ;;
 esac
+'''
+# Hyprland running what `hyprctl dispatch "function() hl.exec_cmd('…') end"` hands it: with sh,
+# in the session's environment, on its own; it answers "ok"
+HYPRLAND_EXEC = r'''import json, os, re, subprocess, sys
+m = re.fullmatch(r"function\(\) hl\.exec_cmd\('((?:[^'\\]|\\.)*)'\) end", sys.argv[1])
+if not m:
+    print("error: not a call the stand-in knows"); sys.exit(1)
+cmd = re.sub(r"\\(.)", r"\1", m.group(1))
+with open(os.path.join(os.path.dirname(__file__), "session-env.json")) as f:
+    env = json.load(f)
+subprocess.Popen(["sh", "-c", cmd], env=env, start_new_session=True,
+                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+print("ok")
 '''
 # systemd-coredump's record of the crash, with what mustn't reach a bug report (the command line
 # with the home folder in it, the user, the computer's name)
@@ -82,6 +102,8 @@ class Keeper(Case):
             with open(p, "w") as f:
                 f.write(text)
             os.chmod(p, 0o755)
+        with open(os.path.join(self.stubs, "hyprland-exec.py"), "w") as f:
+            f.write(HYPRLAND_EXEC)
         # Slate's folder: bin/slate, and its settings (Interface size at 125%)
         self.dir = os.path.join(self.h.config, "slate")
         os.makedirs(os.path.join(self.dir, "bin"))
@@ -118,8 +140,13 @@ class Keeper(Case):
         with open(os.path.join(self.stubs, "plan"), "w") as f:
             f.write("\n".join(steps) + "\n")
 
-    def slate_cmd(self, *args):
-        code, out = run([self.slate] + list(args), env=self.env, timeout=30)
+    def slate_cmd(self, *args, slate=None, callers_own=None):
+        """Runs slate from a terminal: self.env is the session's environment (what Hyprland
+        has), callers_own anything more that only the terminal has."""
+        with open(os.path.join(self.stubs, "session-env.json"), "w") as f:
+            json.dump(self.env, f)
+        env = dict(self.env, **(callers_own or {}))
+        code, out = run([slate or self.slate] + list(args), env=env, timeout=30)
         self.assertEqual(code, 0, out)
 
     def read(self, name):
@@ -283,6 +310,43 @@ class Keeper(Case):
         self.quiet_for(0.5)
         self.assertEqual(self.launches(), 1)
         self.assertEqual(self.keeper(), keeper)
+
+    # ---- where it starts from ---------------------------------------------------------------
+    def test_started_in_the_sessions_environment(self):
+        # Started from a terminal with variables of its own (a Claude Code session's, say):
+        # Hyprland starts it, so they don't reach Slate, nor the apps it opens
+        self.slate_cmd(callers_own={"CALLERS_OWN": "1"})
+        self.started(1)
+        self.assertNotIn("CALLERS_OWN", self.read("env.1"))
+        self.assertIn("QT_SCALE_FACTOR=1.25", self.read("env.1"))
+        self.assertIn("_start", self.read("hyprctl.log"))
+
+    def test_a_full_restart_starts_in_the_sessions_environment(self):
+        self.slate_cmd()
+        self.started(1)
+        self.slate_cmd("restart", "--full", callers_own={"CALLERS_OWN": "1"})
+        self.started(2)
+        self.assertNotIn("CALLERS_OWN", self.read("env.2"))
+
+    def test_without_hyprland_it_starts_slate_itself(self):
+        open(os.path.join(self.stubs, "no-dispatch"), "w").close()
+        self.slate_cmd(callers_own={"CALLERS_OWN": "1"})
+        self.started(1)
+        self.assertIn("CALLERS_OWN=1", self.read("env.1"))
+
+    def test_a_folder_with_a_space_and_quotes(self):
+        odd = os.path.join(self.h.dir, "my sl'ate \\ \"$HOME\"; x")
+        os.makedirs(os.path.join(odd, "bin"))
+        slate_odd = os.path.join(odd, "bin", "slate")
+        shutil.copy(self.slate, slate_odd)
+        self.addCleanup(run, [slate_odd, "stop"], env=self.env)
+        self.slate_cmd(slate=slate_odd, callers_own={"CALLERS_OWN": "1"})
+        self.started(1)
+        self.assertNotIn("CALLERS_OWN", self.read("env.1"))
+        with open(os.path.join(self.h.runtime, "slate-keeper.pid")) as f:
+            keeper = f.read().strip()
+        with open(f"/proc/{keeper}/cmdline") as f:
+            self.assertIn(slate_odd, f.read())
 
     # ---- a crash loop -------------------------------------------------------------------
     def test_a_crash_loop_stops_trying_and_says_so(self):

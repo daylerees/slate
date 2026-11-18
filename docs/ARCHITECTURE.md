@@ -330,8 +330,9 @@ scripts/session-services.sh   at session start: Hyprland's environment to D-Bus 
                               systemd, PipeWire, WirePlumber and pipewire-pulse too
 bin/slate                     the `slate` command: start, stop, restart (with the reload cover), `ipc`, `log`,
                               `logs`, `dir`, `mcp`, `build-hyprbars`
-                              (and the keeper, `slate _keep`, that starts Slate again after a crash
-                              and writes a crash report)
+                              (starting goes through Hyprland, `slate _start`, for the session's
+                              environment; and the keeper, `slate _keep`, that starts Slate again after
+                              a crash and writes a crash report)
 bin/slate-build-hyprbars      `slate build-hyprbars`: builds the optional Hyprbars plugin for the running
                               Hyprland (see Window mode below)
 bin/slate-session-install     adds "Slate" as its own session on the login screen (sudo; --remove)

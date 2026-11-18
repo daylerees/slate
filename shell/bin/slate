@@ -73,9 +73,26 @@ keeper_pid() {
     case "$c" in *"$SLATE_DIR/bin/slate _keep"*) echo "$k" ;; *) return 1 ;; esac
 }
 
+# $1 for sh, in single quotes (each ' as '\''); and as a Lua string, in single quotes
+sh_quote() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
+lua_quote() { printf "'%s'" "$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e "s/'/\\\\'/g")"; }
+
+# Starting Slate goes through Hyprland, as at login (autostart.lua), so it gets the session's
+# environment and not whatever the terminal it was started from has (a Claude Code session's
+# variables once reached every app opened from Slate that way). Started here only when Hyprland
+# can't be asked: not running, or not answering.
 start() {
-    mkdir -p "$(dirname "$LOG")" "$SLATE_HOME"
     # Already running, or about to be: nothing to do
+    keeper_pid >/dev/null && return 0
+    [ -n "$(pids)" ] && return 0
+    if [ -x "$SLATE_DIR/bin/slate" ] && command -v hyprctl >/dev/null 2>&1; then
+        run=$(lua_quote "$(sh_quote "$SLATE_DIR/bin/slate") _start")
+        [ "$(timeout 5 hyprctl dispatch "function() hl.exec_cmd($run) end" 2>/dev/null)" = ok ] && return 0
+    fi
+    start_here
+}
+start_here() {
+    mkdir -p "$(dirname "$LOG")" "$SLATE_HOME"
     keeper_pid >/dev/null && return 0
     [ -n "$(pids)" ] && return 0
     setsid "$SLATE_DIR/bin/slate" _keep </dev/null >/dev/null 2>&1 &
@@ -269,6 +286,7 @@ case "${1:-start}" in
         [ -n "$cover" ] && cover_down
         : ;;
     stop) stop ;;
+    _start) start_here ;;   # (start, as Hyprland runs it: not for running by hand)
     _keep) keep ;;      # (the keeper, started by start: not for running by hand)
     # The cover by itself, for whatever changes Slate's files before restarting it: up, change
     # them, `slate restart` (which finds it there), and it comes down when Slate's ready
