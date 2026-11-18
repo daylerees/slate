@@ -700,13 +700,17 @@ SCENES["settings-sound-effects"] = {
 
 # About → What Slate is using: its memory and processor right now
 SCENES["settings-about"]["mask"] = [(512, 505, 630, 90)]
+# Storage → Drives: the container's drive is the host's disk, so its free space and meter move
+# with whatever else the host is doing (380 GB free one run, 375 GB the next)
+SCENES["settings-storage"]["mask"] = [(526, 390, 260, 24), (934, 384, 190, 20)]
 
 # The camera: the note as an app starts using it, and the bar's camera item (off to start with)
 # lit while it's on (a test hook stands in for camera-watch.py)
 SCENES["osd-camera"] = {
-    "do": [("notifications", "clear"), ("test", "camera", "true", "Firefox")],
+    # (held: it hides itself 1.4 s after it shows, sometimes before the picture under load)
+    "do": [("notifications", "clear"), ("test", "osdHold", "true"), ("test", "camera", "true", "Firefox")],
     "wait": lambda st: st["osd"]["shown"] and st["osd"]["mode"] == "note",
-    "settle": 0.4, "undo": [("test", "camera", "false", "")],
+    "settle": 0.4, "undo": [("test", "camera", "false", ""), ("test", "osdHold", "false")],
 }
 SCENES["bar-camera"] = {
     "settings": {"barShowCamera": "true"},

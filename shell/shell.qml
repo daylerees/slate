@@ -291,6 +291,8 @@ ShellRoot {
             Config.cameraApps = apps === "" ? [] : apps.split(",");
             Config.cameraOn = on;
         }
+        // Keep the OSD up once it shows (true) until let go (false), for a picture of it
+        function osdHold(on: bool): void { osdPop.held = on; }
         // The dock's own menu (its empty space): "open", or an item to choose, as barMenu
         function dockMenu(what: string): void { win.testMenu(what); }
         // A pretend pointer on the menu bar at x, y (in the bar window's own coordinates; the bar's

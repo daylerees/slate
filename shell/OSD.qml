@@ -45,7 +45,11 @@ PanelWindow {
         shown = true;
         hideTimer.restart();
     }
-    Timer { id: hideTimer; interval: 1400; onTriggered: osd.shown = false }
+    Timer { id: hideTimer; interval: 1400; onTriggered: if (!osd.held) osd.shown = false }
+    // (tests: kept up while a picture is taken, which can take longer than 1.4 s under load;
+    // let go, it hides as usual)
+    property bool held: false
+    onHeldChanged: if (!held && shown) hideTimer.restart()
 
     // An icon and a few words, no level (the camera)
     function showNote(icon, label, dimmed) {
