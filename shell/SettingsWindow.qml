@@ -232,6 +232,7 @@ FloatingWindow {
         foundRetryLabel = "";
         foundItem = hit;
         foundAt = Date.now();
+        foundSetY = -1;
         placeFound();
         Qt.callLater(() => { placeFound(); foundFade.restart(); });
     }
@@ -264,13 +265,20 @@ FloatingWindow {
     Timer { id: foundRetry; interval: 100; onTriggered: win.showFound() }
     property Item foundItem: null
     property real foundAt: 0
+    property real foundSetY: -1             // where jumping to it left the page (-1: not yet)
+    Connections { target: scroller; function onContentHeightChanged() { if (win.foundItem) win.placeFound(); } }
     function placeFound() {
         const hit = foundItem;
         if (!hit || !pageLoader.item) return;
-        // Scrolled to it for the first moment only, so it doesn't fight you scrolling away
-        if (Date.now() - foundAt < 1000) {
-            const p = hit.mapToItem(pageLoader.item, 0, 0);
-            scroller.contentY = Math.max(0, Math.min(scroller.contentHeight - scroller.height, p.y - 40));
+        // Scrolled to it for the first moment only, so it doesn't fight you scrolling away; and
+        // later, as the page grows, while it was too short to reach it (things below still
+        // loading on a busy computer: the jump stopped short and stayed there) and you haven't
+        // scrolled since
+        const p = hit.mapToItem(pageLoader.item, 0, 0), want = Math.max(0, p.y - 40), age = Date.now() - foundAt;
+        const untouched = foundSetY >= 0 && Math.abs(scroller.contentY - foundSetY) < 1;
+        if (age < 1000 || (untouched && foundSetY < want - 1 && age < 5000)) {
+            scroller.contentY = Math.max(0, Math.min(scroller.contentHeight - scroller.height, want));
+            foundSetY = scroller.contentY;
         }
         const q = hit.mapToItem(contentPane, 0, 0);
         foundFlash.x = q.x - 6; foundFlash.y = q.y - 4;
