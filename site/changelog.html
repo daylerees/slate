@@ -39,6 +39,50 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.34.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.34.0 <time datetime="2026-11-19">19 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Before you update:</strong> Slate now installs once for everyone on the computer, so its code moves out of <code>~/.config/slate</code>. Run <code>./install.sh</code> once from a fresh copy of Slate (it asks for your password). Your settings and tweaks stay where they are, and the old copy is kept in <code>~/.config/slate.before-shared</code>. Updating from Settings → Updates works again once this is done.</li>
+        <li><strong>Software.</strong> A new app to find, install, update and remove apps, and to update the system, with Discover, Installed, Updates, search and a page for each app. Jobs carry on even when the window is closed, and Slate lets you know once a day when updates are waiting.</li>
+        <li><strong>Accessibility.</strong> A new Settings page with Reduce transparency and Reduce motion, zoom (from the keyboard, or the scroll wheel with Super+Alt held), high contrast and a text size of its own, and locating the pointer. There's a trailing pointer, an on-screen keyboard (on the lock and login screens too) and screen reader support, and you can move through the menu bar, the dock and their panels with the keyboard.</li>
+        <li><strong>Several people on one computer.</strong> Settings → Users adds, changes and removes accounts. The login screen lets you choose who's logging in, each in their own look, and someone new is welcomed and offered a password of their own. Slate is installed once for everyone, and updates for everyone with an administrator's password.</li>
+        <li><strong>Record the screen</strong>, with the computer's sound, the microphone or both.</li>
+        <li><strong>Do Not Disturb on a schedule</strong>, and on its own in full screen and during calls.</li>
+        <li><strong>Timers.</strong> A drink reminder and a focus timer, on the menu bar, the dock or both.</li>
+        <li><strong>Storage.</strong> A new Settings page that shows what's using the disk and helps you free some space. Slate lets you know gently when a drive is nearly full.</li>
+        <li><strong>Quick Look.</strong> Preview a file with the space bar, from Slate and from file managers.</li>
+        <li><strong>Touchpad gestures</strong> for workspaces, the overview, the desktop and the launcher. You can choose what each gesture does.</li>
+        <li><strong>Brightness.</strong> A slider for each display, and automatic brightness that follows the room and learns what you like.</li>
+        <li><strong>Nova</strong> can find apps on Flathub, see waiting updates, and install or update them, asking you first.</li>
+        <li>New desktops start with Slate's blue wallpaper, and gray and white app icons get a plain tile of their own.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>The menu bar:</strong> the clock is right as soon as you're back from sleep. A panel stays centered on its button when the button's text changes width. The hover and pressed highlights stay inside their container's edge.</li>
+        <li><strong>Stability:</strong> Slate could crash when the menu bar or dock moved to another edge.</li>
+        <li><strong>Settings:</strong> Tab moves between text boxes, here and in the Welcome window. Searching for "dark mode" finds Theme first again, and choosing a search result scrolls all the way to the setting, even while the page is still loading.</li>
+        <li><strong>The launcher:</strong> app icons are smooth every time, rather than sometimes slightly jagged.</li>
+        <li><strong>The touchpad:</strong> pinching in and out were the wrong way round.</li>
+        <li><strong>The login screen:</strong> a round picture shows again after one that couldn't load, and the login and lock screen menus have a little more room between rows.</li>
+        <li><strong>Restarting Slate from a terminal</strong> no longer gives it that terminal's environment.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>Settings and Software no longer have "Slate" in their names.</li>
+        <li>Several tests that failed now and then under load wait for what they really mean now.</li>
+        <li>The full test suite passed (372,965 checks) on the packages this release was tested with, and on today's Arch packages too.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="v0.33.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.33.0 <time datetime="2026-11-15">15 November 2026</time></h2>
   <div class="cl-grid">
