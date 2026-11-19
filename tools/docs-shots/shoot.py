@@ -43,7 +43,9 @@ class DocsSession(Session):
     def _prepare(self):
         super()._prepare()
         h = self.h
-        hypr = os.path.join(self.slate_dir, "hypr")
+        # (your own files, the session's monitors and settings, are in slate_home; the code is in
+        # slate_dir, as when Slate is installed for everyone)
+        hypr = os.path.join(self.slate_home, "hypr")
         # The same screen, drawn at twice the pixels
         with open(os.path.join(hypr, "monitors.lua"), encoding="utf-8") as f:
             text = f.read()
@@ -56,7 +58,7 @@ class DocsSession(Session):
                     "glass": False, "accent": "#8fb3e8", "accentFromWallpaper": False,
                     "screensaverMinutes": 0, "idleLockMinutes": 0, "idleScreenOffMinutes": 0, "idleSuspendMinutes": 0,
                     "wallpaper": os.path.join(self.slate_dir, "wallpapers", WALLPAPER)}
-        self._write(os.path.join(self.slate_dir, "settings.json"), json.dumps(settings, indent=2))
+        self._write(os.path.join(self.slate_home, "settings.json"), json.dumps(settings, indent=2))
         os.remove(h("Pictures", "wallpaper.png"))      # (the visual tier's own, unused here)
         # Pretend apps (each a terminal underneath, with an app id of its own), and the
         # container's own apps hidden from the launcher
