@@ -3,9 +3,10 @@ does (its process, its file, when it started: ScreenRecorder.qml reads it); `sto
 the video is saved in the screenshot folder with a notification. The sound comes from Settings,
 Private Mode stops it starting, one runs at a time, and what goes wrong is said kindly.
 wf-recorder here is a stand-in that writes a little "video" and stops on an interrupt, as the
-real one does."""
+real one does (and by itself once record.sh is gone, so no test leaves one running)."""
 import json
 import os
+import signal
 import stat
 import subprocess
 import time
@@ -19,17 +20,33 @@ SCRIPT = slate.path("shell", "scripts", "record.sh")
 RECORDER = """#!%s
 import json, os, signal, sys, time
 open(%r, "a").write(json.dumps(sys.argv[1:]) + "\\n")
+# (it gives up by itself once record.sh has gone, or after a minute, so a test that's killed
+# outright still leaves nothing running)
+parent, until = os.getppid(), time.time() + 60
 if os.environ.get("STUB_RECORDER_FAILS"):
     sys.stderr.write("failed to find an output\\n")
     sys.exit(1)
 out = sys.argv[sys.argv.index("-f") + 1]
 open(out, "wb").write(b"a little video")
 signal.signal(signal.SIGINT, lambda *a: sys.exit(0))
-while True:
+while os.getppid() == parent and time.time() < until:
     time.sleep(0.05)
 """
 
 MONITORS = json.dumps([{"name": "DP-1", "focused": True, "activeWorkspace": {"id": 1}}])
+
+
+def alive(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    # (a finished child of ours that nobody has waited for yet counts as gone)
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            return f.read().rsplit(")", 1)[1].split()[0] != "Z"
+    except OSError:
+        return False
 
 
 class Record(Case):
@@ -56,10 +73,20 @@ class Record(Case):
             json.dump(dict({"screenshotFolder": self.folder}, **extra), f)
 
     def start(self, mode="screen", env=None):
+        # (in a process group of its own, so end() takes the recorder it starts with it)
         p = subprocess.Popen(["/bin/sh", SCRIPT, "start", mode], env=dict(self.s.env, **(env or {})),
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        self.addCleanup(p.kill)
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        self.addCleanup(self.end, p)
         return p
+
+    def end(self, p):
+        """Stop record.sh and everything it started. Killing only the shell left its recorder
+        running, adopted by systemd, whenever a test ended without stopping it."""
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        p.wait(timeout=5)
 
     def wait_for(self, cond, what, timeout=5):
         end = time.time() + timeout
@@ -172,6 +199,17 @@ class Record(Case):
         code, out = run(["/bin/sh", SCRIPT, "start", "screen"], env=self.s.env, timeout=10)
         self.assertEqual(code, 1, out)
         self.assertIn('Install the \\"wf-recorder\\" package', json.dumps(self.notes()))
+
+    def test_nothing_outlives_the_test(self):
+        """A test that ends without stopping its recording (it failed, or timed out) leaves no
+        recorder behind: one stayed running on the author's desktop for days after a run outside
+        the container. Bug, 2026-11-18."""
+        p = self.start()
+        self.wait_for(lambda: os.path.exists(self.mark) and os.path.exists(self.calls), "no recording")
+        with open(self.mark) as f:
+            pid = int(f.readline())
+        self.end(p)                     # (the test's own cleanup, with the recording still going)
+        self.wait_for(lambda: not alive(pid), "the recorder outlived the test", timeout=3)
 
     def test_says_when_the_recorder_fails(self):
         code, out = run(["/bin/sh", SCRIPT, "start", "screen"], env=dict(self.s.env, STUB_RECORDER_FAILS="1"), timeout=10)
