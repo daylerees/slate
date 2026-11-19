@@ -16,10 +16,10 @@ class FirewallSwitch(LiveCase):
         self.addCleanup(lambda: self.ipc("test", "settingsPoll", "firewall", ""))
         self.addCleanup(lambda: self.ipc("power", "cancel"))
 
-    def show(self, on):
+    def show(self, on, allow=None):
         self.ipc("settings", "page", "lock")
         self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "lock", "Settings → Security")
-        self.ipc("test", "settingsPoll", "firewall", json.dumps({"kind": "ufw", "on": on, "allow": NONE_OPEN,
+        self.ipc("test", "settingsPoll", "firewall", json.dumps({"kind": "ufw", "on": on, "allow": dict(NONE_OPEN, **(allow or {})),
                                                                   "install": "", "canChange": True}))
         self.wait(lambda st: st["settings"].get("checking", 0) == 0, "the firewall looked at")
         self.s.settle(0.4)
@@ -49,3 +49,16 @@ class FirewallSwitch(LiveCase):
                 self.wait(lambda st: st["settings"].get("checking", 0) == 0, "the firewall looked at")
                 self.s.settle(0.4)
                 self.assertEqual(self.ipc("test", "settingsToggle", "Firewall"), "none")
+
+    def test_an_allowance_needs_the_firewall_on(self):
+        """While it's off, what it lets in doesn't count: the rows are grayed out, saying so,
+        with no switch to press. On, they switch without asking anything more."""
+        self.show(False)
+        for label in ("KDE Connect", "File sharing", "Remote login", "Game streaming"):
+            self.assertEqual(self.ipc("test", "settingsToggle", label), "none", label)
+        waiting = {w["label"]: w["needs"] for w in self.s.state()["settings"]["waiting"]}
+        self.assertEqual(waiting.get("Remote login"), "Needs the firewall to be on")
+        self.show(True, {"ssh": True})
+        self.assertEqual(self.ipc("test", "settingsToggle", "Remote login"), "pressed")
+        self.s.settle(1.0)
+        self.assertEqual(self.s.state()["asking"], "")

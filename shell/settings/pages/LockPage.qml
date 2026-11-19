@@ -261,5 +261,74 @@ Column {
             }
             }
         }
+        // What it lets in (firewall.py allow: the same few ports each, from your own network
+        // only), where Slate can change it. They count while it's on
+        // What it lets in (firewall.py allow: the same few ports each, from your own network
+        // only), where Slate can change it; they count while it's on
+        function allow(id, on) { fw.change(["allow", id, on ? "on" : "off"], on ? "Letting it in…" : "Closing it again…"); }
+        Separator { visible: fw.info.canChange === true }
+        SettingRow {
+            visible: fw.info.canChange === true
+            label: "KDE Connect"
+            detail: "Your phone and this computer finding each other, for notifications, files and the clipboard (KDE Connect and GSConnect)"
+            needsMet: fw.info.on === true
+            needs: "Needs the firewall to be on"
+            needsPage: "lock"; needsLabel: "Firewall"
+            SettingToggle {
+                enabled: fw.doing === ""
+                checked: !!fw.info.allow && fw.info.allow.kdeconnect === true
+                Accessible.name: "KDE Connect"
+                onToggled: v => fw.allow("kdeconnect", v)
+            }
+        }
+        Separator { visible: fw.info.canChange === true }
+        SettingRow {
+            visible: fw.info.canChange === true
+            label: "File sharing"
+            detail: "Other computers on your network opening folders you share (Samba)"
+            needsMet: fw.info.on === true
+            needs: "Needs the firewall to be on"
+            needsPage: "lock"; needsLabel: "Firewall"
+            SettingToggle {
+                enabled: fw.doing === ""
+                checked: !!fw.info.allow && fw.info.allow.samba === true
+                Accessible.name: "File sharing"
+                onToggled: v => fw.allow("samba", v)
+            }
+        }
+        Separator { visible: fw.info.canChange === true }
+        SettingRow {
+            visible: fw.info.canChange === true
+            label: "Remote login"
+            detail: "Logging in to this computer from another one on your network (SSH)"
+            needsMet: fw.info.on === true
+            needs: "Needs the firewall to be on"
+            needsPage: "lock"; needsLabel: "Firewall"
+            SettingToggle {
+                enabled: fw.doing === ""
+                checked: !!fw.info.allow && fw.info.allow.ssh === true
+                Accessible.name: "Remote login"
+                onToggled: v => fw.allow("ssh", v)
+            }
+        }
+        Separator { visible: fw.info.canChange === true }
+        SettingRow {
+            visible: fw.info.canChange === true
+            label: "Game streaming"
+            detail: "Steam Remote Play, and game downloads from your other computers"
+            needsMet: fw.info.on === true
+            needs: "Needs the firewall to be on"
+            needsPage: "lock"; needsLabel: "Firewall"
+            SettingToggle {
+                enabled: fw.doing === ""
+                checked: !!fw.info.allow && fw.info.allow.steam === true
+                Accessible.name: "Game streaming"
+                onToggled: v => fw.allow("steam", v)
+            }
+        }
+    }
+    Footnote {
+        visible: fw.info.canChange === true
+        text: "Each lets in only what it needs, and only from your own network. Whatever you do yourself, like browsing and downloading, works as usual with the firewall on."
     }
 }
