@@ -15,7 +15,8 @@ and which of Slate's allowances are open, all read without a password.
 ufw keeps its state in files everyone can read (/etc/ufw/ufw.conf, user.rules, user6.rules);
 firewalld answers anyone over D-Bus (firewall-cmd). Changing either needs an administrator:
 for ufw, Slate's root helper bin/slate-firewall (by slate-system --root, your password); for
-firewalld, firewall-cmd and systemctl themselves, which ask for the password (polkit). Nothing
+firewalld, firewall-cmd and its service (through bin/slate-init), which ask for the password
+themselves (polkit). Nothing
 here runs as root. Allowances are let in from the local network only (LOCAL): ufw's rules say
 so, and firewalld's are rich rules for the allowance's service from each of those ranges.
 
@@ -28,6 +29,10 @@ import subprocess
 import sys
 
 ROOT = os.environ.get("SLATE_FIREWALL_ROOT") or "/"
+# How this computer starts and stops services (systemd, or what it has instead)
+SLATE_INIT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin", "slate-init")
+if os.environ.get("SLATE_TEST") and os.environ.get("SLATE_FIREWALL_INIT"):
+    SLATE_INIT = os.environ["SLATE_FIREWALL_INIT"]           # (the tests' stand-in, and only theirs)
 
 # Slate's allowances: each opens only these ports (ufw: from the local network's own addresses,
 # LOCAL) or firewalld's service of the same use. The one table both readers here and
@@ -150,9 +155,9 @@ def firewalld_status():
 
 
 def nixos_status():
-    # (networking.firewall: its systemd unit is "firewall")
-    code, out = run(["systemctl", "is-active", "firewall"])
-    on = None if code is None else out.strip() == "active"
+    # (networking.firewall: its service is "firewall". slate-init: 0 running, 1 not, 2 can't tell)
+    code, _ = run([SLATE_INIT, "service-active", "firewall"])
+    on = True if code == 0 else False if code == 1 else None
     return {"kind": "nixos", "on": on, "allow": {k: False for k in ALLOWANCES},
             "install": "", "canChange": False}
 
@@ -209,8 +214,8 @@ def change(kind, args):
         return code
     # firewalld: the password is asked for by firewall-cmd and systemctl themselves
     if args[0] in ("on", "off"):
-        verb = "enable" if args[0] == "on" else "disable"
-        code, _ = run(["systemctl", verb, "--now", "firewalld"], timeout=300)
+        verb = "service-enable" if args[0] == "on" else "service-disable"
+        code, _ = run([SLATE_INIT, verb, "firewalld"], timeout=300)
         return code
     flag = "--add-rich-rule" if args[0] == "allow" else "--remove-rich-rule"
     for rule in rich_rules(args[1]):

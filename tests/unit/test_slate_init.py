@@ -98,6 +98,9 @@ class Systemd(InitCase):
         self.s.add("systemctl")
         self.assertEqual(self.go("service-enable", "printing")[0], 0)
         self.assertEqual(self.s.calls("systemctl")[-1], ["enable", "--now", "cups.service", "cups.socket"])
+        # (and off again, as the firewall's switch does)
+        self.assertEqual(self.go("service-disable", "firewalld")[0], 0)
+        self.assertEqual(self.s.calls("systemctl")[-1], ["disable", "--now", "firewalld"])
 
     def test_display_manager(self):
         self.s.add("systemctl", stdout="sddm.service\n")
@@ -178,6 +181,7 @@ class Services(InitCase):
         self.assertEqual(self.go("service-hint", "bluetooth")[1], "sudo rc-update add bluetooth default && sudo rc-service bluetooth start\n")
         self.assertEqual(self.go("service-hint", "printing")[1], "sudo rc-update add cupsd default && sudo rc-service cupsd start\n")
         self.assertEqual(self.go("service-enable", "bluetooth")[0], 2, "only systemd is switched on for you")
+        self.assertEqual(self.go("service-disable", "firewalld")[0], 2, "only systemd is switched off for you")
 
     def test_runit_on_void(self):
         self.system("runit-void", logind=True)

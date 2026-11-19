@@ -1,6 +1,6 @@
 """scripts/firewall.py: which firewall there is, whether it's on and which of Slate's allowances
 are open, read without a password (Settings → Security → Firewall). A pretend / for each test
-(SLATE_FIREWALL_ROOT) with ufw's files or none, and stand-in ufw, firewall-cmd and systemctl."""
+(SLATE_FIREWALL_ROOT) with ufw's files or none, and stand-in ufw, firewall-cmd and slate-init."""
 import json
 import os
 
@@ -45,7 +45,9 @@ class FirewallCase(Case):
         # (none of the computer's own: each test adds what it has)
         for name in ("ufw", "firewall-cmd"):
             self.s.add(name, missing=True)
-        self.s.add("systemctl", stdout="inactive\n", code=3)
+        # (slate-init, which knows how services are run here: a stand-in recording what it's asked)
+        self.s.add("slate-init-stub", stdout="", code=1)
+        self.init = os.path.join(self.s.dir, "slate-init-stub")
 
     def distro(self, id_, like=""):
         with open(os.path.join(self.root, "etc", "os-release"), "w") as f:
@@ -63,7 +65,8 @@ class FirewallCase(Case):
         self.s.add("ufw", stdout="")
 
     def status(self):
-        code, out = run([SCRIPT, "status"], env=dict(self.s.env, SLATE_FIREWALL_ROOT=self.root))
+        code, out = run([SCRIPT, "status"], env=dict(self.s.env, SLATE_FIREWALL_ROOT=self.root, SLATE_TEST="1",
+                                                      SLATE_FIREWALL_INIT=self.init))
         self.assertEqual(code, 0, out)
         return json.loads(out)
 
@@ -126,10 +129,12 @@ class Reading(FirewallCase):
 
     def test_nixos_is_read_only(self):
         self.distro("nixos")
-        self.s.add("systemctl", stdout="active\n")
-        st = self.status()
-        self.assertEqual((st["kind"], st["on"], st["canChange"]), ("nixos", True, False))
-        self.assertEqual(self.s.calls("systemctl")[-1], ["is-active", "firewall"])
+        for code, on in ((0, True), (1, False), (2, None)):
+            with self.subTest(code=code):
+                self.s.add("slate-init-stub", stdout="", code=code)
+                st = self.status()
+                self.assertEqual((st["kind"], st["on"], st["canChange"]), ("nixos", on, False))
+                self.assertEqual(self.s.calls("slate-init-stub")[-1], ["service-active", "firewall"])
 
     def test_none_offers_the_distros_usual_one(self):
         for distro, like, offer in (("cachyos", "arch", "ufw"), ("debian", "", "ufw"), ("ubuntu", "debian", "ufw"),
@@ -146,7 +151,8 @@ class Reading(FirewallCase):
         with open(stub, "w") as f:
             f.write("#!/bin/sh\nsleep 30\n")
         os.chmod(stub, 0o755)
-        code, out = run([SCRIPT, "status"], env=dict(self.s.env, SLATE_FIREWALL_ROOT=self.root), timeout=20)
+        code, out = run([SCRIPT, "status"], env=dict(self.s.env, SLATE_FIREWALL_ROOT=self.root, SLATE_TEST="1",
+                                                      SLATE_FIREWALL_INIT=self.init), timeout=20)
         self.assertEqual(code, 0, out)
         st = json.loads(out)
         self.assertEqual((st["kind"], st["on"]), ("firewalld", None))
@@ -174,7 +180,7 @@ def load_firewall():
 class Changing(FirewallCase):
     """firewall.py set and allow: ufw through Slate's root helper (slate-system --root
     slate-firewall, a stand-in here that records what it's asked), firewalld through
-    firewall-cmd and systemctl themselves."""
+    firewall-cmd and its service (slate-init) themselves."""
 
     def setUp(self):
         super().setUp()
@@ -185,7 +191,8 @@ class Changing(FirewallCase):
         os.chmod(self.system, 0o755)
 
     def act(self, *args, extra=None):
-        env = dict(self.s.env, SLATE_FIREWALL_ROOT=self.root, SLATE_TEST="1", SLATE_FIREWALL_SYSTEM=self.system, **(extra or {}))
+        env = dict(self.s.env, SLATE_FIREWALL_ROOT=self.root, SLATE_TEST="1", SLATE_FIREWALL_SYSTEM=self.system,
+                   SLATE_FIREWALL_INIT=self.init, **(extra or {}))
         return run([SCRIPT, *args], env=env)
 
     def asked_for(self):
@@ -234,10 +241,12 @@ class Changing(FirewallCase):
 
     def test_firewalld_by_its_own_commands(self):
         self.s.add("firewall-cmd", by_args={"--state": "running\n", "": ""})
-        self.s.add("systemctl", stdout="")
+        self.s.add("slate-init-stub", stdout="")
         code, out = self.act("set", "off")
         self.assertEqual(code, 0, out)
-        self.assertEqual(self.s.calls("systemctl")[-1], ["disable", "--now", "firewalld"])
+        self.assertEqual(self.s.calls("slate-init-stub")[-1], ["service-disable", "firewalld"])
+        code, out = self.act("set", "on")
+        self.assertEqual(self.s.calls("slate-init-stub")[-1], ["service-enable", "firewalld"])
         code, out = self.act("allow", "ssh", "on")
         self.assertEqual(code, 0, out)
         added = [c for c in self.s.calls("firewall-cmd") if any(a.startswith("--add-rich-rule=") for a in c)]

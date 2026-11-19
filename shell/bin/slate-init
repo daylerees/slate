@@ -16,6 +16,7 @@
 #                                           the command that switches from one to the other
 #   slate-init service-enable <service>     switch it on now (as root; systemd only: exit 2
 #                                           elsewhere, where service-hint is shown instead)
+#   slate-init service-disable <service>    switch it off now, and at every start (as enable)
 #   slate-init display-manager       the login manager in use (greetd, sddm…), none or unknown
 #   slate-init timedate show         Timezone=, NTP=yes|no, CanNTP=yes|no, CanSet=yes|no
 #   slate-init timedate zones        every time zone, one a line
@@ -160,6 +161,10 @@ service-enable)
     [ "$INIT" = systemd ] || exit 2
     # shellcheck disable=SC2046
     exec systemctl enable --now $(service_names "${2:?which service}") ;;
+service-disable)
+    [ "$INIT" = systemd ] || exit 2
+    # shellcheck disable=SC2046
+    exec systemctl disable --now $(service_names "${2:?which service}") ;;
 display-manager)
     if [ "$INIT" = systemd ]; then
         dm=$(systemctl show -P Id display-manager.service 2>/dev/null || true)
