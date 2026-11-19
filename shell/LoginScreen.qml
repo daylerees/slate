@@ -36,6 +36,12 @@ Item {
     // field, and the next thing typed answers it. answerVisible: PAM wants it shown as it's typed
     property bool asking: false
     property bool answerVisible: false
+    // What another way in (a face, a finger, a key) is waiting for, in Slate's words: a quiet
+    // line under the field while nothing else is said there ("Looking for your face…")
+    property string hint: ""
+    // Someone's here: the pointer moved, or a key was pressed before anything was typed (the
+    // lock screen looks for a face again then, if it had stopped)
+    signal activity()
     signal submitted(string password)
     signal cancelled()                     // Escape while it asks: back to a fresh password
     signal powerAction(string action)      // suspend, hibernate, reboot, poweroff, logout
@@ -204,6 +210,8 @@ Item {
 
     // Clicking the background closes an open menu and returns to the password
     MouseArea { anchors.fill: parent; onClicked: { ls.menu = ""; password.forceActiveFocus(); } }
+    // (the pointer moving anywhere: someone's here. It takes no clicks, so nothing under it changes)
+    HoverHandler { onPointChanged: if (ls.interactive) ls.activity() }
 
     // ---- Middle: avatar, name, password ---------------------------------------
     Column {
@@ -341,7 +349,7 @@ Item {
                         onAccepted: ls.submit()
                         onTextChanged: if (text !== "" && ls.messageIsError) { ls.message = ""; ls.messageIsError = false; }
                         Keys.onEscapePressed: { if (ls.menu !== "") ls.menu = ""; else if (ls.asking) { text = ""; ls.asking = false; ls.message = ""; ls.cancelled(); } else text = ""; }
-                        Keys.onPressed: event => { capsSoon.restart(); event.accepted = false; }
+                        Keys.onPressed: event => { capsSoon.restart(); if (text === "") ls.activity(); event.accepted = false; }
                         Keys.onReleased: event => { capsSoon.restart(); event.accepted = false; }
                     }
                     Text {
@@ -385,12 +393,13 @@ Item {
                     id: note
                     readonly property bool isError: ls.messageIsError && ls.message !== ""
                     readonly property bool caps: ls.message === "" && ls.capsLock
+                    readonly property bool hinting: ls.message === "" && !ls.capsLock && ls.hint !== ""
                     width: parent.width
                     // Only an error's strip needs room round it: a plain line (Caps Lock, a status)
                     // takes its own height, so the frame's edge is as close under it as above the field
                     height: isError ? Math.max(30, noteRow.implicitHeight + 12) : noteRow.implicitHeight
                     radius: ls.corner(10)
-                    visible: ls.capsLock || ls.message !== ""
+                    visible: ls.capsLock || ls.message !== "" || ls.hint !== ""
                     color: isError ? Qt.rgba(ls.error.r, ls.error.g, ls.error.b, 0.14) : "transparent"
                     Row {
                         id: noteRow
@@ -409,14 +418,19 @@ Item {
                             id: noteText
                             // PAM messages can carry their own line breaks; let them wrap to fit instead
                             textFormat: Text.PlainText      // PAM's words, not ours: never markup
-                            text: ls.message !== "" ? ls.message.replace(/\s+/g, " ").trim() : "Caps Lock is on"
+                            text: ls.message !== "" ? ls.message.replace(/\s+/g, " ").trim() : note.caps ? "Caps Lock is on" : ls.hint
                             width: Math.min(implicitWidth, note.width - 24 - (noteIcon.visible ? noteIcon.width + noteRow.spacing : 0))
                             wrapMode: Text.Wrap
                             maximumLineCount: 3
                             elide: Text.ElideRight
                             lineHeight: 1.35; lineHeightMode: Text.ProportionalHeight
-                            horizontalAlignment: lineCount > 1 ? Text.AlignLeft : Text.AlignHCenter
-                            color: note.isError ? ls.error : ls.message !== "" ? ls.dim : ls.accent
+                            // (left once it needs more than one line, going by its words measured
+                            // apart: by its own line count or width, its alignment fed back into its
+                            // layout, a binding loop, or worse, a layout that never settled)
+                            horizontalAlignment: noteWords.advanceWidth > note.width - 24 - (noteIcon.visible ? noteIcon.width + noteRow.spacing : 0)
+                                ? Text.AlignLeft : Text.AlignHCenter
+                            TextMetrics { id: noteWords; font: noteText.font; text: noteText.text }
+                            color: note.isError ? ls.error : ls.message !== "" || note.hinting ? ls.dim : ls.accent
                             font.family: ls.font; font.pixelSize: 13; font.weight: Font.Medium
                         }
                     }

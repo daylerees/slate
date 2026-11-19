@@ -10,7 +10,8 @@ CODE = "246810"                    # the second answer the test's own PAM servic
 DEFAULTS = (3, 900, 600)           # pam_faillock's own: deny, fail_interval, unlock_time
 
 
-class Lock(LiveCase):
+class LockCase(LiveCase):
+    """Locking and letting go for each test; no tests of its own."""
     def setUp(self):
         super().setUp()
         self.user = self.s.env["USER"]
@@ -29,6 +30,7 @@ class Lock(LiveCase):
         if self.s.state()["lock"]["asking"]:
             self.ipc("lock", "cancel")
         self.ipc("lock", "pamService", "", "")
+        self.ipc("lock", "autoService", "", "")
         if self.s.state()["lock"]["locked"]:
             self.wait(lambda st: not st["lock"]["busy"], "the last check to end", timeout=15)
             self.ipc("lock", "submit", PASSWORD)
@@ -73,6 +75,9 @@ class Lock(LiveCase):
         lock = (st or self.s.state())["lock"]
         return (lock["deny"], lock["interval"], lock["unlockTime"])
 
+
+
+class Lock(LockCase):
     # ---- Locking and unlocking ----------------------------------------------------------
     def test_wrong_password_stays_locked_and_the_right_one_unlocks(self):
         self.lock()
@@ -213,3 +218,65 @@ class Lock(LiveCase):
         self.forget_failures()
         self.wait(lambda st: not st["lock"]["lockedOut"] and st["lock"]["message"] == "",
                   "the field back after a reset", timeout=15)
+
+
+class AnotherWayIn(LockCase):
+    """A face, a finger or a key (SLT-248's first step): a PAM service of the test's own stands in
+    for one, a pam_exec script that says what it's waiting for (as pam_howdy does), waits, then
+    lets you in or doesn't. It starts by itself as the screen locks, its words show under the
+    field, and the password still works at any moment."""
+    def method(self, wait, ok, says="Attempting facial authentication"):
+        d = self.s.h("pam.d")
+        os.makedirs(d, exist_ok=True)
+        script = os.path.join(d, "fake-face")
+        with open(script, "w", encoding="utf-8") as f:
+            f.write(f'#!/bin/sh\necho "{says}"\nsleep {wait}\nexit {0 if ok else 1}\n')
+        os.chmod(script, 0o755)
+        with open(os.path.join(d, "slate-face"), "w", encoding="utf-8") as f:
+            f.write(f"auth required pam_exec.so stdout {script}\naccount required pam_permit.so\n")
+        self.ipc("lock", "autoService", d, "slate-face")
+
+    def test_it_lets_you_in_without_typing(self):
+        self.method(wait=2, ok=True)
+        self.lock()
+        st = self.wait(lambda st: st["lock"]["hint"] != "", "what it's waiting for", timeout=10)["lock"]
+        self.assertEqual(st["hint"], "Looking for your face… or type your password")
+        self.wait(lambda st: not st["lock"]["locked"], "it to let you in", timeout=15)
+
+    def test_the_password_works_while_it_waits(self):
+        self.method(wait=60, ok=True)
+        self.lock()
+        self.wait(lambda st: st["lock"]["hint"] != "", "it to start looking", timeout=10)
+        self.ipc("lock", "submit", PASSWORD)
+        st = self.wait(lambda st: not st["lock"]["locked"], "the password to unlock", timeout=15)["lock"]
+        self.assertEqual(st["hint"], "", "it was still looking after the password let you in")
+
+    def test_not_you_stays_locked_and_looks_again_when_youre_back(self):
+        self.method(wait=1, ok=False)
+        refused = self.s.state()["lock"]["failuresShown"]
+        st = self.lock()
+        st = self.wait(lambda st: st["lock"]["autoGaveUp"], "it to give up", timeout=15)["lock"]
+        self.assertTrue(st["locked"])
+        self.assertEqual(st["hint"], "")
+        self.assertEqual(st["message"], "", "a face that wasn't you said something")
+        self.assertEqual(st["failuresShown"], refused, "it counted as a wrong password")
+        self.s.settle(3.2)                     # (it looks again no more than every few seconds)
+        self.ipc("lock", "activity")
+        self.wait(lambda st: st["lock"]["hint"] != "" and not st["lock"]["autoGaveUp"], "it to look again", timeout=10)
+
+    def test_its_words_for_each_way_in(self):
+        for says, want in (("Place your finger on the fingerprint reader", "Touch the fingerprint reader, or type your password"),
+                           ("Please touch the device.", "Touch your security key, or type your password"),
+                           ("Something else entirely", "Something else entirely")):
+            with self.subTest(says):
+                self.method(wait=30, ok=False, says=says)
+                self.lock()
+                self.wait(lambda st: st["lock"]["hint"] == want, f"{want!r}", timeout=10)
+                self.let_go()
+                self.method(wait=30, ok=False, says=says)
+
+    def test_nothing_changes_without_one(self):
+        st = self.lock()
+        self.s.settle(1.5)
+        st = self.s.state()["lock"]
+        self.assertEqual((st["hint"], st["autoGaveUp"]), ("", False))

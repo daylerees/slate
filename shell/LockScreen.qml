@@ -87,6 +87,62 @@ Scope {
     }
     property string testPamService: ""
     property string testPamDir: ""
+
+    // ---- Another way in: a face, a finger or a key ---------------------------------
+    // A second PAM conversation, for a PAM service that has only those ways in and no
+    // password (Slate's own, set up from Settings; none for anyone who hasn't): it starts on
+    // its own as the lock screen shows, and again once someone's back after it gave up. What it
+    // says it's waiting for shows under the field (hint). The password stays its own
+    // conversation (pam above, `login`): typing one stops this, so neither ever waits on the
+    // other. pam_faillock isn't in this service, so a face that isn't recognized never counts
+    // towards the password's tries.
+    property string testAutoService: ""
+    property string testAutoDir: ""
+    readonly property string autoService: Config.testMode && testAutoService !== "" ? testAutoService : ""
+    property string hint: ""
+    property real autoStartedAt: 0
+    property bool autoGaveUp: false
+    // What a known module says, in Slate's words; anything else as it said it (shown as plain text)
+    function methodWords(text) {
+        const t = String(text || "").trim();
+        if (/face|facial|howdy/i.test(t)) return "Looking for your face… or type your password";
+        if (/finger|swipe/i.test(t)) return "Touch the fingerprint reader, or type your password";
+        if (/touch|u2f|fido|security key|token|device/i.test(t)) return "Touch your security key, or type your password";
+        return t;
+    }
+    PamContext {
+        id: autoPam
+        config: root.autoService !== "" ? root.autoService : "login"
+        configDirectory: Config.testMode && root.testAutoDir !== "" ? root.testAutoDir : "/etc/pam.d"
+        onPamMessage: {
+            // (a question is for a password or a code: this conversation never answers one,
+            // the password has its own)
+            if (responseRequired) { abort(); root.hint = ""; root.autoGaveUp = true; return; }
+            if (message !== "" && !messageIsError) root.hint = root.methodWords(message);
+        }
+        onCompleted: result => {
+            root.hint = "";
+            if (result === PamResult.Success && !root.busy) { root.succeeded(); return; }
+            root.autoGaveUp = true;
+        }
+        onError: err => { root.hint = ""; root.autoGaveUp = true; }
+    }
+    function startAuto() {
+        if (autoService === "" || autoPam.active || busy || asking || lockedOut) return;
+        if (!locked && !(previewing && previewMode === "lock")) return;
+        autoGaveUp = false;
+        autoStartedAt = Date.now();
+        autoPam.start();
+    }
+    function stopAuto() {
+        if (autoPam.active) autoPam.abort();
+        hint = "";
+    }
+    // Someone's back (the pointer, or a key before typing): look again if it had given up, not
+    // more than once every few seconds
+    function activity() {
+        if (autoGaveUp && Date.now() - autoStartedAt > 3000) startAuto();
+    }
     // PAM asked a second question and waits for the answer (what's typed next goes to it)
     property bool asking: false
     signal asked(string question, bool visible)
@@ -103,6 +159,7 @@ Scope {
     }
     function check(password) {
         if (lockedOut) return;            // trying while locked out only extends it
+        stopAuto();                       // (the password wins: the other way in stops)
         if (asking && pam.active) {       // the answer to PAM's question, not a new attempt
             asking = false; busy = true; message = ""; messageIsError = false;
             pam.respond(password);
@@ -214,6 +271,7 @@ Scope {
     }
     function succeeded() {
         busy = false;
+        stopAuto();
         lockedUntil = 0;
         // (never the preview's ending while the screen is really locked: the lock comes first)
         if (previewing && !locked) {
@@ -239,6 +297,8 @@ Scope {
         busy = false; message = ""; messageIsError = false;
         root.opened();
         checkLockout(false);              // still locked out from earlier?
+        stopAuto();
+        Qt.callLater(startAuto);          // (a face, a finger or a key, where one's set up)
     }
 
     // ---- The real lock -------------------------------------------------------------
@@ -261,6 +321,8 @@ Scope {
                 busy: root.busy
                 message: root.message
                 messageIsError: root.messageIsError
+                hint: root.hint
+                onActivity: root.activity()
                 lockedOut: root.lockedOut
                 showPowerMenu: Config.s.lockScreenPowerMenu
                 onSubmitted: pw => root.check(pw)
@@ -455,7 +517,7 @@ Scope {
     readonly property var testPeople: testPeopleText.split(";").filter(p => p.indexOf(":") > 0)
         .map(p => ({ user: p.slice(0, p.indexOf(":")), name: p.slice(p.indexOf(":") + 1) }))
     Timer { id: previewCloseTimer; interval: 900; onTriggered: root.previewing = false }
-    function endPreview() { previewCloseTimer.stop(); previewing = false; testCaps = false; testPeopleText = ""; }
+    function endPreview() { previewCloseTimer.stop(); previewing = false; testCaps = false; testPeopleText = ""; if (!locked) stopAuto(); }
 
     PanelWindow {
         visible: root.previewing
@@ -479,6 +541,9 @@ Scope {
             busy: root.busy
             message: root.message
             messageIsError: root.messageIsError
+            // (the lock screen's preview tries the other way in too; the login screen's doesn't yet)
+            hint: root.previewMode === "lock" ? root.hint : ""
+            onActivity: if (root.previewMode === "lock") root.activity()
             lockedOut: root.lockedOut
             capsLock: root.testCaps
             people: root.previewMode === "login" ? root.testPeople : []
@@ -523,6 +588,15 @@ Scope {
         // Tests: a faillock.conf of their own ("" for the system's), and a password as if typed
         // and Enter pressed. PAM checks it like any other, so it's no way past the lock
         function pamService(dir: string, name: string): void { if (Config.testMode) { root.testPamDir = dir; root.testPamService = name; } }
+        // (and a service of theirs for another way in, as Slate's own would be: "" for none)
+        function autoService(dir: string, name: string): void {
+            if (!Config.testMode) return;
+            root.stopAuto();              // (PAM won't take a new service while it's talking)
+            root.autoGaveUp = false;
+            root.testAutoDir = dir; root.testAutoService = name;
+        }
+        // (someone's back, as the pointer moving does)
+        function activity(): void { if (Config.testMode) root.activity(); }
         function cancel(): void { if (Config.testMode) root.cancelAsking(); }
         function faillockConf(path: string): void { if (Config.testMode) root.testFaillockConf = path; }
         function submit(password: string): void { if (Config.testMode) root.check(password); }

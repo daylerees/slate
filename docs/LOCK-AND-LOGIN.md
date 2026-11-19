@@ -25,6 +25,16 @@ the gloss sheen like the bar's containers and no outline.
   the password the lock lets go after 1.5 s if a fade never finishes.
 - **Password** is checked by PAM (`PamContext`, the `login` stack, incl. `pam_faillock`).
   The field is emptied on Enter; Slate drops its copy after the check and runs `gc()`.
+- **Another way in** (a face, a finger or a key): a second `PamContext`, for a PAM service
+  with only those methods and no password (`autoService`: Slate's own once it's set up, none
+  otherwise, so nothing changes for anyone without one). It starts as the screen locks (and
+  in the lock preview), and again on the pointer moving or a key before anything's typed,
+  once it's given up, at most every 3 s. Its info messages show under the field in Slate's
+  words (`methodWords`: face, fingerprint, security key; anything else as said, plain text);
+  a question in it is never answered (it gives up instead). Typing a password stops it: the
+  password is its own conversation, so neither waits on the other. `pam_faillock` isn't in
+  that service, so a face that isn't recognized never counts towards the password's tries.
+  Tests stand in for it with `slate ipc call lock autoService <dir> <service>` (test mode).
 - **Lockout:** after a failure Slate reads `faillock --user $USER`; at 3 failures within
   15 min it shows "Too many tries · you can try again in m:ss", disables the field and stops
   sending attempts. Wrong passwords show the tries left. Those numbers (and the 10 minutes it
