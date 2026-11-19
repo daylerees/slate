@@ -42,9 +42,12 @@ SS = 4               # supersampling for smooth edges
 def data_dirs():
     """Where the desktop keeps shared data, most personal first: XDG_DATA_HOME, then
     XDG_DATA_DIRS (the standard: NixOS has nothing in /usr/share, and /usr/local/share
-    counts everywhere), with Flatpak's exports kept in their usual place."""
+    counts everywhere), with Flatpak's exports: yours and everyone's, where Flatpak keeps them
+    (FLATPAK_USER_DIR and FLATPAK_SYSTEM_DIR move them, for Flatpak too; the tests do)."""
     home = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
-    out = [home, os.path.join(home, "flatpak", "exports", "share"), "/var/lib/flatpak/exports/share"]
+    user = os.environ.get("FLATPAK_USER_DIR") or os.path.join(home, "flatpak")
+    system = os.environ.get("FLATPAK_SYSTEM_DIR") or "/var/lib/flatpak"
+    out = [home, os.path.join(user, "exports", "share"), os.path.join(system, "exports", "share")]
     for d in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":"):
         if d and d not in out:
             out.append(d)

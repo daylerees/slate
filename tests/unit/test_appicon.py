@@ -6,7 +6,9 @@ tiles look like (size, which corners are cut away, colours, centring) rather tha
 """
 import json
 import os
+import shutil
 import sys
+import tempfile
 import unittest
 
 from PIL import Image, ImageDraw
@@ -409,3 +411,55 @@ class AppIcon(Case):
         self.assertIn("Usage: appicon.py --tile", out)
         code, out = run([sys.executable, SCRIPT, "--tile", "roundapp"], env=self.h.env)
         self.assertNotEqual(code, 0)
+
+
+DIRS = """
+import importlib.util, json, sys
+out = {}
+for name in sys.argv[1:]:
+    spec = importlib.util.spec_from_file_location(name.replace("-", "_"), name)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    out[name] = m.data_dirs()
+print(json.dumps(out))
+"""
+
+
+class DataDirs(unittest.TestCase):
+    """Where apps and icons are looked for (data_dirs), written in appicon.py and spaces.py
+    (which the assistant's app list uses): both copies agree, and both find Flatpak's exports
+    where Flatpak's own FLATPAK_USER_DIR and FLATPAK_SYSTEM_DIR put them. The tests' scratch
+    home moves everyone's Flatpaks away, so they never see the computer's own apps: they
+    used to, from /var/lib/flatpak, which was always looked in. Bug, 2026-11-19."""
+    FILES = [slate.path("shell", "scripts", "appicon.py"), slate.path("shell", "scripts", "spaces.py")]
+    CASES = [
+        ({}, ["/h/.local/share", "/h/.local/share/flatpak/exports/share", "/var/lib/flatpak/exports/share",
+              "/usr/local/share", "/usr/share"]),
+        ({"XDG_DATA_HOME": "/d", "XDG_DATA_DIRS": "/nix/share:/usr/share"},
+         ["/d", "/d/flatpak/exports/share", "/var/lib/flatpak/exports/share", "/nix/share", "/usr/share"]),
+        ({"FLATPAK_USER_DIR": "/fu", "FLATPAK_SYSTEM_DIR": "/fs", "XDG_DATA_DIRS": "/fs/exports/share:/usr/share"},
+         ["/h/.local/share", "/fu/exports/share", "/fs/exports/share", "/usr/share"]),
+    ]
+
+    def dirs(self, extra):
+        # (a home of its own: spaces.py makes its folders there as it loads. "/h" in CASES)
+        home = tempfile.mkdtemp(prefix="slate-test-")
+        self.addCleanup(shutil.rmtree, home, True)
+        env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": home, "PYTHONDONTWRITEBYTECODE": "1", **extra}
+        code, out = run([sys.executable, "-c", DIRS] + self.FILES, env=env)
+        self.assertEqual(code, 0, out)
+        return {f: [d.replace(home, "/h", 1) if d.startswith(home) else d for d in dirs]
+                for f, dirs in json.loads(out).items()}
+
+    def test_every_copy_agrees(self):
+        for extra, want in self.CASES:
+            with self.subTest(env=extra):
+                got = self.dirs(extra)
+                for f in self.FILES:
+                    self.assertEqual(got[f], want, os.path.basename(f))
+
+    def test_the_tests_never_see_the_computers_apps(self):
+        h = slate.ScratchHome()
+        self.addCleanup(h.cleanup)
+        for f, dirs in self.dirs(h.env).items():
+            self.assertFalse([d for d in dirs if d.startswith("/var/lib/flatpak")], os.path.basename(f))

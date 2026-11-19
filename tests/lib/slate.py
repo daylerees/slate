@@ -113,6 +113,8 @@ class ScratchHome:
             "XDG_CONFIG_HOME": self.config, "XDG_CACHE_HOME": self.cache,
             "XDG_DATA_HOME": self.data, "XDG_STATE_HOME": self.state,
             "XDG_RUNTIME_DIR": self.runtime,
+            # (everyone's Flatpaks: none, rather than the computer's own in /var/lib/flatpak)
+            "FLATPAK_SYSTEM_DIR": os.path.join(self.dir, "flatpak-system"),
             "DBUS_SESSION_BUS_ADDRESS": "unix:path=/nonexistent",
             "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/nonexistent",
             "PYTHONDONTWRITEBYTECODE": "1",
