@@ -90,24 +90,34 @@ class AutoBrightnessCase(LiveCase):
             return {}
 
     def wait_screen(self, want, what, timeout=10, near=10):
-        for _ in range(int(timeout / 0.2)):
-            if abs(self.screen() - want) <= near:
+        """Until the screen is about `want`: as long as it's still moving (`timeout` seconds
+        without a step is too long), since a loaded run makes each step slower, not wrong."""
+        last, since = self.screen(), time.monotonic()
+        while time.monotonic() - since < timeout:
+            now = self.screen()
+            if abs(now - want) <= near:
                 return
+            if now != last:
+                last, since = now, time.monotonic()
             self.s.settle(0.2)
-        self.fail(f"{what}: the screen is at {self.screen()}/1000, not about {want}")
+        self.fail(f"{what}: the screen stopped at {self.screen()}/1000, not about {want}")
 
-    def wait_still(self, what, timeout=10):
-        """Until the easing has finished: no new step for half a second (five steps' time)."""
-        last, since = None, time.monotonic()
-        end = since + timeout
+    def wait_eased(self, what, timeout=10):
+        """Until the easing has reached where Slate says it's taking the screen: the last step
+        set is the target (Light.raw of the percentage in its status line, which every ease ends
+        on). Waiting for half a second without a step ended early in a loaded full run, and the
+        rest of the easing was then taken for following a flicker."""
+        target = None
+        end = time.monotonic() + timeout
         while time.monotonic() < end:
-            calls = len(self.set_calls())
-            if calls != last:
-                last, since = calls, time.monotonic()
-            elif time.monotonic() - since >= 0.5:
-                return
+            now = self.s.state()["autoBrightness"]["now"] or {}
+            if now.get("screen") is not None:
+                target = max(1, min(1000, int(round(now["screen"] / 100.0 * 1000))))
+                calls = self.set_calls()
+                if calls and calls[-1] == target and self.screen() == target:
+                    return
             self.s.settle(0.1)
-        self.fail(f"{what}: it was still stepping after {timeout}s")
+        self.fail(f"{what}: the screen is at {self.screen()}/1000, still easing to {target}")
 
     def switch_on(self):
         self.config("autoBrightness", "true")
@@ -169,7 +179,7 @@ class Follows(AutoBrightnessCase):
 
         # A flicker (a little more light) isn't followed. (Once the easing has finished: near
         # 860 can be a step short of it, and that last step was once taken for following it)
-        self.wait_still("easing to 2000 lux")
+        self.wait_eased("easing to 2000 lux")
         before = len(self.set_calls())
         self.lux(2300)
         self.s.settle(3.0)

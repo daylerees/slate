@@ -69,6 +69,10 @@ def in_container():
     return bool(os.environ.get("SLATE_TEST_CARD"))
 
 
+# What `qs ipc call` says, still exiting 0, when nothing answered the call
+IPC_MISSED = {"Target not found.", "Function not found."}
+
+
 class SessionError(Exception):
     pass
 
@@ -293,6 +297,10 @@ class Session:
         if code != 0:
             self.died()         # (if it's gone, keep its log and crash report before anything else runs)
             raise SessionError(f"ipc {target} {function} {' '.join(map(str, args))}: {out.strip()[:300]}")
+        # (qs exits 0 when nothing answers: a call to a target that's switched off or a function
+        # that isn't there was taken for done, and the test failed later, elsewhere, if at all)
+        if out.strip() in IPC_MISSED:
+            raise SessionError(f"ipc {target} {function} {' '.join(map(str, args))}: {out.strip()}")
         return out.strip()
 
     def state(self):

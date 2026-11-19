@@ -758,10 +758,15 @@ SCENES["bar-arranging-priority"] = {
 # The bar being arranged (Settings → Menu Bar → Edit layout) with glass switched on in the same
 # instant: every item on it drawn (three were once left undrawn when the two came together).
 # Both are sent at once, two IPC calls side by side, not one after the other as "settings" and
-# "do" would; glass goes back off after (it's off to start with)
+# "do" would; glass goes back off after (it's off to start with). Each call's own result is
+# waited for, and one that nothing answered fails the scene with what qs said (it exits 0 then,
+# and a bare `wait` always succeeds: a lost call once showed only as the scene timing out)
 _SLATE_IPC = 'qs -p "$SLATE_DIR" ipc call '
+_CALL = ('call() { out=$(' + _SLATE_IPC + '"$@" 2>&1); s=$?; [ -n "$out" ] && echo "$* : $out"; '
+         'case "$out" in "Target not found."|"Function not found.") return 1 ;; esac; return $s; }; ')
 SCENES["bar-arranging-glass"] = {
-    "do": [("!sh", "-c", _SLATE_IPC + "config set glass true & " + _SLATE_IPC + "bar edit start & wait")],
+    "do": [("!sh", "-c", _CALL + "call config set glass true & a=$!; call bar edit start & b=$!; "
+            "wait $a || exit 1; wait $b")],
     "wait": lambda st: st["bar"]["arranging"] and st["bar"]["editor"], "settle": 5,     # (glass: its blur is made the first time)
     "undo": [("bar", "edit", "done"), ("config", "set", "glass", "false")],
 }
