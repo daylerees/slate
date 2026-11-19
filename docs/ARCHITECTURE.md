@@ -238,6 +238,9 @@ scripts/software.py           Slate Software's engine: the Flathub catalog on th
 scripts/accounts.py           the people on this computer for Settings → Users: listing, adding, changing and
                               removing accounts (home folders kept unless asked) through AccountsService
                               (passwords on stdin, hashed with libcrypt)
+scripts/firewall.py           the firewall for Settings → Security: which one there is (ufw, firewalld,
+                              NixOS's, none), whether it's on and which allowances are open, read
+                              without a password (ufw's files, firewall-cmd); the allowances' ports
 scripts/netinfo.sh            connection details for the network panel (nmcli), as KEY=value lines
 scripts/camera-watch.py       tells Slate when a camera starts and stops being used (inotify on
                               /dev/video*), for OSD.qml's indicator

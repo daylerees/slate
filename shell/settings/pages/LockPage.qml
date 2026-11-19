@@ -180,4 +180,44 @@ Column {
             key: "idleRespectInhibitors"
         }
     }
+    // The firewall (scripts/firewall.py status, read without a password): which one this
+    // computer has, and whether it's on
+    GroupLabel { text: "Firewall" }
+    Group {
+        id: fw
+        readonly property string script: Quickshell.shellPath("scripts/firewall.py")
+        // { kind: ufw | firewalld | nixos | none, on: true | false | null, allow: {…},
+        //   install: the package to offer, canChange }, or {} until it's answered
+        property var info: ({})
+        readonly property string kind: info.kind || ""
+        readonly property string name: kind === "ufw" ? "ufw" : kind === "firewalld" ? "firewalld" : ""
+        function take(text) { try { info = JSON.parse(text); } catch (e) { info = {}; } }
+        function refresh() { fwProc.running = false; fwProc.running = true; }
+        // (the tests: what the script would say, looked at again as soon as it's given)
+        Connections { target: win; enabled: Config.testMode; function onPretendPollsChanged() { fw.refresh(); } }
+        FirstLook {
+            id: fwProc
+            running: true
+            command: [fw.script, "status"]
+            stdout: StdioCollector { onStreamFinished: fw.take(win.pretendPolls.firewall ?? text) }
+        }
+        SettingRow {
+            id: fwRow
+            label: "Firewall"
+            detail: fw.kind === "" ? "Looking…"
+                : fw.kind === "none" ? "There's no firewall on this computer yet, so anything on your network can try to reach it"
+                    + (fw.info.install ? ". Install " + fw.info.install + " and you can turn one on here" : "")
+                : fw.kind === "nixos" ? (fw.info.on === true ? "On. " : fw.info.on === false ? "Off. " : "")
+                    + "It's set in your NixOS configuration (networking.firewall), so change it there"
+                : fw.info.on === true ? "On: other computers can only reach this one in the ways you allow (" + fw.name + ")"
+                : fw.info.on === false ? "Off: anything on your network can try to reach this computer (" + fw.name + ")"
+                : "Slate couldn't tell whether " + fw.name + " is on just now"
+            Text {
+                visible: fw.kind !== "" && fw.kind !== "none" && fw.info.on !== null && fw.info.on !== undefined
+                text: fw.info.on ? "On" : "Off"
+                color: fw.info.on ? win.text : win.dim
+                font.family: win.font; font.pixelSize: Config.text(13)
+            }
+        }
+    }
 }

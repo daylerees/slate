@@ -220,6 +220,20 @@ SCENES["settings-users"] = dict(SCENES["settings-users"],
     do=[("settings", "page", "users"), ("test", "settingsPoll", "users", _PEOPLE)],
     undo=[("test", "settingsPoll", "users", ""), ("settings", "close")])
 
+# Settings → Security's Firewall group, as scripts/firewall.py might find it: ufw on, ufw off,
+# none installed (on an Arch-like computer: offered ufw) and NixOS's own
+_FW_NONE = {"kdeconnect": False, "samba": False, "ssh": False, "steam": False}
+for _name, _fw in (("on", {"kind": "ufw", "on": True, "allow": dict(_FW_NONE, ssh=True), "install": "", "canChange": True}),
+                   ("off", {"kind": "ufw", "on": False, "allow": _FW_NONE, "install": "", "canChange": True}),
+                   ("none", {"kind": "none", "on": False, "allow": _FW_NONE, "install": "ufw", "canChange": False}),
+                   ("nixos", {"kind": "nixos", "on": True, "allow": _FW_NONE, "install": "", "canChange": False})):
+    SCENES[f"settings-firewall-{_name}"] = {
+        "do": [("settings", "page", "lock"), ("test", "settingsPoll", "firewall", json.dumps(_fw)),
+               ("settings", "find", "lock", "Firewall")],
+        "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "lock" and st["settings"].get("checking", 0) == 0,
+        "settle": 1.2, "undo": [("test", "settingsPoll", "firewall", ""), ("settings", "close")],
+    }
+
 # A picture arriving after one that couldn't be loaded (the login screen, from someone without a
 # picture to someone with one): it shows, rather than the round picture staying empty
 _PEOPLE_MISSING = _PEOPLE.replace('"picture": "", "me": false, "loggedIn": false', '"picture": "/tmp/slate-scene-no-such-face.png", "me": false, "loggedIn": false')
