@@ -211,6 +211,24 @@ Column {
                 fw.refresh();
             }
         }
+        // No firewall: install the distro's usual one (slate-system --install, your password).
+        // It arrives off, for you to turn on
+        function install() {
+            const pkg = fw.info.install;
+            if (!pkg) return;
+            fw.doing = "Installing " + pkg + "…";
+            fw.problem = "";
+            installProc.command = [Quickshell.shellPath("bin/slate-system"), "--install", pkg];
+            installProc.running = true;
+        }
+        Process {
+            id: installProc
+            onExited: code => {
+                fw.doing = "";
+                fw.problem = code === 0 ? "" : "Slate couldn't install " + (fw.info.install || "it") + ". Check you're online, then try again";
+                fw.refresh();
+            }
+        }
         // Off asks first: it makes the computer easier to reach
         function askOff() {
             win.ask = {
@@ -237,7 +255,8 @@ Column {
                 : fw.problem !== "" ? fw.problem
                 : fw.kind === "" ? "Looking…"
                 : fw.kind === "none" ? "There's no firewall on this computer yet, so anything on your network can try to reach it"
-                    + (fw.info.install ? ". Install " + fw.info.install + " and you can turn one on here" : "")
+                    + (fw.info.install ? ". Install " + fw.info.install + " and you can turn it on here"
+                       : ". Install your distro's firewall (ufw or firewalld) and you can turn it on here")
                 : fw.kind === "nixos" ? (fw.info.on === true ? "On. " : fw.info.on === false ? "Off. " : "")
                     + "It's set in your NixOS configuration (networking.firewall), so change it there"
                 : fw.info.on === true ? "On: other computers can only reach this one in the ways you allow (" + fw.name + ")"
@@ -251,6 +270,12 @@ Column {
                 text: fw.info.on ? "On" : "Off"
                 color: fw.info.on ? win.text : win.dim
                 font.family: win.font; font.pixelSize: Config.text(13)
+            }
+            Button {
+                visible: fw.kind === "none" && !!fw.info.install
+                enabled: fw.doing === ""
+                icon: 0xEA96; label: "Install " + (fw.info.install || "")
+                onClicked: fw.install()
             }
             SettingToggle {
                 visible: fw.info.canChange === true
