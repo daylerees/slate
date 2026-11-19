@@ -56,20 +56,29 @@ class Bar(LiveCase):
         words change its width ("10 min" to "9 min", "Drink") and move it. It stayed where the
         thing was when it opened, which once showed in the timers' pictures as a panel off to
         one side, depending on whether the time had arrived before the panel opened."""
-        for key in ("drinkReminder", "barShowDrink", "barValueDrink"):
+        for key in ("drinkReminder", "barShowDrink", "barValueDrink", "barShowTitle"):
             self.keep_setting(key)
         self.addCleanup(lambda: self.ipc("popout", "close"))
+        # Room on the bar for the time: a window left open by an earlier file puts its title there,
+        # and on a full bar the drink reminder's time is among the first words to go (Bar.gives)
+        self.config("barShowTitle", "false")
         self.config("drinkReminder", "true")
         self.config("barShowDrink", "true")
         self.config("barValueDrink", "false")
         drink = lambda st: st["bar"]["line"]["drink"]
-        st = self.wait(lambda st: drink(st)["visible"] and drink(st)["w"] > 0, "the drink reminder on the bar")
+        # (its time gone before it's measured: it starts on, and was once measured with it still there)
+        st = self.wait(lambda st: drink(st)["visible"] and drink(st)["w"] > 0 and drink(st)["text"] == "",
+                       "the drink reminder on the bar, without its time")
         self.ipc("bar", "panel", "drink")
         st = self.wait(lambda st: st["popout"] == "drink", "the drink panel to open")
         centre = lambda st: drink(st)["x"] + drink(st)["w"] / 2
         offset, narrow = st["popoutAnchor"] - centre(st), drink(st)["w"]
         self.config("barValueDrink", "true")                    # the time beside the droplet: wider
-        st = self.wait(lambda st: drink(st)["w"] > narrow + 10, "the drink reminder to show its time")
+        try:
+            st = self.wait(lambda st: drink(st)["text"] != "" and drink(st)["w"] > narrow + 10, "the drink reminder to show its time")
+        except AssertionError:
+            st = self.s.state()
+            self.fail(f"the drink reminder's time didn't show: {drink(st)}; slimmed {st['bar']['gives']}, in More {st['bar']['overflowed']}")
         self.wait(lambda st: st["popout"] == "drink" and abs(st["popoutAnchor"] - centre(st) - offset) <= 1,
                   "the panel to stay centred on the drink reminder")
 
