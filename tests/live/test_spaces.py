@@ -58,6 +58,8 @@ class Saving(LiveCase):
         self.addCleanup(lambda: os.path.exists(store) and os.remove(store))
         self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
         self.s.settle(1.0)
-        self.ipc("test", "saveSpace", "Work", "1")
+        # (the workspace the window opened on: after other tests, not always the first)
+        ws = self.s.hyprctl("activeworkspace", json_out=True)["id"]
+        self.ipc("test", "saveSpace", "Work", str(ws))
         self.wait(lambda st: st["spaces"]["saved"] == 1, "the new space in the list")
         self.assertTrue(os.path.exists(store), "it wasn't saved")
