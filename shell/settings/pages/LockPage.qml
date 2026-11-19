@@ -176,7 +176,7 @@ Column {
         Separator {}
         ToggleSetting {
             label: "Wait while media plays"
-            detail: "You're not counted as away while a video or app is keeping the screen awake"
+            detail: "You're not counted as away while something plays full screen, or an app is keeping the screen awake"
             key: "idleRespectInhibitors"
         }
     }

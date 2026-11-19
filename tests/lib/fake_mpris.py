@@ -3,11 +3,12 @@
 track playing, so the dock and the control centre have something to show (the test session
 has no real player). Runs until it's stopped.
 
-    fake_mpris.py [--title T] [--artist A] [--paused] [--art FILE] [--still]
+    fake_mpris.py [--title T] [--artist A] [--paused] [--art FILE] [--still] [--desktop-entry D]
 
 --art gives the track a cover (a picture file); --still keeps its position where it is
 (a Rate of 0, so nothing works out that time has passed), for a screenshot that's the same
-every time. Prints "ready" once its name is on the bus."""
+every time. --desktop-entry names the app it belongs to (as a window's app id would), for
+Config.mediaFullscreen. Prints "ready" once its name is on the bus."""
 import argparse
 import os
 import sys
@@ -66,6 +67,7 @@ def main():
     ap.add_argument("--paused", action="store_true")
     ap.add_argument("--art", help="a picture file for the track's cover")
     ap.add_argument("--still", action="store_true", help="the position doesn't move (Rate 0)")
+    ap.add_argument("--desktop-entry", default="", help="the app it belongs to")
     args = ap.parse_args()
 
     state = {"status": "Paused" if args.paused else "Playing"}
@@ -83,7 +85,7 @@ def main():
         "org.mpris.MediaPlayer2": {
             "CanQuit": GLib.Variant("b", False), "CanRaise": GLib.Variant("b", False),
             "HasTrackList": GLib.Variant("b", False), "Identity": GLib.Variant("s", "Slate Test Player"),
-            "DesktopEntry": GLib.Variant("s", ""), "SupportedUriSchemes": GLib.Variant("as", []),
+            "DesktopEntry": GLib.Variant("s", args.desktop_entry), "SupportedUriSchemes": GLib.Variant("as", []),
             "SupportedMimeTypes": GLib.Variant("as", []),
         },
         "org.mpris.MediaPlayer2.Player": {

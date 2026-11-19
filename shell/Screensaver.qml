@@ -1,7 +1,8 @@
 // Screensaver (Settings → Screensaver): after a while with no input it covers every screen,
 // before the lock and screen-off timers in Security (which carry on as before). Any key,
 // click or pointer move puts it away; the key or click goes no further. Apps that keep the
-// screen awake (video) hold it off, as they do the lock, when Security says so. With
+// screen awake (video), and a player playing full screen (Config.mediaFullscreen), hold it
+// off, as they do the lock, when Security says so. With
 // "Lock on wake", waking it locks the screen first, and it goes once the lock is up, so the
 // desktop never shows unlocked (not for a preview).
 // Four styles (each can show the clock and date: Settings → Screensaver → Show the clock):
@@ -49,8 +50,11 @@ Scope {
     // Locking didn't happen (it can be refused): don't stay up forever
     Timer { id: lockFallback; interval: 3000; onTriggered: if (root.locking) root.stop() }
 
+    // (whether it's counting the idle time: the tests read it)
+    readonly property bool watching: idleWatch.enabled
     IdleMonitor {
-        enabled: root.minutes > 0 && !root.locked && !Config.caffeine
+        id: idleWatch
+        enabled: root.minutes > 0 && !root.locked && !Config.caffeine && !Config.mediaFullscreen
         timeout: root.minutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: if (isIdle) root.start(true); else root.wake()

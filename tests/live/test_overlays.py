@@ -369,3 +369,75 @@ class Overlays(LiveCase):
         st = self.wait(lambda st: st["launcher"]["query"] == "lock", "the search")
         self.assertIn("Lock", st["launcher"]["results"], "locking needs no login service")
         self.ipc("launcher", "close")
+
+
+class MediaFullscreen(LiveCase):
+    """Something playing full screen holds off the screensaver and the screen-off timer, under
+    Security's Wait while media plays, even when the player never asks the screen to stay
+    awake (Plezy doesn't: the screensaver came on mid-episode. Bug, 2026-11-19). A pretend
+    player (fake_mpris.py) belongs to a foot window by its app id; music in the background,
+    another app full screen, or the switch off doesn't count."""
+    KEY = "slate-test-video"
+
+    def setUp(self):
+        super().setUp()
+        self.keep_setting("idleRespectInhibitors")
+        self.keep_setting("screensaverMinutes")
+        self.keep_setting("idleScreenOffMinutes")
+        self.config("idleRespectInhibitors", "true")
+        self.config("screensaverMinutes", 5)
+        self.config("idleScreenOffMinutes", 20)
+        self.addCleanup(self.close_windows)
+
+    def close_windows(self):
+        for c in self.s.hyprctl("clients", json_out=True):
+            if c["class"].startswith(self.KEY):
+                self.s.hyprctl("eval", "hl.dispatch(hl.dsp.window.close({ window = [=[address:%s]=] }))" % c["address"])
+
+    def open_window(self, app_id):
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot --app-id %s")' % app_id)
+        for _ in range(100):
+            c = next((c for c in self.s.hyprctl("clients", json_out=True) if c["class"] == app_id), None)
+            if c:
+                return c["address"]
+            self.s.settle(0.1)
+        self.fail(f"the {app_id} window didn't open")
+
+    def fullscreen(self, address, on=True):
+        if on:
+            self.s.hyprctl("eval", "hl.dispatch(hl.dsp.window.fullscreen({ mode = 'fullscreen', action = 'set', window = [=[address:%s]=] }))" % address)
+        else:
+            self.s.hyprctl("eval", "hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, window = [=[address:%s]=] }))" % address)
+
+    def held(self, st):
+        return st["mediaFullscreen"] and not st["screensaver"]["watching"] and not st["lock"]["screenOffWatching"]
+
+    def counting(self, st):
+        return not st["mediaFullscreen"] and st["screensaver"]["watching"] and st["lock"]["screenOffWatching"]
+
+    def test_a_player_full_screen_holds_off_the_idle_timers(self):
+        self.play("--desktop-entry", self.KEY)
+        video = self.open_window(self.KEY)
+        # Playing in a window: still counting
+        self.steady(lambda: self.counting(self.s.state()))
+        self.assertTrue(self.counting(self.s.state()), "a player in a window held off the timers")
+        # Full screen: held off
+        self.fullscreen(video)
+        self.wait(self.held, "the timers held off with the player full screen")
+        # Wait while media plays off: counting again
+        self.config("idleRespectInhibitors", "false")
+        self.wait(self.counting, "the timers counting with Wait while media plays off")
+        self.config("idleRespectInhibitors", "true")
+        self.wait(self.held, "held off again")
+        # Out of full screen: counting again
+        self.fullscreen(video, on=False)
+        self.wait(self.counting, "the timers counting once it's out of full screen")
+
+    def test_another_app_full_screen_doesnt_count(self):
+        """Music playing (a player with no window of its own) while some other app is full
+        screen: you could be away, so the timers count."""
+        self.play("--desktop-entry", self.KEY + "-music")
+        other = self.open_window(self.KEY + "-game")
+        self.fullscreen(other)
+        st = self.steady(self.s.state, floor=0.6)
+        self.assertTrue(self.counting(st), "music behind another full-screen app held off the timers")

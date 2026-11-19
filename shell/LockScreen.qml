@@ -415,20 +415,25 @@ Scope {
     }
 
     // ---- Idle: lock, screen off, suspend ----------------------------------------------
+    // A player playing full screen holds them off (Config.mediaFullscreen), but not once the
+    // screen is locked: a video behind the lock mustn't keep the screen on
+    readonly property bool mediaHolds: Config.mediaFullscreen && !root.locked
+    readonly property bool screenOffWatching: screenOffWatch.enabled    // (the tests read it)
     IdleMonitor {
-        enabled: Config.s.idleLockMinutes > 0 && !root.locked && !Config.caffeine
+        enabled: Config.s.idleLockMinutes > 0 && !root.locked && !Config.caffeine && !root.mediaHolds
         timeout: Config.s.idleLockMinutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: if (isIdle) root.lockNow()
     }
     IdleMonitor {
-        enabled: Config.s.idleScreenOffMinutes > 0 && !Config.caffeine
+        id: screenOffWatch
+        enabled: Config.s.idleScreenOffMinutes > 0 && !Config.caffeine && !root.mediaHolds
         timeout: Config.s.idleScreenOffMinutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.dpms({ action = "${isIdle ? "off" : "on"}" })`])
     }
     IdleMonitor {
-        enabled: Config.s.idleSuspendMinutes > 0 && Config.canSuspend && !Config.caffeine
+        enabled: Config.s.idleSuspendMinutes > 0 && Config.canSuspend && !Config.caffeine && !root.mediaHolds
         timeout: Config.s.idleSuspendMinutes * 60
         respectInhibitors: Config.s.idleRespectInhibitors
         onIsIdleChanged: {

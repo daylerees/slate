@@ -553,8 +553,10 @@ ShellRoot {
                 lock: { locked: lockScreen.locked, previewing: lockScreen.previewing, previewPeople: lockScreen.testPeople.length, busy: lockScreen.busy, message: lockScreen.message, asking: lockScreen.asking, messageIsError: lockScreen.messageIsError,
                         // (what it read from faillock.conf, and what it made of the wrong passwords so far)
                         deny: lockScreen.failDeny, interval: lockScreen.failInterval, unlockTime: lockScreen.unlockTime, lockedOut: lockScreen.lockedOut,
-                        failuresShown: lockScreen.failuresShown },
-                screensaver: { open: screensaver.shown },
+                        failuresShown: lockScreen.failuresShown, screenOffWatching: lockScreen.screenOffWatching },
+                screensaver: { open: screensaver.shown, watching: screensaver.watching },
+                // (a player playing full screen, which holds off the idle timers)
+                mediaFullscreen: Config.mediaFullscreen,
                 power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },
                 polkit: { open: polkitAgent.shown },
                 welcome: { built: welcome.built, open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps, newHere: welcome.newHere },

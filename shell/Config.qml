@@ -8,6 +8,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import Quickshell.Wayland
+import Quickshell.Services.Mpris
 import Quickshell.Services.UPower
 
 Singleton {
@@ -779,6 +781,26 @@ Singleton {
     // other tools hear it as a usual "stay awake" request too (Popouts.qml). Not kept over a
     // restart, so it can't be left on by mistake for days
     property bool caffeine: false
+    // Something playing full screen: a media player (MPRIS) that's playing, and a window of the
+    // same app that's full screen. Slate's idle timers wait for it as they do for an app that
+    // asks the screen to stay awake, under the same switch (Settings → Security → Wait while
+    // media plays): some players (Plezy, for one) say they're playing but never ask, and the
+    // screensaver came on mid-episode. Full screen, so music playing in the background doesn't
+    // keep the screen on. The timers leave it out while the screen is locked (LockScreen.qml)
+    readonly property bool mediaFullscreen: !isLoginScreen && s.idleRespectInhibitors
+        && playingFullscreen(Mpris.players.values, ToplevelManager.toplevels.values)
+    // (the decision itself: players as MPRIS has them, windows as ToplevelManager has them.
+    // A player names its app by desktopEntry or identity, a window by appId; they match
+    // ignoring case and ".desktop", or by the last part of a reverse-DNS name
+    // ("org.videolan.VLC" and "vlc")
+    function playingFullscreen(players, windows) {
+        const name = n => String(n || "").toLowerCase().replace(/\.desktop$/, "");
+        const last = n => n.split(".").pop();
+        const same = (a, b) => a !== "" && b !== "" && (a === b || last(a) === b || a === last(b));
+        const playing = players.filter(p => p.isPlaying).map(p => [name(p.desktopEntry), name(p.identity)]);
+        if (playing.length === 0) return false;
+        return windows.some(w => w.fullscreen && playing.some(ns => ns.some(n => same(n, name(w.appId)))));
+    }
     property bool assistantWorking: false       // Nova has a prompt out (Assistant.qml): the bar's button shows it
 
     // ---- The camera in use (scripts/camera-watch.py) -----------------------------------------
