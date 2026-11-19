@@ -489,6 +489,7 @@ ShellRoot {
                 }))(softwareLoader.item) : { built: false, open: false },
                 settings: { built: !!settings, open: !!settings && settings.visible, section: settings ? settings.section : "",
                             focusedBox: settings ? settings.focusedBox : "",
+                            sidebar: settings ? settings.sidebarFit : {},
                             changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, viewHeight: settings ? Math.round(settings.scrollView.height) : 0,
                             thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,

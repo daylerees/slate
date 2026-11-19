@@ -37,6 +37,16 @@ class Settings(LiveCase):
         self.ipc("settings", "close")
         self.wait(lambda st: not st["settings"]["open"], "Settings to close")
 
+    def test_the_sidebar_fits_without_scrolling(self):
+        """At the window's usual height (620: SettingsWindow's fitSize), every page in the sidebar
+        shows without scrolling: the sidebar has that less its margins. It scrolled by 12 pixels
+        until Notifications and Power moved to All Settings (2026-11-19)."""
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.ipc("settings", "open")
+        st = self.wait(lambda st: st["settings"]["open"] and st["settings"]["sidebar"].get("needs"), "Settings to open")
+        needs = st["settings"]["sidebar"]["needs"]
+        self.assertLessEqual(needs, 620 - 2 * 14, f"the sidebar's pages need {needs} pixels")
+
     def test_find_lands_on_page(self):
         """settings find <page> <label> (what the launcher's settings search does) opens the
         page for the last setting on each page."""

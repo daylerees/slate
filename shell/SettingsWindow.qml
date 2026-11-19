@@ -552,6 +552,9 @@ FloatingWindow {
     }
     readonly property var sidebarSections: [{ id: "overview", label: "All Settings", icon: 0xEA03 }].concat(sections.filter(x => !x.more))
     readonly property var moreSections: sections.filter(x => x.more)
+    // (the tests: how tall the sidebar's pages are, and the room it has. They fit, unscrolled,
+    // at the window's usual height: pages used less often are "more", on All Settings only)
+    readonly property var sidebarFit: ({ needs: Math.ceil(sideCol.implicitHeight), room: Math.floor(sideScroll.height) })
     // A page opened from All Settings: the sidebar keeps All Settings lit, and the title gets a back arrow
     // The page this one belongs to (Wallpaper, Icons and App Theming: Appearance), or ""
     readonly property string parentSection: (sections.find(x => x.id === section) || {}).parent || ""
