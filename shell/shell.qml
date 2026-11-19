@@ -225,6 +225,8 @@ ShellRoot {
         function settingsTab(forward: bool): void { if (settingsLoader.item) settingsLoader.item.testTab(forward); }
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
         function newSpace(): void { popouts.newSpaceAsked(); }
+        // Saving a space as New Space's Save does (Spaces.save), workspaces as "1,3"
+        function saveSpace(name: string, ids: string): void { Spaces.save(name, "#8fb3e8", 0xEDBA, ids.split(",").map(Number)); }
         // Slate Software: what its engine (scripts/software.py) would say, as a JSON object
         // { status, catalogue, lists, installed, updates, app, act }, used in place of running it
         // (act: how an install, removal or update goes, "ok" or what went wrong)
@@ -556,6 +558,9 @@ ShellRoot {
                         deny: lockScreen.failDeny, interval: lockScreen.failInterval, unlockTime: lockScreen.unlockTime, lockedOut: lockScreen.lockedOut,
                         failuresShown: lockScreen.failuresShown, screenOffWatching: lockScreen.screenOffWatching },
                 screensaver: { open: screensaver.shown, watching: screensaver.watching },
+                // Spaces (Spaces.qml): how many are saved, as the panel lists them, and the
+                // workspaces New Space would offer
+                spaces: { saved: Spaces.list.length, live: Spaces.live.length },
                 // (a player playing full screen, which holds off the idle timers)
                 mediaFullscreen: Config.mediaFullscreen,
                 power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },

@@ -1,5 +1,7 @@
 """Spaces (the bar's Spaces panel, Spaces.qml): New Space shows the workspaces as they are, each
 window live on its card."""
+import os
+
 from live import LiveCase
 
 
@@ -43,3 +45,19 @@ class NewSpace(LiveCase):
         self.assertFalse(self.s.died(), "Slate died (tests/out/live/slate.log and crashes/)")
         self.assertEqual(self.s.slate_pid(), pid, "Slate restarted")
         self.assertEqual(self.s.state()["popout"], "spaces", "the panel went")
+
+
+class Saving(LiveCase):
+    def test_the_first_space_saved_shows_in_the_list(self):
+        """Saving a space when none has been saved yet (no spaces.json): the panel's list has it
+        straight away. It stayed empty until Slate restarted: the list is read again when the
+        file changes, and a file that wasn't there yet wasn't watched. Bug, 2026-11-19."""
+        store = os.path.join(self.s.h.data, "slate", "spaces.json")
+        if os.path.exists(store):
+            os.remove(store)
+        self.addCleanup(lambda: os.path.exists(store) and os.remove(store))
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        self.s.settle(1.0)
+        self.ipc("test", "saveSpace", "Work", "1")
+        self.wait(lambda st: st["spaces"]["saved"] == 1, "the new space in the list")
+        self.assertTrue(os.path.exists(store), "it wasn't saved")

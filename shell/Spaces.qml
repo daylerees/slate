@@ -63,6 +63,7 @@ Singleton {
         0xEB1F, 0xEBF2, 0xEABD, 0xEB25, 0xEB84, 0xEC2C, 0xEC08, 0xEB35, 0xEB10, 0xEB6D, 0xEA89]
 
     FileView {
+        id: store
         path: root.file
         watchChanges: true
         printErrors: false
@@ -79,8 +80,15 @@ Singleton {
         stdout: StdioCollector { onStreamFinished: { try { root.live = JSON.parse(text); } catch (e) { root.live = []; } } }
     }
 
+    // (read again once it's saved: the file is watched for changes, but one that didn't exist
+    // yet, before your first space, isn't, and that space didn't show until Slate restarted)
     function save(name, colour, icon, workspaceIds) {
-        Quickshell.execDetached(["python3", script, "save", name, String(colour), Number(icon).toString(16), workspaceIds.join(",")]);
+        saver.command = ["python3", script, "save", name, String(colour), Number(icon).toString(16), workspaceIds.join(",")];
+        saver.running = true;
+    }
+    Process {
+        id: saver
+        onExited: store.reload()
     }
     function remove(id) {
         list = list.filter(s => s.id !== id);
