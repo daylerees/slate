@@ -229,7 +229,8 @@ class SessionFiles(RootCase):
 # folder where they said /usr/local/libexec, /etc/polkit-1 and /etc/NIXOS (as
 # test_distro_family.py does with /etc/os-release), and `install` writes only inside it.
 
-HELPERS = ["slate-system-root", "slate-session-install", "slate-greeter-install", "slate-private-camera", "slate-update-install"]
+HELPERS = ["slate-system-root", "slate-session-install", "slate-greeter-install", "slate-private-camera", "slate-update-install",
+           "slate-firewall"]
 LISTS = ["arch", "artix", "debian", "fedora", "gentoo", "opensuse", "void"]
 REAL = "/usr/local/libexec/slate"
 

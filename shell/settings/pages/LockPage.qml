@@ -192,6 +192,35 @@ Column {
         readonly property string kind: info.kind || ""
         readonly property string name: kind === "ufw" ? "ufw" : kind === "firewalld" ? "firewalld" : ""
         function take(text) { try { info = JSON.parse(text); } catch (e) { info = {}; } }
+        // Changing it (firewall.py set / allow: your password each time): what it's doing now,
+        // and how the last change went ("" when it went through)
+        property string doing: ""
+        property string problem: ""
+        function change(args, doing) {
+            fw.doing = doing;
+            fw.problem = "";
+            changeProc.command = [fw.script].concat(args);
+            changeProc.running = true;
+        }
+        Process {
+            id: changeProc
+            stderr: StdioCollector { id: changeSaid }
+            onExited: code => {
+                fw.doing = "";
+                fw.problem = code === 0 ? "" : (changeSaid.text.trim().split("\n").pop() || "Slate couldn't change the firewall");
+                fw.refresh();
+            }
+        }
+        // Off asks first: it makes the computer easier to reach
+        function askOff() {
+            win.ask = {
+                title: "Turn the firewall off?",
+                body: "Anything on your network will be able to try to reach this computer, including things you haven't allowed. "
+                    + "You can turn it back on here at any time.",
+                button: "Turn off", destructive: true, code: 0xEAE2,
+                run: () => fw.change(["set", "off"], "Turning it off…")
+            };
+        }
         function refresh() { fwProc.running = false; fwProc.running = true; }
         // (the tests: what the script would say, looked at again as soon as it's given)
         Connections { target: win; enabled: Config.testMode; function onPretendPollsChanged() { fw.refresh(); } }
@@ -204,7 +233,9 @@ Column {
         SettingRow {
             id: fwRow
             label: "Firewall"
-            detail: fw.kind === "" ? "Looking…"
+            detail: fw.doing !== "" ? fw.doing
+                : fw.problem !== "" ? fw.problem
+                : fw.kind === "" ? "Looking…"
                 : fw.kind === "none" ? "There's no firewall on this computer yet, so anything on your network can try to reach it"
                     + (fw.info.install ? ". Install " + fw.info.install + " and you can turn one on here" : "")
                 : fw.kind === "nixos" ? (fw.info.on === true ? "On. " : fw.info.on === false ? "Off. " : "")
@@ -212,11 +243,22 @@ Column {
                 : fw.info.on === true ? "On: other computers can only reach this one in the ways you allow (" + fw.name + ")"
                 : fw.info.on === false ? "Off: anything on your network can try to reach this computer (" + fw.name + ")"
                 : "Slate couldn't tell whether " + fw.name + " is on just now"
+            // (one or the other: a Row leaves out what's hidden, and the row's slot doesn't)
+            Row {
+            // (NixOS's: only said, as it's changed in its configuration)
             Text {
-                visible: fw.kind !== "" && fw.kind !== "none" && fw.info.on !== null && fw.info.on !== undefined
+                visible: fw.kind === "nixos" && fw.info.on !== null && fw.info.on !== undefined
                 text: fw.info.on ? "On" : "Off"
                 color: fw.info.on ? win.text : win.dim
                 font.family: win.font; font.pixelSize: Config.text(13)
+            }
+            SettingToggle {
+                visible: fw.info.canChange === true
+                enabled: fw.doing === ""
+                checked: fw.info.on === true
+                Accessible.name: "Firewall"
+                onToggled: v => { if (v) fw.change(["set", "on"], "Turning it on…"); else fw.askOff(); }
+            }
             }
         }
     }

@@ -2,6 +2,9 @@
 """The firewall (Settings → Security → Firewall): which one this computer has, whether it's on,
 and which of Slate's allowances are open, all read without a password.
 
+    firewall.py set on|off              turn it on or off (asks for the password)
+    firewall.py allow <name> on|off     open or close one of Slate's allowances: kdeconnect,
+                                        samba, ssh or steam (asks for the password)
     firewall.py status      one line of JSON:
         {"kind": "ufw" | "firewalld" | "nixos" | "none",
          "on": true | false | null (can't tell),
@@ -11,11 +14,15 @@ and which of Slate's allowances are open, all read without a password.
 
 ufw keeps its state in files everyone can read (/etc/ufw/ufw.conf, user.rules, user6.rules);
 firewalld answers anyone over D-Bus (firewall-cmd). Changing either needs an administrator:
-that's bin/slate-firewall (ufw) or firewalld's own password prompt, never this script.
+for ufw, Slate's root helper bin/slate-firewall (by slate-system --root, your password); for
+firewalld, firewall-cmd and systemctl themselves, which ask for the password (polkit). Nothing
+here runs as root. Allowances are let in from the local network only (LOCAL): ufw's rules say
+so, and firewalld's are rich rules for the allowance's service from each of those ranges.
 
 SLATE_FIREWALL_ROOT puts / somewhere else, for the tests (with stand-in commands on PATH)."""
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -130,6 +137,13 @@ def firewalld_status():
         code, out = run(["firewall-cmd", "--list-services"])
         if code == 0:
             services = set(out.split())
+        # (Slate's own, from the local network: rich rules accepting the service)
+        code, out = run(["firewall-cmd", "--list-rich-rules"])
+        if code == 0:
+            for line in out.splitlines():
+                m = re.search(r'service name="([^"]+)"\s+accept', line)
+                if m:
+                    services.add(m.group(1))
     return {"kind": "firewalld", "on": on,
             "allow": {k: a["service"] in services for k, a in ALLOWANCES.items()},
             "install": "", "canChange": True}
@@ -168,9 +182,63 @@ def status():
             "install": offer, "canChange": False}
 
 
+# ---- Changing it ----------------------------------------------------------------------
+HERE = os.path.dirname(os.path.abspath(__file__))
+SLATE_SYSTEM = os.path.join(HERE, "..", "bin", "slate-system")
+if os.environ.get("SLATE_TEST") and os.environ.get("SLATE_FIREWALL_SYSTEM"):
+    SLATE_SYSTEM = os.environ["SLATE_FIREWALL_SYSTEM"]       # (the tests' stand-in, and only theirs)
+
+
+def say(problem):
+    """Why it didn't happen, in Slate's words, for Settings to show; exit status 1."""
+    print(problem, file=sys.stderr, flush=True)
+    return 1
+
+
+def rich_rules(name):
+    """firewalld's rich rules for an allowance: its service, from each local range."""
+    service = ALLOWANCES[name]["service"]
+    return [f'rule family="{"ipv6" if ":" in net else "ipv4"}" source address="{net}" service name="{service}" accept'
+            for net in LOCAL]
+
+
+def change(kind, args):
+    """Do it: (exit status, what was run)."""
+    if kind == "ufw":
+        code, _ = run([SLATE_SYSTEM, "--root", "slate-firewall"] + args, timeout=300)
+        return code
+    # firewalld: the password is asked for by firewall-cmd and systemctl themselves
+    if args[0] in ("on", "off"):
+        verb = "enable" if args[0] == "on" else "disable"
+        code, _ = run(["systemctl", verb, "--now", "firewalld"], timeout=300)
+        return code
+    flag = "--add-rich-rule" if args[0] == "allow" else "--remove-rich-rule"
+    for rule in rich_rules(args[1]):
+        code, _ = run(["firewall-cmd", "--permanent", f"{flag}={rule}"], timeout=300)
+        # (removing one that isn't there is fine)
+        if code != 0 and args[0] == "allow":
+            return code
+    code, _ = run(["firewall-cmd", "--reload"], timeout=120)
+    return code
+
+
 def main(argv):
     if argv[1:2] == ["status"]:
         print(json.dumps(status()), flush=True)
+        return 0
+    if argv[1:2] in (["set"], ["allow"]):
+        if argv[1] == "set" and (len(argv) != 3 or argv[2] not in ("on", "off")):
+            return say("firewall.py set takes on or off")
+        if argv[1] == "allow" and (len(argv) != 4 or argv[2] not in ALLOWANCES or argv[3] not in ("on", "off")):
+            return say("firewall.py allow takes " + ", ".join(ALLOWANCES) + ", then on or off")
+        st = status()
+        if not st["canChange"]:
+            return say("There's no firewall here that Slate can change")
+        args = [argv[2]] if argv[1] == "set" else ["allow" if argv[3] == "on" else "deny", argv[2]]
+        code = change(st["kind"], args)
+        if code != 0:
+            what = ("turn the firewall " + argv[2]) if argv[1] == "set" else "change what the firewall lets in"
+            return say(f"Slate couldn't {what}" + (". Was the password prompt closed?" if code in (126, 127) else ""))
         return 0
     print(__doc__.strip().split("\n\n")[1], file=sys.stderr)
     return 2

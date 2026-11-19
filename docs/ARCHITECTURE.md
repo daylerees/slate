@@ -361,13 +361,17 @@ bin/slate-update-install      Settings → Updates for Slate installed for every
                               release (only the tag is given), checks it against its published
                               checksum and puts it in /usr/local/share/slate as root, or --revert;
                               runs only from /usr/local/libexec/slate, and only on a root-owned copy
+bin/slate-firewall            the firewall's switch for ufw (Settings → Security → Firewall): on, off,
+                              and Slate's four allowances (fixed ports, from the local network
+                              only), told only names it knows; runs only from
+                              /usr/local/libexec/slate, by slate-system --root
 bin/slate-system-root         the half of slate-system that runs as root: installs packages and the
                               login session; runs only from /usr/local/libexec/slate, reading that
                               folder's own copy of the package lists
 bin/slate-helpers-install     puts those copies there: slate-system-root (the half of slate-system
                               that installs packages), slate-session-install,
-                              slate-greeter-install, slate-private-camera, slate-update-install, and
-                              the package lists
+                              slate-greeter-install, slate-private-camera, slate-update-install,
+                              slate-firewall, and the package lists
                               the first reads. The one script root runs from the Slate folder (or
                               from the release, by install.sh): a fixed list, each file read as
                               you, links refused. --check (as you) says whether the copies match;

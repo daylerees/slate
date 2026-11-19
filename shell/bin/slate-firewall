@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# The firewall's switch, for ufw (Settings → Security → Firewall; scripts/firewall.py set and
+# allow): turns ufw on or off, and opens or closes Slate's allowances. firewalld needs none of
+# this: firewall-cmd asks for the password itself.
+#
+# It runs from /usr/local/libexec/slate, a root-owned copy (bin/slate-helpers-install puts it
+# there), by slate-system --root (pkexec, your password); never from your Slate folder, which
+# anything running as you could change.
+#
+#   slate-firewall on                 ufw on (its own defaults: nothing comes in unless allowed,
+#                                     everything goes out), and on at every start
+#   slate-firewall off                ufw off
+#   slate-firewall allow <name>       let in what <name> needs, from the local network only
+#   slate-firewall deny <name>        take Slate's rules for <name> away again
+#   slate-firewall --table            the allowances, one rule per line (the tests hold this to
+#                                     scripts/firewall.py's ALLOWANCES and LOCAL)
+#
+# <name> is kdeconnect, samba, ssh or steam, and nothing else: no ports or addresses are ever
+# taken from what it's told. Exits 2 when ufw isn't installed.
+set -uo pipefail
+
+TARGET_DIR=/usr/local/libexec/slate
+
+# What each allowance lets in: protocol and ports (ufw's own way of writing them)
+rules() {
+    case "$1" in
+        kdeconnect) echo "tcp 1714:1764"; echo "udp 1714:1764" ;;
+        samba) echo "udp 137,138"; echo "tcp 139,445" ;;
+        ssh) echo "tcp 22" ;;
+        steam) echo "udp 27031:27036"; echo "tcp 27036:27037" ;;
+        *) return 1 ;;
+    esac
+}
+# The local network: private IPv4 ranges, and IPv6's link-local and unique local ones
+LOCAL="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 fe80::/10 fc00::/7"
+NAMES="kdeconnect samba ssh steam"
+
+if [ "${1:-}" = --table ]; then
+    for n in $NAMES; do
+        rules "$n" | while read -r proto ports; do echo "$n $proto $ports"; done
+    done
+    echo "local $LOCAL"
+    exit 0
+fi
+
+[ "$(dirname "$(readlink -f "$0")")" = "$TARGET_DIR" ] || {
+    echo "slate-firewall: this only runs from $TARGET_DIR (bin/slate-system --root slate-firewall)" >&2; exit 1; }
+[ "$(id -u)" -eq 0 ] || { echo "slate-firewall: this is run as root (by slate-system --root)" >&2; exit 1; }
+command -v ufw >/dev/null || { echo "slate-firewall: ufw isn't installed" >&2; exit 2; }
+
+# Each of an allowance's rules, from each local range: ufw <verb…> <rule>
+each_rule() {   # each_rule <name> <command…>
+    local name=$1; shift
+    local proto ports from
+    while read -r proto ports; do
+        for from in $LOCAL; do
+            "$@" proto "$proto" from "$from" to any port "$ports" || return 1
+        done
+    done < <(rules "$name")
+}
+allow_one() { ufw allow "$@" comment "slate-$NAME" >/dev/null; }
+# (an IPv6 range with IPv6 off in ufw is refused: not an error for the rest)
+deny_one() { ufw --force delete allow "$@" >/dev/null 2>&1 || true; }
+
+case "${1:-}" in
+    on)
+        [ "$#" -eq 1 ] || { echo "slate-firewall: on takes nothing else" >&2; exit 1; }
+        ufw --force enable || exit 1
+        # (and at every start: some distros' ufw only reads ENABLED once its service is on)
+        if command -v systemctl >/dev/null && [ -d /run/systemd/system ]; then
+            systemctl enable ufw.service >/dev/null 2>&1 || true
+        fi ;;
+    off)
+        [ "$#" -eq 1 ] || { echo "slate-firewall: off takes nothing else" >&2; exit 1; }
+        ufw disable || exit 1 ;;
+    allow|deny)
+        [ "$#" -eq 2 ] || { echo "slate-firewall: $1 takes one name ($NAMES)" >&2; exit 1; }
+        NAME=$2
+        case " $NAMES " in *" $NAME "*) ;; *) echo "slate-firewall: no allowance called $NAME ($NAMES)" >&2; exit 1 ;; esac
+        if [ "$1" = allow ]; then
+            # (IPv6 ranges only where ufw does IPv6)
+            ipv6=$(sed -n 's/^IPV6=//p' /etc/default/ufw 2>/dev/null | tr -d '"' | tr 'A-Z' 'a-z')
+            [ "$ipv6" = no ] && LOCAL="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+            each_rule "$NAME" allow_one || { echo "slate-firewall: ufw wouldn't add the rules for $NAME" >&2; exit 1; }
+        else
+            each_rule "$NAME" deny_one
+        fi ;;
+    *)
+        echo "slate-firewall: on, off, allow <name> or deny <name>" >&2; exit 1 ;;
+esac

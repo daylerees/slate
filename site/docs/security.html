@@ -144,6 +144,19 @@
 
       <h3>Going back</h3>
       <p><strong>Switch back</strong>, in the same place in Settings, puts your old login screen back just as it was.</p>
+
+      <h2>The firewall</h2>
+      <p>A firewall stops other computers on your network reaching this one in ways you haven't allowed, while
+        everything you do yourself, like browsing and downloading, works as usual. <strong>Firewall</strong>, at the end
+        of <span class="path"><i class="ti">&#xEB20;</i> Settings → Security</span>, says which firewall your computer
+        has and whether it's on, and switches it.</p>
+      <ul>
+        <li><strong>ufw</strong> (CachyOS, Ubuntu and others) and <strong>firewalld</strong> (Fedora, openSUSE): turn it on
+          or off with the switch. Either way it asks for your password, and turning it off asks you first.</li>
+        <li><strong>NixOS</strong>: it shows whether it's on; change it in your configuration
+          (<code>networking.firewall</code>).</li>
+        <li>No firewall at all: Settings says so, and which one to install.</li>
+      </ul>
     </article>
     <nav class="docs-pager" id="docs-pager"></nav>
   </main>

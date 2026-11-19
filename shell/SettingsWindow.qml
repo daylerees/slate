@@ -209,6 +209,27 @@ FloatingWindow {
         const cls = t.wayland ? t.wayland.appId : t.lastIpcObject ? t.lastIpcObject.class : "";
         return cls === "slate-settings";
     }
+    // (the tests: press the switch on the row with this label on the page showing, as a click
+    // does: it says it was toggled, and the row decides. false when there's no such switch)
+    function testToggle(label) {
+        const row = it => {
+            if (!it) return null;
+            if (it.visible && it.label === label && it !== pageLoader.item) return it;
+            for (const c of it.children) { const r = row(c); if (r) return r; }
+            return null;
+        };
+        const sw = it => {
+            for (const c of it.children) {
+                if (c.visible && c.checked !== undefined && c.toggled !== undefined && c.enabled) return c;
+                const r = sw(c); if (r) return r;
+            }
+            return null;
+        };
+        const r = row(pageLoader.item), t = r ? sw(r) : null;
+        if (!t) return false;
+        t.toggled(!t.checked);
+        return true;
+    }
     function showFound() {
         const label = findLabel || foundRetryLabel;
         findLabel = "";

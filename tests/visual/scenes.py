@@ -231,7 +231,7 @@ for _name, _fw in (("on", {"kind": "ufw", "on": True, "allow": dict(_FW_NONE, ss
         "do": [("settings", "page", "lock"), ("test", "settingsPoll", "firewall", json.dumps(_fw)),
                ("settings", "find", "lock", "Firewall")],
         "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "lock" and st["settings"].get("checking", 0) == 0,
-        "settle": 1.2, "undo": [("test", "settingsPoll", "firewall", ""), ("settings", "close")],
+        "settle": 2.5, "undo": [("test", "settingsPoll", "firewall", ""), ("settings", "close")],     # (after find's highlight)
     }
 
 # A picture arriving after one that couldn't be loaded (the login screen, from someone without a

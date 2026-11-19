@@ -242,6 +242,8 @@ ShellRoot {
         // Settings: Tab (or Shift+Tab) from the text box that has the keyboard
         function settingsTab(forward: bool): void { if (settingsLoader.item) settingsLoader.item.testTab(forward); }
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
+        // Press the switch on the Settings row with this label, as a click does ("pressed" or "none")
+        function settingsToggle(label: string): string { return settingsLoader.item && settingsLoader.item.testToggle(label) ? "pressed" : "none"; }
         function newSpace(): void { popouts.newSpaceAsked(); }
         // Saving a space as New Space's Save does (Spaces.save), workspaces as "1,3"
         function saveSpace(name: string, ids: string): void { Spaces.save(name, "#8fb3e8", 0xEDBA, ids.split(",").map(Number)); }
