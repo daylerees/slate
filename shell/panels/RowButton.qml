@@ -9,6 +9,11 @@ Rectangle {
     property bool toggles: false       // a click turns it off again: lighter under the pointer while it's on
     property bool danger: false        // destructive: the muted hover in red
     signal clicked()
+    // (the keyboard's Menu key, or Shift+F10, on it: what a right-click on it does, for a row
+    // that has a menu of its own: the More panel's)
+    signal menuAsked()
+    // (the keyboard's Delete on it: for a row that can be removed, as the saved spaces can)
+    signal removeAsked()
     // (a screen reader: a button, named by the words on it)
     Accessible.role: Accessible.Button
     Accessible.name: Config.textOf(rb)
@@ -17,19 +22,13 @@ Rectangle {
     // Popouts.keyStep; Enter or Space presses; its ring)
     activeFocusOnTab: visible && enabled
     Keys.onPressed: e => {
+        if (e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier))) { menuAsked(); e.accepted = true; return; }
+        if (e.key === Qt.Key_Delete) { removeAsked(); e.accepted = true; return; }
         if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
         clicked();
         e.accepted = true;
     }
-    Rectangle {
-        z: 5
-        visible: parent.activeFocus
-        anchors { fill: parent; margins: -2 }
-        color: "transparent"
-        radius: Config.corner(10)
-        border.width: 2
-        border.color: Config.accent
-    }
+    FocusRing { round: 10 }
     // Text and icons on it: the plain colour, or the dark one on the active colour (what the
     // row's own words, and the Icons in it, take, so each needn't say it again)
     readonly property color fg: selected ? pop.accentText : pop.text

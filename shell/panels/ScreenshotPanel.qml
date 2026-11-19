@@ -60,13 +60,23 @@ Column {
         id: tile
         property int code
         property string text
+        property string about           // (what it's for, for a screen reader: the row's heading)
         signal picked()
         width: (shotView.width - 16) / 3; height: 76
         radius: Config.corner(10)
         color: "transparent"
         Accessible.role: Accessible.Button
         Accessible.name: tile.text
+        Accessible.description: tile.about
         Accessible.onPressAction: tile.picked()
+        // (the keyboard: a stop, Enter or Space picks it)
+        activeFocusOnTab: visible
+        Keys.onPressed: e => {
+            if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+            tile.picked();
+            e.accepted = true;
+        }
+        FocusRing {}
         HoverFill { base: pop.card; hovered: tileHover.hovered; radius: parent.radius }
         Column {
             anchors.centerIn: parent
@@ -83,7 +93,7 @@ Column {
         spacing: 8
         Repeater {
             model: shotView.modes
-            delegate: Tile { required property var modelData; code: modelData.code; text: modelData.label; onPicked: shotView.take(modelData.mode) }
+            delegate: Tile { required property var modelData; code: modelData.code; text: modelData.label; about: "Take a screenshot"; onPicked: shotView.take(modelData.mode) }
         }
     }
     Label {
@@ -101,7 +111,7 @@ Column {
         spacing: 8
         Repeater {
             model: shotView.modes
-            delegate: Tile { required property var modelData; code: modelData.code; text: modelData.label; onPicked: shotView.record(modelData.mode) }
+            delegate: Tile { required property var modelData; code: modelData.code; text: modelData.label; about: "Record the screen"; onPicked: shotView.record(modelData.mode) }
         }
     }
     RowButton {

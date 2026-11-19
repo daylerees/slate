@@ -142,18 +142,62 @@ PanelWindow {
         places.sort((a, b) => Math.abs(a.p.y - b.p.y) > 4 ? a.p.y - b.p.y : a.p.x - b.p.x);
         return places.map(o => o.c);
     }
+    // (the tests: everything in the open panel that takes a click but can't take the keyboard,
+    // a line each saying what it is and where. A click is a tap handler (ClickTap) or a mouse
+    // area (ClickArea), found anywhere in the panel; it can be reached when it, or something
+    // it's inside, is a stop for Tab and the arrow keys. Right-click-only ones are what a
+    // row's own menu key does, so they're left to the row they're in)
+    function unreachable() {
+        const out = [];
+        const kind = o => {
+            const s = String(o);
+            return /^(ClickTap|QQuickTapHandler)/.test(s) ? "click" : /^(ClickArea|QQuickMouseArea)/.test(s) ? "area" : "";
+        };
+        const reached = it => {
+            for (let a = it; a && a !== content; a = a.parent)
+                if (a.activeFocusOnTab) return true;
+            return false;
+        };
+        const walk = it => {
+            for (const o of it.data || []) {
+                const k = kind(o);
+                if (k === "" || !o.enabled) continue;
+                if (k === "click" && o.acceptedButtons === Qt.RightButton) continue;
+                const owner = k === "click" ? o.parent : o.parent;
+                if (owner && !reached(k === "area" ? o : owner)) {
+                    const p = owner.mapToItem(content, 0, 0);
+                    out.push((Config.textOf(owner) || String(owner).split("(")[0]) + " @" + Math.round(p.x) + "," + Math.round(p.y));
+                }
+            }
+            for (const c of it.children) if (c.visible) walk(c);
+        };
+        if (content.item) walk(content.item);
+        return out;
+    }
     function keyStep(on) {
         const stops = keyStops(), i = stops.indexOf(panelKeys.Window.activeFocusItem);
         if (i < 0) { focusFirst(on); return; }
         const next = stops[Math.max(0, Math.min(stops.length - 1, i + (on ? 1 : -1)))];
-        if (next) next.forceActiveFocus(on ? Qt.TabFocusReason : Qt.BacktabFocusReason);
+        if (next) { next.forceActiveFocus(on ? Qt.TabFocusReason : Qt.BacktabFocusReason); intoView(next); }
     }
     function focusFirst(first) {
         const stops = keyStops();
         const pick = first ? stops[0] : stops[stops.length - 1];
         if (!pick) return false;
         pick.forceActiveFocus(first ? Qt.TabFocusReason : Qt.BacktabFocusReason);
+        intoView(pick);
         return true;
+    }
+    // A control the keyboard has moved to, scrolled into sight in every list it's in (a long
+    // Wi-Fi list, the spaces, the notifications), with a little room above or below it
+    function intoView(item) {
+        for (let f = item.parent; f && f !== content; f = f.parent) {
+            if (f.contentY === undefined || f.contentHeight === undefined || !(f.contentHeight > f.height)) continue;
+            const top = item.mapToItem(f.contentItem, 0, 0).y, bottom = top + item.height, room = 8;
+            const lo = f.originY, hi = f.originY + f.contentHeight - f.height;
+            if (top - room < f.contentY) f.contentY = Math.max(lo, top - room);
+            else if (bottom + room > f.contentY + f.height) f.contentY = Math.min(hi, bottom + room - f.height);
+        }
     }
     function startOpening() {
         if (pending === "") return;

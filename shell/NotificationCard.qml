@@ -6,6 +6,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import "NotificationText.js" as NotificationText
+import "panels" as Panel
 
 Rectangle {
     id: card
@@ -135,6 +136,18 @@ Rectangle {
 
     HoverHandler { id: cardHover }
     ClickTap { onTapped: card.activated() }
+    // (the keyboard, in the bell panel: a stop for Tab and the arrow keys; Enter or Space opens
+    // it, as a click does, and Delete dismisses it. Its close button shows while it, or the
+    // button, has the keyboard, and comes next)
+    activeFocusOnTab: inPanel && visible
+    Keys.onPressed: e => {
+        if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) card.activated();
+        else if (e.key === Qt.Key_Delete) card.closed();
+        else return;
+        e.accepted = true;
+    }
+    Accessible.onPressAction: card.activated()
+    Panel.FocusRing { round: 9 }
 
     // Refresh "2 min ago" text
     property int tick: 0
@@ -259,7 +272,7 @@ Rectangle {
                 // accent when pointed at. (Overhangs the row a little rather than making it taller.)
                 Rectangle {
                     id: closeBtn
-                    visible: cardHover.hovered
+                    visible: cardHover.hovered || card.activeFocus || activeFocus
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     width: 20; height: 20
                     radius: Config.corner(5)
@@ -274,6 +287,16 @@ Rectangle {
                     }
                     HoverHandler { id: closeHover }
                     ClickTap { onTapped: card.closed() }
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "Dismiss"
+                    Accessible.onPressAction: card.closed()
+                    activeFocusOnTab: card.inPanel && visible
+                    Keys.onPressed: e => {
+                        if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space && e.key !== Qt.Key_Delete) return;
+                        card.closed();
+                        e.accepted = true;
+                    }
+                    Panel.FocusRing { round: 5 }
                 }
             }
             Text {
@@ -338,6 +361,16 @@ Rectangle {
                         }
                         HoverHandler { id: actHover }
                         ClickTap { onTapped: card.action(modelData.identifier) }
+                        Accessible.role: Accessible.Button
+                        Accessible.name: modelData.text
+                        Accessible.onPressAction: card.action(modelData.identifier)
+                        activeFocusOnTab: card.inPanel && visible
+                        Keys.onPressed: e => {
+                            if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+                            card.action(modelData.identifier);
+                            e.accepted = true;
+                        }
+                        Panel.FocusRing { round: 8 }
                     }
                 }
             }

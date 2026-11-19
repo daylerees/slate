@@ -284,10 +284,23 @@ Column {
                     }
                 }
                 HoverHandler { id: tileHover }
+                function copy() { Quickshell.execDetached(["wl-copy", "--", tile.detail.v]); tile.copied = true; copiedTimer.restart(); }
                 ClickTap {
                     enabled: tile.detail.copy
-                    onTapped: { Quickshell.execDetached(["wl-copy", "--", tile.detail.v]); tile.copied = true; copiedTimer.restart(); }
+                    onTapped: tile.copy()
                 }
+                // (the keyboard and a screen reader, for one that copies: a button)
+                Accessible.role: tile.detail.copy ? Accessible.Button : Accessible.StaticText
+                Accessible.name: tile.detail.k + ": " + tile.detail.v
+                Accessible.description: tile.detail.copy ? "Copy" : ""
+                Accessible.onPressAction: if (tile.detail.copy) tile.copy()
+                activeFocusOnTab: visible && tile.detail.copy
+                Keys.onPressed: e => {
+                    if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+                    tile.copy();
+                    e.accepted = true;
+                }
+                FocusRing { round: 9 }
             }
         }
     }

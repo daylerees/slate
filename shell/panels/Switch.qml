@@ -17,15 +17,7 @@ Rectangle {
         toggled();
         e.accepted = true;
     }
-    Rectangle {
-        z: 5
-        visible: parent.activeFocus
-        anchors { fill: parent; margins: -2 }
-        color: "transparent"
-        radius: Config.corner(13)
-        border.width: 2
-        border.color: Config.accent
-    }
+    FocusRing { round: 13 }
     readonly property var pop: PanelHost.pop
     id: onOff
     property bool checked: false

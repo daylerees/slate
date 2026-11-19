@@ -53,7 +53,22 @@ Column {
                     code: audioChannel.a && audioChannel.a.muted ? audioChannel.modelData.off : audioChannel.modelData.on
                     color: audioChannel.a && audioChannel.a.muted ? pop.danger : pop.text
                     anchors.verticalCenter: parent.verticalCenter
-                    ClickTap { onTapped: { const a = audioChannel.a; if (a) a.muted = !a.muted; } }
+                    function toggle() { const a = audioChannel.a; if (a) a.muted = !a.muted; }
+                    ClickTap { onTapped: muteIcon.toggle() }
+                    // (the keyboard and a screen reader: a switch, on while it's muted)
+                    Accessible.role: Accessible.CheckBox
+                    Accessible.name: audioChannel.modelData.title === "Output" ? "Mute the sound" : "Mute the microphone"
+                    Accessible.checkable: true
+                    Accessible.checked: !!audioChannel.a && audioChannel.a.muted
+                    Accessible.onToggleAction: muteIcon.toggle()
+                    Accessible.onPressAction: muteIcon.toggle()
+                    activeFocusOnTab: visible
+                    Keys.onPressed: e => {
+                        if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+                        muteIcon.toggle();
+                        e.accepted = true;
+                    }
+                    FocusRing { round: 6 }
                 }
                 Label {
                     anchors { left: muteIcon.right; leftMargin: 8; verticalCenter: parent.verticalCenter }
@@ -70,6 +85,7 @@ Column {
                 value: parent.a ? parent.a.volume : 0
                 muted: parent.a ? parent.a.muted : false
                 busy: !!audioChannel.modelData.node && pop.audioBusy[audioChannel.modelData.node.name] === true
+                Accessible.name: audioChannel.modelData.title === "Output" ? "Volume" : "Microphone volume"
                 onMoved: v => { const a = parent.a; if (a) { a.muted = false; a.volume = v; } }
             }
         }

@@ -9,6 +9,7 @@ Item {
     // An icon straight after the title, to click (the pencil that renames a workspace);
     // the title shortens before the two would overflow
     property int editCode: 0
+    property string editName: "Edit"      // (what it does, for a screen reader: "Rename this workspace")
     signal editClicked()
     width: parent ? parent.width : 0
     height: 26
@@ -31,5 +32,16 @@ Item {
         Icon { anchors.centerIn: parent; code: parent.parent.editCode; font.pixelSize: 16; color: pop.accent }
         HoverHandler { id: titleEditHover }
         ClickArea { anchors.fill: parent; onClicked: parent.parent.editClicked() }
+        // (the keyboard and a screen reader: a button)
+        Accessible.role: Accessible.Button
+        Accessible.name: parent.editName
+        Accessible.onPressAction: parent.editClicked()
+        activeFocusOnTab: visible
+        Keys.onPressed: e => {
+            if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+            parent.editClicked();
+            e.accepted = true;
+        }
+        FocusRing { round: 6 }
     }
 }

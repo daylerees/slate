@@ -130,6 +130,24 @@ ShellRoot {
         enabled: Config.testMode
         // A click (or right-click) on the dock's slot of this kind (drink, focus, trash…)
         function dockClick(kind: string, right: bool): void { win.clickItem(win.indexOfKind(kind), right); }
+        // The open bar panel's controls that take a click but not the keyboard (Popouts.unreachable)
+        function panelGaps(): string { return JSON.stringify(popouts.unreachable()); }
+        // …and walking the keyboard through every stop, as Down does, looking again at each
+        // (a card's close button and a space's delete show only once theirs has the keyboard):
+        // { stops: what each says, gaps: every gap seen }
+        function panelWalk(): string {
+            const gaps = popouts.unreachable(), said = [];
+            popouts.focusFirst(true);
+            for (let i = 0; i < 200; i++) {
+                const f = popouts.contentItem.Window.activeFocusItem;
+                said.push(Config.textOf(f) || String(f).split("(")[0]);
+                for (const g of popouts.unreachable()) if (!gaps.includes(g)) gaps.push(g);
+                const stops = popouts.keyStops();
+                if (stops.indexOf(f) < 0 || stops.indexOf(f) === stops.length - 1) break;
+                popouts.keyStep(true);
+            }
+            return JSON.stringify({ stops: said, gaps: gaps });
+        }
         // Hyprbars (HyprbarsWatch.qml), as Settings → Windows asks for it: check, choose, rebuild,
         // reload, remove. And answering the question that's showing in the confirmation window
         // Arranging the menu bar without a pointer: what a drag, a click on the bar or a button

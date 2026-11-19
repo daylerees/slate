@@ -80,25 +80,33 @@ Column {
             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
             source: Config.avatarUrl
         fallback: true      // no account picture: the themed person icon
-            // Hover: greyed and dimmed with a pencil; click to change the picture
-            saturation: avatarHover.hovered ? -1 : 0
-            brightness: avatarHover.hovered ? -0.45 : 0
+            // Hover (or the keyboard on it): greyed and dimmed with a pencil; click to change the picture
+            readonly property bool pointed: avatarHover.hovered || activeFocus
+            saturation: pointed ? -1 : 0
+            brightness: pointed ? -0.45 : 0
             Behavior on saturation { NumberAnimation { duration: Config.ms(150) } }
             Behavior on brightness { NumberAnimation { duration: Config.ms(150) } }
             Icon {
                 anchors.centerIn: parent
                 code: 0xEB04
                 color: "white"
-                opacity: avatarHover.hovered ? 1 : 0
+                opacity: avatar.pointed ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
             }
             HoverHandler { id: avatarHover }
-            ClickTap {
-                onTapped: {
-                    pop.close();
-                    pop.slate(["settings", "avatar"]);
-                }
+            function change() { pop.close(); pop.slate(["settings", "avatar"]); }
+            ClickTap { onTapped: avatar.change() }
+            // (the keyboard and a screen reader: a button)
+            Accessible.role: Accessible.Button
+            Accessible.name: "Change your picture"
+            Accessible.onPressAction: avatar.change()
+            activeFocusOnTab: visible
+            Keys.onPressed: e => {
+                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+                avatar.change();
+                e.accepted = true;
             }
+            FocusRing { round: 30 }
         }
         Column {
             anchors { left: avatar.right; leftMargin: 14; verticalCenter: parent.verticalCenter; right: ccButtons.left; rightMargin: 8 }

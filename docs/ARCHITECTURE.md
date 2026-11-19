@@ -41,7 +41,8 @@ shell.qml               root: creates everything below, plus the dock itself
 │                       panels/Icon.qml, panels/Divider.qml, panels/Heading.qml,
 │                       panels/Slider.qml, panels/Switch.qml, panels/RowButton.qml,
 │                       panels/LinkRow.qml, panels/PanelTitle.qml, panels/PanelField.qml,
-│                       panels/ForecastDay.qml
+│                       panels/ForecastDay.qml, panels/FocusRing.qml (the ring round a
+│                       control while it has the keyboard)
 │                       and one file for each panel, loaded when it opens: panels/VolumePanel.qml,
 │                       panels/WifiPanel.qml, panels/KeyboardPanel.qml, panels/ClipboardPanel.qml,
 │                       panels/ScreenshotPanel.qml, panels/BluetoothPanel.qml,

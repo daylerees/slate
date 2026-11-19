@@ -7,6 +7,7 @@ Keys are typed for real with wtype, each sequence in one run (in the background,
 goes): every wtype run is a new keyboard, and the old one going away takes the keyboard's focus
 with it, which a real keyboard never does."""
 import json
+import os
 import shutil
 import subprocess
 
@@ -128,3 +129,68 @@ class KeyboardNavigation(LiveCase):
         self.assertEqual(path[0], first)
         self.assertGreater(path[1], first, f"Right didn't move along: {path}")
         self.assertEqual(path[2], first, f"Home didn't go back to the first: {path}")
+
+
+PANELS = ["control", "volume", "wifi", "bluetooth", "battery", "keyboard", "clipboard", "screenshot",
+          "notifications", "calendar", "session", "gamemode", "windowmode", "drink", "focus", "spaces", "more"]
+
+
+class EveryPanelControl(LiveCase):
+    """Accessibility → every control in every bar panel can take the keyboard: nothing that
+    takes a click is left out of Tab and the arrow keys (Popouts.unreachable lists any that
+    are, by what they say and where). The panels are shown with something in them: a
+    notification with an action, Wi-Fi networks, clipboard history."""
+
+    def test_nothing_takes_a_click_but_not_the_keyboard(self):
+        self.addCleanup(lambda: self.ipc("test", "wifi", ""))
+        self.ipc("test", "wifi", json.dumps({"Home": 0.9, "Cafe": 0.6}))
+        self.s.run(["notify-send", "-u", "critical", "-A", "open=Open", "--", "A note", "with an action"])
+        self.wait(lambda st: st["notifications"]["history"] > 0, "the notification")
+        # (a window, for New Space's workspace cards, and a space saved with it for the Spaces
+        # panel's list)
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        self.s.settle(1.0)
+        saved = os.path.join(self.s.h.data, "slate", "spaces.json")
+        self.addCleanup(lambda: os.path.exists(saved) and os.remove(saved))
+        self.ipc("test", "saveSpace", "Work", str(self.s.hyprctl("activeworkspace", json_out=True)["id"]))
+        self.wait(lambda st: st["spaces"]["saved"] > 0, "a saved space")
+        gaps = {}
+        for name in PANELS + ["new space"]:
+            panel = "spaces" if name == "new space" else name
+            self.ipc("bar", "panel", panel)
+            if not self.wait_or_none(lambda st: st["popout"] == panel):
+                gaps[name] = ["(didn't open)"]
+                continue
+            if name == "new space":
+                self.ipc("test", "newSpace")
+            self.s.settle(0.8)
+            found = json.loads(self.ipc("test", "panelWalk"))["gaps"]
+            if found:
+                gaps[name] = found
+            self.ipc("popout", "close")
+            self.wait(lambda st: st["popout"] == "", f"the {name} panel to close")
+        self.assertEqual(gaps, {}, "controls the keyboard can't reach:\n" + json.dumps(gaps, indent=1))
+
+    def test_delete_dismisses_a_notification_card(self):
+        """In the bell panel, Down reaches a notification's card (with its close button showing)
+        and Delete dismisses it."""
+        if not shutil.which("wtype"):
+            self.skipTest("wtype isn't installed")
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.ipc("notifications", "clear")
+        self.s.run(["notify-send", "-u", "critical", "--", "To dismiss", "by keyboard"])
+        self.wait(lambda st: st["notifications"]["history"] == 1, "the notification")
+        self.ipc("bar", "panel", "notifications")
+        self.wait(lambda st: st["popout"] == "notifications", "the bell panel")
+        self.s.settle(0.8)
+        p = subprocess.Popen(["wtype", "-s", "1000", "-k", "Down", "-s", "400", "-k", "Down", "-s", "400", "-k", "Down",
+                              "-s", "800", "-k", "Delete", "-s", "600"], env=self.s.env)
+        self.addCleanup(p.kill)
+        st = self.wait(lambda st: "To dismiss" in st["popoutKeyFocus"], "Down to the card", timeout=12)
+        self.wait(lambda st: st["notifications"]["history"] == 0, "Delete to dismiss it", timeout=8)
+
+    def wait_or_none(self, check, timeout=5):
+        try:
+            return self.wait(check, timeout=timeout)
+        except AssertionError:
+            return None

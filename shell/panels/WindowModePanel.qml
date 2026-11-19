@@ -29,6 +29,7 @@ Column {
     PanelTitle {
         text: Config.workspaceLabel(wmView.ws)
         editCode: wmView.ws > 0 ? 0xEA98 : 0
+        editName: "Rename this workspace"
         onEditClicked: pop.renameWorkspace(wmView.ws)
     }
     Label {

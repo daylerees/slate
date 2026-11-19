@@ -53,6 +53,7 @@ Column {
                         required property var modelData
                         width: parent.width
                         onClicked: pop.moreBar.moreClick(modelData, false)
+                        onMenuAsked: pop.moreBar.moreClick(modelData, true)
                         ClickTap { acceptedButtons: Qt.RightButton; onTapped: pop.moreBar.moreClick(moreRow.modelData, true) }
                         WheelHandler { onWheel: e => pop.moreBar.moreWheel(moreRow.modelData, e.angleDelta.y) }
                         Icon {

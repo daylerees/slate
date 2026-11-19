@@ -10,6 +10,26 @@ Item {
     property bool busy: false          // in use just now (sound playing, or being listened to)
     signal moved(real v)
     implicitHeight: 22
+    // (a screen reader: a slider, its value as a percentage, and its name from where it's used)
+    Accessible.role: Accessible.Slider
+    Accessible.name: "Slider"
+    Accessible.description: Math.round(Math.min(1, value) * 100) + "%"
+    Accessible.onIncreaseAction: step(0.05)
+    Accessible.onDecreaseAction: step(-0.05)
+    // (the keyboard: a stop for Tab and the arrow keys, which the panel moves between with Up
+    // and Down; Left and Right move it 5%, Page Up and Page Down 10%, Home and End to the ends)
+    activeFocusOnTab: visible && enabled
+    function step(by) { moved(Math.max(0, Math.min(1, Math.min(1, value) + by))); }
+    Keys.onPressed: e => {
+        const by = e.key === Qt.Key_Right ? 0.05 : e.key === Qt.Key_Left ? -0.05
+            : e.key === Qt.Key_PageUp ? 0.1 : e.key === Qt.Key_PageDown ? -0.1 : 0;
+        if (by !== 0) step(by);
+        else if (e.key === Qt.Key_Home) moved(0);
+        else if (e.key === Qt.Key_End) moved(1);
+        else return;
+        e.accepted = true;
+    }
+    FocusRing { round: 11 }
     Rectangle {
         id: track
         anchors.verticalCenter: parent.verticalCenter

@@ -116,6 +116,20 @@ Column {
                         width: parent.width
                         height: 52
                         onClicked: { if (Spaces.restoring !== "") return; Spaces.restore(modelData.id); pop.close(); }
+                        onRemoveAsked: askDelete()
+                        // Delete it, asked first in the middle of the screen
+                        function askDelete() {
+                            const sp = spRow.modelData;
+                            pop.close();
+                            if (!pop.powerConfirm) return;
+                            pop.powerConfirm.confirmWith({
+                                title: "Delete \u201c" + sp.name + "\u201d?",
+                                body: "Slate will forget this space. Don't worry about anything that's open: its apps and windows stay just as they are.",
+                                button: "Delete", code: 0xEB41, danger: true
+                            }, () => Spaces.remove(sp.id));
+                        }
+                        // (its delete button shows under the pointer, or while it or the button has the keyboard)
+                        readonly property bool showDelete: spRowHover.hovered || activeFocus || spDel.activeFocus
                         HoverHandler { id: spRowHover }
                         Rectangle {
                             id: spBadge
@@ -142,12 +156,12 @@ Column {
                         Item {
                             id: spSide
                             anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                            width: spRowHover.hovered ? spDel.width : spApps.width
+                            width: spRow.showDelete ? spDel.width : spApps.width
                             height: 28
                             Row {
                                 id: spApps
                                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                                visible: !spRowHover.hovered
+                                visible: !spRow.showDelete
                                 spacing: -5
                                 Repeater {
                                     model: spRow.appIds.slice(0, 4)
@@ -172,17 +186,18 @@ Column {
                                 // A MouseArea, so the click stops here rather than also opening the space
                                 ClickArea {
                                     anchors.fill: parent
-                                    onClicked: {
-                                        const sp = spRow.modelData;
-                                        pop.close();
-                                        if (!pop.powerConfirm) return;
-                                        pop.powerConfirm.confirmWith({
-                                            title: "Delete \u201c" + sp.name + "\u201d?",
-                                            body: "Slate will forget this space. Don't worry about anything that's open: its apps and windows stay just as they are.",
-                                            button: "Delete", code: 0xEB41, danger: true
-                                        }, () => Spaces.remove(sp.id));
-                                    }
+                                    onClicked: spRow.askDelete()
                                 }
+                                Accessible.role: Accessible.Button
+                                Accessible.name: "Delete " + spRow.modelData.name
+                                Accessible.onPressAction: spRow.askDelete()
+                                activeFocusOnTab: visible
+                                Keys.onPressed: e => {
+                                    if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space && e.key !== Qt.Key_Delete) return;
+                                    spRow.askDelete();
+                                    e.accepted = true;
+                                }
+                                FocusRing { round: 7 }
                             }
                         }
                     }
@@ -224,6 +239,16 @@ Column {
             Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: pop.dim }
             HoverHandler { id: spBackHover }
             ClickTap { onTapped: spacesView.mode = "list" }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Back"
+            Accessible.onPressAction: spacesView.mode = "list"
+            activeFocusOnTab: visible
+            Keys.onPressed: e => {
+                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+                spacesView.mode = "list";
+                e.accepted = true;
+            }
+            FocusRing { round: 7 }
         }
         PanelTitle { x: spBack.width + 6; width: parent.width - x; text: "New Space" }
     }
@@ -373,6 +398,20 @@ Column {
                             }
                             HoverHandler { id: wsShotHover }
                             ClickTap { onTapped: spacesView.toggle(wsCard.modelData.id) }
+                            // (the keyboard and a screen reader: a check box, ticked while it's picked)
+                            Accessible.role: Accessible.CheckBox
+                            Accessible.name: Config.workspaceLabel(wsCard.modelData.id)
+                            Accessible.checkable: true
+                            Accessible.checked: wsCard.on
+                            Accessible.onToggleAction: spacesView.toggle(wsCard.modelData.id)
+                            Accessible.onPressAction: spacesView.toggle(wsCard.modelData.id)
+                            activeFocusOnTab: visible
+                            Keys.onPressed: e => {
+                                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+                                spacesView.toggle(wsCard.modelData.id);
+                                e.accepted = true;
+                            }
+                            FocusRing { round: 8 }
                         }
                         Label {
                             width: parent.width
@@ -413,9 +452,26 @@ Column {
 
     Label { visible: spacesView.mode === "new"; text: "Icon"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12) }
     Grid {
+        id: icGrid
         visible: spacesView.mode === "new"
         columns: 15
         spacing: 2
+        // (the keyboard: one stop for the whole grid, not one for each icon, so Down moves on
+        // past it; Left and Right choose the one before or after, Home and End the first and
+        // last. A screen reader hears which, of how many)
+        activeFocusOnTab: visible
+        Keys.onPressed: e => {
+            const all = Spaces.icons, i = Math.max(0, all.indexOf(spacesView.icon));
+            const to = e.key === Qt.Key_Right ? i + 1 : e.key === Qt.Key_Left ? i - 1
+                : e.key === Qt.Key_Home ? 0 : e.key === Qt.Key_End ? all.length - 1 : -1;
+            if (to < 0 && e.key !== Qt.Key_Left) return;
+            spacesView.icon = all[Math.max(0, Math.min(all.length - 1, to))];
+            e.accepted = true;
+        }
+        Accessible.role: Accessible.List
+        Accessible.name: "Icon"
+        Accessible.description: (Spaces.icons.indexOf(spacesView.icon) + 1) + " of " + Spaces.icons.length
+        FocusRing { round: 9 }
         Repeater {
             model: Spaces.icons
             delegate: Rectangle {
@@ -436,9 +492,32 @@ Column {
 
     Label { visible: spacesView.mode === "new"; text: "Color"; color: pop.dim; font.weight: Font.Normal; font.pixelSize: Config.text(12) }
     Grid {
+        id: swGrid
         visible: spacesView.mode === "new"
         columns: 9
         readonly property real cell: 28
+        // (the keyboard: one stop for the colours, Left and Right choosing the one before or
+        // after; the last is your own, with the hue strip and its code below it)
+        readonly property var choices: Spaces.colours.concat(["custom"])
+        function choose(c) {
+            if (c === "custom") {
+                if (!spacesView.custom) { spacesView.custom = true; spHexBox.text = spacesView.colour.toString().slice(0, 7); }
+            } else { spacesView.custom = false; spacesView.colour = c; }
+        }
+        readonly property int chosen: spacesView.custom ? choices.length - 1
+            : Math.max(0, Spaces.colours.findIndex(c => Qt.colorEqual(spacesView.colour, c)))
+        activeFocusOnTab: visible
+        Keys.onPressed: e => {
+            const to = e.key === Qt.Key_Right ? chosen + 1 : e.key === Qt.Key_Left ? chosen - 1
+                : e.key === Qt.Key_Home ? 0 : e.key === Qt.Key_End ? choices.length - 1 : null;
+            if (to === null) return;
+            choose(choices[Math.max(0, Math.min(choices.length - 1, to))]);
+            e.accepted = true;
+        }
+        Accessible.role: Accessible.List
+        Accessible.name: "Color"
+        Accessible.description: spacesView.custom ? "Your own, " + spacesView.colour.toString().slice(0, 7) : (chosen + 1) + " of " + choices.length
+        FocusRing { round: 14 }
         columnSpacing: (spacesView.width - cell * 9) / 8
         rowSpacing: 10
         Repeater {
@@ -483,13 +562,7 @@ Column {
                     Icon { anchors.centerIn: parent; visible: swatch.isCustom; code: 0xEBE6; font.pixelSize: 12; color: spacesView.inkColour }
                 }
                 HoverHandler { id: swHover }
-                ClickTap {
-                    onTapped: {
-                        if (swatch.isCustom) {
-                            if (!spacesView.custom) { spacesView.custom = true; spHexBox.text = spacesView.colour.toString().slice(0, 7); }
-                        } else { spacesView.custom = false; spacesView.colour = swatch.modelData; }
-                    }
-                }
+                ClickTap { onTapped: swGrid.choose(swatch.modelData) }
             }
         }
     }
@@ -501,6 +574,24 @@ Column {
         Item {
             id: hueStrip
             width: parent.width - spHexBox.width - 10; height: 30
+            function setHue(h) {
+                spacesView.colour = Qt.hsla(Math.max(0, Math.min(0.999, h)), 0.65, 0.78, 1);
+                spHexBox.text = spacesView.colour.toString().slice(0, 7);
+            }
+            // (the keyboard and a screen reader: a slider, Left and Right moving round the hues)
+            activeFocusOnTab: visible
+            Keys.onPressed: e => {
+                const h = Math.max(0, spacesView.colour.hslHue);
+                const by = e.key === Qt.Key_Right ? 1 / 36 : e.key === Qt.Key_Left ? -1 / 36 : 0;
+                if (by === 0) return;
+                setHue(h + by);
+                e.accepted = true;
+            }
+            Accessible.role: Accessible.Slider
+            Accessible.name: "Hue"
+            Accessible.onIncreaseAction: setHue(Math.max(0, spacesView.colour.hslHue) + 1 / 36)
+            Accessible.onDecreaseAction: setHue(Math.max(0, spacesView.colour.hslHue) - 1 / 36)
+            FocusRing { round: 9 }
             Canvas {
                 id: hueCanvas
                 anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
@@ -528,11 +619,7 @@ Column {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor      // (a hand over it, as over what's clicked)
-                function set(mx) {
-                    const h = Math.max(0, Math.min(0.999, mx / width));
-                    spacesView.colour = Qt.hsla(h, 0.65, 0.78, 1);
-                    spHexBox.text = spacesView.colour.toString().slice(0, 7);
-                }
+                function set(mx) { hueStrip.setHue(mx / width); }
                 onPressed: m => set(m.x)
                 onPositionChanged: m => { if (pressed) set(m.x); }
             }
@@ -561,6 +648,16 @@ Column {
             Label { id: spCancel; anchors.centerIn: parent; text: "Cancel"; font.weight: Font.Normal }
             HoverHandler { id: spCancelHover }
             ClickTap { onTapped: spacesView.mode = "list" }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Cancel"
+            Accessible.onPressAction: spacesView.mode = "list"
+            activeFocusOnTab: visible
+            Keys.onPressed: e => {
+                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+                spacesView.mode = "list";
+                e.accepted = true;
+            }
+            FocusRing { round: 8 }
         }
         Rectangle {
             width: spSave.implicitWidth + 28; height: 32; radius: Config.corner(8)
@@ -571,6 +668,16 @@ Column {
             Label { id: spSave; anchors.centerIn: parent; text: spacesView.sameName ? "Replace" : "Save"; color: spacesView.canSave ? pop.accentText : pop.dim }
             HoverHandler { id: spSaveHover }
             ClickTap { onTapped: spacesView.save() }
+            Accessible.role: Accessible.Button
+            Accessible.name: spSave.text
+            Accessible.onPressAction: spacesView.save()
+            activeFocusOnTab: visible
+            Keys.onPressed: e => {
+                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
+                spacesView.save();
+                e.accepted = true;
+            }
+            FocusRing { round: 8 }
         }
     }
 }

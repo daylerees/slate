@@ -43,7 +43,13 @@ Rectangle {
         onAccepted: field.accepted()
         onTextEdited: field.textEdited()
         Keys.onEscapePressed: field.escaped()
+        // (the keyboard: a stop for Tab and the arrow keys, which the panel moves on from, Up
+        // and Down included; a screen reader names it by its hint)
+        activeFocusOnTab: field.visible && field.enabled
+        Accessible.name: field.hint
     }
+    // (its ring while it has the keyboard, unless it's outlined already)
+    FocusRing { round: 8; visible: field.typing && !field.outlined }
     Label {
         visible: field.hint !== "" && textInput.text === ""
         anchors { left: parent.left; leftMargin: field.inset; verticalCenter: parent.verticalCenter }

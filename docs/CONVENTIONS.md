@@ -195,6 +195,16 @@ existing ones (Wi-Fi, Bluetooth, Screenshot, Keyboard, Battery). Read one or two
   track colors (`colour`, `trackColour: pop.card`). A text box: a `PanelField`.
 - Tiles (like Screenshot's, or Battery's power modes) use `pop.card`, radius 10, hover
   `Config.hoverOn(pop.card)`.
+- **Every control works by keyboard**, in new panels too: anything that takes a click is a stop
+  for Tab and the arrow keys (`activeFocusOnTab: visible`), Enter or Space presses it (Left and
+  Right for a slider or a row of choices, Delete for something that can be dismissed), it has
+  the `FocusRing {}` while it has the keyboard, and a screen reader role and name
+  (`Accessible.role`, `.name`, `.onPressAction`). `RowButton`, `Switch`, `Slider` and
+  `PanelField` already do all of it. A big grid of choices (Spaces' icons) is one stop, with
+  Left and Right choosing, so Down can move past it. Something shown only on hover (a
+  close or delete button) also shows while its row has the keyboard.
+  `tests/live/test_keyboard_navigation.py::EveryPanelControl` opens every panel and lists
+  anything that takes a click but not the keyboard: a new panel goes in its `PANELS`.
 
 **Why:** the panels read as one family; an extra icon, a bolder weight or a missing footer
 stands out.
