@@ -619,6 +619,27 @@ def battery():
     return None
 
 
+def firewall():
+    """Whether the firewall is on, and what Slate's allowances let in (scripts/firewall.py):
+    looked at only. Switching it, or what it lets in, is never the assistant's (Settings asks
+    for the person's password and, to turn it off, their word first)."""
+    try:
+        st = json.loads(subprocess.run([sys.executable, os.path.join(HERE, "firewall.py"), "status"],
+                                       capture_output=True, text=True, timeout=10).stdout or "{}")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+    kind = st.get("kind")
+    if kind not in ("ufw", "firewalld", "nixos", "none"):
+        return None
+    if kind == "none":
+        return {"installed": False}
+    names = {"kdeconnect": "KDE Connect", "samba": "file sharing", "ssh": "remote login", "steam": "game streaming"}
+    out = {"installed": True, "kind": kind, "on": st.get("on")}
+    if st.get("on"):
+        out["letsIn"] = [names[k] for k, v in (st.get("allow") or {}).items() if v and k in names]
+    return out
+
+
 def network():
     try:
         out = subprocess.run(["nmcli", "-t", "-f", "TYPE,NAME", "connection", "show", "--active"],
@@ -677,8 +698,8 @@ def titles():
 
 @tool("status", "Slate's status",
       "How the desktop is right now: Slate's version, the time, the theme, game mode, Do Not Disturb, night "
-      "light, volume, brightness (and each display's it can set), the battery, the network's name, and the focused "
-      "window and workspace." + OTHERS)
+      "light, volume, brightness (and each display's it can set), the battery, the network's name, the firewall, and "
+      "the focused window and workspace." + OTHERS)
 def status():
     t = datetime.datetime.now()
     out = {"slate": version() or "unknown",
@@ -703,7 +724,7 @@ def status():
         pass
     out["nightLight"] = ipc("config", "get", "nightLight") == "true"
     for key, value in (("volume", volume()), ("brightness", brightness()), ("displays", displays_brightness() or None),
-                       ("battery", battery()), ("network", network())):
+                       ("battery", battery()), ("network", network()), ("firewall", firewall())):
         if value is not None:
             out[key] = value
     ws = spaces.hypr("activeworkspace")

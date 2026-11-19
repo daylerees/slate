@@ -179,6 +179,15 @@ class Base(Case):
         self.s.env["HYPRLAND_INSTANCE_SIGNATURE"] = "test"
         self.s.add("screenshot-taker")
         self.s.add("brightnessctl", stdout="intel_backlight,backlight,300,62%,480\n")
+        # (a pretend / for the firewall, with ufw on and remote login let in: never the computer's own)
+        self.s.env["SLATE_FIREWALL_ROOT"] = fw = os.path.join(self.h.dir, "fw-root")
+        os.makedirs(os.path.join(fw, "etc", "ufw"))
+        with open(os.path.join(fw, "etc", "ufw", "ufw.conf"), "w") as f:
+            f.write("ENABLED=yes\n")
+        with open(os.path.join(fw, "etc", "ufw", "user.rules"), "w") as f:
+            f.write("### tuple ### allow tcp 22 0.0.0.0/0 any 192.168.0.0/16 in\n")
+        self.s.add("ufw", stdout="")
+        self.s.add("firewall-cmd", missing=True)
         apps = self.h(".local", "share", "applications")
         os.makedirs(apps)
         for name, text in ENTRIES.items():
@@ -494,9 +503,26 @@ class Tools(Base):
         self.assertEqual(st["brightness"], 62)
         self.assertEqual(st["battery"], {"percent": 81, "state": "discharging"})
         self.assertEqual(st["network"], {"kind": "Wi-Fi", "name": "Cafe: upstairs"})
+        self.assertEqual(st["firewall"], {"installed": True, "kind": "ufw", "on": True, "letsIn": ["remote login"]})
         self.assertEqual(st["workspace"]["id"], 1)
         self.assertEqual(st["window"], {"address": "0xa2", "app": "Terminal", "title": "~"})
         self.assertRegex(st["time"], r"^\w+ \d+ \w+ \d{4}, \d\d:\d\d$")
+
+    def test_status_firewall_looked_at_only(self):
+        """The firewall in status: none at all, or off (nothing said about what it lets in). No
+        tool switches it or what it lets in: that's the person's, with their password."""
+        import shutil as sh
+        sh.rmtree(os.path.join(self.h.dir, "fw-root", "etc", "ufw"))
+        self.s.add("ufw", missing=True)
+        self.assertEqual(self.tool("status")[0]["firewall"], {"installed": False})
+        os.makedirs(os.path.join(self.h.dir, "fw-root", "etc", "ufw"))
+        with open(os.path.join(self.h.dir, "fw-root", "etc", "ufw", "ufw.conf"), "w") as f:
+            f.write("ENABLED=no\n")
+        self.s.add("ufw", stdout="")
+        self.assertEqual(self.tool("status")[0]["firewall"], {"installed": True, "kind": "ufw", "on": False})
+        src = slate.read("shell", "scripts", "slate-mcp.py")
+        self.assertNotIn("slate-firewall", src)
+        self.assertNotIn('"set"', src.split("def firewall():")[1].split("def network():")[0])
 
     def test_status_without_extras(self):
         """No battery, speakers, backlight or NetworkManager, nothing focused: left out, not an error."""
@@ -1645,3 +1671,4 @@ class Log(Base):
         self.assertLessEqual(len(lines), 40)
         self.assertGreaterEqual(len(lines), 10)
         self.assertEqual(lines[-1]["tool"], "tool199")
+

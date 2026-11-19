@@ -195,7 +195,7 @@ Most other agents take a block like this in their settings (with the whole path 
 
 | Tool | Answers with |
 |---|---|
-| `status` | Slate's version, the time, the theme, game mode, Do Not Disturb, night light, volume, brightness (and `displays`: each display Slate can set the brightness of, by name), the battery, the network's name, and the focused window and workspace |
+| `status` | Slate's version, the time, the theme, game mode, Do Not Disturb, night light, volume, brightness (and `displays`: each display Slate can set the brightness of, by name), the battery, the network's name, the firewall (whether there is one, whether it's on and what Slate's allowances let in: looked at only, never switched), and the focused window and workspace |
 | `settings_search` | Settings that match a word or two ("glass", "dock size", "dpi"): each one's key, name, page in Settings, description, type, default and value now |
 | `settings_get` | One setting, by its key |
 | `windows_list` | Open windows: app, title, workspace, floating, full screen, focused |
