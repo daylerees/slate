@@ -114,11 +114,14 @@ _MORE_CLOSE = [("test", "dockRoom", 0), ("dock", "closeMenu"),
                ("!sh", "-c", "hyprctl clients -j | jq -r '.[] | select(.class | startswith(\"slate-more-\")) | .address' | "
                              "while read -r a; do hyprctl dispatch \"function() hl.dispatch(hl.dsp.window.close({ window = [=[address:$a]=] })) end\"; done; "
                              "for i in $(seq 50); do hyprctl clients -j | grep -q slate-more- || exit 0; sleep 0.1; done")]
+# (with the dock held to 360 px, three of the five go in More: waiting for "some" pictured it
+# part way, with whatever came before deciding how far)
+_MORE_AT_360 = 3
 SCENES["dock-more"] = {"do": _more_open(5) + [("test", "dockRoom", 360)],
-                       "wait": lambda st: _more_there(5)(st) and len(st["dock"]["more"]) > 0, "settle": 1.2,
+                       "wait": lambda st: _more_there(5)(st) and len(st["dock"]["more"]) == _MORE_AT_360, "settle": 1.2,
                        "undo": _MORE_CLOSE}
 SCENES["dock-more-open"] = {"do": _more_open(5) + [("test", "dockRoom", 360),
-                                                   lambda st: _more_there(5)(st) and len(st["dock"]["more"]) > 0, ("dock", "more")],
+                                                   lambda st: _more_there(5)(st) and len(st["dock"]["more"]) == _MORE_AT_360, ("dock", "more")],
                             "wait": lambda st: st["dock"]["menu"] == "more", "settle": 1.2, "undo": _MORE_CLOSE}
 # More than twelve in More: three rows, and the shadow at the bottom saying there's more. All
 # fourteen in More, with no room on the dock for any (at 200 px one still fitted in a fresh
@@ -158,7 +161,8 @@ _MANY_CLOSE = [("dock", "closePreview"),
                              "for i in $(seq 50); do hyprctl clients -j | grep -q %s || exit 0; sleep 0.1; done" % (_MANY, _MANY))]
 _PREVIEWS = {"settings": {"dockPreviews": "true"},
              "do": _many_open(9) + [("dock", "preview", _MANY)],
-             "wait": lambda st: st["dock"]["previews"] and st["dock"]["previews"]["more"] > 0, "settle": 1.5,
+             # (nine windows, five pictured: the other four on the "+4" card)
+             "wait": lambda st: st["dock"]["previews"] and st["dock"]["previews"]["more"] == 4, "settle": 1.5,
              "undo": _MANY_CLOSE,
              # (the five windows' live pictures: what the terminals have drawn by then varies;
              # their captions and the "+N" card stay in)
@@ -471,7 +475,7 @@ _SW_DO = [("!sh", "-c", _SW_ICON), ("test", "softwarePretend", _json.dumps(_SW))
 _SW_UNDO = [("software", "close")]
 SCENES["software-discover"] = {
     "do": _SW_DO + [("software", "page", "discover")],
-    "wait": lambda st: st["software"]["open"] and st["software"]["apps"] > 0 and st["software"]["updates"] == 3,
+    "wait": lambda st: st["software"]["open"] and st["software"]["apps"] == len(_SW["catalogue"]) and st["software"]["updates"] == 3,
     "settle": 1.2, "undo": _SW_UNDO,
 }
 SCENES["software-discover-monotone"] = dict(SCENES["software-discover"], settings={"colourStyle": "monotone"})
@@ -548,6 +552,7 @@ SCENES["bar-workspace-name"] = {
 # The label off the bar saying what the pointer's over (BarLabel.qml): under the clock on the
 # bar at the top, and beside the control centre's button on a bar at the left
 def _label_says(text):
+    # (opacity above 0.99: the fade in has finished, as it ends at 1; a float, so not == 1)
     return lambda st: st["bar"]["label"]["shown"] and st["bar"]["label"]["text"] == text and st["bar"]["label"]["opacity"] > 0.99
 
 
@@ -666,7 +671,8 @@ SCENES["wallpaper-switcher"] = {
 SCENES["notification-glass"] = {
     "settings": {"glass": "true", "notificationSeconds": "30"},
     "do": [("!notify-send", "-a", "Tests", "Backup finished", "1,204 files copied to the external drive")],
-    "wait": lambda st: st["notifications"]["history"] > 0, "settle": 5,     # (glass: its blur is made the first time)
+    # (exactly this one: every scene starts with the notifications cleared)
+    "wait": lambda st: st["notifications"]["history"] == 1, "settle": 5,     # (glass: its blur is made the first time)
     # Just the toast: the bar and dock on glass shade a little differently with what ran
     # before (desktop-glass covers them). And not its countdown bar: how far it's gone is how
     # long the wait before the picture took, longer under a full run's load

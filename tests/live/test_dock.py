@@ -101,14 +101,15 @@ class Dock(LiveCase):
         # frame on the press, and not at all on the release); the setting is saved once, when let go
         before = self.s.state()["dock"]
         self.ipc("test", "dockDividerDrag", "10")
-        st = self.wait(lambda st: st["dock"]["resizing"] and st["dock"]["base"] >= 49, "the dock laid out larger")["dock"]
+        st = self.wait(lambda st: st["dock"]["resizing"] and st["dock"]["base"] == 50, "the dock laid out larger")["dock"]
         self.assertEqual(st["base"], 50)
         self.assertGreater(st["length"], before["length"])
         self.assertEqual(st["windowSize"], before["windowSize"], "the window changed size as the drag began")
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "40")
         # Dragged on, far past the divider: still resizing, still the same window
         self.ipc("test", "dockDividerDrag", "500")
-        st = self.wait(lambda st: st["dock"]["base"] >= 64, "the dock at its largest")["dock"]
+        # (64: the largest a drag can make it, Dock.qml's resize)
+        st = self.wait(lambda st: st["dock"]["base"] == 64, "the dock at its largest")["dock"]
         self.assertTrue(st["resizing"])
         self.assertEqual(st["windowSize"], before["windowSize"])
         self.assertEqual(self.ipc("config", "get", "dockIconSize"), "40")

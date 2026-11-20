@@ -38,7 +38,8 @@ class AgentChoices(LiveCase):
         self.ipc("settings", "close")
         self.wait(lambda st: not st["settings"]["open"], "Settings to close")
         self.ipc("settings", "page", "assistant")
-        st = self.wait(lambda st: st["settings"]["section"] == "assistant" and len(st["settings"]["agents"]) > 0,
+        # (every one of them: the tests below read the whole list)
+        st = self.wait(lambda st: st["settings"]["section"] == "assistant" and len(st["settings"]["agents"]) == len(LABELS),
                        "Settings → Assistant to find the agents", timeout=20)
         return {a["id"]: a for a in st["settings"]["agents"]}
 

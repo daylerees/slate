@@ -147,16 +147,20 @@ class EveryPanelControl(LiveCase):
         # (an urgent notification's pop-up stays until it's dismissed: left, it sat over whatever
         # the next tests in this session showed, and a picture of a panel's shadow under it changed)
         self.addCleanup(lambda: self.ipc("notifications", "clear"))
+        # (this one only: an earlier one in the history let the wait end before it came)
+        self.ipc("notifications", "clear")
+        self.wait(lambda st: st["notifications"]["history"] == 0, "the notifications cleared")
         self.s.run(["notify-send", "-u", "critical", "-A", "open=Open", "--", "A note", "with an action"])
-        self.wait(lambda st: st["notifications"]["history"] > 0, "the notification")
+        self.wait(lambda st: st["notifications"]["history"] == 1, "the notification")
         # (a window, for New Space's workspace cards, and a space saved with it for the Spaces
         # panel's list)
         self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
         self.s.settle(1.0)
         saved = os.path.join(self.s.h.data, "slate", "spaces.json")
         self.addCleanup(lambda: os.path.exists(saved) and os.remove(saved))
-        self.ipc("test", "saveSpace", "Work", str(self.s.hyprctl("activeworkspace", json_out=True)["id"]))
-        self.wait(lambda st: st["spaces"]["saved"] > 0, "a saved space")
+        spaces_before = self.s.state()["spaces"]["saved"]
+        self.ipc("test", "saveSpace", "Keyboard walk", str(self.s.hyprctl("activeworkspace", json_out=True)["id"]))
+        self.wait(lambda st: st["spaces"]["saved"] == spaces_before + 1, "the space saved")
         gaps = {}
         for name in PANELS + ["new space"]:
             panel = "spaces" if name == "new space" else name
