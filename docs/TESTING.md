@@ -28,6 +28,8 @@ tests/run --no-container            # static + unit straight on this machine, fo
 tests/run --filter dock             # only tests (or scenes) whose name has "dock" in it
 tests/run --failed                  # only the tests that failed last time
 tests/run --repeat 5                # the chosen tests 5 times over: only what didn't pass every time
+tests/run --shuffle [seed]          # files shared out and ordered by a seed (said, to run it again)
+tests/run --busy [n]                # n busy loops in each part's container (1 if not said)
 tests/run --jobs 3                  # how many Slate sessions run side by side (1: one after another)
 tests/run -v                        # every check, passes too
 tests/run --json                    # a JSON line per failure, then a summary (for tools)
@@ -71,6 +73,27 @@ naming every test that failed in any run, so `--failed` runs them again. The exi
 when everything passed every time. The timings carry from run to run, so a side-by-side run
 shares its files out the same way each time. One `--repeat` runs at a time: a second says so and leaves the
 first alone (for load alongside one, start an ordinary run with its own `SLATE_TEST_OUT`).
+
+### Shaking them out on purpose
+
+Fragile tests used to be found by accident, when a change in how many sessions ran moved which
+files shared one, or how busy the computer was. Two options do it on purpose:
+
+- `--shuffle [seed]` shares the files out at random and runs each part's files in a random order
+  (a file's own tests keep theirs). A test that passes only after another, or only when something
+  another left isn't there, shows. The seed is said at the start, even with `-q` ("shuffled with
+  seed 482913"): `--shuffle 482913` runs it the same way again. With `--repeat`, each run picks
+  its own unless one is given.
+- `--busy [n]` keeps n processes spinning in each part's container while its tests run (1 if not
+  said), and stops them when the part ends. A test that passes only on a quiet computer shows:
+  a wait on a time rather than on what it means, or a check that a busy computer can't meet.
+  The load is only ever inside the containers: `tests/run` refuses `--busy` with `--no-container`.
+
+Before a release, run them together a few times, a different seed each, in the background:
+`tests/run -q --shuffle --busy` (or `--repeat 3 --shuffle --busy`). What they find is a real
+race more often than not: fix the test or the code, as for any failure. One that checks something
+only a quiet computer can (a smooth slide, icons ready before they're seen) belongs with the
+tests that run in a quiet moment, not with a looser check.
 
 ## Side by side
 

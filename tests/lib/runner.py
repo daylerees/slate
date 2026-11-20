@@ -22,11 +22,15 @@ tests/lib/parallel.py runs several of these side by side, each with some of the 
 totals in tests/out/parts/<name>.json for parallel.py to add up.
 """
 import argparse
+import atexit
 import importlib.util
 import io
 import json
 import os
+import random
 import re
+import signal
+import subprocess
 import sys
 import time
 import traceback
@@ -199,15 +203,36 @@ class Result(unittest.TestResult):
         return self.passed + len(self.failed)
 
 
-def load_tier(tier, only=None):
+def busy(n):
+    """n processes spinning on the processor until this run ends, however it ends (tests/run
+    --busy): a loaded computer on purpose, to find tests that pass only on a quiet one. Started
+    here, so only ever inside the test container (tests/run refuses --busy without one)."""
+    procs = [subprocess.Popen([sys.executable, "-c", "while True: pass"], start_new_session=True)
+             for _ in range(max(0, min(n, 64)))]
+
+    def stop(*_):
+        for p in procs:
+            if p.poll() is None:
+                p.kill()
+    atexit.register(stop)
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        prev = signal.getsignal(sig)
+        signal.signal(sig, lambda s, f, prev=prev: (stop(), prev(s, f) if callable(prev) else sys.exit(128 + s)))
+
+
+def load_tier(tier, only=None, shuffle=None):
     """A suite of every tests/<tier>/test_*.py (or just the files in `only`, as
-    "<tier>/test_<file>")."""
+    "<tier>/test_<file>"), in name order, or in an order of `shuffle`'s (a seed): a file's
+    own tests always keep theirs."""
     d = os.path.join(slate.TESTS, tier)
     suite = unittest.TestSuite()
     if not os.path.isdir(d):
         return suite
     sys.path.insert(0, d)
-    for f in sorted(os.listdir(d)):
+    names = sorted(os.listdir(d))
+    if shuffle is not None:
+        random.Random(f"{shuffle}:{tier}:{os.environ.get('SLATE_TEST_PART', '')}").shuffle(names)
+    for f in names:
         if not (f.startswith("test_") and f.endswith(".py")):
             continue
         if only is not None and f"{tier}/{f[:-3]}" not in only:
@@ -284,7 +309,11 @@ def main(argv=None):
     ap.add_argument("--label", default="", help="added to the summary line, e.g. [latest deps]")
     ap.add_argument("--only", default="", help="just these files: live/test_dock,visual/test_visual (comma list)")
     ap.add_argument("--part", default="", help="one part of a parallel run (tests/lib/parallel.py): its name")
+    ap.add_argument("--shuffle", type=int, default=None, help="the files in an order of this seed's, not by name")
+    ap.add_argument("--busy", type=int, default=0, help="this many busy loops beside the tests (in the container)")
     a = ap.parse_args(argv)
+    if a.busy:
+        busy(a.busy)
     only = {u.strip() for u in a.only.split(",") if u.strip()} or None
     if only:
         # Slices of a file (parallel.py's SPLIT: "visual/test_visual@2/3"): the file runs, and
@@ -313,7 +342,7 @@ def main(argv=None):
     for tier in tiers:
         if only is not None and not any(u.startswith(tier + "/") for u in only):
             continue
-        suite = load_tier(tier, only)
+        suite = load_tier(tier, only, a.shuffle)
         if again is not None:
             suite = only_failed(suite, again)
         if a.filter:

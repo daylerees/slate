@@ -361,6 +361,9 @@ login screen even for comment-only edits, so leave them alone unless they need c
 - After the first full run's failures are fixed, run the live tier several times back to back
   (or the suspect files three to five times each) before the next full run, to flush every
   intermittent test at once. A test that fails one run in three needs repeats to show.
+- Before the first full run, a few `tests/run -q --shuffle --busy` in the background (a new seed
+  each) shake out tests that rely on what ran before them or on a quiet computer, so they're
+  fixed before the run that counts (docs/TESTING.md, Shaking them out on purpose).
 - A test that passes alone and fails in a whole run is explained the day it's seen, not at
   release time. Every one so far has been real (a stale-position race, a watch ending too soon,
   a test leaving a mode on).

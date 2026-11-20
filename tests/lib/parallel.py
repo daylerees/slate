@@ -27,6 +27,7 @@ import argparse
 import json
 import math
 import os
+import random
 import re
 import shutil
 import signal
@@ -72,16 +73,23 @@ def weight(unit, known):
     return 20 + 3 * len(re.findall(r"^\s+def test_", text, re.M))
 
 
-def share_out(files, jobs, known):
+def share_out(files, jobs, known, rng=None):
     """`files` in at most `jobs` groups of about the same expected length: longest first,
-    each to whichever group is shortest so far."""
+    each to whichever group is shortest so far. With `rng` (--shuffle), in that random order
+    instead, so which files share a session changes from seed to seed (the groups only roughly
+    even), and each group keeps the order they came in."""
     groups = [[] for _ in range(max(1, min(jobs, len(files))))]
     totals = [0] * len(groups)
-    for u in sorted(files, key=lambda u: -weight(u, known)):
+    if rng is not None:
+        order = sorted(files)
+        rng.shuffle(order)
+    else:
+        order = sorted(files, key=lambda u: -weight(u, known))
+    for u in order:
         i = totals.index(min(totals))
         groups[i].append(u)
         totals[i] += weight(u, known)
-    return [sorted(g) for g in groups if g]
+    return [g if rng is not None else sorted(g) for g in groups if g]
 
 
 def main(argv=None):
@@ -99,7 +107,10 @@ def main(argv=None):
     ap.add_argument("--filter", default="")
     ap.add_argument("--failed", action="store_true")
     ap.add_argument("--label", default="")
+    ap.add_argument("--shuffle", type=int, default=None)
+    ap.add_argument("--busy", type=int, default=0)
     a = ap.parse_args(argv[:cut])
+    rng = random.Random(a.shuffle) if a.shuffle is not None else None
     tiers = TIERS if a.tier == "all" else [t.strip() for t in a.tier.split(",") if t.strip()]
     bad = [t for t in tiers if t not in TIERS]
     if bad:
@@ -138,10 +149,10 @@ def main(argv=None):
         shown = [s for u in shown for s in slices(u)]
     if quick:
         n = 1 if not each else max(1, min(QUICK_PARTS, math.ceil(sum(weight(u, known) for u in quick) / each)))
-        groups = share_out(quick, n, known)
+        groups = share_out(quick, n, known, rng)
         for i, group in enumerate(groups):
             parts.append(("quick" if len(groups) == 1 else f"quick-{i + 1}", group))
-    for i, group in enumerate(share_out(shown, a.jobs, known) if shown else []):
+    for i, group in enumerate(share_out(shown, a.jobs, known, rng) if shown else []):
         parts.append((f"display-{i + 1}", group))
     if not parts:
         sys.exit("parallel.py: no test files in " + ", ".join(tiers))
@@ -154,6 +165,10 @@ def main(argv=None):
         passthrough += ["--filter", a.filter]
     if a.failed:
         passthrough += ["--failed"]
+    if a.shuffle is not None:
+        passthrough += ["--shuffle", str(a.shuffle)]
+    if a.busy:
+        passthrough += ["--busy", str(a.busy)]
 
     lock = threading.Lock()
     procs, threads = {}, []

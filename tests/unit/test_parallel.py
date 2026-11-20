@@ -63,6 +63,34 @@ class SharingOut(Case):
         self.assertEqual(module().weight("live/test_dock", {"live/test_dock": 44}), 44)
 
 
+class Shuffled(Case):
+    """--shuffle: which files share a session changes with the seed, and the same seed shares
+    them out the same way again, every file still in exactly one part."""
+    FILES = [f"live/test_{c}" for c in "abcdefghijklmnop"]
+
+    def share(self, seed):
+        import random
+        return module().share_out(list(self.FILES), 4, {}, random.Random(seed))
+
+    def test_every_file_once(self):
+        for seed in (1, 2, 3):
+            self.assertEqual(sorted(u for g in self.share(seed) for u in g), sorted(self.FILES))
+
+    def test_the_same_seed_the_same_parts(self):
+        self.assertEqual(self.share(42), self.share(42))
+
+    def test_another_seed_other_parts(self):
+        seen = {tuple(tuple(g) for g in self.share(seed)) for seed in range(6)}
+        self.assertGreater(len(seen), 3, "the seed barely changed which files share a session")
+
+    def test_without_one_as_always(self):
+        """No seed: longest first, as before, whatever order the files came in."""
+        known = {u: 10 + i for i, u in enumerate(self.FILES)}
+        groups = module().share_out(list(self.FILES), 4, known)
+        self.assertEqual(groups, module().share_out(list(reversed(self.FILES)), 4, known))
+        self.assertEqual(groups, [sorted(g) for g in groups], "each part's files in name order")
+
+
 class Standin(Case):
     """Runs parallel.py with the stand-in runner in a scratch tests/out."""
     scratch = True
@@ -127,6 +155,12 @@ class Parts(Standin):
         self.go("--jobs", "2", "--tier", "live")
         with open(os.path.join(self.out, "durations.json")) as f:
             self.assertEqual(json.load(f)["live/test_dock"], 7.5)
+
+    def test_shuffle_and_busy_reach_every_part(self):
+        self.go("--jobs", "2", "--tier", "live", "--shuffle", "7", "--busy", "2")
+        for line in self.asked().values():
+            self.assertIn("--shuffle 7", line)
+            self.assertIn("--busy 2", line)
 
     def test_json_summary(self):
         code, out = self.go("--jobs", "2", "--tier", "live", "--json", display_1="fail")

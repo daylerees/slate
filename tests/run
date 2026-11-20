@@ -25,6 +25,10 @@
 #   tests/run --update-baselines [scene…]   re-shoot approved screenshots (all, or these)
 #   tests/run --docs-shots [shot…] take the docs' pictures again (all, or these): not a test,
 #                                  they go straight into site/docs/img (tools/docs-shots/README.md)
+#   tests/run --shuffle [seed]     which files share a session, and their order, by a seed (printed,
+#                                  to run it the same way again): finds tests that rely on another
+#   tests/run --busy [n]           n busy loops in each part's container beside the tests (1 if
+#                                  not said): finds tests that pass only on a quiet computer
 #   tests/run --json               one JSON line per failure, then a summary
 #   tests/run -v                   list every check, passes too
 #
@@ -37,11 +41,14 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="${SLATE_TEST_OUT:-$ROOT/tests/out}"
 tier=all; deps=pinned; container=1; update=""; updating=0; fresh=0; filtered=0; jobs=""; failed=0
+shuffle=""; busy=""
 repeat=""; pass=(); again=(); docs=0; shots=""      # (again: the options for each run of a --repeat)
 while [ $# -gt 0 ]; do
     case "$1" in
         --repeat|--repeat=*|-q|--quiet|-v|--verbose|--json) ;;
         --tier|--deps|--filter|--jobs) again+=("$1" "${2-}") ;;
+        # (their number is optional: kept with them when there is one)
+        --shuffle|--busy) again+=("$1"); case "${2-}" in [0-9]*) again+=("$2") ;; esac ;;
         *) again+=("$1") ;;
     esac
     case "$1" in
@@ -54,6 +61,8 @@ while [ $# -gt 0 ]; do
         --filter=*) pass+=(--filter "${1#*=}"); filtered=1 ;;
         --fresh) fresh=1 ;;
         --failed) failed=1 ;;
+        --shuffle) shuffle=random; case "${2-}" in [0-9]*) shuffle=$2; shift ;; esac ;;
+        --busy) busy=1; case "${2-}" in [0-9]*) busy=$2; shift ;; esac ;;
         --jobs) jobs=$2; shift ;;
         --jobs=*) jobs=${1#*=} ;;
         --repeat) repeat=$2; shift ;;
@@ -74,6 +83,12 @@ done
 case "$jobs" in ""|[1-9]|[1-9][0-9]) ;; *) echo "tests/run: --jobs is a number, 1 or more" >&2; exit 2 ;; esac
 case "$deps" in pinned|latest) ;; *) echo "tests/run: --deps is pinned or latest" >&2; exit 2 ;; esac
 case "$repeat" in ""|[1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;; *) echo "tests/run: --repeat is a number, 1 or more" >&2; exit 2 ;; esac
+case "$shuffle" in ""|random) ;; *[!0-9]*) echo "tests/run: --shuffle takes a seed (a number) or nothing" >&2; exit 2 ;; esac
+case "$busy" in ""|[1-9]|[1-9][0-9]) ;; *) echo "tests/run: --busy is a number of busy loops per part, 1 to 99" >&2; exit 2 ;; esac
+# (the load goes inside the test containers, never on this computer)
+if [ -n "$busy" ] && [ "$container" = 0 ]; then
+    echo "tests/run: --busy only runs in the container (leave out --no-container)" >&2; exit 2
+fi
 if [ -n "$repeat" ] && [ "$updating" = 1 ]; then
     echo "tests/run: --repeat doesn't go with --update-baselines" >&2; exit 2
 fi
@@ -108,6 +123,14 @@ if [ -n "$repeat" ]; then
     exec python3 "$ROOT/tests/lib/repeat.py" --times "$repeat" --out "$OUT" "${modes[@]+"${modes[@]}"}" \
         -- "$0" "${again[@]+"${again[@]}"}"
 fi
+# A shuffled run: its seed, said even with -q, so a run that found something can be repeated
+# exactly (with --repeat, each run picks its own unless one was given)
+if [ "$shuffle" = random ]; then shuffle=$(( ((RANDOM << 15) | RANDOM) % 1000000 )); fi
+if [ -n "$shuffle" ]; then
+    pass+=(--shuffle "$shuffle")
+    echo "tests/run: shuffled with seed $shuffle (tests/run --shuffle $shuffle runs it the same way again)" >&2
+fi
+[ -z "$busy" ] || pass+=(--busy "$busy")
 quiet=0; for a in "${pass[@]+"${pass[@]}"}"; do case "$a" in -q|--quiet|--json) quiet=1 ;; esac; done
 say() { [ "$quiet" = 1 ] || echo "$@" >&2; }
 mkdir -p "$OUT"
