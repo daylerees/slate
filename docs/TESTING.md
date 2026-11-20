@@ -23,7 +23,8 @@ The exit code is 0 only when everything ran and passed.
 
 ```sh
 tests/run --tier static,unit        # just these tiers (static, unit, live, visual, all)
-tests/run --no-container            # static + unit straight on this machine (fast; no Docker)
+tests/run --no-container            # static + unit straight on this machine, for one without Docker
+                                    # (Slate's own work never uses it: everything runs in the container)
 tests/run --filter dock             # only tests (or scenes) whose name has "dock" in it
 tests/run --failed                  # only the tests that failed last time
 tests/run --repeat 5                # the chosen tests 5 times over: only what didn't pass every time

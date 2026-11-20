@@ -128,7 +128,7 @@ itself. `Config.uiScale` is the factor in use. Two things escape it, and both ha
 Fixed pixel sizes inside QML are fine: Qt scales them.
 
 `tests/static/test_consistency.py::test_interface_size_reaches_everything` checks both (quick:
-`tests/run -q --tier static --no-container --filter interface_size`). When you add a window, a
+`tests/run -q --tier static --filter interface_size`). When you add a window, a
 helper process or anything that reads a position from Hyprland, think of 125%: before calling
 it done, `grep -n '"cursorpos"\|\.at\[\|lastIpcObject' shell/*.qml` (every file listed uses
 `Config.uiScale`, or compares Hyprland's numbers only with each other) and
@@ -155,9 +155,13 @@ another Interface size.
   clearly coming, check `lsmod | grep vkms` before anything else; if it isn't loaded, ask the
   author to run it straight away (sudo may not work in an agent's shell: suggest
   `! sudo modprobe vkms`, or another terminal), so it's ready by the time the tests are reached.
-  Carry on with static and unit (`--tier static,unit` or `--no-container`) and other prep
+  Carry on with static and unit (`--tier static,unit`, which needs no `vkms`) and other prep
   meanwhile. To load it at every boot: `echo vkms | sudo tee /etc/modules-load.d/vkms.conf`.
 - The suite runs in a container and never touches the desktop, so running it needs no asking.
+- **Everything runs in the container.** Never `--no-container`, and never `tests/lib/runner.py`
+  or a test file run directly on the author's machine, static and unit included: the author may be
+  changing things on it while tests run, and the container has the pinned packages. If a run is
+  already going, wait for it rather than run something beside it (two runs share `tests/out`).
 - A visual difference you meant: look at the picture the failing run took
   (`tests/out/visual/<scene>.actual.png`, with a `.diff.png` beside it), then
   `tests/run --approve <scene>` makes it the approved one without running anything again (it
