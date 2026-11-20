@@ -13,16 +13,17 @@ hl.window_rule({
     pin               = true,
 })
 
--- Games: Steam games and gamescope go to the "gaming" workspace (workspaces.lua), fullscreen
+-- Games: Steam games and gamescope, fullscreen, each on a workspace of its own at the end (the
+-- window.open below). A numbered one like any other, so it has a dot on the bar and Super+Left
+-- and Right reach it: a named workspace ("name:gaming", as games once went to) sits outside
+-- Hyprland's numbered ones, where its next and previous never go
 local gamingApps = "^(steam_app.*|gamescope)$"
-local gamingWorkspace = "name:gaming"
 
-hl.window_rule({ match = { content = "game" }, workspace = gamingWorkspace })
 -- (loose on purpose: a tag is something an app sets about itself, and any that says "game" is one)
-hl.window_rule({ match = { xdg_tag = "^(.*game.*)$" }, workspace = gamingWorkspace, fullscreen_state = 2, content = "game", sync_fullscreen = true })
-hl.window_rule({ match = { class = gamingApps }, workspace = gamingWorkspace })
+hl.window_rule({ match = { xdg_tag = "^(.*game.*)$" }, fullscreen_state = 2, content = "game", sync_fullscreen = true })
 hl.window_rule({ match = { class = "^(steam)$", title = "^(Friends List)$" }, float = true })
-hl.window_rule({ match = { class = "^(steam)$", title = "^(Launching\\.{3})$" }, float = true, center = true, workspace = gamingWorkspace })
+-- (Steam's own small window while a game starts: floating where you are)
+hl.window_rule({ match = { class = "^(steam)$", title = "^(Launching\\.{3})$" }, float = true, center = true })
 hl.window_rule({
     match = {
         class         = gamingApps,
@@ -44,8 +45,29 @@ hl.window_rule({
     float            = true,
     fullscreen       = false,
     fullscreen_state = 0,
-    workspace        = gamingWorkspace,
 })
+
+-- A game's window to a workspace of its own, at the end (newWorkspace, workspaces.lua), and you
+-- with it. A second window of the same game (a launcher's, then the game's) joins the first.
+-- What makes a window a game: Steam's games and gamescope by their class, or the app saying so
+-- itself (its content type)
+function slateIsGame(w)
+    local class = tostring(w and w.class or "")
+    return class:find("^steam_app") ~= nil or class == "gamescope" or (w and w.content_type == "game") or false
+end
+hl.on("window.open", function(win)
+    if not (win and win.address and slateIsGame(win)) then return end
+    local target
+    for _, w in ipairs(hl.get_windows()) do
+        if w.address ~= win.address and w.mapped and w.class == win.class and w.workspace and w.workspace.id and w.workspace.id > 0 then
+            target = w.workspace.id
+            break
+        end
+    end
+    target = target or newWorkspace(win.address)
+    if win.workspace and win.workspace.id == target then return end
+    hl.dispatch(hl.dsp.window.move({ workspace = target, window = "address:" .. win.address, follow = true }))
+end)
 
 -- Apps: launchers, Windows apps and chat on the main monitor; sizes for a few utilities
 -- (any Windows program under Wine or Proton, whatever it's called: its class is its .exe)

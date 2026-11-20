@@ -681,7 +681,7 @@ end
 -- workspaces, so only enable wraparound animation when this press actually wraps
 function cycleWorkspace(step)
     local current = hl.get_active_workspace()
-    -- On a named workspace (the "gaming" one games go to): it has no number to step from, so
+    -- On a named workspace (one made by your own rules): it has no number to step from, so
     -- Hyprland's own next or previous, with nothing worked out
     if not current or not current.id then
         hl.dispatch(hl.dsp.focus({ workspace = step > 0 and "m+1" or "m-1" }))

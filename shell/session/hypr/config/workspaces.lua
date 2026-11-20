@@ -4,8 +4,6 @@
 -- or a different layout:
 --   hl.workspace_rule({ workspace = "1", monitor = MONITOR1, layout = "scrolling" })
 
--- The "gaming" workspace games are sent to (windowrules.lua), on the main monitor
-hl.workspace_rule({ workspace = "name:gaming", monitor = PRIMARY_MONITOR, default = true })
 -- The first three workspaces live on the first monitor
 hl.workspace_rule({ workspace = "1", monitor = MONITOR1, default = true })
 hl.workspace_rule({ workspace = "2", monitor = MONITOR1, default = true })

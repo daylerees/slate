@@ -566,6 +566,10 @@ ShellRoot {
                                      shown: Config.wallpaper, saved: Config.s.wallpaper, accent: "" + Config.accent,
                                      held: updateHold.heldUpdates.length, themeApplied: appTheming.themeApplied === appTheming.themeJson,
                                      input: { bar: topBar.mask === topBar.barInput, dock: win.testInputOwn() } },
+                // Every workspace Quickshell knows of, as it has them (a named one, made by your own rules,
+                // has no number in Hyprland 0.57)
+                allWorkspaces: Hyprland.workspaces.values.map(w => ({ id: w.id, name: w.name })),
+                focusedWorkspace: Hyprland.focusedWorkspace ? { id: Hyprland.focusedWorkspace.id, name: Hyprland.focusedWorkspace.name } : null,
                 // Every window Hyprland has, with where it is (address: Hyprland's, without the 0x)
                 windows: Hyprland.toplevels.values.map(t => ({ title: t.title || "", workspace: t.workspace ? t.workspace.id : -1,
                                                               address: (t.address || "").replace(/^0x/, "") })),
