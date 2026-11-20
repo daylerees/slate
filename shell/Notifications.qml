@@ -356,7 +356,9 @@ Scope {
         // fade out rather than vanish. Set here rather than bound to the counts: a binding
         // looped (the list's count follows the window) and hid the window at once
         property bool showing: false
-        visible: showing
+        visible: showing && toastKeeper.ready
+        // (back on the screen after it has been away: ScreenKeeper.qml)
+        ScreenKeeper { id: toastKeeper; window: toastWin }
         // On screen: its first frame has been drawn since it was shown
         property bool ready: false
         onShowingChanged: if (!showing) ready = false

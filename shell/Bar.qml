@@ -355,6 +355,9 @@ PanelWindow {
     implicitWidth: vert ? thickness + shadowPad : (screen ? screen.width : 1)
     color: "transparent"
     WlrLayershell.namespace: "slate-bar"
+    // (back on the screen after it has been away, as a monitor in standby does: ScreenKeeper.qml)
+    visible: barKeeper.ready
+    ScreenKeeper { id: barKeeper; window: bar }
     // (above the dimming laid over the windows while the bar's being arranged: BarEditor.qml;
     // and above the wallpaper switcher, which covers the windows, seen but taking no clicks)
     WlrLayershell.layer: Config.barArranging || Config.wallpaperSwitching ? WlrLayer.Overlay : WlrLayer.Top

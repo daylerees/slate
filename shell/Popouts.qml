@@ -272,8 +272,10 @@ PanelWindow {
     readonly property bool active: fade > 0 || pending !== "" || revealWaiting
     // The window itself stays on screen, empty, between panels: a window made as a panel
     // opened drew its first several frames slowly (its screen buffers being set up), which
-    // held up the slide
-    visible: true
+    // held up the slide. (And made again once a screen comes back after there was none: it
+    // places itself, so it's given the main display to go back to: ScreenKeeper.qml)
+    visible: popKeeper.ready
+    ScreenKeeper { id: popKeeper; window: pop; home: () => Config.primaryScreen }
     anchors { top: true; bottom: true; left: true; right: true }
     // Panels come out of the bar: down from a top bar, up from a bottom one, sideways from a
     // side bar, next to the button that opened them

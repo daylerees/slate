@@ -229,6 +229,9 @@ PanelWindow {
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-dock"
+    // (back on the screen after it has been away, as a monitor in standby does: ScreenKeeper.qml)
+    visible: dockKeeper.ready
+    ScreenKeeper { id: dockKeeper; window: win }
     // (above the wallpaper switcher, which covers the windows: seen, but taking no clicks)
     WlrLayershell.layer: Config.wallpaperSwitching ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: keyNav ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None

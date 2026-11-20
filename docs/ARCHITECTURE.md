@@ -123,6 +123,8 @@ shell.qml               root: creates everything below, plus the dock itself
 │        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml, UsersPage.qml,
 │        AccessibilityPage.qml, TimersPage.qml, StoragePage.qml
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
+├─ ScreenKeeper.qml     brings back a window that follows a screen (the bar, the dock, the panels,
+│                       notifications) once a screen returns after there was none, as a monitor in standby does
 ├─ FadeIn.qml           fade in from the dark (with the logo) at login, with the welcome sound ("slate-fade-in")
 ├─ TitleBar.qml         Slate Bars: Slate's own title bar on the floating window in front (the default)
 ├─ TitleBarWindows.qml  the one look at Hyprland's windows every screen's title bar shares, only while a window floats
