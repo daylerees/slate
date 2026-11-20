@@ -22,6 +22,7 @@ Column {
     property var info: ({ howdy: false, cameras: [], methods: [] })
     property bool looked: false
     property var faces: []
+    property bool known: false           // Slate has asked Howdy for your faces (faces.json is there)
     property string camera: ""           // the camera chosen here (its path); "" for the best there is
     property string doing: ""            // what the helper's doing, while it runs
     property string said: ""             // what it did, or what went wrong
@@ -63,6 +64,7 @@ Column {
                 const o = JSON.parse(text());
                 unlockPage.faces = Array.isArray(o.faces) ? o.faces : [];
                 unlockPage.camera = String(o.camera || "");
+                unlockPage.known = Array.isArray(o.faces);
             } catch (e) {}
         }
     }
@@ -78,6 +80,7 @@ Column {
             if (m) out.push({ id: Number(m[1]), label: m[2] });
         }
         faces = out;
+        known = true;
         keep();
     }
 
@@ -227,12 +230,20 @@ Column {
             label: unlockPage.faces.length === 0 ? "Your face" : "Another look"
             detail: unlockPage.doing !== "" ? unlockPage.doing
                 : unlockPage.said !== "" ? unlockPage.said
+                : unlockPage.faces.length === 0 && !unlockPage.known ? "Slate learns your face through the camera above. Faces added before (outside Settings) show once you ask"
                 : unlockPage.faces.length === 0 ? "Slate learns your face through the camera above. Nothing's added yet"
                 : "With glasses, say, or in different light: more looks help it know you"
             needsMet: unlockPage.info.howdy && !!unlockPage.chosen && !unlockPage.busy
             needs: !unlockPage.info.howdy ? "Needs Howdy to be installed" : !unlockPage.chosen ? "Needs a camera" : "Wait a moment"
             Row {
                 spacing: 8
+                // Faces Howdy already has (added outside Settings): listing them is root's, so
+                    // only when asked, once
+                Button {
+                    visible: !unlockPage.known && unlockPage.faces.length === 0
+                    label: "Show your faces"
+                    onClicked: unlockPage.helper(["face-list"], "Looking…", "", "Slate couldn't look", true)
+                }
                 Button {
                     visible: unlockPage.faceOn && unlockPage.faces.length > 0
                     label: "Try it"

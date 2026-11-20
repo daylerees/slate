@@ -72,6 +72,16 @@ class UnlockPage(LiveCase):
         with open(self.faces_file) as f:
             self.assertEqual([x["label"] for x in json.load(f)["faces"]], ["Me", "Glasses"])
 
+    def test_faces_added_before_are_shown_when_asked(self):
+        """Faces Howdy has from before Settings did it (none listed yet): one look, when asked."""
+        self.open()
+        self.ipc("test", "settingsPoll", "unlockAnswer", "1,2026-11-20 13:55:00,Me\n")
+        self.assertEqual(self.ipc("test", "settingsButton", "Your face", "Show your faces"), "pressed")
+        self.wait(lambda st: st["settings"]["page"]["faces"] == ["Me"], "your face from before")
+        self.assertEqual(json.loads(self.pretend("unlockAsked")), ["face-list"])
+        # Known now: nothing more to show
+        self.assertEqual(self.ipc("test", "settingsButton", "Another look", "Show your faces"), "none")
+
     def test_removing_one_asks_first(self):
         self.open(faces=["Me", "Glasses"])
         self.wait(lambda st: st["settings"]["page"]["faces"] == ["Me", "Glasses"], "your faces from last time")
