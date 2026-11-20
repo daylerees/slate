@@ -41,12 +41,17 @@
       <p>Click a tile to choose that screen. Its settings appear underneath, headed with its name.</p>
 
       <h2>A screen's settings</h2>
+      <p>Until you choose otherwise, each screen starts at its native resolution and the fastest refresh rate it
+        has there, never slower than the screen itself recommends. Some screens recommend a smaller mode than they
+        can show (a super-wide monitor at a quarter of its size, say), so Slate doesn't simply take the screen's word
+        for it. If the fastest rate doesn't work with your cable or graphics card, Slate tries the next one. Anything
+        you choose here, or set in your own <code>monitors.lua</code>, is left as you have it.</p>
       <table>
         <tr><th>Setting</th><th>What it does</th></tr>
         <tr><td>Use this display</td><td>Turn a screen off to leave it dark and unused. The only screen in use can't
           be turned off, so you're never left without one.</td></tr>
-        <tr><td>Resolution</td><td>The sizes the screen reports. Laptop panels often offer only their own, so to make
-          things larger or smaller there, use Scale instead.</td></tr>
+        <tr><td>Resolution</td><td>The sizes the screen reports, with its native one marked. Laptop panels often offer
+          only their own, so to make things larger or smaller there, use Scale instead.</td></tr>
         <tr><td>Refresh rate</td><td>How many times a second the picture updates, from the rates this resolution has.
           Higher is smoother.</td></tr>
         <tr><td>Scale</td><td>How large everything on this screen looks, apps included. Only scales that suit the
@@ -65,7 +70,8 @@
 
       <h2>Keeping a change</h2>
       <p>A new resolution or refresh rate can leave a screen blank if it doesn't really suit it. So whenever you change
-        something, Slate asks <strong>Keep these display settings?</strong> with a countdown. Choose
+        something, Slate asks <strong>Keep these display settings?</strong> in the middle of the screen, and at the top
+        of the page with a countdown. Choose
         <strong>Keep</strong> if everything looks right, or <strong>Go back</strong> to undo it straight away. If you
         can't see the question at all, just wait: when the countdown runs out, Slate puts things back as they were by
         itself. Closing Settings (Esc does it) or going to another page without choosing puts them back straight

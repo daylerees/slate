@@ -41,7 +41,26 @@ Column {
         disp.apply(disp.reflow(all, mon.name, old));
     }
 
-    // Keep or go back (changes revert by themselves if not kept)
+    // Keep or go back (changes revert by themselves if not kept). Asked in Slate's
+    // confirmation window as well as the banner below: the banner alone was easy to miss (it's
+    // at the top of the page), and closing Settings or leaving the page puts the change back,
+    // so a new refresh rate seemed to undo itself a moment later.
+    readonly property string keepQuestion: "displays-keep"
+    Connections {
+        target: disp
+        function onPendingChanged() {
+            const c = displaysPane.win ? displaysPane.win.confirmer : null;
+            if (!c) return;
+            if (!disp.pending) { c.withdraw(displaysPane.keepQuestion); return; }
+            c.confirmWith({
+                id: displaysPane.keepQuestion, title: "Keep these display settings?",
+                body: "If you don't answer, Slate goes back to the old ones in " + disp.revertSeconds
+                    + " seconds, in case your screen can't show these.",
+                button: "Keep", cancelLabel: "Go back", code: 0xEA89, danger: false
+            }, () => disp.keep(), () => disp.revert());
+        }
+    }
+    Component.onDestruction: if (win && win.confirmer) win.confirmer.withdraw(keepQuestion)
     Rectangle {
         visible: disp.pending
         width: parent.width

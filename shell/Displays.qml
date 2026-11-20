@@ -110,10 +110,22 @@ Scope {
         if (m.width > 0) add(configOf(m).mode);
         return out.sort((a, b) => b.w * b.h - a.w * a.h || b.hz - a.hz);
     }
-    // The resolutions alone, largest first ("2880x1800"), the monitor's own marked native
+    // Its native resolution ("5120x1440"): the largest with a rate at least as fast as the one
+    // it recommends (Hyprland lists that first). Not simply the recommended one: some screens
+    // recommend a smaller, slower mode. As monitors.lua chooses it for a monitor's first mode.
+    function nativeResolution(m) {
+        const first = (m.availableModes || [])[0];
+        if (!first) return "";
+        const floor = Number(String(first).replace(/Hz$/, "").split("@")[1]) - 0.5;
+        let best = null;
+        for (const o of modeOptions(m))
+            if (o.hz >= floor && (!best || o.w * o.h > best.w * best.h || (o.w * o.h === best.w * best.h && o.w > best.w))) best = o;
+        return best ? best.w + "x" + best.h : "";
+    }
+    // The resolutions alone, largest first ("2880x1800"), the native one marked
     function resolutionOptions(m) {
         const modes = modeOptions(m), seen = {}, out = [];
-        const native = (m.availableModes || [])[0] ? String(m.availableModes[0]).split("@")[0] : "";
+        const native = nativeResolution(m);
         for (const o of modes) {
             const res = o.w + "x" + o.h;
             if (seen[res]) continue;

@@ -58,3 +58,23 @@ class DisplaysCase(LiveCase):
         self.ipc("settings", "page", "dock")
         self.wait(lambda st: st["settings"]["section"] == "dock", "the Dock page")
         self.wait_transform(0, "the old settings to come back once the page was left", timeout=6)
+
+    def test_the_question_is_asked_in_the_confirmation_window(self):
+        """The banner at the top of the page was easy to miss, and leaving the page puts the
+        change back, so a new refresh rate seemed to undo itself. The question is asked in
+        Slate's confirmation window too, and Go back there puts the old settings back."""
+        self.turn_without_keeping()
+        st = self.wait(lambda st: st["asking"] == "Keep these display settings?", "the question")
+        self.assertIn("15 seconds", st["askingBody"])
+        self.ipc("test", "answer", "false")
+        self.wait_transform(0, "the old settings to come back after Go back", timeout=6)
+        self.wait(lambda st: st["asking"] == "", "the question to close")
+
+    def test_leaving_the_page_takes_the_question_away(self):
+        """Settings closed with the question unanswered: the change goes back, and so does the
+        question (nothing would be left for Keep to keep)."""
+        self.turn_without_keeping()
+        self.wait(lambda st: st["asking"] == "Keep these display settings?", "the question")
+        self.ipc("settings", "close")
+        self.wait_transform(0, "the old settings to come back once Settings closed", timeout=6)
+        self.wait(lambda st: st["asking"] == "", "the question to be taken away")
