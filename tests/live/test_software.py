@@ -309,3 +309,16 @@ class FirstCatalogue(LiveCase):
         self.open_with(status=none, catalogue=APPS, fetch="ok")
         self.wait(lambda st: st["software"]["open"] and st["software"]["fetching"] == "" and st["software"]["apps"] == len(APPS),
                   "the apps, once the catalogue's been got")
+
+
+class NewAppFolders(LiveCase):
+    """AppFolders.qml: an app folder missing when Slate started has appeared (the first Flatpak
+    install, on a computer set up before the installer made it), and Slate can't see apps there
+    until it restarts: it asks, in Slate's confirmation window, and Later leaves it be."""
+    def test_asks_to_restart(self):
+        self.addCleanup(lambda: self.ipc("test", "answer", "false"))
+        self.ipc("test", "appFolderAppeared")
+        st = self.wait(lambda st: st["asking"] == "Restart Slate to show your new apps?", "the question")
+        self.assertIn("Your apps and windows stay open", st["askingBody"])
+        self.ipc("test", "answer", "false")
+        self.wait(lambda st: st["asking"] == "", "Later to close it")

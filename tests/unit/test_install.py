@@ -906,6 +906,9 @@ class Flathub(Case):
         src = slate.read("install.sh")
         self.fns = "".join(name + "() {" + src.split("\n" + name + "() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
                            for name in ("add_flathub", "fetch_flathub_apps"))
+        # (Flatpak's folder for everyone's apps: a scratch one here, never the computer's)
+        self.apps = os.path.join(self.h.dir, "flatpak-apps")
+        self.fns = self.fns.replace("/var/lib/flatpak/exports/share/applications", self.apps)
         # A stand-in for Slate's code: software.py says what it's told, and notes what it was asked
         self.code = os.path.join(self.h.dir, "code")
         os.makedirs(os.path.join(self.code, "scripts"))
@@ -933,11 +936,22 @@ class Flathub(Case):
         out = self.bash("add_flathub")
         self.assertIn("OK Flathub set up", out)
         self.assertEqual(self.s.calls("sudo"), [["flatpak", "remote-add", "--if-not-exists", "flathub",
-                                                 "https://dl.flathub.org/repo/flathub.flatpakrepo"]])
+                                                 "https://dl.flathub.org/repo/flathub.flatpakrepo"],
+                                                ["mkdir", "-p", self.apps]])
+
+    def test_apps_folder_made_up_front(self):
+        """Flatpak only makes its folder for everyone's apps on its first install, and Slate's
+        launcher only sees new apps in folders there when Slate started: the first app from
+        Software didn't show until a restart (Bug, 2026-11-20). It's made with Flathub."""
+        self.s.add("flatpak", by_args={"remotes": "flathub\n"})
+        self.s.add("sudo")
+        self.bash("add_flathub")
+        self.assertEqual(self.s.calls("sudo"), [["mkdir", "-p", self.apps]])
 
     def test_left_alone_where_it_is_set_up(self):
         self.s.add("flatpak", by_args={"remotes": "flathub\n"})
         self.s.add("sudo")
+        os.makedirs(self.apps)
         self.assertEqual(self.bash("add_flathub"), "")
         self.assertEqual(self.s.calls("sudo"), [])
 
@@ -976,3 +990,12 @@ class Flathub(Case):
         deps = src.split('if [ "$DEPS" -eq 1 ]; then\n    step "1. Packages"', 1)[1].split("\nfi\n", 1)[0]
         self.assertIn("add_flathub", deps)
         self.assertIn('[ "$UPDATE" -eq 1 ] || fetch_flathub_apps "$SLATE"', src)
+
+
+class FlatpakAppsFolder(Case):
+    """bin/slate makes your Flatpak apps folder before Quickshell starts, which only watches the
+    app folders there as it starts (Bug, 2026-11-20: the first app from Software didn't show)."""
+    def test_made_before_slate_starts(self):
+        launch = slate.read("shell/bin/slate").split("\nlaunch() {", 1)[1].split("\n}\n", 1)[0]
+        made = launch.index('mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/flatpak/exports/share/applications"')
+        self.assertLess(made, launch.index("qs -n -p"), "made after Quickshell starts")

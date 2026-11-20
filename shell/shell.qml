@@ -250,6 +250,8 @@ ShellRoot {
         // Slate Software: what its engine (scripts/software.py) would say, as a JSON object
         // { status, catalogue, lists, installed, updates, app, act }, used in place of running it
         // (act: how an install, removal or update goes, "ok" or what went wrong)
+        // An app folder that was missing at startup has appeared (AppFolders.qml): what it does then
+        function appFolderAppeared(): void { appFolders.asked = false; appFolders.appeared(); }
         function softwarePretend(json: string): void {
             const p = JSON.parse(json);
             SoftwareJobs.endPretend();
@@ -911,6 +913,7 @@ ShellRoot {
     // itself, only while the key or the microphone is held
     VoiceModel { id: voiceModel }
     NovaVoice { id: novaVoice; window: nova; model: voiceModel; locked: lockScreen.locked }
+    AppFolders { id: appFolders; confirm: powerConfirm }     // new apps in a place Slate wasn't watching: asks to restart
     AssistantGate { id: assistantGate; powerConfirm: powerConfirm; lockScreen: lockScreen; window: nova }     // what AI agents may do (slate mcp)
     // The screen locks: the prompt window closes and a run stops
     Connections { target: lockScreen; function onLockedChanged() { if (lockScreen.locked) { nova.closeWindow(); nova.stop(); wallpaperLayer.switcher.cancel(); } } }

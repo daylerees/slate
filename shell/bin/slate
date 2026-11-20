@@ -104,6 +104,12 @@ start_here() {
 # the crash; Quickshell 0.3.2 has no switch for only its report. The keeper writes a report of
 # its own instead (save_crash).
 launch() {
+    # Flatpak's folder for your apps, made now if it isn't there yet: Quickshell only watches the
+    # app folders that exist as it starts, so the first app installed with Flatpak never showed
+    # in the launcher until Slate restarted (AppFolders.qml asks about the system's own)
+    if command -v flatpak >/dev/null 2>&1; then
+        mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/flatpak/exports/share/applications" 2>/dev/null || true
+    fi
     scale=$(ui_scale)
     level=$(log_level)
     # Always timestamped; more of Quickshell's own messages at the higher levels.

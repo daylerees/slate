@@ -441,10 +441,15 @@ fi
 # distro's flatpak package doesn't do it itself (Arch's does)
 add_flathub() {
     have flatpak || return 0
-    flatpak remotes --columns=name 2>/dev/null | grep -qx flathub && return 0
-    if sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
-        ok "Flathub set up, for Slate Software's apps"
-    else warn "Couldn't set up Flathub; Slate Software says how when you open it"; fi
+    if ! flatpak remotes --columns=name 2>/dev/null | grep -qx flathub; then
+        if sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+            ok "Flathub set up, for Slate Software's apps"
+        else warn "Couldn't set up Flathub; Slate Software says how when you open it"; fi
+    fi
+    # Flatpak's folder for everyone's apps, made now: Flatpak only makes it on its first install,
+    # and Slate's launcher only sees new apps in folders that were there when Slate started
+    local apps=/var/lib/flatpak/exports/share/applications
+    [ -d "$apps" ] || sudo mkdir -p "$apps" || warn "Couldn't make $apps; the first app you install from Software shows after a restart"
 }
 # ...and its list of apps got now: Flatpak only gets it on its first update or install, so Slate
 # Software was empty on a new computer. (Software gets it itself too, if it's still missing.)
