@@ -26,10 +26,12 @@ class Unlock(Case):
         for d in (self.target, self.pamd, self.mods):
             os.makedirs(d)
         src = slate.read("shell", "bin", "slate-unlock")
-        for real in ("TARGET_DIR=/usr/local/libexec/slate", "PAMD=/etc/pam.d", DIRS):
+        # (and the security keys' list: never the real one, even for remove)
+        self.keys = os.path.join(self.h.dir, "etc-slate", "u2f_keys")
+        for real in ("TARGET_DIR=/usr/local/libexec/slate", "PAMD=/etc/pam.d", DIRS, "KEYS=/etc/slate/u2f_keys"):
             self.assertIn(real, src)
         src = (src.replace("/usr/local/libexec/slate", self.target).replace("PAMD=/etc/pam.d", f"PAMD={self.pamd}")
-                  .replace(DIRS, self.mods))
+                  .replace(DIRS, self.mods).replace("KEYS=/etc/slate/u2f_keys", f"KEYS={self.keys}"))
         self.helper = os.path.join(self.target, "slate-unlock")
         with open(self.helper, "w") as f:
             f.write(src)
@@ -90,9 +92,7 @@ class Unlock(Case):
         for m in ("key", "face", "key", "fingerprint", "face"):
             self.assertEqual(self.go("enable", m)[0], 0)
         self.assertEqual(self.go("status")[1], "face\nfingerprint\nkey\n")
-        # (the keys file the helper was given: Keys' tests give it a scratch one)
-        keys = getattr(self, "keys", "/etc/slate/u2f_keys")
-        self.assertEqual(self.auth_lines(), ["pam_howdy.so", "pam_fprintd.so", f"pam_u2f.so authfile={keys} cue", "pam_deny.so"])
+        self.assertEqual(self.auth_lines(), ["pam_howdy.so", "pam_fprintd.so", f"pam_u2f.so authfile={self.keys} cue", "pam_deny.so"])
 
     def test_off_again_and_none_left_takes_the_file_away(self):
         self.installed("pam_howdy.so", "pam_fprintd.so")
@@ -287,11 +287,6 @@ class Keys(Unlock):
 
     def setUp(self):
         super().setUp()
-        self.keys = os.path.join(self.h.dir, "etc-slate", "u2f_keys")
-        src = slate.read(self.helper)
-        self.assertIn("KEYS=/etc/slate/u2f_keys", src)
-        with open(self.helper, "w") as f:
-            f.write(src.replace("KEYS=/etc/slate/u2f_keys", f"KEYS={self.keys}"))
         self.s.add("getent", by_args={"1000": "tester:x:1000:1000:Test:/home/tester:/bin/bash\n",
                                       "1001": "sam:x:1001:1001:Sam:/home/sam:/bin/bash\n"})
         self.me = {"PKEXEC_UID": "1000"}
@@ -354,3 +349,14 @@ class Keys(Unlock):
         self.installed("pam_u2f.so")
         self.assertEqual(self.go("enable", "key")[0], 0)
         self.assertIn(f"pam_u2f.so authfile={self.keys} cue", self.text())
+
+    def test_remove_takes_the_keys_too(self):
+        """Uninstalling or a factory reset (remove): Slate's list of keys goes with slate-lock."""
+        self.installed("pam_u2f.so")
+        self.go("key-add", REG1, env=self.me)
+        self.go("enable", "key")
+        code, out = self.go("remove")
+        self.assertEqual(code, 0, out)
+        self.assertFalse(os.path.exists(self.file))
+        self.assertFalse(os.path.exists(self.keys))
+        self.assertFalse(os.path.exists(os.path.dirname(self.keys)))

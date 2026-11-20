@@ -10,7 +10,8 @@
 #
 #   slate-unlock enable <method>    the lock screen takes it (face, fingerprint or key)
 #   slate-unlock disable <method>   it doesn't any more; with none left the file goes
-#   slate-unlock remove             none at all: the file goes (uninstalling, factory reset)
+#   slate-unlock remove             none at all: the file goes, and the security keys' list
+#                                   (uninstalling, factory reset)
 #   slate-unlock status             the methods it takes, one a line (anyone can read the file)
 #   slate-unlock face-camera <device>   the camera Howdy looks through (/dev/v4l/by-id/…, …)
 #   slate-unlock face-models        get Howdy's recognition models, when it hasn't any yet
@@ -248,8 +249,11 @@ case "${1:-}" in
         exit $? ;;
     remove)
         [ "$#" -eq 1 ] || { echo "slate-unlock: remove takes nothing else" >&2; exit 1; }
-        write
-        exit $? ;;
+        write || exit $?
+        # (Slate's list of security keys too, and its folder once empty)
+        if [ -f "$KEYS" ] && [ ! -L "$KEYS" ]; then rm -f "$KEYS"; fi
+        rmdir "$(dirname "$KEYS")" 2>/dev/null
+        exit 0 ;;
     *)
         echo "slate-unlock: enable <method>, disable <method>, remove, status, face-… or key-…" >&2; exit 1 ;;
 esac
