@@ -63,6 +63,19 @@ the gloss sheen like the bar's containers and no outline.
   anyone as it holds only public keys and the lock screen's PAM runs as you); `key-remove <n>`,
   `key-list`. Only the asking user's line changes. Their names are Slate's, in
   `~/.local/state/slate/keys.json` by handle. Keys come after face and fingerprint in `slate-lock`.
+- **The login screen's other ways in:** `slate-unlock login-enable|login-disable <method>` writes
+  `/etc/pam.d/slate-greetd`: `pam_nologin` (requisite), the methods (`sufficient`; the
+  fingerprint with `max-tries=1 timeout=10`), then `auth/account/password/session include greetd`
+  (or `login` without a greetd service). Only where greetd's config is Slate's
+  (`# Slate login screen` on its first line); the first time it adds `[general] service =
+  "slate-greetd"` there (inside an existing `[general]` if there is one), and
+  `slate-greeter-install` keeps that line whenever the file's there. The file is rewritten, never
+  removed: greetd keeps the service it started with until it restarts, so with no methods it's
+  greetd's own again (`remove` does that too). greetd runs one conversation, so `greeter/shell.qml`
+  starts it as soon as there's someone to log in (`auto`), shows the methods' words as the hint,
+  keeps a password typed meanwhile (`pending`) for the first password question, answers it then,
+  and starts again on activity once they've given way. Tests: `tests/live/test_login_screen.py`'s
+  fake greetd has a face (`AnotherWayIn`).
 - **Lockout:** after a failure Slate reads `faillock --user $USER`; at 3 failures within
   15 min it shows "Too many tries · you can try again in m:ss", disables the field and stops
   sending attempts. Wrong passwords show the tries left. Those numbers (and the 10 minutes it

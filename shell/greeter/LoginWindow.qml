@@ -31,7 +31,7 @@ PanelWindow {
         personIndex: win.greeter.personIndex
         onPersonPicked: i => {
             // (a question from the last attempt belongs to the last person: ended first)
-            if (win.greeter.asking) win.greeter.cancelAsking();
+            if (win.greeter.asking || win.greeter.auto) win.greeter.cancelAsking();
             win.greeter.personChosen = true; win.greeter.personIndex = i;
         }
         sessions: win.greeter.sessions
@@ -44,6 +44,8 @@ PanelWindow {
         interactive: win.primary
         iconFontSource: "file://" + win.greeter.dir + "/fonts/tabler.ttf"
         onSubmitted: pw => win.greeter.submit(pw)
+        hint: win.greeter.hint
+        onActivity: win.greeter.activity()
         onPowerAction: a => win.greeter.power(a)
         onCancelled: win.greeter.cancelAsking()
         Connections {

@@ -178,6 +178,11 @@ vt = 1
 command = "$START"
 user = "$GREETER_USER"
 EOF
+# With a face, a finger or a key set up for the login screen (Settings → Security → Face,
+# Fingerprint & Keys), Slate's own greetd service, which slate-unlock keeps: still used
+if [ -f /etc/pam.d/slate-greetd ] && [ ! -L /etc/pam.d/slate-greetd ]; then
+    printf '\n[general]\nservice = "slate-greetd"\n' >> "$CONF"
+fi
 
 echo
 echo "Done. The Slate login screen will appear at your next logout or reboot."

@@ -28,6 +28,11 @@ class FakeGreetd(threading.Thread):
     screen used to show that instead of "That password didn't match"). BROKEN plays greetd losing its
     worker partway through an attempt: a real connection problem."""
 
+    # A face (as pam_howdy does, ahead of the password in Slate's own greetd service): None for
+    # none; "you" lets you in; "not you" gives way to the password. It takes face_wait seconds
+    face = None
+    face_wait = 0.0
+
     def __init__(self, path):
         super().__init__(daemon=True)
         self.path = path
@@ -46,6 +51,7 @@ class FakeGreetd(threading.Thread):
 
     def serve(self, conn):
         ended = False       # the attempt was refused, so greetd's worker for it is gone
+        looking = False     # the face's message is out, waiting for its (empty) answer
         with conn:
             while True:
                 head = conn.recv(4)
@@ -65,6 +71,14 @@ class FakeGreetd(threading.Thread):
                     reply = {"type": "auth_message", "auth_message_type": "visible", "auth_message": "One-time code: "}
                 elif t == "post_auth_message_response" and req.get("response") == CODE:
                     reply = {"type": "success"}
+                elif t == "create_session" and self.face:
+                    reply, looking = {"type": "auth_message", "auth_message_type": "info",
+                                      "auth_message": "Attempting facial authentication"}, True
+                elif t == "post_auth_message_response" and looking:
+                    time.sleep(self.face_wait)
+                    looking = False
+                    reply = ({"type": "success"} if self.face == "you"
+                             else {"type": "auth_message", "auth_message_type": "secret", "auth_message": "Password:"})
                 elif t == "create_session":
                     reply = {"type": "auth_message", "auth_message_type": "secret", "auth_message": "Password:"}
                 elif t == "post_auth_message_response" and req.get("response") == PASSWORD:
@@ -348,3 +362,99 @@ class EachPersonsLook(LiveCase):
         self.assertEqual(seen()["dir"], data)
         ipc("pick", "0")
         until(lambda: seen().get("accent") == "#22aa44", "your own look again")
+
+
+class AnotherWayIn(LiveCase):
+    """A face, a finger or a key on the login screen (Settings → Face, Fingerprint & Keys): Slate's
+    own greetd service runs them before the password. greetd has one conversation, so the login
+    screen starts it by itself as soon as there's someone to log in, shows what the method's
+    waiting for, and keeps a password typed meanwhile for when it comes to the password. The
+    password always works."""
+
+    def start(self, face, wait=0.0, methods=("face",)):
+        h = self.s.h
+        code = os.path.join(h.dir, "greeter-another-way")
+        if os.path.exists(code):
+            shutil.rmtree(code)
+        build_greeter(code)
+        data = os.path.join(h.dir, "greeter-another-way-data")
+        os.makedirs(data, exist_ok=True)
+        sessions = os.path.join(h.dir, "share-another-way", "wayland-sessions")
+        os.makedirs(sessions, exist_ok=True)
+        with open(os.path.join(sessions, "slate.desktop"), "w") as f:
+            f.write("[Desktop Entry]\nName=Slate\nExec=slate-session --test\nDesktopNames=Hyprland\n")
+        unlock = os.path.join(h.dir, "slate-greetd")
+        with open(unlock, "w") as f:
+            f.write("#%PAM-1.0\n" + "".join(f"# slate-unlock: {m}\nauth sufficient pam_{m}.so\n" for m in methods)
+                    + "auth include greetd\n")
+        sock = os.path.join(h.runtime, "greetd-another-way.sock")
+        if os.path.exists(sock):
+            os.remove(sock)
+        self.greetd = FakeGreetd(sock)
+        self.greetd.face, self.greetd.face_wait = face, wait
+        self.greetd.start()
+        self.addCleanup(self.greetd.stop)
+        self.env = dict(self.s.env, GREETD_SOCK=sock, SLATE_GREETER_TEST="1", SLATE_GREETER_DATA=data,
+                        SLATE_GREETER_UNLOCK=unlock, XDG_DATA_DIRS=os.path.join(h.dir, "share-another-way"), USER="tester")
+        self.code = code
+        self.log = open(os.path.join(self.s.out, "login-screen-another-way.log"), "w")
+        p = subprocess.Popen(["qs", "-p", code], env=self.env, stdout=self.log, stderr=subprocess.STDOUT)
+        self.addCleanup(lambda: p.poll() is None and p.kill())
+        for _ in range(100):
+            if p.poll() is not None:
+                self.fail(f"the login screen exited ({p.returncode}); see tests/out/live/login-screen-another-way.log")
+            if self.ipc("user"):
+                break
+            time.sleep(0.2)
+
+    def ipc(self, *a):
+        return slate.run(["qs", "-p", self.code, "ipc", "call", "greeter"] + list(a), env=self.env)[1].strip()
+
+    def until(self, check, what, timeout=10):
+        for _ in range(int(timeout / 0.1)):
+            if check():
+                return
+            time.sleep(0.1)
+        self.fail(f"timed out waiting for {what}; state {self.ipc('state')}, requests {self.greetd.requests}")
+
+    def test_your_face_lets_you_in_without_typing(self):
+        self.start("you", wait=1.0)
+        self.until(lambda: self.ipc("hint") == "Looking for your face… or type your password", "it to look for your face")
+        self.until(lambda: self.greetd.of_type("start_session"), "your session to start")
+        self.assertFalse([r for r in self.greetd.of_type("post_auth_message_response") if r.get("response")],
+                         "a password was sent")
+
+    def test_not_you_then_the_password(self):
+        self.start("not you")
+        self.until(lambda: json.loads(self.ipc("state"))["wantsPassword"], "it to come to the password")
+        self.assertEqual(self.ipc("hint"), "")
+        self.ipc("submit", PASSWORD)
+        self.until(lambda: self.greetd.of_type("start_session"), "your session to start")
+        self.assertEqual([r.get("response") for r in self.greetd.of_type("post_auth_message_response")][-1], PASSWORD)
+
+    def test_a_password_typed_while_it_looks(self):
+        """Typed before the face gives up: kept, and given once it comes to the password, not
+        sent as the face's answer, and the attempt isn't started again."""
+        self.start("not you", wait=2.0)
+        self.until(lambda: self.ipc("hint") != "", "it to start looking")
+        self.ipc("submit", PASSWORD)
+        self.until(lambda: self.greetd.of_type("start_session"), "your session to start", timeout=15)
+        self.assertEqual(len(self.greetd.of_type("create_session")), 1, "the attempt was started again")
+        answers = [r.get("response") for r in self.greetd.of_type("post_auth_message_response")]
+        self.assertEqual(answers[-1], PASSWORD)
+        self.assertNotIn(PASSWORD, answers[:-1], "the password went to the face")
+
+    def test_a_wrong_password_after_it(self):
+        self.start("not you")
+        self.until(lambda: json.loads(self.ipc("state"))["wantsPassword"], "it to come to the password")
+        self.ipc("submit", "not it")
+        self.until(lambda: self.ipc("message") == "That password didn't match", "the password refused")
+        self.assertFalse(self.greetd.of_type("start_session"))
+
+    def test_nothing_changes_without_one(self):
+        """No methods on for the login screen: nothing starts until a password's typed, as before."""
+        self.start(None, methods=())
+        time.sleep(1.5)
+        self.assertFalse(self.greetd.of_type("create_session"), "an attempt started with nothing to look for")
+        self.ipc("submit", PASSWORD)
+        self.until(lambda: self.greetd.of_type("start_session"), "your session to start")

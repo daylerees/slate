@@ -156,6 +156,7 @@ ShellRoot {
     signal noted(string text, bool isError)
     // Escape on the question: end the attempt, back to a fresh password
     function cancelAsking() {
+        auto = false; wantsPassword = false; hint = "";
         asking = false; busy = false; pending = ""; message = ""; messageIsError = false;
         if (Greetd.state !== GreetdState.Inactive) Greetd.cancelSession();
         Qt.callLater(gc);
@@ -174,7 +175,65 @@ ShellRoot {
         submit(w);
     }
 
+    // ---- Another way in: a face, a finger or a key (Settings → Face, Fingerprint & Keys) -------
+    // Slate's own greetd service, /etc/pam.d/slate-greetd (bin/slate-unlock writes it), runs the
+    // ways in that are on for the login screen ("# slate-unlock: <method>"), each "sufficient",
+    // before the password, which always comes after them. greetd has one conversation, not the
+    // lock screen's two, so the attempt starts as soon as there's someone to log in (auto): what a
+    // method says shows under the field (hint), and a password typed meanwhile is kept (pending)
+    // and given the moment the methods give way to it. Come back (the pointer, a key) once they
+    // have, and they look again
+    readonly property string unlockFile: Quickshell.env("SLATE_GREETER_TEST") === "1" && Quickshell.env("SLATE_GREETER_UNLOCK")
+        ? Quickshell.env("SLATE_GREETER_UNLOCK") : "/etc/pam.d/slate-greetd"
+    property var loginMethods: []
+    FileView {
+        path: root.unlockFile
+        printErrors: false
+        onLoaded: root.loginMethods = text().split("\n").filter(l => l.startsWith("# slate-unlock: ")).map(l => l.slice(16).trim())
+        onLoadFailed: root.loginMethods = []
+    }
+    property bool auto: false              // the attempt started by itself, the methods first
+    property bool wantsPassword: false     // …and it's come to the password: what's typed answers it
+    property real autoStartedAt: 0
+    property string hint: ""
+    function methodWords(text) {
+        const t = String(text || "").trim();
+        if (/face|facial|howdy/i.test(t)) return "Looking for your face… or type your password";
+        if (/finger|swipe/i.test(t)) return "Touch the fingerprint reader, or type your password";
+        if (/touch|u2f|fido|security key|token|device/i.test(t)) return "Touch your security key, or type your password";
+        return "";
+    }
+    function startAuto() {
+        if (loginMethods.length === 0 || checking || !user || busy || asking || auto || !Greetd.available) return;
+        if (Greetd.state !== GreetdState.Inactive) return;
+        auto = true; wantsPassword = false; hint = ""; pending = "";
+        autoStartedAt = Date.now();
+        Greetd.createSession(user);
+    }
+    function stopAuto() {
+        if (!auto) return;
+        auto = false; wantsPassword = false; hint = "";
+        if (Greetd.state !== GreetdState.Inactive) Greetd.cancelSession();
+    }
+    onUserChanged: { stopAuto(); autoSoon.restart(); }
+    onLoginMethodsChanged: autoSoon.restart()
+    Timer { id: autoSoon; interval: 300; onTriggered: root.startAuto() }
+    // Someone's back after the methods gave up: look again, not more than every few seconds
+    function activity() {
+        if (!auto || !wantsPassword || Date.now() - autoStartedAt < 4000) return;
+        stopAuto();
+        autoSoon.restart();
+    }
+
     function submit(password) {
+        // The attempt's under way by itself: answered when it comes to the password (now, if
+        // it already has)
+        if (auto) {
+            busy = true; message = ""; messageIsError = false; hint = "";
+            if (wantsPassword) { auto = false; wantsPassword = false; Greetd.respond(password); }
+            else pending = password;
+            return;
+        }
         if (asking && Greetd.state !== GreetdState.Inactive) {
             asking = false; busy = true; message = ""; messageIsError = false;
             Greetd.respond(password);
@@ -210,14 +269,21 @@ ShellRoot {
         function onAuthMessage(message, error, responseRequired, echoResponse) {
             if (responseRequired) {
                 if (root.pending !== "") {
+                    root.auto = false; root.wantsPassword = false; root.hint = "";
                     Greetd.respond(root.pending);
                     root.pending = "";
+                } else if (root.auto) {
+                    // The methods gave way to the password, and nothing's typed yet: the next
+                    // thing typed answers it
+                    root.wantsPassword = true; root.hint = ""; root.busy = false;
                 } else {
                     // A question after the password: show it, wait for the answer
                     root.busy = false; root.asking = true;
                     root.message = message; root.messageIsError = false;
                     root.asked(message, echoResponse);
                 }
+            } else if (message !== "" && !error && root.methodWords(message) !== "") {
+                root.hint = root.methodWords(message);                 // a face, a finger or a key, waiting
             } else if (message !== "") {
                 root.message = message; root.messageIsError = error;   // e.g. faillock's "account locked"
                 root.noted(message, error);
@@ -225,11 +291,13 @@ ShellRoot {
         }
         function onAuthFailure(message) {
             // (Quickshell has already ended the attempt with greetd)
+            root.auto = false; root.wantsPassword = false; root.hint = "";
             root.fail(root.messageIsError && root.message ? root.message : "That password didn't match");
         }
         function onReadyToLaunch() {
             const s = root.sessions[root.sessionIndex];
             if (!s) { root.fail("Slate couldn't find a session to start"); return; }
+            root.auto = false; root.wantsPassword = false; root.hint = "";
             lastSession.setText(s.id + "\n");
             lastUser.setText(root.user + "\n");
             // This version works: the installer keeps it as the fallback (.good)
@@ -297,6 +365,9 @@ ShellRoot {
         enabled: Quickshell.env("SLATE_GREETER_TEST") === "1"
         function submit(password: string): void { root.submit(password); }
         function message(): string { return root.message; }
+        function hint(): string { return root.hint; }
+        function state(): string { return JSON.stringify({ auto: root.auto, wantsPassword: root.wantsPassword, busy: root.busy, methods: root.loginMethods }); }
+        function activity(): void { root.autoStartedAt = 0; root.activity(); }
         function asking(): string { return root.asking ? "yes" : "no"; }
         function cancel(): void { root.cancelAsking(); }
         // Who's listed and who's chosen, and choosing, as the person menu does

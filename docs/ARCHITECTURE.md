@@ -252,7 +252,8 @@ scripts/auto-brightness.py    Automatic brightness: claims the light sensor (iio
                               signals, no polling), eases the screen and keyboard light to the room
 scripts/unlock-info.py        Settings → Face, Fingerprint & Keys, as you: whether Howdy is installed,
                               fprintd's reader and your fingers (fprintd-list), pam_u2f and your
-                              security keys (/etc/slate/u2f_keys),
+                              security keys (/etc/slate/u2f_keys), and Slate's login screen and
+                              the ways in it takes (slate-greetd),
                               the cameras and which are infrared (V4L2's format list, without
                               turning them on), and the ways in the lock screen takes now
                               with brightnessctl, learns your changes (~/.local/state/slate/
@@ -379,7 +380,9 @@ bin/slate-unlock              which of a face, a fingerprint and a security key 
                               reads it: each method "sufficient", then pam_deny), from a fixed
                               list of module paths and only once installed; adds, lists and
                               removes the faces of whoever asked (Howdy, only root's own copy)
-                              and their security keys (/etc/slate/u2f_keys, pam_u2f's),
+                              and their security keys (/etc/slate/u2f_keys, pam_u2f's); and the
+                              same ways in on Slate's login screen (/etc/pam.d/slate-greetd, which
+                              Slate's greetd config uses),
                               and sets its camera; runs only from /usr/local/libexec/slate, by
                               slate-system --root
 bin/slate-system-root         the half of slate-system that runs as root: installs packages and the

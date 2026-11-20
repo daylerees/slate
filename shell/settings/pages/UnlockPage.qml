@@ -103,6 +103,17 @@ Column {
             run: () => helper(["key-remove", String(i + 1)], "Removing…", "Removed", "Slate couldn't remove it", false)
         };
     }
+    // ---- The login screen: the same ways in, on Slate's own (greetd) login screen, each turned on
+    // for it apart from the lock screen (slate-unlock login-enable: /etc/pam.d/slate-greetd)
+    readonly property bool loginScreen: !!info.loginScreen
+    readonly property var loginMethods: info.loginMethods || []
+    function loginOn(method) { return loginMethods.indexOf(method) >= 0; }
+    function setLoginOn(method, on) {
+        helper([on ? "login-enable" : "login-disable", method], on ? "Turning it on…" : "Turning it off…",
+               on ? "On: the login screen takes it too, from your next login" : "Off: the login screen asks for your password",
+               on ? "Slate couldn't turn it on" : "Slate couldn't turn it off", false);
+    }
+    readonly property string loginNote: "Your saved passwords (the keyring) stay locked until you type your password"
     function setKeyOn(on) {
         helper([on ? "enable" : "disable", "key"], on ? "Turning it on…" : "Turning it off…",
                on ? "On: the lock screen takes your security key" : "Off: the lock screen asks for your password",
@@ -206,6 +217,7 @@ Column {
 
     readonly property var testState: ({ looked: looked, howdy: !!info.howdy, faces: faces.map(f => f.label), faceOn: faceOn,
                                         camera: chosen ? chosen.path : "", said: said, problem: saidProblem, doing: doing,
+                                        loginMethods: loginMethods,
                                         fingers: fingers, fingerOn: fingerOn, adding: addingFinger, fpSaid: fpSaid, fpProblem: fpProblem,
                                         keys: keyHandles.map((h, i) => keyName(h, i)), keyOn: keyOn, keySaid: keySaid, keyProblem: keyProblem })
     // (the tests: what's here and what the helper answers, given in place of the real ones)
@@ -442,6 +454,20 @@ Column {
                 Accessible.name: "Unlock with your face"
             }
         }
+        Separator {}
+        SettingRow {
+            label: "Face on the login screen"
+            detail: "Log in with it too. " + unlockPage.loginNote
+            needsMet: unlockPage.loginScreen && unlockPage.info.howdy && unlockPage.faces.length > 0 && !unlockPage.busy
+            needs: !unlockPage.loginScreen ? "Needs Slate's login screen to be installed" : !(unlockPage.info.howdy && unlockPage.faces.length > 0) ? "Needs your face to be added" : "Wait a moment"
+            needsPage: !unlockPage.loginScreen ? "lock" : ""
+            needsLabel: !unlockPage.loginScreen ? "Slate login screen" : ""
+            SettingToggle {
+                checked: unlockPage.loginOn("face")
+                onToggled: v => unlockPage.setLoginOn("face", v)
+                Accessible.name: "Face on the login screen"
+            }
+        }
     }
     GroupLabel { text: "Fingerprint" }
     Group {
@@ -515,6 +541,20 @@ Column {
                 Accessible.name: "Unlock with your fingerprint"
             }
         }
+        Separator {}
+        SettingRow {
+            label: "Fingerprint on the login screen"
+            detail: "Log in with it too. " + unlockPage.loginNote
+            needsMet: unlockPage.loginScreen && unlockPage.fpInfo.fprintd && unlockPage.fingers.length > 0 && !unlockPage.busy
+            needs: !unlockPage.loginScreen ? "Needs Slate's login screen to be installed" : !(unlockPage.fpInfo.fprintd && unlockPage.fingers.length > 0) ? "Needs a fingerprint to be added" : "Wait a moment"
+            needsPage: !unlockPage.loginScreen ? "lock" : ""
+            needsLabel: !unlockPage.loginScreen ? "Slate login screen" : ""
+            SettingToggle {
+                checked: unlockPage.loginOn("fingerprint")
+                onToggled: v => unlockPage.setLoginOn("fingerprint", v)
+                Accessible.name: "Fingerprint on the login screen"
+            }
+        }
     }
     GroupLabel { text: "Security keys" }
     Group {
@@ -566,9 +606,23 @@ Column {
                 Accessible.name: "Unlock with your security key"
             }
         }
+        Separator {}
+        SettingRow {
+            label: "Security key on the login screen"
+            detail: "Log in with it too. " + unlockPage.loginNote
+            needsMet: unlockPage.loginScreen && unlockPage.keyInfo.u2f && unlockPage.keyHandles.length > 0 && !unlockPage.busy
+            needs: !unlockPage.loginScreen ? "Needs Slate's login screen to be installed" : !(unlockPage.keyInfo.u2f && unlockPage.keyHandles.length > 0) ? "Needs a key to be added" : "Wait a moment"
+            needsPage: !unlockPage.loginScreen ? "lock" : ""
+            needsLabel: !unlockPage.loginScreen ? "Slate login screen" : ""
+            SettingToggle {
+                checked: unlockPage.loginOn("key")
+                onToggled: v => unlockPage.setLoginOn("key", v)
+                Accessible.name: "Security key on the login screen"
+            }
+        }
     }
     Footnote {
-        text: "Faces, fingerprints and keys stay on this computer, and only the lock screen uses them here: sudo, the login screen "
-            + "and other apps still ask for your password."
+        text: "Faces, fingerprints and keys stay on this computer. Only Slate's lock screen uses them, and its login screen "
+            + "where you've turned that on: sudo, other login screens and other apps still ask for your password."
     }
 }

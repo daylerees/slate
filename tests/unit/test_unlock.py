@@ -26,12 +26,15 @@ class Unlock(Case):
         for d in (self.target, self.pamd, self.mods):
             os.makedirs(d)
         src = slate.read("shell", "bin", "slate-unlock")
-        # (and the security keys' list: never the real one, even for remove)
+        # (and the security keys' list and greetd's config: never the real ones, even for remove)
         self.keys = os.path.join(self.h.dir, "etc-slate", "u2f_keys")
-        for real in ("TARGET_DIR=/usr/local/libexec/slate", "PAMD=/etc/pam.d", DIRS, "KEYS=/etc/slate/u2f_keys"):
+        self.greetd_conf = os.path.join(self.h.dir, "greetd-config.toml")
+        for real in ("TARGET_DIR=/usr/local/libexec/slate", "PAMD=/etc/pam.d", DIRS, "KEYS=/etc/slate/u2f_keys",
+                     "GREETD_CONF=/etc/greetd/config.toml"):
             self.assertIn(real, src)
         src = (src.replace("/usr/local/libexec/slate", self.target).replace("PAMD=/etc/pam.d", f"PAMD={self.pamd}")
-                  .replace(DIRS, self.mods).replace("KEYS=/etc/slate/u2f_keys", f"KEYS={self.keys}"))
+                  .replace(DIRS, self.mods).replace("KEYS=/etc/slate/u2f_keys", f"KEYS={self.keys}")
+                  .replace("GREETD_CONF=/etc/greetd/config.toml", f"GREETD_CONF={self.greetd_conf}"))
         self.helper = os.path.join(self.target, "slate-unlock")
         with open(self.helper, "w") as f:
             f.write(src)
@@ -129,12 +132,13 @@ class Unlock(Case):
         self.assertFalse(os.path.exists(self.file))
 
     def test_nothing_else_in_pam_d_changes(self):
+        before = sorted(os.listdir(self.pamd))
         self.installed("pam_howdy.so")
         self.go("enable", "face")
         self.go("remove")
         with open(self.login) as f:
             self.assertEqual(f.read(), "auth include system-local-login\n")
-        self.assertEqual(sorted(os.listdir(self.pamd)), ["login"], "something else was left in pam.d")
+        self.assertEqual(sorted(os.listdir(self.pamd)), before, "something else was left in pam.d")
 
     def test_never_through_a_link(self):
         self.installed("pam_howdy.so")
@@ -360,3 +364,135 @@ class Keys(Unlock):
         self.assertFalse(os.path.exists(self.file))
         self.assertFalse(os.path.exists(self.keys))
         self.assertFalse(os.path.exists(os.path.dirname(self.keys)))
+
+
+SLATES_GREETD = """# Slate login screen (set up by slate-greeter-install; previous config: /etc/greetd/config.toml.before-slate)
+[terminal]
+vt = 1
+
+[default_session]
+command = "start-hyprland"
+user = "greeter"
+"""
+
+
+class LoginScreen(Unlock):
+    """The same ways in on Slate's login screen: /etc/pam.d/slate-greetd, greetd's own service with
+    the methods put first, after nologin's check, and the password (greetd's own) always after
+    them. Only where greetd's config is Slate's own, which is pointed at it once. The file is
+    never taken away (greetd goes on using the service it started with)."""
+
+    def setUp(self):
+        super().setUp()
+        self.login_file = os.path.join(self.pamd, "slate-greetd")
+        with open(os.path.join(self.pamd, "greetd"), "w") as f:
+            f.write("auth include system-local-login\n")
+        with open(self.greetd_conf, "w") as f:
+            f.write(SLATES_GREETD)
+
+    def login_lines(self):
+        with open(self.login_file) as f:
+            return [l for l in f.read().splitlines() if not l.startswith("#")]
+
+    def conf(self):
+        with open(self.greetd_conf) as f:
+            return f.read()
+
+    def test_methods_first_then_greetds_own(self):
+        self.installed("pam_howdy.so", "pam_fprintd.so")
+        self.assertEqual(self.go("login-enable", "fingerprint")[0], 0)
+        code, out = self.go("login-enable", "face")
+        self.assertEqual(code, 0, out)
+        self.assertEqual([" ".join(l.split()) for l in self.login_lines()], [
+            "auth requisite pam_nologin.so",
+            "auth sufficient pam_howdy.so",
+            "auth sufficient pam_fprintd.so max-tries=1 timeout=10",
+            "auth include greetd", "account include greetd", "password include greetd", "session include greetd"])
+        self.assertEqual(self.go("login-status")[1], "face\nfingerprint\n")
+        self.assertEqual(stat.S_IMODE(os.stat(self.login_file).st_mode), 0o644)
+        # The lock screen's own is separate
+        self.assertFalse(os.path.exists(self.file))
+
+    def test_greetd_pointed_at_it_once(self):
+        self.installed("pam_howdy.so", "pam_fprintd.so")
+        self.go("login-enable", "face")
+        self.go("login-enable", "fingerprint")
+        self.assertTrue(self.conf().startswith(SLATES_GREETD), "Slate's config was changed, not added to")
+        self.assertEqual(self.conf().count('service = "slate-greetd"'), 1)
+        self.assertEqual(self.conf().count("[general]"), 1)
+
+    def test_into_a_general_of_its_own(self):
+        with open(self.greetd_conf, "w") as f:
+            f.write(SLATES_GREETD + "\n[general]\nrunfile = \"/run/greetd.run\"\n")
+        self.installed("pam_howdy.so")
+        self.assertEqual(self.go("login-enable", "face")[0], 0)
+        self.assertEqual(self.conf().count("[general]"), 1, "a second [general] breaks greetd's config")
+        self.assertIn('[general]\nservice = "slate-greetd"', self.conf())
+
+    def test_the_last_off_leaves_greetds_own(self):
+        """greetd goes on using the service it started with: the file stays, as greetd's own."""
+        self.installed("pam_howdy.so")
+        self.go("login-enable", "face")
+        self.assertEqual(self.go("login-disable", "face")[0], 0)
+        self.assertEqual([l.split()[-1] for l in self.login_lines()], ["pam_nologin.so", "greetd", "greetd", "greetd", "greetd"])
+        self.assertEqual(self.go("login-status")[1], "")
+
+    def test_without_greetds_own_service_logins(self):
+        os.remove(os.path.join(self.pamd, "greetd"))
+        self.installed("pam_howdy.so")
+        self.go("login-enable", "face")
+        self.assertIn("auth include login", [" ".join(l.split()) for l in self.login_lines()])
+
+    def test_only_slates_login_screen(self):
+        """Another greeter's greetd config (or none) is left alone, and nothing's written."""
+        self.installed("pam_howdy.so")
+        for conf in ('[default_session]\ncommand = "tuigreet"\n', None):
+            with self.subTest(conf=conf):
+                if conf is None:
+                    os.remove(self.greetd_conf)
+                else:
+                    with open(self.greetd_conf, "w") as f:
+                        f.write(conf)
+                code, out = self.go("login-enable", "face")
+                self.assertEqual(code, 4, out)
+                self.assertFalse(os.path.exists(self.login_file))
+                if conf:
+                    self.assertEqual(self.conf(), conf)
+
+    def test_not_installed(self):
+        code, out = self.go("login-enable", "key")
+        self.assertEqual(code, 3, out)
+        self.assertFalse(os.path.exists(self.login_file))
+
+    def test_remove_leaves_greetds_own(self):
+        self.installed("pam_howdy.so")
+        self.go("login-enable", "face")
+        self.assertEqual(self.go("remove")[0], 0)
+        self.assertEqual(self.go("login-status")[1], "")
+        self.assertTrue(os.path.exists(self.login_file), "greetd may still be using it")
+
+
+class GreeterInstallKeepsIt(Case):
+    """slate-greeter-install writes greetd's config afresh (an update does too): with Slate's own
+    login service there, the new config still uses it. (The installer's real run writes /etc, so
+    this checks the step itself, run on its own against a scratch config.)"""
+    scratch = True
+
+    def test_still_uses_slates_service(self):
+        src = slate.read("shell", "bin", "slate-greeter-install")
+        start = src.index("# With a face, a finger or a key set up for the login screen")
+        step = src[start:src.index("fi\n", start) + 3]
+        conf = os.path.join(self.h.dir, "config.toml")
+        pamd = os.path.join(self.h.dir, "pam.d")
+        os.makedirs(pamd)
+        script = step.replace("/etc/pam.d/slate-greetd", os.path.join(pamd, "slate-greetd"))
+        for there in (False, True):
+            with self.subTest(there=there):
+                with open(conf, "w") as f:
+                    f.write(SLATES_GREETD)
+                if there:
+                    open(os.path.join(pamd, "slate-greetd"), "w").close()
+                code, out = run(["bash", "-c", script], env=dict(os.environ, CONF=conf))
+                self.assertEqual(code, 0, out)
+                with open(conf) as f:
+                    self.assertEqual('service = "slate-greetd"' in f.read(), there)

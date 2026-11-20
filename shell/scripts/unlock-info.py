@@ -6,7 +6,8 @@ takes now (Slate's own PAM service, /etc/pam.d/slate-lock, which anyone can read
   unlock-info.py            all of it, as JSON:
       {"howdy": bool, "cameras": [{"path", "name", "ir"}], "methods": ["face", …],
        "fingerprint": {"fprintd": bool, "reader": "<its name>" or "", "fingers": ["right-index-finger", …]},
-       "keys": {"u2f": bool, "keys": ["<handle>", …]}}
+       "keys": {"u2f": bool, "keys": ["<handle>", …]},
+       "loginScreen": bool, "loginMethods": ["face", …]}
 
 A camera is asked which picture formats it gives (V4L2's VIDIOC_ENUM_FMT, as v4l2-ctl
 --list-formats does), which doesn't turn it on. Infrared ones give only greyscale: Howdy is
@@ -131,17 +132,28 @@ def keys():
     return out
 
 
-def methods():
-    """The ways in Slate's lock screen takes now, as slate-unlock wrote them."""
+def methods(service="slate-lock"):
+    """The ways in Slate's lock screen (or, given slate-greetd, its login screen) takes now, as
+    slate-unlock wrote them."""
     try:
-        with open(at("/etc/pam.d/slate-lock")) as f:
+        with open(at("/etc/pam.d/" + service)) as f:
             return [l[len("# slate-unlock: "):].strip() for l in f if l.startswith("# slate-unlock: ")]
     except OSError:
         return []
 
 
+def login_screen():
+    """Slate's login screen is greetd's (slate-greeter-install wrote greetd's config)."""
+    try:
+        with open(at("/etc/greetd/config.toml")) as f:
+            return f.readline().startswith("# Slate login screen")
+    except OSError:
+        return False
+
+
 def main():
-    print(json.dumps({"howdy": howdy(), "cameras": cameras(), "methods": methods(), "fingerprint": fingerprint(), "keys": keys()}))
+    print(json.dumps({"howdy": howdy(), "cameras": cameras(), "methods": methods(), "fingerprint": fingerprint(), "keys": keys(),
+                      "loginScreen": login_screen(), "loginMethods": methods("slate-greetd")}))
     return 0
 
 

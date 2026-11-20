@@ -326,3 +326,43 @@ class SecurityKeys(Fingerprint):
         self.assertEqual(self.ipc("test", "settingsToggle", "Unlock with your security key"), "pressed")
         self.wait(lambda st: st["settings"]["page"]["said"].startswith("On"), "it to say it's on")
         self.assertEqual(json.loads(self.pretend("unlockAsked")), ["enable", "key"])
+
+
+class OnTheLoginScreen(UnlockPage):
+    """Each way in can be turned on for Slate's login screen too (slate-unlock login-enable): only
+    with Slate's login screen installed, and once the method's set up."""
+    # (UnlockPage's own tests run in their own class)
+    test_without_howdy_it_says_what_to_get = test_the_infrared_camera_is_chosen = None
+    test_adding_your_face_asks_first_then_lists_it = test_faces_added_before_are_shown_when_asked = None
+    test_removing_one_asks_first = test_turning_it_on = test_a_cancelled_password_says_nothing = test_try_it = None
+
+    def show(self, login_screen, faces=("Me",), login_methods=()):
+        if faces:
+            os.makedirs(os.path.dirname(self.faces_file), exist_ok=True)
+            with open(self.faces_file, "w") as f:
+                json.dump({"camera": "", "faces": [{"id": i + 1, "label": l} for i, l in enumerate(faces)]}, f)
+        self.ipc("settings", "page", "unlock")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "unlock", "Face, Fingerprint & Keys")
+        self.ipc("test", "settingsPoll", "unlock", json.dumps({"howdy": True, "cameras": BRIO, "methods": ["face"],
+                                                                "loginScreen": login_screen, "loginMethods": list(login_methods)}))
+        return self.wait(lambda st: st["settings"]["page"] and st["settings"]["page"]["faces"] == list(faces)
+                         and st["settings"]["page"]["loginMethods"] == list(login_methods), "the page to look")
+
+    def test_needs_slates_login_screen(self):
+        self.show(login_screen=False)
+        self.assertEqual(self.waiting().get("Face on the login screen"), "Needs Slate's login screen to be installed")
+        self.assertEqual(self.ipc("test", "settingsToggle", "Face on the login screen"), "none")
+
+    def test_needs_the_method_set_up(self):
+        self.show(login_screen=True, faces=())
+        self.assertEqual(self.waiting().get("Face on the login screen"), "Needs your face to be added")
+
+    def test_turning_it_on_and_off(self):
+        self.show(login_screen=True)
+        self.assertEqual(self.ipc("test", "settingsToggle", "Face on the login screen"), "pressed")
+        self.wait(lambda st: "next login" in st["settings"]["page"]["said"], "it to say when")
+        self.assertEqual(json.loads(self.pretend("unlockAsked")), ["login-enable", "face"])
+        self.show(login_screen=True, login_methods=["face"])
+        self.ipc("test", "settingsToggle", "Face on the login screen")
+        self.wait(lambda st: st["settings"]["page"]["said"].startswith("Off"), "it to say it's off")
+        self.assertEqual(json.loads(self.pretend("unlockAsked")), ["login-disable", "face"])

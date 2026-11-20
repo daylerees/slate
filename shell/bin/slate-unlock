@@ -27,6 +27,12 @@
 #                                   the key); then your keys, as key-list
 #   slate-unlock key-remove <n>     remove your nth key; then your keys, as key-list
 #   slate-unlock key-list           your keys, "<n>,<handle>" a line (anyone can read the file)
+#   slate-unlock login-enable <method>
+#   slate-unlock login-disable <method>
+#                                   the same on Slate's login screen: /etc/pam.d/slate-greetd,
+#                                   which Slate's greetd config uses (only Slate's: exits 4 when
+#                                   greetd's config isn't the one Slate's login screen wrote)
+#   slate-unlock login-status       the methods Slate's login screen takes, one a line
 #   slate-unlock --table            each method and the PAM modules it can be (the tests)
 #
 # Faces are Howdy's (Howdy Next 3): kept in /etc/howdy, root's, so adding, removing and even
@@ -42,6 +48,14 @@
 # lock screen asks for that through `login` itself, so a lost key or a camera that can't see
 # you never locks you out. A method's line comes from a fixed list of root-owned module paths,
 # and only once its module is installed. Exits 3 when a method's module isn't installed.
+#
+# The login screen's service is greetd's own with the methods put first: nologin's check (no
+# logins while the computer's shutting down), then each method "sufficient", then everything in
+# greetd's own service (the password and the rest: account, session). greetd has one
+# conversation, so the methods run before the password and it comes once they give up; the
+# fingerprint's tries are kept short there. Once written, the file is only ever rewritten, never
+# taken away: greetd reads which service to use as it starts, and goes on using it until the
+# computer restarts, so with no methods it's simply greetd's own again.
 set -uo pipefail
 umask 022
 
@@ -49,6 +63,8 @@ TARGET_DIR=/usr/local/libexec/slate
 PAMD=/etc/pam.d
 FILE=$PAMD/slate-lock
 KEYS=/etc/slate/u2f_keys            # security keys (pam_u2f's authfile)
+LOGIN_FILE=$PAMD/slate-greetd       # Slate's login screen's service (greetd's own, methods first)
+GREETD_CONF=/etc/greetd/config.toml
 MARK="# slate-unlock:"
 METHODS="face fingerprint key"
 # Where each method's PAM module can be, first found wins: "<module file> <line's module part>"
@@ -73,6 +89,10 @@ if [ "${1:-}" = --table ]; then
 fi
 if [ "${1:-}" = status ]; then
     [ -f "$FILE" ] && [ ! -L "$FILE" ] && sed -n "s/^$MARK //p" "$FILE"
+    exit 0
+fi
+if [ "${1:-}" = login-status ]; then
+    [ -f "$LOGIN_FILE" ] && [ ! -L "$LOGIN_FILE" ] && sed -n "s/^$MARK //p" "$LOGIN_FILE"
     exit 0
 fi
 
@@ -192,6 +212,55 @@ line_for() {
     done < <(candidates "$1")
     return 1
 }
+# ---- The login screen ------------------------------------------------------------------------
+login_current() { [ -f "$LOGIN_FILE" ] && sed -n "s/^$MARK //p" "$LOGIN_FILE" | while read -r m _; do known "$m" && echo "$m"; done; }
+# A method's line for the login screen: the lock screen's, the fingerprint given one short try
+# (the password waits behind it)
+login_line_for() {
+    local l
+    l=$(line_for "$1") || return 1
+    [ "$1" = fingerprint ] && l="$l max-tries=1 timeout=10"
+    echo "$l"
+}
+# greetd's config is Slate's login screen's (slate-greeter-install wrote it)
+slates_greetd() { [ -f "$GREETD_CONF" ] && [ ! -L "$GREETD_CONF" ] && head -1 "$GREETD_CONF" | grep -q '^# Slate login screen'; }
+write_login() {
+    local m tmp base=login
+    [ -f "$PAMD/greetd" ] && base=greetd
+    tmp=$(mktemp "$PAMD/.slate-greetd.XXXXXX") || return 1
+    {
+        echo "#%PAM-1.0"
+        echo "# Slate's login screen: greetd's own service ($base), with the ways in that are on put"
+        echo "# first. Written by Slate (slate-unlock, from Settings → Security); with none on, it's"
+        echo "# greetd's own. The password always works: it comes once these give up."
+        echo "auth       requisite    pam_nologin.so"
+        for m in $METHODS; do
+            case " $* " in *" $m "*) ;; *) continue ;; esac
+            echo "$MARK $m"
+            login_line_for "$m" || { rm -f "$tmp"; echo "slate-unlock: $m isn't installed" >&2; return 3; }
+        done
+        echo "auth       include      $base"
+        echo "account    include      $base"
+        echo "password   include      $base"
+        echo "session    include      $base"
+    } > "$tmp" || { rm -f "$tmp"; return 1; }
+    chown root:root "$tmp" && chmod 0644 "$tmp" && mv -f "$tmp" "$LOGIN_FILE" || { rm -f "$tmp"; return 1; }
+}
+# Slate's greetd config uses it (once the file's there, so greetd never names a service that
+# isn't): a [general] service line, added once
+point_greetd() {
+    local tmp
+    grep -q '^service[[:space:]]*=[[:space:]]*"slate-greetd"' "$GREETD_CONF" && return 0
+    tmp=$(mktemp "$(dirname "$GREETD_CONF")/.config.toml.XXXXXX") || return 1
+    if grep -q '^\[general\]' "$GREETD_CONF"; then
+        # (a [general] of its own already: the line goes in it, as a second would break the file)
+        sed '/^\[general\]/a service = "slate-greetd"' "$GREETD_CONF" > "$tmp"
+    else
+        { cat "$GREETD_CONF"; printf '\n[general]\nservice = "slate-greetd"\n'; } > "$tmp"
+    fi
+    chmod 0644 "$tmp" && mv -f "$tmp" "$GREETD_CONF" || { rm -f "$tmp"; return 1; }
+}
+
 # Write the file for these methods (none: take it away), all at once
 write() {
     local m tmp
@@ -227,6 +296,22 @@ case "${1:-}" in
         mapfile -t on < <(printf '%s\n' "${on[@]}" | grep -v '^$' | sort -u)
         write "${on[@]}"
         exit $? ;;
+    login-enable|login-disable)
+        [ "$#" -eq 2 ] || { echo "slate-unlock: $1 takes one method ($METHODS)" >&2; exit 1; }
+        known "$2" || { echo "slate-unlock: no method called $2 ($METHODS)" >&2; exit 1; }
+        slates_greetd || { echo "slate-unlock: Slate's login screen isn't installed" >&2; exit 4; }
+        if [ "$1" = login-enable ]; then
+            line_for "$2" >/dev/null || { echo "slate-unlock: $2 isn't installed" >&2; exit 3; }
+            mapfile -t on < <(login_current; echo "$2")
+        else
+            mapfile -t on < <(login_current | grep -vx "$2")
+        fi
+        mapfile -t on < <(printf '%s\n' "${on[@]}" | grep -v '^$' | sort -u)
+        [ ! -L "$LOGIN_FILE" ] && { [ ! -e "$LOGIN_FILE" ] || [ -f "$LOGIN_FILE" ]; } || {
+            echo "slate-unlock: $LOGIN_FILE isn't a plain file: not touching it" >&2; exit 1; }
+        write_login "${on[@]}" || exit $?
+        point_greetd
+        exit $? ;;
     face-camera|face-remove)
         [ "$#" -eq 2 ] || { echo "slate-unlock: $1 takes one more thing" >&2; exit 1; }
         face "$1" "$2"
@@ -250,6 +335,8 @@ case "${1:-}" in
     remove)
         [ "$#" -eq 1 ] || { echo "slate-unlock: remove takes nothing else" >&2; exit 1; }
         write || exit $?
+        # (the login screen's back to greetd's own: the file stays, as greetd may be using it)
+        if [ -f "$LOGIN_FILE" ] && [ ! -L "$LOGIN_FILE" ]; then write_login || exit $?; fi
         # (Slate's list of security keys too, and its folder once empty)
         if [ -f "$KEYS" ] && [ ! -L "$KEYS" ]; then rm -f "$KEYS"; fi
         rmdir "$(dirname "$KEYS")" 2>/dev/null

@@ -87,7 +87,8 @@ class UnlockInfo(Case):
         self.assertEqual(code, 0, out)
         self.assertEqual(json.loads(out), {"howdy": False, "cameras": [], "methods": [],
                                            "fingerprint": {"fprintd": False, "reader": "", "fingers": []},
-                                           "keys": {"u2f": False, "keys": []}})
+                                           "keys": {"u2f": False, "keys": []},
+                                           "loginScreen": False, "loginMethods": []})
 
     # fprintd-list's answers, as fprintd 1.94 gives them
     LISTED = ("found 1 devices\nDevice at /net/reactivated/Fprint/Device/0\nUsing device /net/reactivated/Fprint/Device/0\n"
@@ -140,3 +141,13 @@ class UnlockInfo(Case):
         self.addCleanup(os.environ.__setitem__, "PATH", os.environ["PATH"])
         os.environ["PATH"] = d + ":" + os.environ["PATH"]
         self.assertTrue(self.mod.keys()["u2f"])
+
+    def test_the_login_screen(self):
+        """Slate's login screen (greetd's config is Slate's), and the ways in it takes."""
+        self.assertFalse(self.mod.login_screen())
+        self.put("/etc/greetd/config.toml", '[default_session]\ncommand = "tuigreet"\n')
+        self.assertFalse(self.mod.login_screen(), "another greeter's")
+        self.put("/etc/greetd/config.toml", "# Slate login screen (set up by slate-greeter-install)\n[terminal]\n")
+        self.assertTrue(self.mod.login_screen())
+        self.put("/etc/pam.d/slate-greetd", "#%PAM-1.0\nauth requisite pam_nologin.so\n# slate-unlock: face\nauth sufficient pam_howdy.so\n")
+        self.assertEqual(self.mod.methods("slate-greetd"), ["face"])
