@@ -605,7 +605,7 @@ PanelWindow {
     // ---- For the tests -------------------------------------------------------
     function testState() {
         return {
-            open: shown, visible: visible, path: path, index: index, count: files.length, web: web, openShown: openButton.visible, closeShown: card.header ? closeButton.visible : root.view === "details",
+            open: shown, visible: visible, keysReady: keysReady, path: path, index: index, count: files.length, web: web, openShown: openButton.visible, closeShown: card.header ? closeButton.visible : root.view === "details",
             arrowsShown: card.header && counter.visible,
             arrows: counter.visible ? [Math.round(prevButton.mapToItem(card, 0, 0).x), Math.round(nextButton.mapToItem(card, 0, 0).x)] : [],
             kind: kind, view: view, note: note, details: details,

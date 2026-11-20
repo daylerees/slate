@@ -41,7 +41,10 @@ class QuickLook(LiveCase):
         # (a text file's words come in a line after its details, which already make the view
         # "text": waited for too, or code and cut were now and then read before they'd arrived)
         self.ipc("quicklook", "open", path)
+        # (and ready for keys: it takes the keyboard a moment after it shows, and a key pressed
+        # before then went nowhere)
         return self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["path"] == path
+                         and st["quicklook"]["keysReady"]
                          and st["quicklook"]["view"] != "loading"
                          and (st["quicklook"]["view"] != "text" or st["quicklook"]["textLength"] > 0),
                          f"Quick Look on {os.path.basename(path)}")["quicklook"]
@@ -139,11 +142,21 @@ class QuickLook(LiveCase):
     def test_space_and_escape_close_it(self):
         p = self.file("Documents", "close me.txt", data=b"hello\n")
         self.look(p)
-        self.key("-k", "space")
-        self.closed("Space to close it")
+        self.press_until("space", lambda st: not st["quicklook"]["open"], "Space to close it")
         self.look(p)
-        self.key("-k", "Escape")
-        self.closed("Escape to close it")
+        self.press_until("Escape", lambda st: not st["quicklook"]["open"], "Escape to close it")
+
+    def press_until(self, key, check, what, tries=5):
+        """Press a key until check(state): Hyprland hands Quick Look the keyboard a moment after
+        it asks, and a key pressed in between went nowhere (a full run of the tests side by side
+        made that moment long enough to miss now and then). Still fails if no press ever does."""
+        for _ in range(tries):
+            self.key("-k", key)
+            try:
+                return self.wait(check, what, timeout=1.5)
+            except AssertionError:
+                continue
+        return self.wait(check, what, timeout=1)
 
     # ---- From the launcher ------------------------------------------------------------------
 
