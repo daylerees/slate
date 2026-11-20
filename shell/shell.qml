@@ -602,7 +602,9 @@ ShellRoot {
                 welcome: { built: welcome.built, open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps, newHere: welcome.newHere },
                 fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
                 notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.quiet, dndHand: notifs.dnd, dndWhy: notifs.autoWhy, dndSays: notifs.quietWhy, quietHours: notifs.quietHours, toasts: notifs.toastsShowing,
-                                 latest: notifs.history.length > 0 ? notifs.history[0].summary : "", toast: notifs.toastLook() },
+                                 latest: notifs.history.length > 0 ? notifs.history[0].summary : "",
+                                 // (the last few, newest first: one that arrives just after another hides it from latest)
+                                 recent: notifs.history.slice(0, 5).map(n => n.summary), toast: notifs.toastLook() },
                 dock: win.testState(),
                 tray: SystemTray.items.values.map(i => i.id),
                 // The lists that keep their rows: rows made in each so far, the tray's icons made and

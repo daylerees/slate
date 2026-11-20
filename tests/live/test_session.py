@@ -196,8 +196,13 @@ class YourQml(LiveCase):
         self.assertEqual(made_as, self.s.state()["configMadeAs"], "your shell.qml was given a copy of Config of its own")
         with self.subTest("a mistake"):
             save("import QtQuick\nScope { this is not qml\n")
-            self.wait(lambda st: st["notifications"]["latest"] == "Slate couldn't load your shell.qml",
-                      "the notice of the mistake", timeout=40)
+            # (among the last few, not only the latest: another arriving just after it, as Slate
+            # restarts, hid it once in a full run. What came instead is in the failure)
+            try:
+                self.wait(lambda st: "Slate couldn't load your shell.qml" in st["notifications"]["recent"],
+                          "the notice of the mistake", timeout=40)
+            except AssertionError:
+                self.fail(f"no notice of the mistake; the latest were {self.s.state()['notifications']['recent']}")
 
 
 class SomeoneNew(LiveCase):
