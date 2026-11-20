@@ -40,7 +40,7 @@ local function note(...) print(table.concat({ ... }, "\t")) end
 MONITORS = {}               -- what hl.get_monitors() gives
 local events, timers = {}, {}
 hl = {
-    monitor = function(spec) note("MONITOR", spec.output, spec.mode) end,
+    monitor = function(spec) note("MONITOR", spec.output, spec.disabled and "off" or spec.mode) end,
     get_monitors = function() return MONITORS end,
     on = function(event, fn) events[event] = events[event] or {}; table.insert(events[event], fn) end,
     timer = function(fn, opts) table.insert(timers, fn); return {} end,
@@ -91,10 +91,19 @@ class MonitorsLua(Case):
         with open(os.path.join(d, "displays.lua"), "w") as f:
             f.write(lua)
 
-    def do(self, case, before=""):
+    def vkms(self, *outputs):
+        """vkms's screens in a stand-in /sys (or none): where monitors.lua is told to look."""
+        root = os.path.join(self.h.dir, "sys")
+        for out in outputs:
+            os.makedirs(os.path.join(root, "faux", "vkms", "drm", "card0", f"card0-{out}"), exist_ok=True)
+        return f'SLATE_VKMS_DIRS = "{root}/faux/vkms/drm/card*/card*-*"\n'
+
+    def do(self, case, before="", tests=False):
         """Load monitors.lua (with `before` run first: the monitors already there), then case:
         the rules made after Slate's own default one, as (output, mode)."""
-        env = dict(self.h.env, STUB_CONFIG=MONITORS, STUB_BEFORE=before, STUB_CASE=case)
+        if "SLATE_VKMS_DIRS" not in before:
+            before = self.vkms() + before            # (never this computer's own /sys)
+        env = dict(self.h.env, STUB_CONFIG=MONITORS, STUB_BEFORE=before, STUB_CASE=case, SLATE_TEST="1" if tests else "")
         code, out = run([self.lua, self.stub], env=env)
         self.assertEqual(code, 0, out)
         lines = [line.split("\t") for line in out.splitlines()]
@@ -105,7 +114,7 @@ class MonitorsLua(Case):
 
     def best(self, lua_modes):
         """slateBestModes for a list of modes, as Python strings."""
-        env = dict(self.h.env, STUB_CONFIG=MONITORS, STUB_BEFORE="",
+        env = dict(self.h.env, STUB_CONFIG=MONITORS, STUB_BEFORE=self.vkms(),
                    STUB_CASE="for _, m in ipairs(slateBestModes(%s)) do print('BEST\\t' .. m) end" % lua_modes)
         code, out = run([self.lua, self.stub], env=env)
         self.assertEqual(code, 0, out)
@@ -220,3 +229,36 @@ class MonitorsLua(Case):
             happen("monitor.added", v)
         ''', before=f'screen("Virtual-2", "", {vkms}, "1024x768@60.00")')
         self.assertEqual(rules, [])
+
+    # ---- The tests' screen (vkms) -------------------------------------------------------
+
+    def test_the_tests_screen_is_off(self):
+        """Slate's live tests need vkms loaded on this computer, and its screen was turned on and
+        drawn on your own desktop, unseen: Hyprland stayed busy and the desktop lagged (Bug,
+        2026-11-20). It's off as the config loads."""
+        self.assertEqual(self.do("", before=self.vkms("Virtual-1")), [("Virtual-1", "off")])
+
+    def test_left_on_in_the_tests_own_session(self):
+        """The tests turn on the one they use themselves (tests/lib/session.py)."""
+        self.assertEqual(self.do("", before=self.vkms("Virtual-1"), tests=True), [])
+
+    def test_a_virtual_machines_screen_stays_on(self):
+        """A virtual machine's screen is "Virtual-1" too, but isn't vkms's: left alone."""
+        vm = modes("1280x800@60.00", "1920x1080@60.00")
+        rules = self.do('local v = screen("Virtual-1", "", %s, "1280x800@60.00"); happen("monitor.added", v)' % vm)
+        self.assertEqual(rules, [])
+
+    def test_loaded_while_you_are_logged_in(self):
+        """vkms loaded after login: its screen goes off as it arrives."""
+        vk = modes("1024x768@60.00", "4096x2160@60.00")
+        rules = self.do('local v = screen("Virtual-1", "", %s, "1024x768@60.00"); happen("monitor.added", v)' % vk,
+                        before=self.vkms("Virtual-1"))
+        self.assertEqual(rules, [("Virtual-1", "off"), ("Virtual-1", "off")])
+
+    def test_your_own_rule_for_it_wins(self):
+        """A rule of your own for it (to use it on purpose) is left as it is when it arrives."""
+        vk = modes("1024x768@60.00")
+        rules = self.do('yours({ output = "Virtual-1", mode = "1024x768@60.00" }); '
+                        'local v = screen("Virtual-1", "", %s, "1024x768@60.00"); happen("monitor.added", v)' % vk,
+                        before=self.vkms("Virtual-1"))
+        self.assertEqual(rules, [("Virtual-1", "off"), ("Virtual-1", "1024x768@60.00")])

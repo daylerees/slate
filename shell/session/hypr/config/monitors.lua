@@ -12,6 +12,28 @@ hl.monitor({
     scale     = "auto",
 })
 
+-- ---- The tests' screen -----------------------------------------------------------
+-- Slate's live tests need the vkms kernel module loaded on this computer, and Hyprland sees its
+-- screen too ("Virtual-1"): turned on and drawn though nobody could see it, it kept Hyprland
+-- busy and the desktop lagged. So its screens are off here (the tests' own session turns on the
+-- one it uses). Found by the vkms device in /sys, not by name: a virtual machine's screen is
+-- called "Virtual-1" too. (SLATE_VKMS_DIRS: the tests' stand-in for where to look)
+function slateTestScreens()
+    local out = {}
+    local p = io.popen("ls -d " .. (SLATE_VKMS_DIRS or "/sys/devices/faux/vkms/drm/card*/card*-* /sys/devices/platform/vkms/drm/card*/card*-*") .. " 2>/dev/null")
+    if not p then return out end
+    for line in p:lines() do
+        local name = line:match("/card%d+%-([^/]+)$")
+        if name then out[name] = true end
+    end
+    p:close()
+    return out
+end
+local inTests = os.getenv("SLATE_TEST") == "1"
+if not inTests then
+    for name in pairs(slateTestScreens()) do hl.monitor({ output = name, disabled = true }) end
+end
+
 -- ---- Each monitor's best mode ------------------------------------------------------
 -- A monitor's "preferred" mode is the one it recommends, which isn't always its best: some
 -- recommend a smaller, slower one (an Odyssey G9 says 3840x1080 at 120 Hz, though it shows
@@ -147,6 +169,13 @@ end
 -- Monitors that arrive later (at login, or plugged in) get theirs as they come, by then
 -- knowing what your own monitors.lua chose
 local function arrived(m)
+    -- (vkms loaded while you're logged in: its screen arrives now, and goes off now)
+    if not inTests then
+        local test = slateTestScreens()
+        for _, now in ipairs(hl.get_monitors() or {}) do
+            if test[now.name] and now.enabled ~= false and not isChosen(now) then SLATE_HL_MONITOR({ output = now.name, disabled = true }) end
+        end
+    end
     if type(m) == "table" and m.name then
         for _, now in ipairs(hl.get_monitors() or {}) do if now.name == m.name then giveBest(now, true) end end
     else

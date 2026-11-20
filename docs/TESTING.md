@@ -114,9 +114,13 @@ echo vkms | sudo tee /etc/modules-load.d/slate-tests.conf
 It isn't used as a screen: Hyprland draws in software (llvmpipe) to a headless output inside
 the container, which is why screenshots are the same on every machine. (The container shares
 your `/sys`, so `tests/run` hides `/sys/class/leds` from it: your keyboard's lights, Caps Lock
-among them, would otherwise show on the lock and login screens.) Your own Hyprland may
-notice the virtual card appear; it doesn't put anything on it. `sudo modprobe -r vkms` takes
-it away again. GitHub's runners load it the same way. One card is enough for every session
+among them, would otherwise show on the lock and login screens.) Your own Hyprland sees
+the virtual card too, as a screen called `Virtual-1`: loaded before you log in, Hyprland would
+turn it on and draw to it, unseen, which keeps it busy and makes the desktop lag. Slate's
+Hyprland config turns vkms's screens off (`monitors.lua`; found by the vkms device in `/sys`,
+so a virtual machine's own `Virtual-1` is left alone), as they arrive too, and the tests'
+session turns on the one it uses. A rule of your own for it in `~/.config/slate/hypr/monitors.lua`
+still wins. `sudo modprobe -r vkms` takes it away again. GitHub's runners load it the same way. One card is enough for every session
 of a run: none of them needs it to itself.
 
 ## When a screenshot changes
