@@ -1051,6 +1051,19 @@ def discord_css(c):
             ":root, .theme-dark, .theme-light, .visual-refresh {\n%s\n}\n" % (GEN, body))
 
 DISCORDS = ["vesktop", "Vencord", "equibop", "Equicord", "legcord"]
+# Discords with Vencord built in, by command and Flathub id. They make their config folder (one
+# of DISCORDS) the first time they run, so until then they count as installed by these: Settings
+# said "Not installed" for a Vesktop you'd just installed and not yet opened
+VENCORD_CLIENTS = {"vesktop": "dev.vencord.Vesktop", "equibop": "org.equicord.equibop", "legcord": "app.legcord.Legcord"}
+
+
+def vencord_client_installed():
+    """A Discord with Vencord built in is installed: its command, or its Flatpak (yours, or the
+    system's; only yours when trying things against a scratch home, SLATE_THEME_TEST)"""
+    system = not os.environ.get("SLATE_THEME_TEST")
+    bases = [os.path.join(DATA, "flatpak", "app")] + (["/var/lib/flatpak/app"] if system else [])
+    return any(shutil.which(cmd) or any(os.path.isdir(os.path.join(b, fid)) for b in bases)
+               for cmd, fid in VENCORD_CLIENTS.items())
 
 
 def discord_roots():
@@ -1123,7 +1136,7 @@ def vencord_restore():
         NOTES.append(("restored" if ok else "lost", "discord", "Discord"))
 
 @app("discord", "Discord (Vencord)", "Vesktop, Vencord and Equicord, Flatpak builds too: a Slate theme, switched on for you, with Vencord put back after Discord updates",
-     lambda: bool(discord_roots()))
+     lambda: bool(discord_roots()) or vencord_client_installed())
 def discord(ctx):
     css = discord_css(ctx.c)
     for root in discord_roots():
@@ -1135,7 +1148,22 @@ def discord(ctx):
 
 @stale("discord")
 def discord_stale():
-    return vencord_used() and bool(vencord_gone())
+    if vencord_used() and vencord_gone():
+        return True
+    # A Vencord folder without Slate's theme, or with it not switched on: one that's appeared
+    # since (Vesktop opened for the first time, after its theme was switched on), or reset
+    for root in discord_roots():
+        if not os.path.isfile(os.path.join(root, "themes", "slate.theme.css")):
+            return True
+        settings = first_existing(os.path.join(root, "settings", "settings.json"), os.path.join(root, "settings.json"))
+        if settings:
+            try:
+                with open(settings) as f:
+                    if "slate.theme.css" not in (json.load(f).get("enabledThemes") or []):
+                        return True
+            except (OSError, ValueError, AttributeError):
+                pass
+    return False
 
 
 def spicetify():

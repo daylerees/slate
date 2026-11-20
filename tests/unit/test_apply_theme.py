@@ -401,7 +401,8 @@ class Apps(Case):
         """Nothing installed but what every desktop has; then a program, a config folder and a
         Firefox profile each count."""
         s = Stubs(self.h)
-        env = dict(s.env, PATH=s.dir)
+        # (SLATE_THEME_TEST: only the scratch home's own Flatpaks, never this computer's)
+        env = dict(s.env, PATH=s.dir, SLATE_THEME_TEST="1")
         found = lambda: sorted(a["id"] for a in self.apps(env) if a["installed"])
         self.assertEqual(found(), ["gtk", "kde"])
         s.add("kitty")
@@ -449,6 +450,52 @@ class DiscordFlatpak(ApplyTheme):
         code, out = run([sys.executable, SCRIPT, "--apps"], env=self.env)
         self.assertEqual(code, 0, out)
         self.assertTrue(next(a for a in json.loads(out) if a["id"] == "discord")["installed"])
+
+
+class VencordClients(ApplyTheme):
+    """Vesktop, Equibop and Legcord have Vencord built in, and make their config folder only the
+    first time they run: Settings said "Not installed" for a Vesktop just installed from
+    Software and not yet opened (Bug, 2026-11-20). They count as installed by their Flatpak or
+    command, and a theme switched on before then goes in once the folder's there."""
+
+    def discord(self, env=None):
+        code, out = run([sys.executable, SCRIPT, "--apps"], env=env or self.env)
+        self.assertEqual(code, 0, out)
+        return next(a for a in json.loads(out) if a["id"] == "discord")
+
+    def stale(self):
+        code, out = run([sys.executable, SCRIPT, "--stale", json.dumps(dict(COLOURS, on=["discord"]))], env=self.env)
+        self.assertEqual(code, 0, out)
+        return out.split()
+
+    def test_a_flatpak_not_yet_opened(self):
+        for fid in ("dev.vencord.Vesktop", "org.equicord.equibop", "app.legcord.Legcord"):
+            with self.subTest(fid):
+                app = self.h(".local/share/flatpak/app", fid)
+                os.makedirs(app)
+                self.assertTrue(self.discord()["installed"])
+                os.rmdir(app)
+
+    def test_a_command_not_yet_opened(self):
+        self.s.add("vesktop")
+        self.assertTrue(self.discord()["installed"])
+
+    def test_discord_alone_still_needs_vencord(self):
+        os.makedirs(self.h(".local/share/flatpak/app/com.discordapp.Discord"))
+        self.assertFalse(self.discord()["installed"])
+
+    def test_themed_once_it_has_been_opened(self):
+        base = ".var/app/dev.vencord.Vesktop/config/vesktop"
+        os.makedirs(self.h(".local/share/flatpak/app/dev.vencord.Vesktop"))
+        self.apply(["discord"])                                   # switched on before its first run
+        self.assertEqual(self.stale(), [], "nothing to put in place yet")
+        self.put({base + "/settings/settings.json": json.dumps({"enabledThemes": []})})     # opened
+        self.assertEqual(self.stale(), ["discord"])
+        self.apply(["discord"])
+        self.assertIn("--background-primary", self.text(base + "/themes/slate.theme.css"))
+        with open(self.h(base + "/settings/settings.json")) as f:
+            self.assertIn("slate.theme.css", json.load(f)["enabledThemes"])
+        self.assertEqual(self.stale(), [])
 
 
 class OtherFlatpaks(ApplyTheme):
@@ -696,9 +743,10 @@ class LostToAnUpdate(ApplyTheme):
     def test_discord_without_vencord_left_alone(self):
         """Vesktop users (Vencord built in) with plain Discord installed too: never patched."""
         self.put({".config/vesktop/settings/settings.json": "{}", self.DISCORD + "/app.asar": "plain discord " * 8000})
-        self.assertEqual(self.stale(["discord"]), [])
         self.assertFalse([l for l in self.apply(["discord"]).splitlines() if l.startswith(("restored", "lost"))])
         self.assertTrue(self.text(self.DISCORD + "/app.asar").startswith("plain discord"))
+        # (and with Vesktop's theme in place, nothing's stale: plain Discord isn't Slate's to patch)
+        self.assertEqual(self.stale(["discord"]), [])
 
 
 class FlatpakAndSnapGtk(ApplyTheme):

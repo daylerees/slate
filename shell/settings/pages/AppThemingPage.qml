@@ -50,6 +50,13 @@ Column {
             command: ["python3", Quickshell.shellPath("scripts/apply-theme.py"), "--apps"]
             stdout: StdioCollector { onStreamFinished: { try { appTheming.apps = JSON.parse(text); } catch (e) {} } }
         }
+        // Asked again whenever you come back to Settings: an app installed meanwhile (from
+        // Software, say) shows as installed without leaving the page and coming back
+        function recheck() { appsQuery.running = false; appsQuery.running = true; }
+        Connections {
+            target: Hyprland
+            function onActiveToplevelChanged() { if (win && win.isFocused()) appTheming.recheck(); }
+        }
         // Installing one (its Install button, after asking): from the distro's own repositories,
         // with your password (bin/slate-system --install); a notification says how it went
         property string installing: ""          // the app's id, while it installs
