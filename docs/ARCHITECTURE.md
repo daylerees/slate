@@ -248,6 +248,9 @@ scripts/camera-watch.py       tells Slate when a camera starts and stops being u
                               /dev/video*), for OSD.qml's indicator
 scripts/auto-brightness.py    Automatic brightness: claims the light sensor (iio-sensor-proxy, D-Bus
                               signals, no polling), eases the screen and keyboard light to the room
+scripts/unlock-info.py        Settings → Face, Fingerprint & Keys, as you: whether Howdy is installed,
+                              the cameras and which are infrared (V4L2's format list, without
+                              turning them on), and the ways in the lock screen takes now
                               with brightnessctl, learns your changes (~/.local/state/slate/
                               auto-brightness.json, 0600); --check says what the computer has
 scripts/display-brightness.py  which displays Settings → Displays can set the brightness of, and how
@@ -370,8 +373,10 @@ bin/slate-firewall            the firewall's switch for ufw (Settings → Securi
 bin/slate-unlock              which of a face, a fingerprint and a security key the lock screen takes:
                               writes /etc/pam.d/slate-lock (Slate's own PAM service, nothing else
                               reads it: each method "sufficient", then pam_deny), from a fixed
-                              list of module paths and only once installed; runs only from
-                              /usr/local/libexec/slate, by slate-system --root
+                              list of module paths and only once installed; adds, lists and
+                              removes the faces of whoever asked (Howdy, only root's own copy),
+                              and sets its camera; runs only from /usr/local/libexec/slate, by
+                              slate-system --root
 bin/slate-system-root         the half of slate-system that runs as root: installs packages and the
                               login session; runs only from /usr/local/libexec/slate, reading that
                               folder's own copy of the package lists

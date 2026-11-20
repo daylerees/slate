@@ -12,7 +12,19 @@
 #   slate-unlock disable <method>   it doesn't any more; with none left the file goes
 #   slate-unlock remove             none at all: the file goes (uninstalling, factory reset)
 #   slate-unlock status             the methods it takes, one a line (anyone can read the file)
+#   slate-unlock face-camera <device>   the camera Howdy looks through (/dev/v4l/by-id/…, …)
+#   slate-unlock face-models        get Howdy's recognition models, when it hasn't any yet
+#   slate-unlock face-add <label> [device]
+#                                   add your face (Howdy looks through the camera): through that
+#                                   camera from now on, when one's given, and with Howdy's models
+#                                   got first if it hasn't any; then your faces, as face-list
+#   slate-unlock face-remove <id>   remove one of your faces; then your faces, as face-list
+#   slate-unlock face-list          your faces, "<id>,<date>,<label>" a line
 #   slate-unlock --table            each method and the PAM modules it can be (the tests)
+#
+# Faces are Howdy's (Howdy Next 3): kept in /etc/howdy, root's, so adding, removing and even
+# listing them is root's to do. Always the faces of whoever asked (pkexec's PKEXEC_UID), never
+# a name given here; Howdy only ever from a root-owned file in a fixed place.
 #
 # The file is only ever these methods, each "sufficient", then pam_deny (nothing else gets in
 # through it), and the account checked as `login` does: the password is never in it, as the
@@ -60,6 +72,63 @@ fi
 [ ! -e "$FILE" ] || [ -f "$FILE" ] || { echo "slate-unlock: $FILE isn't a plain file: not touching it" >&2; exit 1; }
 
 known() { case " $METHODS " in *" $1 "*) return 0 ;; esac; return 1; }
+
+# ---- Faces (Howdy) -------------------------------------------------------------------------
+HOWDY_PATHS="/usr/bin/howdy /usr/local/bin/howdy"
+HOWDY_MODELS=/usr/share/howdy/models
+# Howdy, if it's here: a root-owned program, not writable by anyone else
+howdy_bin() {
+    local h
+    for h in $HOWDY_PATHS; do
+        [ -f "$h" ] && [ ! -L "$h" ] && [ "$(stat -c %u "$h")" = 0 ] && [ -z "$(find "$h" -perm /022)" ] && { echo "$h"; return 0; }
+    done
+    return 1
+}
+# Whose faces: the account that asked (pkexec says), as a name
+asker() {
+    local uid="${PKEXEC_UID:-}"
+    case "$uid" in ''|*[!0-9]*) echo "slate-unlock: faces are changed through pkexec (slate-system --root)" >&2; return 1 ;; esac
+    [ "$uid" -ne 0 ] || { echo "slate-unlock: not root's faces" >&2; return 1; }
+    getent passwd "$uid" | cut -d: -f1 | grep -E '^[a-z_][a-z0-9_.-]*[$]?$'
+}
+# The camera Howdy looks through: a video device, by its stable name or as /dev/videoN, never a
+# link out of /dev
+set_camera() {   # set_camera <howdy> <device>
+    case "$2" in
+        /dev/v4l/by-id/*|/dev/v4l/by-path/*) [[ "$2" =~ ^/dev/v4l/by-(id|path)/[A-Za-z0-9_.:-]+$ ]] || { echo "slate-unlock: not a camera: $2" >&2; return 1; } ;;
+        /dev/video[0-9]|/dev/video[0-9][0-9]) ;;
+        *) echo "slate-unlock: not a camera: $2" >&2; return 1 ;;
+    esac
+    case "$(readlink -f "$2")" in /dev/video[0-9]*) ;; *) echo "slate-unlock: not a camera: $2" >&2; return 1 ;; esac
+    [ -c "$2" ] || { echo "slate-unlock: not a camera: $2" >&2; return 1; }
+    "$1" set device_path "$2"
+}
+# Howdy's recognition models, when it hasn't any (they're large, and fetched from the internet)
+models() { [ -n "$(ls -A "$HOWDY_MODELS" 2>/dev/null)" ] || "$1" download-models; }
+face() {   # face <action> [arg] [arg]
+    local howdy user
+    howdy=$(howdy_bin) || { echo "slate-unlock: Howdy isn't installed" >&2; return 3; }
+    case "$1" in
+        face-camera) set_camera "$howdy" "$2" ;;
+        face-models) models "$howdy" ;;
+        face-add)
+            [[ "$2" =~ ^[A-Za-z0-9][A-Za-z0-9\ _.-]{0,39}$ ]] || { echo "slate-unlock: a face's name is letters, numbers and spaces" >&2; return 1; }
+            user=$(asker) || return 1
+            if [ -n "${3:-}" ]; then set_camera "$howdy" "$3" || return 1; fi
+            models "$howdy" || return 1
+            "$howdy" -U "$user" add --plain -y "$2" || return 1
+            "$howdy" -U "$user" list --plain || true ;;
+        face-remove)
+            [[ "$2" =~ ^[0-9]{1,9}$ ]] || { echo "slate-unlock: not a face's number: $2" >&2; return 1; }
+            user=$(asker) || return 1
+            "$howdy" -U "$user" remove -y "$2" || return 1
+            "$howdy" -U "$user" list --plain || true ;;
+        face-list)
+            user=$(asker) || return 1
+            # (none yet is Howdy's "abort": an empty list here)
+            "$howdy" -U "$user" list --plain || true ;;
+    esac
+}
 # The methods on now, as the file says
 current() { [ -f "$FILE" ] && sed -n "s/^$MARK //p" "$FILE" | while read -r m _; do known "$m" && echo "$m"; done; }
 # A method's line, from the first of its modules that's installed
@@ -105,10 +174,22 @@ case "${1:-}" in
         mapfile -t on < <(printf '%s\n' "${on[@]}" | grep -v '^$' | sort -u)
         write "${on[@]}"
         exit $? ;;
+    face-camera|face-remove)
+        [ "$#" -eq 2 ] || { echo "slate-unlock: $1 takes one more thing" >&2; exit 1; }
+        face "$1" "$2"
+        exit $? ;;
+    face-add)
+        [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || { echo "slate-unlock: face-add takes a name, and a camera if you like" >&2; exit 1; }
+        face "$@"
+        exit $? ;;
+    face-models|face-list)
+        [ "$#" -eq 1 ] || { echo "slate-unlock: $1 takes nothing else" >&2; exit 1; }
+        face "$1"
+        exit $? ;;
     remove)
         [ "$#" -eq 1 ] || { echo "slate-unlock: remove takes nothing else" >&2; exit 1; }
         write
         exit $? ;;
     *)
-        echo "slate-unlock: enable <method>, disable <method>, remove or status" >&2; exit 1 ;;
+        echo "slate-unlock: enable <method>, disable <method>, remove, status or face-…" >&2; exit 1 ;;
 esac

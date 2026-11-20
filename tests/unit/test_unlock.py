@@ -158,3 +158,117 @@ class Unlock(Case):
         self.s.add("id", by_args={"-u": "1000\n", "": "me\n"})
         self.assertEqual(self.go("enable", "face")[0], 1)
         self.assertFalse(os.path.exists(self.file))
+
+
+class Faces(Unlock):
+    """Faces are Howdy's (Howdy Next 3), kept in /etc/howdy, root's: the helper adds, removes and
+    lists them for whoever asked (pkexec's PKEXEC_UID), never a name it's given, through a
+    root-owned howdy in a fixed place, and only with words and numbers it has checked."""
+
+    def setUp(self):
+        super().setUp()
+        self.bin = os.path.join(self.h.dir, "usr-bin")
+        os.makedirs(self.bin)
+        self.howdy = os.path.join(self.bin, "howdy")
+        self.log = os.path.join(self.h.dir, "howdy-asked")
+        with open(self.howdy, "w") as f:
+            f.write(f"""#!/bin/sh
+echo "$*" >> {self.log}
+case "$*" in *"list --plain"*) printf '1,2026-11-20 13:55:00,Me\\n2,2026-11-20 13:56:00,Glasses\\n' ;; esac
+""")
+        os.chmod(self.howdy, 0o755)
+        self.models = os.path.join(self.h.dir, "howdy-models")
+        os.makedirs(self.models)
+        src = slate.read(self.helper)
+        self.assertIn('HOWDY_PATHS="/usr/bin/howdy /usr/local/bin/howdy"', src)
+        src = (src.replace('HOWDY_PATHS="/usr/bin/howdy /usr/local/bin/howdy"', f'HOWDY_PATHS="{self.howdy}"')
+                  .replace("HOWDY_MODELS=/usr/share/howdy/models", f"HOWDY_MODELS={self.models}"))
+        with open(self.helper, "w") as f:
+            f.write(src)
+        self.s.add("stat", stdout="0\n")                      # (howdy is root's, for real)
+        self.s.add("getent", by_args={"1000": "tester:x:1000:1000:Test:/home/tester:/bin/bash\n"})
+        self.asker = {"PKEXEC_UID": "1000"}
+
+    def asked(self):
+        return open(self.log).read().splitlines() if os.path.exists(self.log) else []
+
+    def test_add_list_and_remove_your_own(self):
+        """Each change ends with your faces, so Settings can show them without asking again."""
+        open(os.path.join(self.models, "face.onnx"), "w").close()
+        faces = ["1,2026-11-20 13:55:00,Me", "2,2026-11-20 13:56:00,Glasses"]
+        for args in (("face-add", "Me"), ("face-add", "With glasses"), ("face-remove", "2")):
+            code, out = self.go(*args, env=self.asker)
+            self.assertEqual(code, 0, out)
+            self.assertEqual(out.splitlines()[-2:], faces)
+        code, out = self.go("face-list", env=self.asker)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out.splitlines(), faces)
+        self.assertEqual(self.asked(), ["-U tester add --plain -y Me", "-U tester list --plain",
+                                        "-U tester add --plain -y With glasses", "-U tester list --plain",
+                                        "-U tester remove -y 2", "-U tester list --plain", "-U tester list --plain"])
+
+    def test_the_first_face_gets_the_camera_and_models_too(self):
+        """One password for all of it: the camera chosen, Howdy's models got (only when it has
+        none), then the face."""
+        cams = sorted(f for f in os.listdir("/dev") if f.startswith("video")) if os.path.isdir("/dev") else []
+        if not cams:
+            self.skipTest("no camera here to point at")
+        code, out = self.go("face-add", "Me", "/dev/" + cams[0], env=self.asker)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.asked(), ["set device_path /dev/" + cams[0], "download-models",
+                                        "-U tester add --plain -y Me", "-U tester list --plain"])
+
+    def test_a_wrong_camera_adds_nothing(self):
+        code, out = self.go("face-add", "Me", "/etc/shadow", env=self.asker)
+        self.assertNotEqual(code, 0, out)
+        self.assertEqual(self.asked(), [])
+
+    def test_only_whoever_asked(self):
+        """No PKEXEC_UID (not through pkexec), or root's own: nothing is done."""
+        for env in ({}, {"PKEXEC_UID": "0"}, {"PKEXEC_UID": "1000; id"}, {"PKEXEC_UID": "999999"}):
+            with self.subTest(env):
+                code, out = self.go("face-add", "Me", env=env)
+                self.assertNotEqual(code, 0, out)
+        self.assertEqual(self.asked(), [])
+
+    def test_only_a_plain_name_and_a_number(self):
+        for bad in ("", "-U root", "Me; rm -rf /", "../x", "x" * 41, "$(id)", "Me\nYou"):
+            with self.subTest(bad):
+                self.assertNotEqual(self.go("face-add", bad, env=self.asker)[0], 0)
+        for bad in ("", "1 2", "-y", "1;id", "x"):
+            with self.subTest(bad):
+                self.assertNotEqual(self.go("face-remove", bad, env=self.asker)[0], 0)
+        self.assertEqual(self.asked(), [])
+
+    def test_only_a_camera(self):
+        for bad in ("/etc/shadow", "/dev/v4l/by-id/../../etc/shadow", "/dev/null", "-x", "/dev/video0; id",
+                    "/dev/v4l/by-id/a b"):
+            with self.subTest(bad):
+                self.assertNotEqual(self.go("face-camera", bad)[0], 0)
+        self.assertEqual(self.asked(), [])
+
+    def test_a_camera(self):
+        cams = sorted(f for f in os.listdir("/dev") if f.startswith("video")) if os.path.isdir("/dev") else []
+        if not cams:
+            self.skipTest("no camera here to point at")
+        code, out = self.go("face-camera", "/dev/" + cams[0])
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.asked(), ["set device_path /dev/" + cams[0]])
+
+    def test_models_only_when_there_are_none(self):
+        self.assertEqual(self.go("face-models")[0], 0)
+        open(os.path.join(self.models, "face.onnx"), "w").close()
+        self.assertEqual(self.go("face-models")[0], 0)
+        self.assertEqual(self.asked(), ["download-models"])
+
+    def test_howdy_only_when_it_is_roots(self):
+        """A howdy that isn't root's (or anyone can change) is never run as root."""
+        self.s.add("stat", stdout="1000\n")
+        code, out = self.go("face-list", env=self.asker)
+        self.assertEqual(code, 3, out)
+        self.assertIn("Howdy isn't installed", out)
+        self.assertEqual(self.asked(), [])
+
+    def test_not_installed(self):
+        os.remove(self.howdy)
+        self.assertEqual(self.go("face-list", env=self.asker)[0], 3)
