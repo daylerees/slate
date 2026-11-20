@@ -48,6 +48,7 @@ brightnessctl
 ?power-profiles-daemon      # skipped if tuned-ppd (Fedora Workstation's) is there; it does the same job
 ?iio-sensor-proxy        # Automatic brightness: the laptop's light sensor (scripts/auto-brightness.py)
 ?ddcutil                  # Settings → Displays → Brightness for monitors, over DDC/CI (scripts/display-brightness.py)
+?xrdb                     # Settings → Displays → Sharp older apps: tells X11 apps the scale (Xft.dpi)
 ?adw-gtk3-theme
 ?qt6ct
 ?xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)

@@ -48,6 +48,7 @@ brightnessctl
 ?power-profiles-daemon
 ?iio-sensor-proxy        # Automatic brightness: the laptop's light sensor (scripts/auto-brightness.py)
 ?ddcutil                  # Settings → Displays → Brightness for monitors, over DDC/CI (scripts/display-brightness.py)
+?xrdb                     # Settings → Displays → Sharp older apps: tells X11 apps the scale (Xft.dpi)
 ?qt6ct
 ?xdg-desktop-portal-gtk   # Flatpak and Snap apps: light or dark (the Settings portal)
 papirus-icon-theme   # icon theme (Slate makes it the default; coloured folders)

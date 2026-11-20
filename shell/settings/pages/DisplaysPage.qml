@@ -275,6 +275,20 @@ Column {
             onPicked: v => Config.s.mainDisplay = v
         }
     }
+    // Apps made for X11 (Steam and the like): at a scale like 125%, Hyprland draws them at 100%
+    // and stretches them, which blurs them; this has them draw themselves at the scale instead
+    // (slate.lua's slateApply)
+    GroupLabel { text: "Older apps" }
+    Group {
+        ToggleSetting {
+            label: "Sharp older apps"
+            key: "sharpX11Apps"
+            detail: "Apps made for older Linux desktops (X11), like Steam, draw at your display's own pixels and scale themselves, "
+                + "so they're sharp rather than blurry. A few that can't scale themselves look smaller. Apps you open after changing it follow it"
+            needsMet: disp.monitors.some(m => !m.disabled && Math.abs(m.scale - Math.round(m.scale)) > 0.01)
+            needs: "Needs a display at a scale like 125% (Scale, above)"
+        }
+    }
     // Automatic brightness: only where there's a light sensor to follow (AutoBrightness.qml).
     // A sensor the kernel has but nothing reads yet says what to install. And how bright each
     // display is (DisplayBrightness.qml): looked at as the page opens, and again for a display

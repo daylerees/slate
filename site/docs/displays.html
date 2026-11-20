@@ -84,6 +84,14 @@
         <span class="path"><i class="ti">&#xEB20;</i> Settings → Appearance</span>. It works on top of each screen's
         scale. See <a href="appearance.html#size">Appearance</a>.</p>
 
+      <h3 id="sharp-older-apps">Sharp older apps</h3>
+      <p>At a scale that isn't a whole number, like 125%, apps made for older Linux desktops (X11), like Steam, can look
+        blurry: they're drawn at 100% and stretched. Turn on <strong>Sharp older apps</strong> in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Displays → Older apps</span> and they draw at your
+        display's own pixels and scale themselves to your main display's scale, so they're sharp. A few that can't
+        scale themselves look smaller. Apps you open after changing it follow it, so restart Steam if it's open.
+        Apps other than Steam are told the scale through <code>xrdb</code>, if it's installed.</p>
+
       <h2>Brightness</h2>
       <p>Your keyboard's brightness keys change the screen's brightness (and the keyboard's backlight, where it has
         keys for it), with a small pop-up showing the new level, just like the volume.</p>

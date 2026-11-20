@@ -98,6 +98,29 @@ function slateApply(t)
     if t.editor then EDITOR = t.editor end
     if t.calculator then CALCULATOR = t.calculator end
 
+    -- Sharp older apps (Settings → Displays): apps made for X11 (through Xwayland: Steam and the
+    -- like) drawn at the screen's own pixels rather than drawn at 100% and stretched, which blurs
+    -- them at a scale like 125%; and told the scale to draw themselves at: Steam by its own
+    -- variable (apps started from now on), the rest by Xft.dpi (xrdb, where it's installed).
+    -- Only when it changes; and turned off, Xft.dpi is put back only if Slate had set it, so one
+    -- of your own (~/.Xresources) is left alone
+    if t.sharp_x11 ~= nil then
+        local scale = tonumber(t.x11_scale) or 1
+        local want = t.sharp_x11 and string.format("%.2f", scale) or "off"
+        if want ~= SLATE_SHARP_X11 then
+            local was = SLATE_SHARP_X11
+            SLATE_SHARP_X11 = want
+            pcall(hl.config, { xwayland = { force_zero_scaling = t.sharp_x11 } })
+            if t.sharp_x11 then
+                hl.env("STEAM_FORCE_DESKTOPUI_SCALING", want)
+                hl.exec_cmd(string.format("command -v xrdb >/dev/null && printf 'Xft.dpi: %d\\n' | xrdb -merge", math.floor(96 * scale + 0.5)))
+            elseif was and was ~= "off" then
+                hl.env("STEAM_FORCE_DESKTOPUI_SCALING", "")
+                hl.exec_cmd("command -v xrdb >/dev/null && printf 'Xft.dpi: 96\\n' | xrdb -merge")
+            end
+        end
+    end
+
     -- Lid and power button
     if t.lid_action ~= nil then LID_ACTION = t.lid_action end
     if t.power_key_action ~= nil then POWER_KEY_ACTION = t.power_key_action end

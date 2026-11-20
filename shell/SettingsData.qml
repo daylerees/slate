@@ -62,6 +62,7 @@ JsonAdapter {
     property real longitude: 0
     property string mainDisplay: ""           // Settings → Displays → Main display (monitor description; "" = the first)
     property bool autoBrightness: false      // Settings → Displays: the screen (and keyboard light) follow the room (AutoBrightness.qml)
+    property bool sharpX11Apps: false        // Settings → Displays → Sharp older apps: X11 apps (Steam) drawn at the screen's own pixels (slate.lua)
     property string logLevel: "normal"        // Settings → Debug → Log detail: normal, detailed or everything (applied when Slate starts)
     property real uiScale: 1                  // Settings → Appearance → Interface size: scales all of Slate (applied when Slate starts)
     property string workspaceShape: "square"  // workspace indicators: square (rounded) or circle

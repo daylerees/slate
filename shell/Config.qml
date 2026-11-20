@@ -1120,6 +1120,14 @@ Singleton {
         return e.command.filter(a => !/^%[a-zA-Z]$/.test(a))
             .map(a => /^[A-Za-z0-9_@%+=:,.\/-]+$/.test(a) ? a : "'" + a.replace(/'/g, "'\\''") + "'").join(" ");
     }
+    // The main display's scale (Settings → Displays → Scale): what apps made for X11 are told to
+    // draw at with Sharp older apps on (one scale for them all: they can't follow each display)
+    readonly property real x11Scale: {
+        const p = primaryScreen;
+        const m = p ? Hyprland.monitors.values.find(x => x.name === p.name) : null;
+        const o = m ? (m.lastIpcObject || {}) : {};
+        return Number(o.scale || (m && m.scale) || 1) || 1;
+    }
     readonly property string hyprSettings: {
         // (worked out again once the apps' entries have loaded: the default apps below are
         // looked up there, and before they'd loaded they came back empty and were left out,
@@ -1170,6 +1178,9 @@ Singleton {
                        editor: s.defaultEditor, calculator: s.defaultCalculator };
         for (const k in apps) { const c = appCommand(apps[k]); if (c) t.push(`${k} = ${q(c)}`); }
         t.push(`lid_action = ${q(s.lidAction)}, power_key_action = ${q(s.powerKeyAction)}`);
+        // Sharp older apps (Settings → Displays): X11 apps drawn at the screen's own pixels, and
+        // told the main display's scale to draw themselves at (slate.lua)
+        t.push(`sharp_x11 = ${s.sharpX11Apps ? "true" : "false"}, x11_scale = ${x11Scale.toFixed(2)}`);
         // Set directly (not through slateApply), so a Hyprland config of your own can read it too
         return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}; `
             + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `

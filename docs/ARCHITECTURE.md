@@ -778,6 +778,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `brightnessctl` | screen and keyboard brightness keys, Settings → Displays → Brightness for the built-in screen, and Automatic brightness |
 | `ddcutil` (Gentoo `app-misc/ddcutil`; NixOS `hardware.i2c.enable` and `ddcutil`) | Settings → Displays → Brightness for monitors, over DDC/CI (`scripts/display-brightness.py`, `DisplayBrightness.qml`). Optional: without it a monitor's row is grayed out and says to install it. It also needs the `i2c-dev` module and access to `/dev/i2c-*` (the `i2c` group, or ddcutil's udev rule), which the row says when that's missing |
 | `iio-sensor-proxy` (Gentoo `sys-apps/iio-sensor-proxy`; NixOS `hardware.sensor.iio.enable`) | Settings → Displays → Automatic brightness: reads the laptop's light sensor, over D-Bus (`scripts/auto-brightness.py`). Optional: the switch only shows where the kernel has a light sensor, and grayed out says to install it when it's missing |
+| `xrdb` (Arch `xorg-xrdb`, Debian `x11-xserver-utils`, Gentoo `x11-apps/xrdb`, NixOS `xorg.xrdb`) | Settings → Displays → Sharp older apps: tells apps made for X11 the scale to draw at (`Xft.dpi`, from `slateApply` in `session/hypr/config/slate.lua`). Optional: without it Steam still scales itself (its own variable); other X11 apps stay at 100%, sharp but small |
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colors |

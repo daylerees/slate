@@ -44,6 +44,7 @@
     pulseaudio  # pactl: a screen recording with the computer's sound and the microphone together
     v4l-utils   # Settings → Webcam: the camera's picture settings (v4l2-ctl)
     ddcutil     # optional: Settings → Displays → Brightness for monitors, over DDC/CI
+    xorg.xrdb   # optional: Settings → Displays → Sharp older apps tells X11 apps the scale (Xft.dpi)
     poppler-utils   # optional: Quick Look (Space on a file in the launcher or the dock) draws a PDF's pages (pdftoppm)
     whisper-cpp   # optional: talking to Nova, speech turned into text on this computer (Settings → Assistant → Voice)
     # ollama      # yours to add: Nova with a model on this computer (Settings → Assistant); or services.ollama.enable = true;

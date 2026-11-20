@@ -69,6 +69,36 @@ class Hardware(LiveCase):
         self.wait(lambda st: st["popout"] == "battery", "the power panel")
 
 
+class SharpOlderApps(LiveCase):
+    """Settings → Displays → Sharp older apps: X11 apps (Steam) drawn at the screen's own pixels
+    (Hyprland's xwayland:force_zero_scaling) and told the scale to draw at themselves (slate.lua)."""
+    def zero_scaling(self):
+        o = self.s.hyprctl("getoption", "xwayland:force_zero_scaling", json_out=True)
+        return int(o.get("bool", o.get("int", 0)))
+
+    def lua(self, expr):
+        code, _ = self.s.run(["hyprctl", "eval", f"assert({expr})"])
+        return code == 0
+
+    def until(self, check, what):
+        for _ in range(40):
+            if check():
+                return
+            self.s.settle(0.2)
+        self.fail(f"timed out waiting for {what}")
+
+    def test_the_switch_reaches_hyprland(self):
+        self.keep_setting("sharpX11Apps")
+        self.assertEqual(self.zero_scaling(), 0, "on before it was asked for")
+        self.config("sharpX11Apps", "true")
+        self.until(lambda: self.zero_scaling() == 1, "Hyprland to draw X11 apps at the screen's own pixels")
+        # (the test screen's scale is 1: what Steam is told)
+        self.until(lambda: self.lua('SLATE_SHARP_X11 == "1.00"'), "the scale handed on for Steam")
+        self.config("sharpX11Apps", "false")
+        self.until(lambda: self.zero_scaling() == 0, "Hyprland to stretch them again")
+        self.until(lambda: self.lua('SLATE_SHARP_X11 == "off"'), "it to be off")
+
+
 class Formats(LiveCase):
     def test_the_bars_date_follows_the_date_format(self):
         self.keep_setting("dateFormat")
