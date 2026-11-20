@@ -120,13 +120,17 @@ SCENES["dock-more"] = {"do": _more_open(5) + [("test", "dockRoom", 360)],
 SCENES["dock-more-open"] = {"do": _more_open(5) + [("test", "dockRoom", 360),
                                                    lambda st: _more_there(5)(st) and len(st["dock"]["more"]) > 0, ("dock", "more")],
                             "wait": lambda st: st["dock"]["menu"] == "more", "settle": 1.2, "undo": _MORE_CLOSE}
-# More than twelve in More: three rows, and the shadow at the bottom saying there's more
-SCENES["dock-more-many"] = {"do": _more_open(14) + [("test", "dockRoom", 200),
-                                                   lambda st: _more_there(14)(st) and len(st["dock"]["more"]) > 12, ("dock", "more")],
+# More than twelve in More: three rows, and the shadow at the bottom saying there's more. All
+# fourteen in More, with no room on the dock for any (at 200 px one still fitted in a fresh
+# session, and the picture depended on which scenes had come before)
+def _all_in_more(n):
+    return lambda st: _more_there(n)(st) and sum(1 for k in st["dock"]["more"] if k.startswith("slate-more-")) == n
+
+
+SCENES["dock-more-many"] = {"do": _more_open(14) + [("test", "dockRoom", 150), _all_in_more(14), ("dock", "more")],
                             "wait": lambda st: st["dock"]["menu"] == "more", "settle": 1.2, "undo": _MORE_CLOSE}
 # Scrolled partway (half a row): the shades at both ends, the scrollbar beside the cells
-SCENES["dock-more-scrolled"] = {"do": _more_open(14) + [("test", "dockRoom", 200),
-                                                       lambda st: _more_there(14)(st) and len(st["dock"]["more"]) > 12, ("dock", "more"),
+SCENES["dock-more-scrolled"] = {"do": _more_open(14) + [("test", "dockRoom", 150), _all_in_more(14), ("dock", "more"),
                                                        lambda st: st["dock"]["moreOpen"] and st["dock"]["grid"], ("test", "dockGridScroll", 46)],
                                 "wait": lambda st: st["dock"]["grid"] and st["dock"]["grid"]["y"] == 46, "settle": 1.2, "undo": _MORE_CLOSE}
 
