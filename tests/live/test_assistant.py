@@ -639,11 +639,7 @@ class Nova(LiveCase):
         # presses straight away, so a key can be lost before Slate has its keymap. -s waits a
         # moment first; and the keys the box was given say whether it arrived
         seen = self.nova()["keysSeen"]
-        for _ in range(5):
-            self.s.run(["wtype", "-s", "300", "-M", "ctrl", "c", "-m", "ctrl"], check=True)
-            self.s.settle(0.3)
-            if self.nova()["keysSeen"] > seen:
-                break
+        self.press_until(lambda st: st["assistant"]["keysSeen"] > seen, "Ctrl+C to reach the box", "-M", "ctrl", "c", "-m", "ctrl")
         st = self.wait(lambda st: not st["assistant"]["working"], "Ctrl+C to stop it", timeout=15)["assistant"]
         self.assertEqual(st["error"], "", "stopping is not an error")
         self.wait(lambda st: not st["assistant"]["stopShown"], "Stop to go")
@@ -887,11 +883,7 @@ class NovaWindowChecks:
         # Escape, a real key press (wtype: -s waits for the keymap; the keys the box was given
         # say whether it arrived)
         seen = self.s.state()["assistant"]["keysSeen"]
-        for _ in range(5):
-            self.s.run(["wtype", "-s", "300", "-k", "Escape"], check=True)
-            self.s.settle(0.3)
-            if self.s.state()["assistant"]["keysSeen"] > seen:
-                break
+        self.press_until(lambda st: st["assistant"]["keysSeen"] > seen, "Escape to reach the box", "-k", "Escape")
         self.wait(lambda st: not st["assistant"]["open"], "Escape to close it")
         self.s._until(lambda: self.client() is None, 5, "the window to go")
 

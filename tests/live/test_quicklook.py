@@ -50,11 +50,7 @@ class QuickLook(LiveCase):
                          f"Quick Look on {os.path.basename(path)}")["quicklook"]
 
     def key(self, *args):
-        """A real key press (wtype: -s waits a moment for its keymap). Each wtype is a new
-        virtual keyboard, and its first key can arrive before Slate has its keymap and be lost
-        (it was, now and then, for a key to a window that had only just taken the keyboard):
-        a Shift first, which nothing here minds, takes that place."""
-        self.s.run(["wtype", "-s", "300", "-k", "Shift_L", *args], check=True)
+        self.press(*args)
 
     def closed(self, what="Quick Look to close"):
         self.wait(lambda st: not st["quicklook"]["open"], what)
@@ -142,21 +138,9 @@ class QuickLook(LiveCase):
     def test_space_and_escape_close_it(self):
         p = self.file("Documents", "close me.txt", data=b"hello\n")
         self.look(p)
-        self.press_until("space", lambda st: not st["quicklook"]["open"], "Space to close it")
+        self.press_until(lambda st: not st["quicklook"]["open"], "Space to close it", "-k", "space")
         self.look(p)
-        self.press_until("Escape", lambda st: not st["quicklook"]["open"], "Escape to close it")
-
-    def press_until(self, key, check, what, tries=5):
-        """Press a key until check(state): Hyprland hands Quick Look the keyboard a moment after
-        it asks, and a key pressed in between went nowhere (a full run of the tests side by side
-        made that moment long enough to miss now and then). Still fails if no press ever does."""
-        for _ in range(tries):
-            self.key("-k", key)
-            try:
-                return self.wait(check, what, timeout=1.5)
-            except AssertionError:
-                continue
-        return self.wait(check, what, timeout=1)
+        self.press_until(lambda st: not st["quicklook"]["open"], "Escape to close it", "-k", "Escape")
 
     # ---- From the launcher ------------------------------------------------------------------
 
@@ -200,13 +184,7 @@ class QuickLook(LiveCase):
         # hands it over a moment later: a key typed straight after the state said "closed" could
         # land in between and go nowhere (2 runs in 5). Nobody types that fast after Escape, so
         # it types until a key arrives, and still fails if the keyboard never comes back
-        for _ in range(10):
-            self.key("x")
-            try:
-                self.wait(lambda st: st["launcher"]["query"].startswith("zephyrx"), "typing to reach the launcher again", timeout=1)
-                break
-            except AssertionError:
-                continue
+        self.press_until(lambda st: st["launcher"]["query"].startswith("zephyrx"), "typing to reach the launcher again", "x", tries=10)
         self.assertRegex(self.s.state()["launcher"]["query"], r"^zephyrx+$", "typing never reached the launcher again")
 
     def test_space_while_typing_is_a_space(self):

@@ -101,6 +101,28 @@ class LiveCase(slate.Case):
             self.fail("the pretend media player didn't start: " + line)
         return p
 
+    def press(self, *args):
+        """Real key presses, through a virtual keyboard (wtype; its arguments: "-k", "Escape", or
+        text). Each wtype run is a new keyboard, and its first key can arrive before Slate has
+        its keymap and be lost: it waits a moment first (-s 300) and presses a Shift, which
+        nothing minds, in that place."""
+        self.s.run(["wtype", "-s", "300", "-k", "Shift_L", *args], check=True)
+
+    def press_until(self, check, what, *args, tries=5, timeout=1.5):
+        """press(*args) until check(state) holds, pressing again if it doesn't. A key pressed
+        just as something takes the keyboard (or gives it back) can go nowhere: Hyprland hands it
+        over a moment after Slate's state says so, and a full run of the tests side by side makes
+        that moment long enough to miss now and then. Still fails if no press ever does. Only for
+        keys a second press can't overshoot: check for "at least this far" where it could."""
+        for _ in range(tries - 1):
+            self.press(*args)
+            try:
+                return self.wait(check, what, timeout=timeout)
+            except AssertionError:
+                continue
+        self.press(*args)
+        return self.wait(check, what, timeout=timeout)
+
     def screenshot(self, name):
         return self.s.screenshot(os.path.join(slate.OUT, "live", name + ".png"))
 

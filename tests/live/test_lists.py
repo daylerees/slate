@@ -47,11 +47,7 @@ class WifiPassword(Lists):
         self.wait(lambda st: st["lists"]["panel"]["typing"], "Cafe's password field, ready to type in")
         # Half a password, typed with real key presses (a key can be lost before Slate has
         # wtype's keymap: -s waits a moment first, and what arrived says whether to go again)
-        for _ in range(5):
-            self.s.run(["wtype", "-s", "300", "hunter"], check=True)
-            self.s.settle(0.3)
-            if self.panel()["typed"]:
-                break
+        self.press_until(lambda st: st["lists"]["panel"]["typed"] != "", "typing to reach the password field", "hunter")
         self.assertEqual(self.panel()["typed"], "hunter", f"the typing didn't reach the field: {self.panel()}")
         rows = self.made("wifi")
 
@@ -73,7 +69,7 @@ class WifiPassword(Lists):
             self.assertEqual(self.made("wifi"), rows, "rows were made again")
 
         with self.subTest("and the rest can still be typed"):
-            self.s.run(["wtype", "-s", "300", "2"], check=True)
+            self.press("2")
             self.wait(lambda st: st["lists"]["panel"]["typed"] == "hunter2", "the rest of the password")
 
         with self.subTest("a network that turns up gets a row, the others keep theirs"):
