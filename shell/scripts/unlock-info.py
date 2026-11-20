@@ -4,7 +4,8 @@ unlock) is installed, the cameras here and which are infrared, and which ways in
 takes now (Slate's own PAM service, /etc/pam.d/slate-lock, which anyone can read).
 
   unlock-info.py            all of it, as JSON:
-      {"howdy": bool, "cameras": [{"path", "name", "ir"}], "methods": ["face", …]}
+      {"howdy": bool, "cameras": [{"path", "name", "ir"}], "methods": ["face", …],
+       "fingerprint": {"fprintd": bool, "reader": "<its name>" or "", "fingers": ["right-index-finger", …]}}
 
 A camera is asked which picture formats it gives (V4L2's VIDIOC_ENUM_FMT, as v4l2-ctl
 --list-formats does), which doesn't turn it on. Infrared ones give only greyscale: Howdy is
@@ -15,7 +16,10 @@ import fcntl
 import glob
 import json
 import os
+import re
+import shutil
 import struct
+import subprocess
 import sys
 
 ROOT = os.environ.get("SLATE_UNLOCK_TEST", "")
@@ -85,6 +89,29 @@ def howdy():
     return pam and any(os.path.isfile(at(h)) for h in HOWDY)
 
 
+def fprintd_list():
+    """What fprintd-list says about you (as you: fprintd lets you see your own fingers)."""
+    user = os.environ.get("USER") or ""
+    try:
+        r = subprocess.run(["fprintd-list", user], capture_output=True, text=True, timeout=8)
+        return r.stdout + r.stderr
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def fingerprint(list_fingers=fprintd_list):
+    """fprintd (its commands and its PAM module), the reader it found, and your enrolled fingers.
+    fprintd-list says "Fingerprints for user … on <reader> (press):" then " - #0: <finger>" a
+    line, or "User … has no fingers enrolled for <reader>.", or "No devices available"."""
+    pam = any(os.path.isfile(at(d + "/pam_fprintd.so")) for d in SECURITY)
+    if not (pam and shutil.which("fprintd-list")):
+        return {"fprintd": False, "reader": "", "fingers": []}
+    text = list_fingers()
+    m = re.search(r"Fingerprints for user \S+ on (.+?) \(", text) or re.search(r"has no fingers enrolled for (.+?)\.?$", text, re.M)
+    fingers = re.findall(r"^ - #\d+: (\S+)", text, re.M)
+    return {"fprintd": True, "reader": m.group(1).strip() if m else "", "fingers": fingers}
+
+
 def methods():
     """The ways in Slate's lock screen takes now, as slate-unlock wrote them."""
     try:
@@ -95,7 +122,7 @@ def methods():
 
 
 def main():
-    print(json.dumps({"howdy": howdy(), "cameras": cameras(), "methods": methods()}))
+    print(json.dumps({"howdy": howdy(), "cameras": cameras(), "methods": methods(), "fingerprint": fingerprint()}))
     return 0
 
 

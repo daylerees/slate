@@ -127,3 +127,121 @@ class UnlockPage(LiveCase):
 
     def pretend(self, what):
         return self.ipc("test", "settingsPollValue", what)
+
+
+# fprintd's commands, as stand-ins that say what the real ones do (fprintd 1.94), and note what
+# they were asked in $dir/asked
+ENROLL = """#!/bin/sh
+echo "$0 $*" >> "$(dirname "$0")/asked"
+echo "Using device /net/reactivated/Fprint/Device/0"
+echo "Enrolling $2 finger."
+for r in enroll-stage-passed enroll-retry-scan enroll-stage-passed enroll-stage-passed enroll-completed; do
+    sleep 0.3; echo "Enroll result: $r"
+done
+"""
+VERIFY = """#!/bin/sh
+echo "$0 $*" >> "$(dirname "$0")/asked"
+echo "Verify started!"
+sleep 0.3
+echo "Verify result: verify-match (done)"
+"""
+DELETE = """#!/bin/sh
+echo "$0 $*" >> "$(dirname "$0")/asked"
+echo "Fingerprint $3 of user $1 deleted on Synaptics Sensors"
+"""
+
+
+class Fingerprint(LiveCase):
+    def setUp(self):
+        super().setUp()
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.addCleanup(lambda: self.ipc("power", "cancel"))
+        for what in ("unlock", "unlockAnswer", "unlockCode", "unlockAsked"):
+            self.addCleanup(lambda w=what: self.ipc("test", "settingsPoll", w, ""))
+
+    def page(self):
+        return self.s.state()["settings"]["page"]
+
+    def waiting(self):
+        return {w["label"]: w["needs"] for w in self.s.state()["settings"]["waiting"]}
+
+    def pretend(self, what):
+        return self.ipc("test", "settingsPollValue", what)
+
+    def tools(self):
+        """The stand-ins, once Settings is open (a poll given before it's built is dropped)."""
+        d = self.s.h("fprint-tools")
+        os.makedirs(d, exist_ok=True)
+        for name, text in (("fprintd-enroll", ENROLL), ("fprintd-verify", VERIFY), ("fprintd-delete", DELETE)):
+            p = os.path.join(d, name)
+            with open(p, "w") as f:
+                f.write(text)
+            os.chmod(p, 0o755)
+        if os.path.exists(os.path.join(d, "asked")):
+            os.remove(os.path.join(d, "asked"))
+        self.ipc("test", "settingsPoll", "fprintTools", d)
+        self.addCleanup(lambda: self.ipc("test", "settingsPoll", "fprintTools", ""))
+        return d
+
+    def show(self, fingers=(), reader="Synaptics Sensors", fprintd=True, methods=()):
+        self.ipc("settings", "page", "unlock")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "unlock", "Face, Fingerprint & Keys")
+        self.ipc("test", "settingsPoll", "unlock", json.dumps({"howdy": False, "cameras": [], "methods": list(methods),
+                                                                "fingerprint": {"fprintd": fprintd, "reader": reader, "fingers": list(fingers)}}))
+        return self.wait(lambda st: st["settings"]["page"] and st["settings"]["page"]["fingers"] == list(fingers), "the fingers listed")
+
+    def asked(self, d):
+        with open(os.path.join(d, "asked")) as f:
+            return [l.split(" ", 1)[1].strip() if " " in l else "" for l in f.read().splitlines()]
+
+    def test_without_fprintd_or_a_reader(self):
+        self.show(fprintd=False, reader="")
+        self.assertEqual(self.waiting().get("Unlock with your fingerprint"), "Needs fprintd to be installed")
+        self.show(reader="")
+        self.assertEqual(self.waiting().get("Your fingerprints"), "Needs a fingerprint reader")
+
+    def test_adding_a_finger_says_each_touch(self):
+        self.show()
+        d = self.tools()
+        self.assertEqual(self.page()["adding"], "right-index-finger")
+        self.assertEqual(self.ipc("test", "settingsButton", "Your fingerprints", "Add"), "pressed")
+        st = self.wait(lambda st: st["asking"] != "", "the question")
+        self.assertEqual(st["asking"], "Add your right index finger?")
+        self.ipc("test", "answer", "true")
+        seen = set()
+        for _ in range(60):
+            said = self.page()["fpSaid"]
+            seen.add(said)
+            if said.startswith("Added"):
+                break
+            self.s.settle(0.1)
+        self.assertIn("Added. You can unlock with it once it's on below", seen)
+        self.assertTrue(any(s.startswith("Lift your finger, then touch the reader again") for s in seen), seen)
+        self.assertEqual(self.asked(d), ["-f right-index-finger"])
+
+    def test_the_next_finger_is_one_not_added(self):
+        self.show(fingers=["right-index-finger"])
+        self.assertEqual(self.page()["adding"], "left-index-finger")
+
+    def test_removing_a_finger_asks_first(self):
+        self.show(fingers=["right-index-finger", "left-thumb"])
+        d = self.tools()
+        self.assertEqual(self.ipc("test", "settingsButton", "Left thumb", "Remove"), "pressed")
+        st = self.wait(lambda st: st["asking"] != "", "the question")
+        self.assertEqual(st["asking"], "Remove your left thumb?")
+        self.ipc("test", "answer", "true")
+        self.wait(lambda st: st["settings"]["page"]["fpSaid"] == "Removed", "it removed")
+        self.assertTrue(self.asked(d)[0].endswith("-f left-thumb"), self.asked(d))
+
+    def test_try_it(self):
+        self.show(fingers=["right-index-finger"])
+        self.tools()
+        self.assertEqual(self.ipc("test", "settingsButton", "Your fingerprints", "Try it"), "pressed")
+        self.wait(lambda st: st["settings"]["page"]["fpSaid"].startswith("That's you"), "it to know you")
+
+    def test_turning_it_on(self):
+        self.show(fingers=["right-index-finger"])
+        self.assertEqual(self.waiting().get("Unlock with your fingerprint"), None)
+        self.assertEqual(self.ipc("test", "settingsToggle", "Unlock with your fingerprint"), "pressed")
+        self.wait(lambda st: st["settings"]["page"]["said"].startswith("On"), "it to say it's on")
+        self.assertEqual(json.loads(self.pretend("unlockAsked")), ["enable", "fingerprint"])

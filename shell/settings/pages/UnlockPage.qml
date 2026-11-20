@@ -19,7 +19,7 @@ Column {
     id: unlockPage
     spacing: 4
     readonly property string script: Quickshell.shellPath("scripts/unlock-info.py")
-    property var info: ({ howdy: false, cameras: [], methods: [] })
+    property var info: ({ howdy: false, cameras: [], methods: [], fingerprint: { fprintd: false, reader: "", fingers: [] } })
     property bool looked: false
     property var faces: []
     property bool known: false           // Slate has asked Howdy for your faces (faces.json is there)
@@ -31,10 +31,106 @@ Column {
     readonly property var cams: info.cameras || []
     // The camera in use: the one chosen, else an infrared one, else the first
     readonly property var chosen: cams.find(c => c.path === camera) || cams.find(c => c.ir) || cams[0] || null
-    readonly property bool busy: doing !== "" || tryPam.active
+    readonly property bool busy: doing !== "" || tryPam.active || fp.running || fpTry.running || fpDelete.running
+
+    // ---- Fingerprint: fprintd's own commands, as you (it lets you enroll, list, remove and
+    // check your own fingers); only turning it on for the lock screen needs your password
+    readonly property var fpInfo: info.fingerprint || ({ fprintd: false, reader: "", fingers: [] })
+    readonly property var fingers: fpInfo.fingers || []
+    readonly property bool fingerOn: (info.methods || []).indexOf("fingerprint") >= 0
+    // fprintd's names for the fingers, in the order they're offered
+    readonly property var fingerNames: ["right-index-finger", "left-index-finger", "right-thumb", "left-thumb",
+        "right-middle-finger", "left-middle-finger", "right-ring-finger", "left-ring-finger",
+        "right-little-finger", "left-little-finger"]
+    function fingerLabel(n) {
+        const s = String(n).replace(/-finger$/, "").replace(/-/g, " ");
+        return s.charAt(0).toUpperCase() + s.slice(1) + (/thumb$/.test(n) ? "" : " finger");
+    }
+    readonly property var freeFingers: fingerNames.filter(n => fingers.indexOf(n) < 0)
+    property string nextFinger: ""
+    readonly property string addingFinger: freeFingers.indexOf(nextFinger) >= 0 ? nextFinger : (freeFingers[0] || "")
+    property string fpSaid: ""
+    property bool fpProblem: false
+    property int touches: 0
+    // (the tests: stand-ins for fprintd's commands, in a folder of theirs)
+    function fpTool(name) { return Config.testMode && win.pretendPolls.fprintTools ? win.pretendPolls.fprintTools + "/" + name : name; }
+    readonly property string me: Quickshell.env("USER") || ""
+    // Enrolling: fprintd-enroll says how each touch went ("Enroll result: enroll-stage-passed",
+    // … "enroll-completed"); a few touches of the same finger make one fingerprint
+    Process {
+        id: fp
+        stdout: SplitParser { onRead: line => unlockPage.enrollSaid(line) }
+        onExited: code => { if (unlockPage.fpSaid.startsWith("Touch") || unlockPage.fpSaid.startsWith("Lift")) { unlockPage.fpSaid = "Slate couldn't finish adding it. Try again"; unlockPage.fpProblem = true; } unlockPage.refresh(); }
+    }
+    function enrollSaid(line) {
+        const m = String(line).match(/Enroll result: (\S+)/);
+        if (!m) return;
+        const r = m[1];
+        if (r === "enroll-stage-passed") { touches++; fpSaid = "Lift your finger, then touch the reader again (" + touches + ")"; fpProblem = false; }
+        else if (r === "enroll-completed") { fpSaid = "Added. You can unlock with it once it's on below"; fpProblem = false; }
+        else if (r === "enroll-retry-scan" || r === "enroll-remove-and-retry") { fpSaid = "That didn't read well. Touch the reader again"; fpProblem = false; }
+        else if (r === "enroll-swipe-too-short") { fpSaid = "Too short: swipe a little slower"; fpProblem = false; }
+        else if (r === "enroll-finger-not-centered") { fpSaid = "Put your finger in the middle of the reader"; fpProblem = false; }
+        else if (r === "enroll-data-full") { fpSaid = "The reader is full: remove a fingerprint first"; fpProblem = true; }
+        else if (r === "enroll-duplicate") { fpSaid = "That finger's already added"; fpProblem = true; }
+        else { fpSaid = "Slate couldn't add it. Try again"; fpProblem = true; }
+    }
+    function askAddFinger() {
+        const finger = addingFinger;
+        if (finger === "") return;
+        win.ask = {
+            title: "Add your " + fingerLabel(finger).toLowerCase() + "?",
+            body: "Touch the reader with it, lift it, and touch again, until Slate says it's done. A few touches, "
+                + "each a little different, help it know your finger. It stays on this computer.",
+            button: "Add", code: 0xEBD1,
+            run: () => {
+                touches = 0; fpSaid = "Touch the reader with your " + fingerLabel(finger).toLowerCase(); fpProblem = false;
+                fp.command = [fpTool("fprintd-enroll"), "-f", finger];
+                fp.running = true;
+            }
+        };
+    }
+    function askRemoveFinger(finger) {
+        win.ask = {
+            title: "Remove your " + fingerLabel(finger).toLowerCase() + "?",
+            body: "Slate won't recognize this finger any more. Your password and your other fingers still work, "
+                + "and you can add it again at any time.",
+            button: "Remove", destructive: true, code: 0xEBD1,
+            run: () => { fpSaid = ""; fpDelete.command = [fpTool("fprintd-delete"), unlockPage.me, "-f", finger]; fpDelete.running = true; }
+        };
+    }
+    Process {
+        id: fpDelete
+        onExited: code => { unlockPage.fpSaid = code === 0 ? "Removed" : "Slate couldn't remove it"; unlockPage.fpProblem = code !== 0; unlockPage.refresh(); }
+    }
+    // Try it: fprintd-verify, any of your fingers ("Verify result: verify-match (done)")
+    Process {
+        id: fpTry
+        stdout: SplitParser {
+            onRead: line => {
+                const m = String(line).match(/Verify result: (\S+)/);
+                if (!m) return;
+                const ok = m[1] === "verify-match";
+                unlockPage.fpSaid = ok ? "That's you: the lock screen will let you in" : m[1] === "verify-no-match"
+                    ? "Slate didn't recognize that finger. Try again, or add it" : "Slate couldn't read it. Try again";
+                unlockPage.fpProblem = !ok;
+            }
+        }
+    }
+    function tryFinger() {
+        fpSaid = "Touch the reader"; fpProblem = false;
+        fpTry.command = [fpTool("fprintd-verify")];
+        fpTry.running = true;
+    }
+    function setFingerOn(on) {
+        helper([on ? "enable" : "disable", "fingerprint"], on ? "Turning it on…" : "Turning it off…",
+               on ? "On: the lock screen takes your fingerprint" : "Off: the lock screen asks for your password",
+               on ? "Slate couldn't turn it on" : "Slate couldn't turn it off", false);
+    }
 
     readonly property var testState: ({ looked: looked, howdy: !!info.howdy, faces: faces.map(f => f.label), faceOn: faceOn,
-                                        camera: chosen ? chosen.path : "", said: said, problem: saidProblem, doing: doing })
+                                        camera: chosen ? chosen.path : "", said: said, problem: saidProblem, doing: doing,
+                                        fingers: fingers, fingerOn: fingerOn, adding: addingFinger, fpSaid: fpSaid, fpProblem: fpProblem })
     // (the tests: what's here and what the helper answers, given in place of the real ones)
     readonly property bool pretending: Config.testMode && win.pretendPolls.unlock !== undefined
 
@@ -270,8 +366,81 @@ Column {
             }
         }
     }
+    GroupLabel { text: "Fingerprint" }
+    Group {
+        SettingRow {
+            visible: unlockPage.looked && (!unlockPage.fpInfo.fprintd || unlockPage.fpInfo.reader === "")
+            label: !unlockPage.fpInfo.fprintd ? "Fingerprint unlock needs fprintd" : "No fingerprint reader"
+            detail: !unlockPage.fpInfo.fprintd
+                ? "fprintd reads your fingerprint reader. Install fprintd with your package manager (on Debian and Ubuntu, libpam-fprintd too), then come back here"
+                : "Slate can't find a fingerprint reader that fprintd supports"
+        }
+        Separator { visible: unlockPage.looked && (!unlockPage.fpInfo.fprintd || unlockPage.fpInfo.reader === "") }
+        Repeater {
+            model: unlockPage.fingers
+            delegate: Column {
+                required property var modelData
+                width: parent ? parent.width : 0
+                ListItemRow {
+                    width: parent.width
+                    label: unlockPage.fingerLabel(modelData)
+                    detail: "On " + unlockPage.fpInfo.reader
+                    removable: !unlockPage.busy
+                    onRemoved: unlockPage.askRemoveFinger(modelData)
+                }
+                Separator {}
+            }
+        }
+        DropdownSetting {
+            label: "Finger to add"
+            detail: unlockPage.fpSaid !== "" ? unlockPage.fpSaid
+                : unlockPage.fingers.length === 0 ? "Slate learns your fingerprint through the reader. Nothing's added yet"
+                : "More fingers mean another way in when one's busy"
+            needsMet: unlockPage.fpInfo.reader !== "" && unlockPage.freeFingers.length > 0 && !unlockPage.busy
+            needs: !unlockPage.fpInfo.fprintd ? "Needs fprintd to be installed" : unlockPage.fpInfo.reader === "" ? "Needs a fingerprint reader"
+                : unlockPage.freeFingers.length === 0 ? "Every finger's added" : "Wait a moment"
+            options: unlockPage.freeFingers.map(n => ({ value: n, label: unlockPage.fingerLabel(n) }))
+            value: unlockPage.addingFinger
+            onPicked: v => unlockPage.nextFinger = v
+        }
+        Separator {}
+        SettingRow {
+            label: "Your fingerprints"
+            detail: unlockPage.fingers.length === 0 ? "Add one, then turn it on below" : "Check the reader knows you"
+            needsMet: unlockPage.fpInfo.reader !== "" && !unlockPage.busy
+            needs: !unlockPage.fpInfo.fprintd ? "Needs fprintd to be installed" : unlockPage.fpInfo.reader === "" ? "Needs a fingerprint reader" : "Wait a moment"
+            Row {
+                spacing: 8
+                Button {
+                    visible: unlockPage.fingers.length > 0
+                    label: "Try it"
+                    onClicked: unlockPage.tryFinger()
+                }
+                Button {
+                    label: "Add"
+                    primary: unlockPage.fingers.length === 0
+                    enabled: unlockPage.addingFinger !== ""
+                    onClicked: unlockPage.askAddFinger()
+                }
+            }
+        }
+        Separator {}
+        SettingRow {
+            label: "Unlock with your fingerprint"
+            detail: unlockPage.faceOn && unlockPage.fingerOn
+                ? "The lock screen takes your fingerprint. With your face on too, it looks for your face first"
+                : "The lock screen takes your fingerprint, and you can still type your password"
+            needsMet: unlockPage.fpInfo.fprintd && unlockPage.fingers.length > 0 && !unlockPage.busy
+            needs: !unlockPage.fpInfo.fprintd ? "Needs fprintd to be installed" : unlockPage.fingers.length === 0 ? "Needs a fingerprint to be added" : "Wait a moment"
+            SettingToggle {
+                checked: unlockPage.fingerOn
+                onToggled: v => unlockPage.setFingerOn(v)
+                Accessible.name: "Unlock with your fingerprint"
+            }
+        }
+    }
     Footnote {
-        text: "Faces are kept by Howdy, on this computer only, and only the lock screen uses them: sudo, the login screen "
+        text: "Faces and fingerprints stay on this computer, and only the lock screen uses them here: sudo, the login screen "
             + "and other apps still ask for your password."
     }
 }

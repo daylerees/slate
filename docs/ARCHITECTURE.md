@@ -251,6 +251,7 @@ scripts/camera-watch.py       tells Slate when a camera starts and stops being u
 scripts/auto-brightness.py    Automatic brightness: claims the light sensor (iio-sensor-proxy, D-Bus
                               signals, no polling), eases the screen and keyboard light to the room
 scripts/unlock-info.py        Settings → Face, Fingerprint & Keys, as you: whether Howdy is installed,
+                              fprintd's reader and your fingers (fprintd-list),
                               the cameras and which are infrared (V4L2's format list, without
                               turning them on), and the ways in the lock screen takes now
                               with brightnessctl, learns your changes (~/.local/state/slate/
@@ -779,6 +780,8 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `ddcutil` (Gentoo `app-misc/ddcutil`; NixOS `hardware.i2c.enable` and `ddcutil`) | Settings → Displays → Brightness for monitors, over DDC/CI (`scripts/display-brightness.py`, `DisplayBrightness.qml`). Optional: without it a monitor's row is grayed out and says to install it. It also needs the `i2c-dev` module and access to `/dev/i2c-*` (the `i2c` group, or ddcutil's udev rule), which the row says when that's missing |
 | `iio-sensor-proxy` (Gentoo `sys-apps/iio-sensor-proxy`; NixOS `hardware.sensor.iio.enable`) | Settings → Displays → Automatic brightness: reads the laptop's light sensor, over D-Bus (`scripts/auto-brightness.py`). Optional: the switch only shows where the kernel has a light sensor, and grayed out says to install it when it's missing |
 | `xrdb` (Arch `xorg-xrdb`, Debian `x11-xserver-utils`, Gentoo `x11-apps/xrdb`, NixOS `xorg.xrdb`) | Settings → Displays → Sharp older apps: tells apps made for X11 the scale to draw at (`Xft.dpi`, from `slateApply` in `session/hypr/config/slate.lua`). Optional: without it Steam still scales itself (its own variable); other X11 apps stay at 100%, sharp but small |
+| Howdy (Arch AUR `howdy-next`; not packaged on most distros) | Settings → Security → Face, Fingerprint & Keys → Face: face unlock on the lock screen (`pam_howdy.so`, through `bin/slate-unlock`). Optional, and never installed by Slate: the page says what to get |
+| `fprintd` (Debian/Ubuntu also `libpam-fprintd`) | Settings → Security → Face, Fingerprint & Keys → Fingerprint: enrolling, listing, checking and removing your fingers (`fprintd-enroll`, `-list`, `-verify`, `-delete`, as you) and fingerprint unlock on the lock screen (`pam_fprintd.so`). Optional, and not installed by Slate (most computers have no reader): the page says to install it |
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colors |

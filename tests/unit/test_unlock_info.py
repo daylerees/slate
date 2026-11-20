@@ -85,4 +85,40 @@ class UnlockInfo(Case):
     def test_json_with_nothing_here(self):
         code, out = run([sys.executable, SCRIPT], env=dict(os.environ, SLATE_UNLOCK_TEST=self.root))
         self.assertEqual(code, 0, out)
-        self.assertEqual(json.loads(out), {"howdy": False, "cameras": [], "methods": []})
+        self.assertEqual(json.loads(out), {"howdy": False, "cameras": [], "methods": [],
+                                           "fingerprint": {"fprintd": False, "reader": "", "fingers": []}})
+
+    # fprintd-list's answers, as fprintd 1.94 gives them
+    LISTED = ("found 1 devices\nDevice at /net/reactivated/Fprint/Device/0\nUsing device /net/reactivated/Fprint/Device/0\n"
+              "Fingerprints for user alex on Synaptics Sensors (press):\n - #0: right-index-finger\n - #1: left-thumb\n")
+    NONE_YET = ("found 1 devices\nDevice at /net/reactivated/Fprint/Device/0\nUsing device /net/reactivated/Fprint/Device/0\n"
+                "User alex has no fingers enrolled for Goodix MOC Fingerprint Sensor.\n")
+
+    def fprintd(self):
+        """fprintd's PAM module, and its fprintd-list on PATH."""
+        self.put("/usr/lib/security/pam_fprintd.so")
+        d = os.path.join(self.root, "bin")
+        os.makedirs(d, exist_ok=True)
+        p = os.path.join(d, "fprintd-list")
+        with open(p, "w") as f:
+            f.write("#!/bin/sh\n")
+        os.chmod(p, 0o755)
+        self.addCleanup(os.environ.__setitem__, "PATH", os.environ["PATH"])
+        os.environ["PATH"] = d + ":" + os.environ["PATH"]
+
+    def test_fingerprint_needs_fprintd(self):
+        self.assertEqual(self.mod.fingerprint(lambda: self.LISTED), {"fprintd": False, "reader": "", "fingers": []})
+
+    def test_fingers_and_the_reader(self):
+        self.fprintd()
+        self.assertEqual(self.mod.fingerprint(lambda: self.LISTED),
+                         {"fprintd": True, "reader": "Synaptics Sensors", "fingers": ["right-index-finger", "left-thumb"]})
+
+    def test_a_reader_with_no_fingers_yet(self):
+        self.fprintd()
+        self.assertEqual(self.mod.fingerprint(lambda: self.NONE_YET),
+                         {"fprintd": True, "reader": "Goodix MOC Fingerprint Sensor", "fingers": []})
+
+    def test_no_reader(self):
+        self.fprintd()
+        self.assertEqual(self.mod.fingerprint(lambda: "No devices available\n"), {"fprintd": True, "reader": "", "fingers": []})

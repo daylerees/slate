@@ -53,6 +53,11 @@ the gloss sheen like the bar's containers and no outline.
   turning face on or off go through `slate-unlock` (`face-add`, `face-remove`, `face-camera`,
   `enable`/`disable face`). Howdy keeps faces root's, so the page shows the helper's last list,
   kept in `~/.local/state/slate/faces.json`. Try it runs `slate-lock` itself, without locking.
+  Fingerprints use fprintd's own commands as you (polkit lets you manage your own fingers):
+  `fprintd-list` (through unlock-info.py), `fprintd-enroll -f <finger>` (each touch's result
+  said in Slate's words), `fprintd-verify` (Try it) and `fprintd-delete $USER -f <finger>`; only
+  `enable`/`disable fingerprint` needs `slate-unlock`. In `slate-lock` the methods run in turn,
+  face before fingerprint, so with both on the reader takes over once Howdy gives up.
 - **Lockout:** after a failure Slate reads `faillock --user $USER`; at 3 failures within
   15 min it shows "Too many tries · you can try again in m:ss", disables the field and stops
   sending attempts. Wrong passwords show the tries left. Those numbers (and the 10 minutes it

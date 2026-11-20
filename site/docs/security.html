@@ -86,6 +86,24 @@
       <p>Your faces are kept by Howdy on this computer only, and only the lock screen uses them: <code>sudo</code>,
         the login screen and other apps still ask for your password.</p>
 
+      <h2 id="fingerprint">Unlocking with your fingerprint</h2>
+      <p>With a fingerprint reader, the lock screen can take your fingerprint instead of your password, which
+        always works too. Set it up on the same page,
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Security → Face, Fingerprint &amp; Keys</span>, under
+        <strong>Fingerprint</strong>. It needs <strong>fprintd</strong>: install <code>fprintd</code> with your package
+        manager (on Debian and Ubuntu, <code>libpam-fprintd</code> too). The page says when it's missing, or when
+        there's no reader it supports.</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Your fingers</td><td>Each finger you've added, with <strong>Remove</strong> (it asks first).</td></tr>
+        <tr><td>Finger to add</td><td>Which finger <strong>Add</strong> learns next. Adding one asks first, then has you
+          touch the reader, lift and touch again until it says it's done, telling you how each touch went.</td></tr>
+        <tr><td>Your fingerprints</td><td><strong>Try it</strong> checks the reader knows you, without locking.</td></tr>
+        <tr><td>Unlock with your fingerprint</td><td>The lock screen takes your fingerprint, and says so under the
+          password box. With your face on too, it looks for your face first. Turning it on or off asks for your
+          password.</td></tr>
+      </table>
+
       <h2>Locking when you're away</h2>
       <p>Under <strong>When you're away</strong>, Slate can lock, turn the screen off and suspend after times you choose:</p>
       <table>
