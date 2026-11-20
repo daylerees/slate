@@ -500,6 +500,68 @@ exec {real} "$@"
         self.assertEqual(json.loads(text), {"user": "tester", "name": name, "session": "slate", "kb_layout": "gb"})
         self.assertIn("Zoë", text, "the name was written as escapes, not as itself")
 
+    # ---- Your displays -----------------------------------------------------------------
+    # The login screen starts each monitor as your desktop shows it, so the monitor doesn't
+    # change mode (a few seconds of black) once for the login screen and again for your desktop
+
+    G9 = "Samsung Electric Company Odyssey G95SC H1AK500000"
+
+    def monitors(self, mons, saved=None):
+        self.s.add("hyprctl", by_args={"monitors": json.dumps(mons) + "\n",
+                                       "getoption": '{"option": "input:kb_layout", "str": "gb", "set": true}\n'})
+        if saved is not None:
+            d = os.path.join(self.h.state, "slate")
+            os.makedirs(d, exist_ok=True)
+            with open(os.path.join(d, "displays.json"), "w") as f:
+                json.dump(saved, f)
+
+    def displays(self):
+        with open(os.path.join(self.dest, "displays")) as f:
+            return [line.split("\t") for line in f.read().splitlines()]
+
+    def test_your_displays_as_your_desktop_shows_them(self):
+        """Mode, scale, rotation and position from the running Hyprland, by description; HDR as
+        Settings → Displays keeps it. A monitor that's off, or that doesn't say what it is (a
+        virtual one), stays out."""
+        os.makedirs(self.dest)
+        self.monitors([
+            {"name": "DP-3", "description": self.G9, "width": 5120, "height": 1440, "refreshRate": 239.99899,
+             "scale": 1.25, "transform": 0, "x": 0, "y": 0, "disabled": False},
+            {"name": "HDMI-A-1", "description": "Dell Inc. DELL U2720Q ABC", "width": 3840, "height": 2160,
+             "refreshRate": 60.0, "scale": 2, "transform": 1, "x": 4096, "y": -200, "disabled": False},
+            {"name": "DP-1", "description": "Off one", "width": 1920, "height": 1080, "refreshRate": 60.0,
+             "scale": 1, "transform": 0, "x": 0, "y": 0, "disabled": True},
+            {"name": "Virtual-1", "description": "", "width": 1024, "height": 768, "refreshRate": 60.0,
+             "scale": 1, "transform": 0, "x": 0, "y": 0},
+        ], saved={self.G9: {"hdrCapable": True, "hdr": "on", "sdrBrightness": 1.2, "sdrSaturation": 1},
+                  "Dell Inc. DELL U2720Q ABC": {"hdrCapable": False, "hdr": "auto"}})
+        code, out = self.sync()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.displays(), [
+            [self.G9, "5120x1440@240.00", "1.250000", "0", "0", "0", "on", "1.20", "1.00"],
+            ["Dell Inc. DELL U2720Q ABC", "3840x2160@60.00", "2.000000", "1", "4096", "-200", ""],
+        ])
+        self.assertTrue(os.stat(os.path.join(self.dest, "displays")).st_mode & 0o004, "the login screen can't read it")
+
+    def test_displays_left_alone_without_hyprland(self):
+        """Run outside Hyprland (no answer): the displays from last time stay."""
+        os.makedirs(self.dest)
+        with open(os.path.join(self.dest, "displays"), "w") as f:
+            f.write("before\n")
+        self.s.add("hyprctl", by_args={"monitors": ("", 1)})
+        self.assertEqual(self.sync()[0], 0)
+        with open(os.path.join(self.dest, "displays")) as f:
+            self.assertEqual(f.read(), "before\n")
+
+    def test_displays_not_in_your_own_folder(self):
+        """They're the computer's, not a person's: only in the shared folder."""
+        self.monitors([{"name": "DP-3", "description": self.G9, "width": 5120, "height": 1440,
+                        "refreshRate": 240.0, "scale": 1, "transform": 0, "x": 0, "y": 0}])
+        os.makedirs(self.dest)
+        self.assertEqual(self.sync()[0], 0)
+        for d, _, files in os.walk(os.path.join(self.dest, "people")):
+            self.assertNotIn("displays", files, d)
+
 
 class StartedForEveryone(Case):
     def test_slate_starts_the_sync_for_someone_with_only_their_own_folder(self):

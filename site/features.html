@@ -584,7 +584,7 @@
         <li>Unlock with your face (Howdy, with an infrared camera if you have one), set up in Settings → Security → Face, Fingerprint &amp; Keys: add and name looks, remove them, and try it; your password always works too</li>
         <li>Unlock with your fingerprint (fprintd), on the same page: add fingers (it says how each touch went), remove them, and try it</li>
         <li>Unlock with a security key (a YubiKey, with pam-u2f), on the same page: add keys by name with a touch, and remove them</li>
-        <li>Each of them on Slate's login screen too, switched on apart from the lock screen: it looks for your face (or waits for your finger or key) as soon as it shows your account, and your password always works</li>
+        <li>Each of them on Slate's login screen too, switched on apart from the lock screen: it looks for your face (or waits for your finger or key) once it's up and showing your account, and your password always works</li>
         <li>A power menu on the lock screen (optional)</li>
         <li>Lock before sleep</li>
       </ul>
@@ -610,7 +610,7 @@
     </article>
     <article>
       <h3>Login screen</h3>
-      <ul><li>A matching greetd login screen, with your wallpaper and picture</li><li>Optional: nothing changes your login screen until you choose Install in Settings → Security, which first says what's involved (it replaces the system's login screen and needs updating with your password when Slate, Hyprland, Quickshell or greetd change)</li><li>Switch back to your old login screen from the same place</li><li>Follows your wallpaper, theme and picture automatically; a new design asks for your password once, with an urgent notification that stays until you answer it (only for changes to the login screen itself; "Later" waits a week)</li><li>Resync from Settings → Debug, if you changed something outside Slate</li><li>Safe updates: each one is test-loaded before it's installed, and if the login screen ever fails at boot, the last version that worked takes over, then a basic emergency login</li></ul>
+      <ul><li>A matching greetd login screen, with your wallpaper and picture</li><li>Optional: nothing changes your login screen until you choose Install in Settings → Security, which first says what's involved (it replaces the system's login screen and needs updating with your password when Slate, Hyprland, Quickshell or greetd change)</li><li>Switch back to your old login screen from the same place</li><li>Starts each monitor in the same mode, scale and HDR setting as your desktop, so the screen doesn't go black a second time as you log in (a monitor it hasn't seen yet gets its own choice until you log in once)</li><li>Follows your wallpaper, theme and picture automatically; a new design asks for your password once, with an urgent notification that stays until you answer it (only for changes to the login screen itself; "Later" waits a week)</li><li>Resync from Settings → Debug, if you changed something outside Slate</li><li>Safe updates: each one is test-loaded before it's installed, and if the login screen ever fails at boot, the last version that worked takes over, then a basic emergency login</li></ul>
     </article>
   </div>
 </section>

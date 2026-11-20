@@ -202,6 +202,44 @@ print("{ " + ", ".join(json.dumps(k) + ": " + json.dumps(v, ensure_ascii=False)
                        for k, v in zip(("user", "name", "session", "kb_layout"), sys.argv[1:])) + " }")' \
     "$USER" "${name:-$USER}" "$session" "$(kb_layout)" | write user.json
 
+# Your displays, as your desktop shows them now, so the login screen starts each monitor the
+# same way: a monitor changing mode goes black for a few seconds, and the login screen in its
+# own mode meant that twice at every login (and a face recognized while it was black, the login
+# screen never seen). One monitor a line, tab separated, by description as Settings → Displays
+# keeps them: description, mode, scale, rotation, x, y, then HDR (on, off, auto, or nothing to
+# leave it as Hyprland has it) and, with HDR on, its SDR brightness and saturation. Data only:
+# greeter/hyprland.lua checks each field. Not run in Hyprland (no answer): left as it was
+mons=$(hyprctl monitors -j 2>/dev/null || true)
+displays=$(python3 -c 'import json, math, sys
+try:
+    mons = json.loads(sys.argv[1])
+except ValueError:
+    sys.exit(1)
+try:
+    saved = json.load(open(sys.argv[2]))
+except (OSError, ValueError):
+    saved = {}
+if not isinstance(mons, list) or not isinstance(saved, dict):
+    sys.exit(1)
+lines = []
+for m in mons:
+    d = m.get("description") or ""
+    if not d or m.get("disabled") or any(c in d for c in "\t\n\r"):
+        continue
+    s = saved.get(d) if isinstance(saved.get(d), dict) else {}
+    hdr = s.get("hdr", "")
+    if hdr not in ("on", "off", "auto") or (hdr != "on" and not s.get("hdrCapable")):
+        hdr = ""
+    f = [d, "%dx%d@%.2f" % (m["width"], m["height"], m["refreshRate"]), "%.6f" % m["scale"],
+         str(m.get("transform", 0)), str(m["x"]), str(m["y"]), hdr]
+    if hdr == "on":
+        f += ["%.2f" % float(s.get("sdrBrightness", 1)), "%.2f" % float(s.get("sdrSaturation", 1))]
+    lines.append("\t".join(f))
+if not lines:
+    sys.exit(1)
+print("\n".join(lines))' "$mons" "${XDG_STATE_HOME:-$HOME/.local/state}/slate/displays.json" 2>/dev/null) \
+    && printf '%s\n' "$displays" | write displays || true
+
 # Fonts: your interface font's files (system fonts are already readable, so not those), the
 # icon font and the bundled Geist. Only what's changed is copied, and only fonts no longer
 # wanted are removed

@@ -149,12 +149,17 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
 | Location | Owner | Contents | Updated by |
 |---|---|---|---|
 | `/usr/local/share/slate-greeter` (+ `.good`) | root | the files listed in `greeter/files` (`shell.qml`, `LoginWindow.qml`, `LoginScreen.qml`, `Config.qml`, … and the `emergency/` login screen), plus `hyprland.lua` (keyboard layout filled in), `version`, and `settings.json` → symlink to the data folder | `sudo /usr/local/share/slate/bin/slate-greeter-install` |
-| `/var/lib/slate-greeter` | you | the shared look, appearance only: `settings.json` (the same allow-list), `wallpaper`, `avatar`, `user.json` (user, name, default session), `fonts/` | `slate-greeter-sync` — run automatically by Slate when the wallpaper or settings change |
+| `/var/lib/slate-greeter` | you | the shared look, appearance only: `settings.json` (the same allow-list), `wallpaper`, `avatar`, `user.json` (user, name, default session), `fonts/`, `displays` (each monitor as your desktop shows it: description, mode, scale, rotation, position, HDR; tab separated, checked field by field by `greeter/hyprland.lua`) | `slate-greeter-sync` — run automatically by Slate when the wallpaper, settings or displays change |
 | `/var/lib/slate-greeter/people/<name>/` | that person (`people/` itself: root, 1777) | that person's own look: `settings.json` (an allow-list of appearance settings), `wallpaper`, `avatar`. Used only when it's a real folder owned by the person it's named after | each person's own `slate-greeter-sync`, without a password |
 | `/var/cache/slate-greeter` | greeter | `last-session`, `proven` (version of the last copy someone logged in with), logs, caches | the greeter |
 
 - **Keeping the appearance in step:** Slate runs `slate-greeter-sync` a few seconds after the
-  wallpaper, settings or avatar change. If something changed outside Slate (the wallpaper file
+  wallpaper, settings or avatar change, when Settings → Displays keeps a change or a monitor comes
+  or goes, and once 10 s after Slate starts. **Displays:** the login screen's Hyprland starts each
+  listed monitor as your desktop has it (by description), so the monitor changes mode once at
+  boot rather than again at login (each change is seconds of black on some monitors, and a face
+  could be recognized during it); a mode that doesn't take steps down a rate; unlisted monitors
+  get Hyprland's own choice. If something changed outside Slate (the wallpaper file
   replaced in place, the picture, name or keyboard layout changed elsewhere), Settings → Debug
   (a tile on All Settings) → **Resync** runs it by hand.
 - **Updating the code:** when the login screen's code changes, Slate shows an urgent

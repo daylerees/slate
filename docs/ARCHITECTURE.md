@@ -354,7 +354,7 @@ bin/slate-greeter-install     installs or updates the Slate login screen and swi
                               (sudo; --revert, --code-only), after
 bin/slate-greeter-check       test-loading it without a display, so a broken copy is never installed
 bin/slate-greeter-sync        keeps the login screen's appearance in step with your desktop, without
-                              sudo: data only (settings, wallpaper, avatar, font) into /var/lib/slate-greeter
+                              sudo: data only (settings, wallpaper, avatar, font, displays) into /var/lib/slate-greeter
 bin/slate-private-camera      Private Mode's camera switch: the camera off for every app and back
                               (root, through pkexec; installed once, on asking)
 bin/slate-factory-reset       Settings → Debug → Factory reset: settings and what Slate remembers moved

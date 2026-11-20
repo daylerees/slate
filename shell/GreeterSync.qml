@@ -20,6 +20,20 @@ Scope {
         command: ["sh", "-c", "{ [ -w /var/lib/slate-greeter ] || [ -w /var/lib/slate-greeter/people ]; } && exec \"$0\" || true", Quickshell.shellPath("bin/slate-greeter-sync")]
     }
     Connections { target: Config; function onWallpaperChanged() { greeterSync.restart(); } function onSaved() { greeterSync.restart(); } function onAvatarVersionChanged() { greeterSync.restart(); } }
+    // Your displays too (the login screen starts each monitor as your desktop has it): when
+    // Settings → Displays keeps a change, a monitor comes or goes, and once a little after Slate
+    // starts, by when each monitor has its best mode (session/hypr/config/monitors.lua)
+    FileView {
+        path: Config.stateHome + "/slate/displays.json"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: { reload(); greeterSync.restart(); }
+    }
+    Connections {
+        target: Hyprland
+        function onRawEvent(e) { if (e.name.startsWith("monitoradded") || e.name.startsWith("monitorremoved")) greeterSync.restart(); }
+    }
+    Timer { interval: 10000; running: !Config.testMode; onTriggered: greeterSync.restart() }
 
     // When the login screen's code has changed, offer to install it (a notification
     // with an Update button, then a password prompt). Checked 20 s after Slate starts
