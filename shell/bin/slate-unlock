@@ -41,7 +41,7 @@ MARK="# slate-unlock:"
 METHODS="face fingerprint key"
 # Where each method's PAM module can be, first found wins: "<module file> <line's module part>"
 # (Howdy 3 has pam_howdy.so; Howdy 2 is a pam_python script. pam_u2f's keys are in a file root
-# owns, never in your home: SLT-252 manages it)
+# owns, never in your home, for Settings to manage)
 candidates() {
     local d
     for d in /usr/lib/security /usr/lib64/security /lib/security /lib64/security \

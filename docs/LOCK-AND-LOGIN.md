@@ -43,6 +43,12 @@ the gloss sheen like the bar's containers and no outline.
   login`. The password is never in it. The last method off takes the file away;
   `./install.sh --uninstall` and factory reset (asking first, while Slate can still ask for the
   password) do too. The lock screen watches the file and uses it while it names a method.
+  Settings → Security → Face, Fingerprint & Keys (`settings/pages/UnlockPage.qml`) sets it up:
+  `scripts/unlock-info.py` says without a password whether Howdy is installed, the cameras and
+  which are infrared, and the methods on; adding, removing and listing faces, the camera, and
+  turning face on or off go through `slate-unlock` (`face-add`, `face-remove`, `face-camera`,
+  `enable`/`disable face`). Howdy keeps faces root's, so the page shows the helper's last list,
+  kept in `~/.local/state/slate/faces.json`. Try it runs `slate-lock` itself, without locking.
 - **Lockout:** after a failure Slate reads `faillock --user $USER`; at 3 failures within
   15 min it shows "Too many tries · you can try again in m:ss", disables the field and stops
   sending attempts. Wrong passwords show the tries left. Those numbers (and the 10 minutes it

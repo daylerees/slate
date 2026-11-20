@@ -44,6 +44,14 @@ Column {
             key: "lockBeforeSleep"
         }
     }
+    GroupLabel { text: "Unlocking" }
+    Group {
+        SettingRow {
+            label: "Face, Fingerprint & Keys"
+            detail: "Unlock the lock screen by looking at your camera, with your password still there"
+            Button { label: "Open"; onClicked: win.goTo("unlock", "") }
+        }
+    }
     GroupLabel { text: "Login screen" }
     Group {
         SettingRow {

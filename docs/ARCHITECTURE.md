@@ -119,7 +119,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │        DisplaysPage.qml, InputPage.qml, SoundPage.qml, PowerPage.qml, ShortcutsPage.qml,
 │        AppsPage.qml, StartupPage.qml, DateTimePage.qml, ScreenshotsPage.qml, WindowsPage.qml,
 │        NotificationsPage.qml, BluetoothPage.qml, PrintersPage.qml, AboutPage.qml, WifiPage.qml,
-│        HotCornersPage.qml, DebugPage.qml, WebcamPage.qml, LockPage.qml, ScreensaverPage.qml,
+│        HotCornersPage.qml, DebugPage.qml, WebcamPage.qml, LockPage.qml, UnlockPage.qml, ScreensaverPage.qml,
 │        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml, UsersPage.qml,
 │        AccessibilityPage.qml, TimersPage.qml, StoragePage.qml
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")

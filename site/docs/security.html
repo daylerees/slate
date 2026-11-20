@@ -62,6 +62,27 @@
         <span class="path"><i class="ti">&#xEB20;</i> Settings → General</span> (see
         <a href="night-light.html#your-picture-and-location">Your picture and location</a>).</p>
 
+      <h2 id="face">Unlocking with your face</h2>
+      <p>The lock screen can let you in when it sees your face, so you don't have to type your password. Your password
+        always works too, at any moment, so a camera that can't see you never locks you out. Set it up in
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Security → Face, Fingerprint &amp; Keys</span>.</p>
+      <p>It needs <strong>Howdy</strong>, which recognizes your face through your camera. Slate doesn't install it
+        for you: on Arch it's <code>howdy-next</code> in the AUR; on other systems, follow Howdy's own instructions.
+        The page says when it's missing.</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Camera</td><td>The camera Howdy looks through. Slate picks an infrared one if you have one (a webcam
+          made for Windows Hello, say): it sees you in the dark, and a photo can't fool it. A camera that isn't
+          infrared works, but the page warns you that a photo of you could fool it.</td></tr>
+        <tr><td>Your face</td><td><strong>Add your face</strong> asks first, then your password, then looks at you for
+          a few seconds. Give each look a name; adding another (with glasses, say) helps it know you. Each look has
+          <strong>Remove</strong>. <strong>Try it</strong> checks it recognizes you, without locking.</td></tr>
+        <tr><td>Unlock with your face</td><td>The lock screen looks for your face as soon as it wakes, and says so
+          under the password box. Turning it on or off asks for your password.</td></tr>
+      </table>
+      <p>Your faces are kept by Howdy on this computer only, and only the lock screen uses them: <code>sudo</code>,
+        the login screen and other apps still ask for your password.</p>
+
       <h2>Locking when you're away</h2>
       <p>Under <strong>When you're away</strong>, Slate can lock, turn the screen off and suspend after times you choose:</p>
       <table>

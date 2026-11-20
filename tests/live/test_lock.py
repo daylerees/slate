@@ -222,7 +222,7 @@ class Lock(LockCase):
 
 
 class AnotherWayIn(LockCase):
-    """A face, a finger or a key (SLT-248's first step): a PAM service of the test's own stands in
+    """A face, a finger or a key: a PAM service of the test's own stands in
     for one, a pam_exec script that says what it's waiting for (as pam_howdy does), waits, then
     lets you in or doesn't. It starts by itself as the screen locks, its words show under the
     field, and the password still works at any moment."""

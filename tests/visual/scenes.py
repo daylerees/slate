@@ -678,6 +678,17 @@ SCENES["dock-magnified-glass"] = {
     "undo": [("test", "dockHover", -1)],
 }
 
+# Face, Fingerprint & Keys with Howdy, a webcam with an infrared camera (as a Logitech BRIO is),
+# two looks added and face unlock on (the tests' computer has no Howdy or camera)
+_UNLOCK = json.dumps({"howdy": True, "methods": ["face"], "cameras": [
+    {"path": "/dev/v4l/by-id/usb-BRIO-video-index0", "name": "Logitech BRIO", "ir": False},
+    {"path": "/dev/v4l/by-id/usb-BRIO-video-index2", "name": "Logitech BRIO", "ir": True}]})
+_FACES = '{"camera": "", "faces": [{"id": 1, "label": "Me"}, {"id": 2, "label": "Glasses"}]}'
+SCENES["settings-unlock"] = dict(SCENES["settings-unlock"],
+    do=[("!sh", "-c", 'mkdir -p "$HOME/.local/state/slate" && printf %s \'' + _FACES + '\' > "$HOME/.local/state/slate/faces.json"'),
+        ("settings", "page", "unlock"), ("test", "settingsPoll", "unlock", _UNLOCK)],
+    undo=[("test", "settingsPoll", "unlock", ""), ("settings", "close"), ("!sh", "-c", 'rm -f "$HOME/.local/state/slate/faces.json"')])
+
 # Settings → Displays lists the switched-off virtual screen by name: Virtual-1 here, Virtual-2
 # on GitHub's runners
 SCENES["settings-displays"]["mask"] = [(505, 538, 220, 24)]

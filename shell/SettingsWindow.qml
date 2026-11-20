@@ -211,6 +211,21 @@ FloatingWindow {
     }
     // (the tests: press the switch on the row with this label on the page showing, as a click
     // does: it says it was toggled, and the row decides. false when there's no such switch)
+    // (the tests: a button on the row with that label, pressed; a page's own state, where it keeps one)
+    function testButton(rowLabel, label) {
+        const find = (it, want) => {
+            if (!it) return null;
+            if (it.visible && want(it) && it !== pageLoader.item) return it;
+            for (const c of it.children) { const r = find(c, want); if (r) return r; }
+            return null;
+        };
+        const r = find(pageLoader.item, it => it.label === rowLabel && it.detail !== undefined);
+        const b = r ? find(r, it => it !== r && it.label === label && it.clicked !== undefined && it.enabled) : null;
+        if (!b) return false;
+        b.clicked();
+        return true;
+    }
+    function pageTestState() { const p = pageLoader.item; return p && p.testState !== undefined ? p.testState : null; }
     function testToggle(label) {
         const row = it => {
             if (!it) return null;
@@ -917,7 +932,7 @@ FloatingWindow {
                     active: win.visible
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, control: controlPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, users: usersPage, accessibility: accessibilityPage, timers: timersPage, storage: storagePage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, wallpaper: wallpaperPage, icons: iconsPage, assistant: assistantPage })[win.section]
+                        unlock: unlockPage, apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, users: usersPage, accessibility: accessibilityPage, timers: timersPage, storage: storagePage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, wallpaper: wallpaperPage, icons: iconsPage, assistant: assistantPage })[win.section]
                     onLoaded: {
                         scroller.contentY = 0; dropLayer.owner = null;
                         if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound));
@@ -1205,6 +1220,7 @@ FloatingWindow {
     Component { id: wifiPage; WifiPage {} }
 
     Component { id: lockPage; LockPage {} }
+    Component { id: unlockPage; UnlockPage {} }
 
     Component { id: hotCornersPage; HotCornersPage {} }
 

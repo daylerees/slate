@@ -246,6 +246,8 @@ ShellRoot {
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
         // Press the switch on the Settings row with this label, as a click does ("pressed" or "none")
         function settingsToggle(label: string): string { return settingsLoader.item && settingsLoader.item.testToggle(label) ? "pressed" : "none"; }
+        function settingsPollValue(what: string): string { return settingsLoader.item ? String(settingsLoader.item.pretendPolls[what] ?? "") : ""; }
+        function settingsButton(row: string, label: string): string { return settingsLoader.item && settingsLoader.item.testButton(row, label) ? "pressed" : "none"; }
         function newSpace(): void { popouts.newSpaceAsked(); }
         // Saving a space as New Space's Save does (Spaces.save), workspaces as "1,3"
         function saveSpace(name: string, ids: string): void { Spaces.save(name, "#8fb3e8", 0xEDBA, ids.split(",").map(Number)); }
@@ -526,7 +528,9 @@ ShellRoot {
                             // (a heading it went to has no label: its text)
                             found: settings && settings.foundItem ? String(settings.foundItem.label || settings.foundItem.text || "") : "",
                             // (the agents Settings → Assistant offers, once it's looked)
-                            agents: settings ? settings.assistantAgentsSeen : [] },
+                            agents: settings ? settings.assistantAgentsSeen : [],
+                            // (what the page open now says about itself, where it keeps a testState)
+                            page: settings && settings.visible ? settings.pageTestState() : null },
                 launcher: { open: appLauncher.shown, visible: appLauncher.visible, screen: appLauncher.screen ? appLauncher.screen.name : "", query: appLauncher.query, mode: appLauncher.mode, current: appLauncher.currentIndex,
                             results: (appLauncher.results || []).slice(0, 30).map(r => opt(r.name) || opt(r.title) || opt(r.id) || ""),
                             // How it opened and scrolled (launcherScroll): frame times, the time spent moving

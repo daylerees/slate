@@ -43,7 +43,7 @@ const SECTIONS = [
     { id: "timers", title: "Timers", icon: 0xEA70, about: "A drink reminder and a focus timer, on the menu bar or the dock", covers: ["timers"] },
     { id: "accessibility", title: "Accessibility", icon: 0xEBA9, about: "Easier to see and use: a screen reader, zoom, contrast, text size, an on-screen keyboard", covers: ["accessibility"] },
     { id: "users", title: "People on this computer", icon: 0xEBF2, about: "Adding someone, changing their account, and removing it", covers: ["users"] },
-    { id: "security", title: "Locking and login", icon: 0xEAE2, about: "The lock screen, the login screen, the screensaver and the firewall", covers: ["lock", "screensaver"] },
+    { id: "security", title: "Locking and login", icon: 0xEAE2, about: "The lock screen, unlocking with your face, the login screen, the screensaver and the firewall", covers: ["lock", "unlock", "screensaver"] },
     { id: "privacy", title: "Private Mode and the camera", icon: 0xF227, about: "Turning off the mic, camera, assistants and screen capture", },
   ]},
   { title: "Apps and tools", pages: [
