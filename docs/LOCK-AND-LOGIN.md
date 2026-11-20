@@ -72,7 +72,10 @@ the gloss sheen like the bar's containers and no outline.
   `slate-greeter-install` keeps that line whenever the file's there. The file is rewritten, never
   removed: greetd keeps the service it started with until it restarts, so with no methods it's
   greetd's own again (`remove` does that too). greetd runs one conversation, so `greeter/shell.qml`
-  starts it as soon as there's someone to log in (`auto`), shows the methods' words as the hint,
+  starts it once there's someone to log in and the login screen has been on the screen for a
+  moment (`auto`: `LoginWindow` reports its first frame, `windowShown`, then `seenFor`; on a cold
+  boot the first frame is late, and a face found before it meant the login screen was never
+  seen), shows the methods' words as the hint,
   keeps a password typed meanwhile (`pending`) for the first password question, answers it then,
   and starts again on activity once they've given way. Tests: `tests/live/test_login_screen.py`'s
   fake greetd has a face (`AnotherWayIn`).

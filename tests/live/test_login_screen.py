@@ -424,6 +424,17 @@ class AnotherWayIn(LiveCase):
         self.assertFalse([r for r in self.greetd.of_type("post_auth_message_response") if r.get("response")],
                          "a password was sent")
 
+    def test_it_looks_only_once_youve_seen_the_login_screen(self):
+        """It waits for the window's first frame, then a moment more, before it starts: on a cold
+        boot the first frame came late, so the face matched (or gave up) before the login screen
+        had ever shown, and all you saw was black and then your desktop."""
+        self.start("you", wait=1.0)
+        self.until(lambda: self.greetd.of_type("create_session"), "it to start looking")
+        state = json.loads(self.ipc("state"))
+        self.assertGreater(state.get("shownAt", 0), 0, "it started before the login screen was drawn")
+        self.assertGreaterEqual(state["autoStartedAt"] - state["shownAt"], 1000,
+                                "it started without a moment to see the login screen")
+
     def test_not_you_then_the_password(self):
         self.start("not you")
         self.until(lambda: json.loads(self.ipc("state"))["wantsPassword"], "it to come to the password")

@@ -48,6 +48,13 @@ PanelWindow {
         onActivity: win.greeter.activity()
         onPowerAction: a => win.greeter.power(a)
         onCancelled: win.greeter.cancelAsking()
+        // Its first frame drawn: the login screen's on the screen, so a face, a finger or a key
+        // can start looking (greeter/shell.qml's windowShown)
+        Connections {
+            target: win.primary ? screen.Window.window : null
+            enabled: win.greeter.shownAt === 0
+            function onFrameSwapped() { win.greeter.windowShown(); }
+        }
         Connections {
             target: win.greeter
             function onFailed(t) { screen.fail(t); }

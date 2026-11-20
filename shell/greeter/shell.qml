@@ -203,11 +203,26 @@ ShellRoot {
         if (/touch|u2f|fido|security key|token|device/i.test(t)) return "Touch your security key, or type your password";
         return "";
     }
+    // Not before the login screen's on the screen, and has been for a moment: on a cold boot the
+    // first frame comes late, and a face found before it meant black, then the desktop, with
+    // the login screen never seen (LoginWindow says when it's drawn its first frame)
+    readonly property real startedAt: Date.now()
+    property real shownAt: 0
+    readonly property int seenFor: 1200
+    function windowShown() {
+        if (shownAt > 0) return;
+        shownAt = Date.now();
+        console.info("slate-greeter: on the screen after", shownAt - startedAt, "ms");
+        autoSoon.restart();
+    }
     function startAuto() {
         if (loginMethods.length === 0 || checking || !user || busy || asking || auto || !Greetd.available) return;
-        if (Greetd.state !== GreetdState.Inactive) return;
+        if (Greetd.state !== GreetdState.Inactive || shownAt === 0) return;
+        const wait = shownAt + seenFor - Date.now();
+        if (wait > 0) { autoSoon.interval = wait; autoSoon.restart(); return; }
         auto = true; wantsPassword = false; hint = ""; pending = "";
         autoStartedAt = Date.now();
+        console.info("slate-greeter: looking for", loginMethods.join(", "), "after", autoStartedAt - startedAt, "ms");
         Greetd.createSession(user);
     }
     function stopAuto() {
@@ -217,7 +232,7 @@ ShellRoot {
     }
     onUserChanged: { stopAuto(); autoSoon.restart(); }
     onLoginMethodsChanged: autoSoon.restart()
-    Timer { id: autoSoon; interval: 300; onTriggered: root.startAuto() }
+    Timer { id: autoSoon; interval: 300; onTriggered: { interval = 300; root.startAuto(); } }
     // Someone's back after the methods gave up: look again, not more than every few seconds
     function activity() {
         if (!auto || !wantsPassword || Date.now() - autoStartedAt < 4000) return;
@@ -366,7 +381,7 @@ ShellRoot {
         function submit(password: string): void { root.submit(password); }
         function message(): string { return root.message; }
         function hint(): string { return root.hint; }
-        function state(): string { return JSON.stringify({ auto: root.auto, wantsPassword: root.wantsPassword, busy: root.busy, methods: root.loginMethods }); }
+        function state(): string { return JSON.stringify({ auto: root.auto, wantsPassword: root.wantsPassword, busy: root.busy, methods: root.loginMethods, shownAt: root.shownAt, autoStartedAt: root.autoStartedAt }); }
         function activity(): void { root.autoStartedAt = 0; root.activity(); }
         function asking(): string { return root.asking ? "yes" : "no"; }
         function cancel(): void { root.cancelAsking(); }
