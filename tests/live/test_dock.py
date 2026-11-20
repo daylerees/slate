@@ -788,6 +788,28 @@ class More(MoreCase):
             self.assertIn(kept, kinds, f"the {kept} stays")
 
 
+class MoreDrawsItsIcons(MoreCase):
+    """An app that opens with no room left on the dock goes straight into More, never a cell on
+    the dock, and the dock's cells were what drew an app's missing tile: More's grid showed an
+    empty space where its icon belonged. Its tile (AppTile) draws a missing one too."""
+    APPS = ["slate-straight-to-more"]
+
+    def test_an_app_straight_into_more_has_its_icon(self):
+        key = self.APPS[0]
+        self.ipc("test", "dockRoom", 200)
+        # (on a workspace out of sight: focused, the menu bar shows its icon, and draws it)
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot --app-id %s", { workspace = "9 silent" })' % key)
+        self.wait(lambda st: key in st["dock"]["more"], "it in More", timeout=10)
+        # (whoever drew it already, it's gone: only More's grid can draw it again)
+        tile = os.path.join(self.s.state()["icons"]["tileDir"], key + ".png")
+        if os.path.exists(tile):
+            os.remove(tile)
+        self.addCleanup(lambda: self.ipc("dock", "closeMenu"))
+        self.ipc("dock", "more")
+        self.wait(lambda st: st["dock"]["menu"] == "more", "More's grid open")
+        self.wait(lambda st: os.path.exists(tile), "its tile drawn", timeout=15)
+
+
 class MoreScrolls(MoreCase):
     """More with more than three rows of apps scrolls: its scrollbar has room of its own beside
     the grid, never over the right-hand column's names, and the shades show which way there's
