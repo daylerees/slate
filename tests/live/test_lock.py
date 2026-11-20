@@ -41,6 +41,11 @@ class LockCase(LiveCase):
         self.ipc("lock", "lock")
         return self.wait(lambda st: st["lock"]["locked"], "the lock")["lock"]
 
+    def lock_idle(self):
+        """Locked by itself (idle, sleep, the screensaver): you're away, so it looks at once."""
+        self.ipc("lock", "lockAsIdle")
+        return self.wait(lambda st: st["lock"]["locked"], "the lock")["lock"]
+
     def answer(self, password):
         """Type a password and press Enter; the lock's state once PAM has answered."""
         self.ipc("lock", "submit", password)
@@ -239,14 +244,14 @@ class AnotherWayIn(LockCase):
 
     def test_it_lets_you_in_without_typing(self):
         self.method(wait=2, ok=True)
-        self.lock()
+        self.lock_idle()
         st = self.wait(lambda st: st["lock"]["hint"] != "", "what it's waiting for", timeout=10)["lock"]
         self.assertEqual(st["hint"], "Looking for your face… or type your password")
         self.wait(lambda st: not st["lock"]["locked"], "it to let you in", timeout=15)
 
     def test_the_password_works_while_it_waits(self):
         self.method(wait=60, ok=True)
-        self.lock()
+        self.lock_idle()
         self.wait(lambda st: st["lock"]["hint"] != "", "it to start looking", timeout=10)
         self.ipc("lock", "submit", PASSWORD)
         st = self.wait(lambda st: not st["lock"]["locked"], "the password to unlock", timeout=15)["lock"]
@@ -255,7 +260,7 @@ class AnotherWayIn(LockCase):
     def test_not_you_stays_locked_and_looks_again_when_youre_back(self):
         self.method(wait=1, ok=False)
         refused = self.s.state()["lock"]["failuresShown"]
-        st = self.lock()
+        st = self.lock_idle()
         st = self.wait(lambda st: st["lock"]["autoGaveUp"], "it to give up", timeout=15)["lock"]
         self.assertTrue(st["locked"])
         self.assertEqual(st["hint"], "")
@@ -271,13 +276,39 @@ class AnotherWayIn(LockCase):
                            ("Something else entirely", "Something else entirely")):
             with self.subTest(says):
                 self.method(wait=30, ok=False, says=says)
-                self.lock()
+                self.lock_idle()
                 self.wait(lambda st: st["lock"]["hint"] == want, f"{want!r}", timeout=10)
                 self.let_go()
                 self.method(wait=30, ok=False, says=says)
 
-    def test_nothing_changes_without_one(self):
+    def test_locked_by_you_waits_until_youre_back(self):
+        """Super+L and the like: you're leaving, and still facing the camera, so it doesn't
+        look until you come back (a key or the pointer), and not in the first moments after
+        locking, when that's you walking away."""
+        self.addCleanup(lambda: self.ipc("lock", "byYouFor", "-1"))
+        self.ipc("lock", "byYouFor", "2500")
+        self.method(wait=30, ok=False)
         st = self.lock()
+        self.assertTrue(st["waitForYou"])
+        self.s.settle(1.0)
+        self.ipc("lock", "activity")              # (you, going: too soon to count)
+        self.s.settle(0.6)
+        st = self.s.state()["lock"]
+        self.assertEqual(st["hint"], "", "it looked for your face as you locked it")
+        self.s.settle(1.5)
+        self.ipc("lock", "activity")              # back
+        st = self.wait(lambda st: st["lock"]["hint"] != "", "it to look once you're back", timeout=10)["lock"]
+        self.assertFalse(st["waitForYou"])
+
+    def test_locked_by_you_the_password_still_works(self):
+        self.method(wait=30, ok=False)
+        self.lock()
+        st = self.answer(PASSWORD)
+        self.assertFalse(st["locked"])
+        self.assertFalse(self.s.state()["lock"]["waitForYou"])
+
+    def test_nothing_changes_without_one(self):
+        st = self.lock_idle()
         self.s.settle(1.5)
         st = self.s.state()["lock"]
         self.assertEqual((st["hint"], st["autoGaveUp"]), ("", False))
@@ -308,7 +339,7 @@ class SlatesOwnService(LockCase):
         self.ipc("lock", "unlockFile", self.service())
         st = self.wait(lambda st: st["lock"]["unlockMethods"] == ["face"], "the methods read")["lock"]
         self.assertEqual(st["autoService"], "slate-lock")
-        self.lock()
+        self.lock_idle()
         self.wait(lambda st: st["lock"]["hint"] == "Looking for your face… or type your password", "it looking", timeout=10)
         self.wait(lambda st: not st["lock"]["locked"], "it to let you in", timeout=15)
 

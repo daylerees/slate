@@ -587,7 +587,7 @@ ShellRoot {
                             zooming: wsOverview.zooming, leaving: wsOverview.leaving, focused: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1,
                             columns: wsOverview.isGrid ? Math.max(1, Math.min(wsOverview.gridSize, wsOverview.spaces.length)) : 0 },
                 lock: { locked: lockScreen.locked, previewing: lockScreen.previewing, previewPeople: lockScreen.testPeople.length, busy: lockScreen.busy, message: lockScreen.message, asking: lockScreen.asking, messageIsError: lockScreen.messageIsError,
-                        hint: lockScreen.hint, autoGaveUp: lockScreen.autoGaveUp, unlockMethods: lockScreen.unlockMethods, autoService: lockScreen.autoService,
+                        hint: lockScreen.hint, autoGaveUp: lockScreen.autoGaveUp, waitForYou: lockScreen.waitForYou, unlockMethods: lockScreen.unlockMethods, autoService: lockScreen.autoService,
                         // (what it read from faillock.conf, and what it made of the wrong passwords so far)
                         deny: lockScreen.failDeny, interval: lockScreen.failInterval, unlockTime: lockScreen.unlockTime, lockedOut: lockScreen.lockedOut,
                         failuresShown: lockScreen.failuresShown, screenOffWatching: lockScreen.screenOffWatching },

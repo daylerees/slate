@@ -77,8 +77,11 @@
         <tr><td>Your face</td><td><strong>Add your face</strong> asks first, then your password, then looks at you for
           a few seconds. Give each look a name; adding another (with glasses, say) helps it know you. Each look has
           <strong>Remove</strong>. <strong>Try it</strong> checks it recognizes you, without locking.</td></tr>
-        <tr><td>Unlock with your face</td><td>The lock screen looks for your face as soon as it wakes, and says so
-          under the password box. Turning it on or off asks for your password.</td></tr>
+        <tr><td>Unlock with your face</td><td>The lock screen looks for your face when you come back to it, and says so
+          under the password box. When it locked by itself (you were away, or the computer slept), that's as soon
+          as it wakes. When you locked it yourself (<kbd>Super</kbd> + <kbd>L</kbd>, Lock now, the power menu), you're
+          probably still in front of the camera, so it waits until you press a key or move the pointer, and not in
+          the first few seconds. Turning it on or off asks for your password.</td></tr>
       </table>
       <p>Your faces are kept by Howdy on this computer only, and only the lock screen uses them: <code>sudo</code>,
         the login screen and other apps still ask for your password.</p>

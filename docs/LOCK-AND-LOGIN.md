@@ -29,7 +29,11 @@ the gloss sheen like the bar's containers and no outline.
   with only those methods and no password (`autoService`: Slate's own once it's set up, none
   otherwise, so nothing changes for anyone without one). It starts as the screen locks (and
   in the lock preview), and again on the pointer moving or a key before anything's typed,
-  once it's given up, at most every 3 s. Its info messages show under the field in Slate's
+  once it's given up, at most every 3 s. Locked by you (the `lock` IPC: Super+L, Lock now, the
+  power menu, hot corners, the lid; or logind's `Session.Lock`), it doesn't start until you're
+  back (`waitForYou`): a key or the pointer at least 4 s after locking, or waking from sleep,
+  since you're still in front of the camera as you lock. Locks by idle, sleep or the screensaver
+  start it at once. Its info messages show under the field in Slate's
   words (`methodWords`: face, fingerprint, security key; anything else as said, plain text);
   a question in it is never answered (it gives up instead). Typing a password stops it: the
   password is its own conversation, so neither waits on the other. `pam_faillock` isn't in

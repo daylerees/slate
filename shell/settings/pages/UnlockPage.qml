@@ -259,8 +259,8 @@ Column {
         Separator {}
         SettingRow {
             label: "Unlock with your face"
-            detail: unlockPage.faceOn ? "The lock screen looks for your face as soon as it wakes"
-                : "The lock screen looks for your face as it wakes, and you can still type your password"
+            detail: "The lock screen looks for your face when you come back. Locked with Super+L, it waits for a key "
+                + "or the pointer, so it doesn't let you straight back in"
             needsMet: unlockPage.info.howdy && unlockPage.faces.length > 0 && !unlockPage.busy
             needs: !unlockPage.info.howdy ? "Needs Howdy to be installed" : unlockPage.faces.length === 0 ? "Needs your face to be added" : "Wait a moment"
             SettingToggle {

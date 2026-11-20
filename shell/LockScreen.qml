@@ -142,7 +142,18 @@ Scope {
         }
         onError: err => { root.hint = ""; root.autoGaveUp = true; }
     }
+    // Locked by you (Super+L, Lock now, the power menu, a hot corner, the lid): you're leaving,
+    // and still in front of the camera, so a face would let you straight back in. It waits for
+    // you to come back instead: a key or the pointer, a few seconds after locking (byYouFor), or
+    // the computer waking from sleep. Locked by itself (idle, sleep, the screensaver), you're
+    // away already, and it looks as the screen wakes
+    property bool waitForYou: false
+    property real lockedAt: 0
+    readonly property int byYouFor: Config.testMode && testByYouFor >= 0 ? testByYouFor : 4000
+    property int testByYouFor: -1
+    Connections { target: Config; function onWoke() { if (root.locked && root.waitForYou) { root.waitForYou = false; root.startAuto(); } } }
     function startAuto() {
+        if (waitForYou) { autoGaveUp = true; return; }      // (until you're back: activity)
         if (autoService === "" || autoPam.active || busy || asking || lockedOut) return;
         if (!locked && !(previewing && previewMode === "lock")) return;
         autoGaveUp = false;
@@ -156,6 +167,12 @@ Scope {
     // Someone's back (the pointer, or a key before typing): look again if it had given up, not
     // more than once every few seconds
     function activity() {
+        if (waitForYou) {
+            if (Date.now() - lockedAt < byYouFor) return;
+            waitForYou = false;
+            startAuto();
+            return;
+        }
         if (autoGaveUp && Date.now() - autoStartedAt > 3000) startAuto();
     }
     // PAM asked a second question and waits for the answer (what's typed next goes to it)
@@ -398,12 +415,15 @@ Scope {
         onFinished: root.xray(false) }
     NumberAnimation { id: fadeOut; target: root; property: "lockFade"; to: 0; duration: Config.ms(300); easing.type: Easing.InCubic
         onFinished: root.setLocked(false) }
-    // fade: false for locks before sleep (and anything else that mustn't wait on a look)
-    function lockNow(fade) {
+    // fade: false for locks before sleep (and anything else that mustn't wait on a look);
+    // byYou: you asked for it (waitForYou)
+    function lockNow(fade, byYou) {
         // A real lock ends any preview: left open, the preview took the first right password
         // for itself ("Welcome back") and the lock stayed
         endPreview();
         if (locked) return;
+        waitForYou = byYou === true;
+        lockedAt = Date.now();
         // And any check of a password typed into the preview: one still running as the lock
         // comes up mustn't count as the lock's own password
         if (pam.active) { pam.abort(); forget(); }
@@ -420,6 +440,7 @@ Scope {
     }
     function unlock() {
         if (!locked || unlocking) return;
+        waitForYou = false;                   // (before woke(), which would start a look)
         Config.woke();                        // (after sleep it's this, more often than not)
         fadeIn.stop();
         if (Config.animate) {
@@ -464,7 +485,7 @@ Scope {
                 } else if (line.includes("PrepareForSleep (false")) {
                     Config.woke();
                 } else if (line.includes("org.freedesktop.login1.Session.Lock ")) {
-                    root.lockNow();
+                    root.lockNow(undefined, true);       // (loginctl lock-session: asked for)
                 }
             }
         }
@@ -587,7 +608,7 @@ Scope {
 
     IpcHandler {
         target: "lock"
-        function lock(): void { root.lockNow(); }
+        function lock(): void { root.lockNow(undefined, true); }
         function preview(mode: string): void {
             if (root.locked) return;      // nothing to try out while it's really locked
             root.previewMode = mode === "login" ? "login" : "lock";
@@ -619,6 +640,10 @@ Scope {
         }
         // (someone's back, as the pointer moving does)
         function activity(): void { if (Config.testMode) root.activity(); }
+        // (the tests: how long a lock you asked for waits before your coming back counts, and
+        // a lock as idle makes it, not asked for)
+        function byYouFor(ms: int): void { if (Config.testMode) root.testByYouFor = ms; }
+        function lockAsIdle(): void { if (Config.testMode) root.lockNow(); }
         function cancel(): void { if (Config.testMode) root.cancelAsking(); }
         function faillockConf(path: string): void { if (Config.testMode) root.testFaillockConf = path; }
         function submit(password: string): void { if (Config.testMode) root.check(password); }
