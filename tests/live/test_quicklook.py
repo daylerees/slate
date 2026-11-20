@@ -183,8 +183,18 @@ class QuickLook(LiveCase):
         self.key("-k", "Escape")
         self.closed()
         self.assertTrue(self.s.state()["launcher"]["open"], "the launcher closed with Quick Look")
-        self.key("x")
-        self.wait(lambda st: st["launcher"]["query"] == "zephyrx", "typing to reach the launcher again")
+        # The launcher asks for the keyboard back once Quick Look says it's closed, and Hyprland
+        # hands it over a moment later: a key typed straight after the state said "closed" could
+        # land in between and go nowhere (2 runs in 5). Nobody types that fast after Escape, so
+        # it types until a key arrives, and still fails if the keyboard never comes back
+        for _ in range(10):
+            self.key("x")
+            try:
+                self.wait(lambda st: st["launcher"]["query"].startswith("zephyrx"), "typing to reach the launcher again", timeout=1)
+                break
+            except AssertionError:
+                continue
+        self.assertRegex(self.s.state()["launcher"]["query"], r"^zephyrx+$", "typing never reached the launcher again")
 
     def test_space_while_typing_is_a_space(self):
         p = self.file("Documents", "quokka.txt", data=b"q\n")
