@@ -1293,6 +1293,8 @@ PanelWindow {
                     id: gen
                     command: Config.tileCommand(row.modelData.id, row.tilePath)
                     onExited: row.version++
+                    onRunningChanged: Config.tileDrawing(running)
+                    Component.onDestruction: if (running) Config.tileDrawing(false)
                 }
 
                 // A quick toggle: a switch at the end of its row showing whether it's on (the list only)

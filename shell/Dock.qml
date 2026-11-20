@@ -2363,6 +2363,8 @@ PanelWindow {
                             id: gen
                             command: Config.tileCommand(cell.app.entry ? cell.app.entry.id : cell.app.key, cell.tilePath)
                             onExited: cell.version++
+                            onRunningChanged: Config.tileDrawing(running)
+                            Component.onDestruction: if (running) Config.tileDrawing(false)
                         }
 
                         // Running indicator: a short rounded bar (accent for the focused app)

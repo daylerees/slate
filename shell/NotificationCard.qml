@@ -204,6 +204,8 @@ Rectangle {
                 id: gen
                 command: Config.tileCommand(card.entry ? card.entry.entryId : "", card.tilePath)
                 onExited: icon.version++
+                onRunningChanged: Config.tileDrawing(running)
+                Component.onDestruction: if (running) Config.tileDrawing(false)
             }
             Rectangle {
                 anchors.fill: parent

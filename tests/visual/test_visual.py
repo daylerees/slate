@@ -75,8 +75,14 @@ class Visual(LiveCase):
             # App icons drawn and their colours noted (the tiles behind them take a shade of
             # each): they arrive in the background, at startup and after a change of icon
             # style, so a picture taken sooner depended on how busy the computer was
-            self.wait(lambda st: not st["icons"]["busy"], f"the {name} scene's app icons")
-            self.s.settle(scene.get("settle", 0.8))
+            # (and again after settling: an app that only just showed, like the Settings window's
+            # on the dock, starts drawing its tile a moment later, and a fresh session's first
+            # scenes met it half drawn)
+            for _ in range(5):
+                self.wait(lambda st: not st["icons"]["busy"], f"the {name} scene's app icons")
+                self.s.settle(scene.get("settle", 0.8))
+                if not self.s.state()["icons"]["busy"]:
+                    break
             return self.s.screenshot(os.path.join(OUT, name + ".actual.png"))
         finally:
             undo = scene.get("undo", [])

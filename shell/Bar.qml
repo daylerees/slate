@@ -1305,6 +1305,8 @@ PanelWindow {
                         id: tileGen
                         command: Config.tileCommand(appTile.key, appTile.path)
                         onExited: appTile.version++
+                        onRunningChanged: Config.tileDrawing(running)
+                        Component.onDestruction: if (running) Config.tileDrawing(false)
                     }
                 }
             }

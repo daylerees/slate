@@ -1769,7 +1769,18 @@ Singleton {
     // bool", whatever the expression)
     function iconsBusy() {
         return !!(tileAll?.running || tileAllRun?.running || iconColoursSoon?.running
-            || iconColoursRun?.running || iconColoursReading);
+            || iconColoursRun?.running || iconColoursReading || tilesDrawing > 0);
+    }
+    // One app's tile being drawn as it first shows (the menu bar, the dock, the launcher and a
+    // notification each draw a missing one themselves): counted, so iconsBusy says so too. Each
+    // drawing Process calls tileDrawing(running) as it starts and stops, and tileDrawing(false)
+    // if it's taken away while still drawing. Once one's drawn, its colour is noted straight
+    // away, as after tileAll: asked before the tile existed, the next look was 30 s off, and
+    // the app sat on the theme's tile until then (Settings, opened, on the dock)
+    property int tilesDrawing: 0
+    function tileDrawing(on) {
+        tilesDrawing = Math.max(0, tilesDrawing + (on ? 1 : -1));
+        if (!on && iconColoursWanted) iconColoursSoon.restart();
     }
     onIconColoursWantedChanged: if (iconColoursWanted) iconColoursSoon.restart()
     // An icon with no colour noted yet (an app just drawn): look again, at most every 30 s each
