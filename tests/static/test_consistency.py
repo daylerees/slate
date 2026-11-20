@@ -1367,3 +1367,55 @@ class WindowsNeverAskForNothing(Case):
                 if re.match(r"    implicit(Width|Height):", line) and re.search(r"\? 0 :|: 0\s*(//.*)?$", line):
                     bad.append(f"{os.path.relpath(path, slate.path('shell'))}:{n}: {line.strip()}")
         self.assertEqual(bad, [], "a window that can ask for a size of 0")
+
+
+def enclosing_block(src, at, opener="Process {"):
+    """The text of the `opener … }` block that `at` (an offset in src) sits in, or "" when it
+    isn't in one: the last opener before it whose braces haven't closed by then."""
+    start = src.rfind(opener, 0, at)
+    while start != -1:
+        depth, i = 0, start + len(opener) - 1
+        while i < len(src):
+            if src[i] == "{":
+                depth += 1
+            elif src[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            i += 1
+        if i >= at:
+            return src[start:i + 1]
+        start = src.rfind(opener, 0, start)
+    return ""
+
+
+class TileDrawing(Case):
+    """The tests wait for app tiles to be drawn (Config.iconsBusy, the state's icons.busy) before
+    taking pictures. Drawing it isn't told about makes that wait end early: tiles drawn as an app
+    first shows (the dock's More, a notification…) weren't counted until two bugs found them
+    (an app sat on the wrong colored tile, or showed an empty space). So every Process drawing one
+    app's tile (Config.tileCommand) reports to Config.tileDrawing as it starts and stops, and if
+    it's taken away while still drawing, and nothing draws one any other way."""
+    STARTS = "onRunningChanged: Config.tileDrawing(running)"
+    GONE = "Component.onDestruction: if (running) Config.tileDrawing(false)"
+
+    def test_each_tile_drawing_is_counted(self):
+        found = 0
+        for f in slate.files("shell", ".qml"):
+            src = slate.read(*f.split("/"))
+            for m in re.finditer(r"Config\.tileCommand\(", src):
+                found += 1
+                with self.subTest(f"{f}:{src.count(chr(10), 0, m.start()) + 1}"):
+                    block = enclosing_block(src, m.start())
+                    self.assertTrue(block, "Config.tileCommand used outside a Process")
+                    self.assertIn(self.STARTS, block, "doesn't count itself as drawing (Config.tileDrawing)")
+                    self.assertIn(self.GONE, block, "isn't uncounted if it's taken away while drawing")
+        self.assertGreaterEqual(found, 5, "the tile-drawing Processes weren't found")
+
+    def test_one_tile_is_only_drawn_through_tile_command(self):
+        for f in slate.files("shell", ".qml"):
+            if f == "shell/Config.qml":
+                continue
+            with self.subTest(f):
+                self.assertNotRegex(slate.read(*f.split("/")), r'tileScript[^\n]*"--tile"',
+                                    "draws one tile without Config.tileCommand (so isn't counted)")
