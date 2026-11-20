@@ -24,7 +24,7 @@ CONFIG = """<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configurat
   <policy context="default">
     <allow send_destination="*" eavesdrop="true"/>
     <allow eavesdrop="true"/>
-    <allow own="*"/>
+    <allow own="*"/>%s
   </policy>
 </busconfig>
 """
@@ -49,7 +49,9 @@ class FilePreviewer(Case):
         os.makedirs(self.services)
         conf = os.path.join(self.h.dir, "bus.conf")
         with open(conf, "w") as f:
-            f.write(CONFIG % (self.h.runtime, self.services))
+            # (the bus refusing Nautilus's name, for the test that needs a name it won't give)
+            deny = '\n    <deny own="org.gnome.NautilusPreviewer"/>' if self._testMethodName == "test_a_name_the_bus_wont_give_isnt_said_ready" else ""
+            f.write(CONFIG % (self.h.runtime, self.services, deny))
         self.daemon = subprocess.Popen(["dbus-daemon", "--config-file=" + conf, "--print-address", "--nofork"],
                                        stdout=subprocess.PIPE, text=True)
         self.addCleanup(self.daemon.kill)
@@ -88,6 +90,14 @@ class FilePreviewer(Case):
         self.assertEqual(self.line(p), {"show": "/tmp/b.txt", "from": "nemo"})
         self.call("org.gnome.NautilusPreviewer", "/org/gnome/NautilusPreviewer", "org.gnome.NautilusPreviewer2", "Close", None)
         self.assertEqual(self.line(p), {"close": True})
+
+    def test_a_name_the_bus_wont_give_isnt_said_ready(self):
+        """Ready is said once the bus has answered for each name: one it won't give isn't in it.
+        It used to be said as soon as the names were asked for, so a file manager asking straight
+        after could find nobody there (the test below failed that way under load). Bug,
+        2026-11-20."""
+        p = self.start("nautilus", "nemo")
+        self.assertEqual(self.line(p), {"ready": ["org.nemo.Preview"]})
 
     def test_space_again_closes_it(self):
         """Nautilus asks to close it if it's showing that file (Space a second time)."""

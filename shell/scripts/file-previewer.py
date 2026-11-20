@@ -18,6 +18,7 @@ import json
 import os
 import shutil
 import sys
+import time
 
 NAUTILUS = ("org.gnome.NautilusPreviewer", "/org/gnome/NautilusPreviewer", """
 <node>
@@ -140,16 +141,25 @@ def main():
         print("file-previewer: no session bus (%s)" % e, file=sys.stderr)
         return 0
     pv = Previewer(bus)
+    # Asking for a name is answered later, by the bus: ready is said only once each is ours (or
+    # known to be someone else's), or a file manager asking straight after could find nobody there
+    settled = {}
     for (name, path, xml), who in wanted:
         try:
             if not free(bus, name):
                 continue
             iface = Gio.DBusNodeInfo.new_for_xml(xml).interfaces[0]
             bus.register_object(path, iface, pv.call(who), pv.get, None)
-            Gio.bus_own_name_on_connection(bus, name, Gio.BusNameOwnerFlags.DO_NOT_QUEUE, None, None)
+            Gio.bus_own_name_on_connection(bus, name, Gio.BusNameOwnerFlags.DO_NOT_QUEUE,
+                                           lambda c, n: settled.__setitem__(n, True),
+                                           lambda c, n: settled.__setitem__(n, False))
             pv.owned.append((name, path, iface.name))
         except Exception as e:
             print("file-previewer: %s: %s" % (name, e), file=sys.stderr)
+    context, until = GLib.MainContext.default(), time.monotonic() + 3
+    while len(settled) < len(pv.owned) and time.monotonic() < until:
+        context.iteration(False) or time.sleep(0.01)
+    pv.owned = [o for o in pv.owned if settled.get(o[0])]
     if not pv.owned:
         return 0
     say({"ready": [o[0] for o in pv.owned]})
