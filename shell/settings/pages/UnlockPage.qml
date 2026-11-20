@@ -19,7 +19,8 @@ Column {
     id: unlockPage
     spacing: 4
     readonly property string script: Quickshell.shellPath("scripts/unlock-info.py")
-    property var info: ({ howdy: false, cameras: [], methods: [], fingerprint: { fprintd: false, reader: "", fingers: [] } })
+    property var info: ({ howdy: false, cameras: [], methods: [], fingerprint: { fprintd: false, reader: "", fingers: [] },
+                          keys: { u2f: false, keys: [] } })
     property bool looked: false
     property var faces: []
     property bool known: false           // Slate has asked Howdy for your faces (faces.json is there)
@@ -31,7 +32,82 @@ Column {
     readonly property var cams: info.cameras || []
     // The camera in use: the one chosen, else an infrared one, else the first
     readonly property var chosen: cams.find(c => c.path === camera) || cams.find(c => c.ir) || cams[0] || null
-    readonly property bool busy: doing !== "" || tryPam.active || fp.running || fpTry.running || fpDelete.running
+    readonly property bool busy: doing !== "" || tryPam.active || fp.running || fpTry.running || fpDelete.running || keyReg.running
+
+    // ---- Security keys (pam_u2f): registering one is pamu2fcfg, as you (touch the key); the
+    // list of keys is root's (/etc/slate/u2f_keys, never in your home), so adding and removing
+    // go through the helper. Anyone can read the list (unlock-info.py), so no password to see
+    // it. Their names are yours, kept here (keys.json, by each key's handle)
+    readonly property var keyInfo: info.keys || ({ u2f: false, keys: [] })
+    readonly property var keyHandles: keyInfo.keys || []
+    readonly property bool keyOn: (info.methods || []).indexOf("key") >= 0
+    property var keyNames: ({})
+    property string keySaid: ""
+    property bool keyProblem: false
+    property string addingKeyName: ""
+    function keyName(handle, i) { return keyNames[handle] || "Security key " + (i + 1); }
+    readonly property string keyNamesPath: Config.stateHome + "/slate/keys.json"
+    FileView {
+        id: keyNamesFile
+        path: unlockPage.keyNamesPath
+        printErrors: false
+        onLoaded: { try { const o = JSON.parse(text()); unlockPage.keyNames = o.names || {}; } catch (e) {} }
+    }
+    function keepKeyNames() {
+        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', keyNamesPath]);
+        keyNamesFile.setText(JSON.stringify({ names: keyNames }));
+    }
+    function askAddKey() {
+        win.confirmer.confirmWith({
+            title: "Add a security key?",
+            body: "Plug in your key, and touch it when it blinks. Then Slate asks for your password to save it. "
+                + "Only the key's public half is kept, on this computer.",
+            button: "Add", code: 0xEAC7, danger: false,
+            input: { text: "", placeholder: "A name for it, like YubiKey", maxLength: 40 }
+        }, (opt, typed) => {
+            addingKeyName = String(typed || "").trim().slice(0, 40);
+            keySaid = "Touch your security key"; keyProblem = false;
+            keyReg.command = [fpTool("pamu2fcfg"), "-n"];
+            keyReg.running = true;
+        });
+    }
+    // pamu2fcfg -n: its last line is the key's registration (":<handle>,<public key>,<type>,<flags>")
+    Process {
+        id: keyReg
+        stdout: StdioCollector { id: keyRegOut }
+        onExited: code => {
+            const line = keyRegOut.text.trim().split("\n").filter(l => l !== "").pop() || "";
+            const reg = line.indexOf(":") >= 0 ? line.slice(line.indexOf(":") + 1) : line;
+            if (code !== 0 || !/^[^,]+,[^,]+,[a-z0-9]+,/.test(reg)) {
+                unlockPage.keySaid = "Slate couldn't read the key. Check it's plugged in, then try again";
+                unlockPage.keyProblem = true;
+                return;
+            }
+            unlockPage.keySaid = "";
+            if (unlockPage.addingKeyName !== "") {
+                const n = Object.assign({}, unlockPage.keyNames);
+                n[reg.split(",")[0]] = unlockPage.addingKeyName;
+                unlockPage.keyNames = n;
+                unlockPage.keepKeyNames();
+            }
+            unlockPage.helper(["key-add", reg], "Saving your key…", "Added. You can unlock with it once it's on below", "Slate couldn't add the key", false);
+        }
+    }
+    function askRemoveKey(i) {
+        const name = keyName(keyHandles[i], i);
+        win.ask = {
+            title: "Remove “" + name + "”?",
+            body: "This key won't unlock the lock screen any more. Your password and any other keys still work, "
+                + "and you can add it again at any time.",
+            button: "Remove", destructive: true, code: 0xEAC7,
+            run: () => helper(["key-remove", String(i + 1)], "Removing…", "Removed", "Slate couldn't remove it", false)
+        };
+    }
+    function setKeyOn(on) {
+        helper([on ? "enable" : "disable", "key"], on ? "Turning it on…" : "Turning it off…",
+               on ? "On: the lock screen takes your security key" : "Off: the lock screen asks for your password",
+               on ? "Slate couldn't turn it on" : "Slate couldn't turn it off", false);
+    }
 
     // ---- Fingerprint: fprintd's own commands, as you (it lets you enroll, list, remove and
     // check your own fingers); only turning it on for the lock screen needs your password
@@ -53,7 +129,7 @@ Column {
     property bool fpProblem: false
     property int touches: 0
     // (the tests: stand-ins for fprintd's commands, in a folder of theirs)
-    function fpTool(name) { return Config.testMode && win.pretendPolls.fprintTools ? win.pretendPolls.fprintTools + "/" + name : name; }
+    function fpTool(name) { return Config.testMode && win.pretendPolls.unlockTools ? win.pretendPolls.unlockTools + "/" + name : name; }
     readonly property string me: Quickshell.env("USER") || ""
     // Enrolling: fprintd-enroll says how each touch went ("Enroll result: enroll-stage-passed",
     // … "enroll-completed"); a few touches of the same finger make one fingerprint
@@ -130,7 +206,8 @@ Column {
 
     readonly property var testState: ({ looked: looked, howdy: !!info.howdy, faces: faces.map(f => f.label), faceOn: faceOn,
                                         camera: chosen ? chosen.path : "", said: said, problem: saidProblem, doing: doing,
-                                        fingers: fingers, fingerOn: fingerOn, adding: addingFinger, fpSaid: fpSaid, fpProblem: fpProblem })
+                                        fingers: fingers, fingerOn: fingerOn, adding: addingFinger, fpSaid: fpSaid, fpProblem: fpProblem,
+                                        keys: keyHandles.map((h, i) => keyName(h, i)), keyOn: keyOn, keySaid: keySaid, keyProblem: keyProblem })
     // (the tests: what's here and what the helper answers, given in place of the real ones)
     readonly property bool pretending: Config.testMode && win.pretendPolls.unlock !== undefined
 
@@ -439,8 +516,59 @@ Column {
             }
         }
     }
+    GroupLabel { text: "Security keys" }
+    Group {
+        SettingRow {
+            visible: unlockPage.looked && !unlockPage.keyInfo.u2f
+            label: "Security keys need pam-u2f"
+            detail: "pam-u2f lets a security key (a YubiKey, say) unlock your computer. Install pam-u2f with your package manager "
+                + "(on Debian and Ubuntu, libpam-u2f and pamu2fcfg), then come back here"
+        }
+        Separator { visible: unlockPage.looked && !unlockPage.keyInfo.u2f }
+        Repeater {
+            model: unlockPage.keyHandles
+            delegate: Column {
+                required property var modelData
+                required property int index
+                width: parent ? parent.width : 0
+                ListItemRow {
+                    width: parent.width
+                    label: unlockPage.keyName(modelData, index)
+                    detail: "Touch it to unlock"
+                    removable: !unlockPage.busy
+                    onRemoved: unlockPage.askRemoveKey(index)
+                }
+                Separator {}
+            }
+        }
+        SettingRow {
+            label: unlockPage.keyHandles.length === 0 ? "Your security key" : "Another key"
+            detail: unlockPage.keySaid !== "" ? unlockPage.keySaid
+                : unlockPage.keyHandles.length === 0 ? "Plug in a security key and touch it to add it. Nothing's added yet"
+                : "A spare key keeps a way in if one's lost"
+            needsMet: unlockPage.keyInfo.u2f && !unlockPage.busy
+            needs: !unlockPage.keyInfo.u2f ? "Needs pam-u2f to be installed" : "Wait a moment"
+            Button {
+                label: unlockPage.keyHandles.length === 0 ? "Add a key" : "Add"
+                primary: unlockPage.keyHandles.length === 0
+                onClicked: unlockPage.askAddKey()
+            }
+        }
+        Separator {}
+        SettingRow {
+            label: "Unlock with your security key"
+            detail: "The lock screen lets you in when you touch your key, and you can still type your password"
+            needsMet: unlockPage.keyInfo.u2f && unlockPage.keyHandles.length > 0 && !unlockPage.busy
+            needs: !unlockPage.keyInfo.u2f ? "Needs pam-u2f to be installed" : unlockPage.keyHandles.length === 0 ? "Needs a key to be added" : "Wait a moment"
+            SettingToggle {
+                checked: unlockPage.keyOn
+                onToggled: v => unlockPage.setKeyOn(v)
+                Accessible.name: "Unlock with your security key"
+            }
+        }
+    }
     Footnote {
-        text: "Faces and fingerprints stay on this computer, and only the lock screen uses them here: sudo, the login screen "
+        text: "Faces, fingerprints and keys stay on this computer, and only the lock screen uses them here: sudo, the login screen "
             + "and other apps still ask for your password."
     }
 }

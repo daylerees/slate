@@ -5,7 +5,8 @@ takes now (Slate's own PAM service, /etc/pam.d/slate-lock, which anyone can read
 
   unlock-info.py            all of it, as JSON:
       {"howdy": bool, "cameras": [{"path", "name", "ir"}], "methods": ["face", …],
-       "fingerprint": {"fprintd": bool, "reader": "<its name>" or "", "fingers": ["right-index-finger", …]}}
+       "fingerprint": {"fprintd": bool, "reader": "<its name>" or "", "fingers": ["right-index-finger", …]},
+       "keys": {"u2f": bool, "keys": ["<handle>", …]}}
 
 A camera is asked which picture formats it gives (V4L2's VIDIOC_ENUM_FMT, as v4l2-ctl
 --list-formats does), which doesn't turn it on. Infrared ones give only greyscale: Howdy is
@@ -112,6 +113,24 @@ def fingerprint(list_fingers=fprintd_list):
     return {"fprintd": True, "reader": m.group(1).strip() if m else "", "fingers": fingers}
 
 
+def keys():
+    """pam_u2f (its PAM module and pamu2fcfg, which registers a key), and your keys: their handles,
+    from /etc/slate/u2f_keys (root's, but anyone can read it: public keys only), in order."""
+    pam = any(os.path.isfile(at(d + "/pam_u2f.so")) for d in SECURITY)
+    out = {"u2f": bool(pam and shutil.which("pamu2fcfg")), "keys": []}
+    user = os.environ.get("USER") or ""
+    try:
+        with open(at("/etc/slate/u2f_keys")) as f:
+            for line in f:
+                name, _, rest = line.strip().partition(":")
+                if user and name == user:
+                    out["keys"] = [k.split(",")[0] for k in rest.split(":") if k]
+                    break
+    except OSError:
+        pass
+    return out
+
+
 def methods():
     """The ways in Slate's lock screen takes now, as slate-unlock wrote them."""
     try:
@@ -122,7 +141,7 @@ def methods():
 
 
 def main():
-    print(json.dumps({"howdy": howdy(), "cameras": cameras(), "methods": methods(), "fingerprint": fingerprint()}))
+    print(json.dumps({"howdy": howdy(), "cameras": cameras(), "methods": methods(), "fingerprint": fingerprint(), "keys": keys()}))
     return 0
 
 

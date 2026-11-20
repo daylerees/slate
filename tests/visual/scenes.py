@@ -679,10 +679,11 @@ SCENES["dock-magnified-glass"] = {
 }
 
 # Face, Fingerprint & Keys with Howdy, a webcam with an infrared camera (as a Logitech BRIO is),
-# two looks added and face unlock on, and a fingerprint reader with one finger, on too (the
-# tests' computer has no Howdy, camera or reader)
+# two looks added and face unlock on, a fingerprint reader with one finger, on too, and one
+# security key (the tests' computer has no Howdy, camera, reader or key)
 _UNLOCK = json.dumps({"howdy": True, "methods": ["face", "fingerprint"],
-    "fingerprint": {"fprintd": True, "reader": "Synaptics Sensors", "fingers": ["right-index-finger"]}, "cameras": [
+    "fingerprint": {"fprintd": True, "reader": "Synaptics Sensors", "fingers": ["right-index-finger"]},
+    "keys": {"u2f": True, "keys": ["H1"]}, "cameras": [
     {"path": "/dev/v4l/by-id/usb-BRIO-video-index0", "name": "Logitech BRIO", "ir": False},
     {"path": "/dev/v4l/by-id/usb-BRIO-video-index2", "name": "Logitech BRIO", "ir": True}]})
 _FACES = '{"camera": "", "faces": [{"id": 1, "label": "Me"}, {"id": 2, "label": "Glasses"}]}'
@@ -690,9 +691,9 @@ SCENES["settings-unlock"] = dict(SCENES["settings-unlock"],
     do=[("!sh", "-c", 'mkdir -p "$HOME/.local/state/slate" && printf %s \'' + _FACES + '\' > "$HOME/.local/state/slate/faces.json"'),
         ("settings", "page", "unlock"), ("test", "settingsPoll", "unlock", _UNLOCK)],
     undo=[("test", "settingsPoll", "unlock", ""), ("settings", "close"), ("!sh", "-c", 'rm -f "$HOME/.local/state/slate/faces.json"')])
-# …and scrolled to its Fingerprint section
+# …and scrolled to its Fingerprint and Security keys sections
 SCENES["settings-unlock-fingerprint"] = {
-    "do": SCENES["settings-unlock"]["do"] + [("settings", "find", "unlock", "Unlock with your fingerprint")],
+    "do": SCENES["settings-unlock"]["do"] + [("settings", "find", "unlock", "Unlock with your security key")],
     "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "unlock" and st["settings"]["found"] != "",
     "settle": 2.5,          # (after find's highlight)
     "undo": SCENES["settings-unlock"]["undo"],

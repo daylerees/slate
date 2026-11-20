@@ -104,6 +104,24 @@
           password.</td></tr>
       </table>
 
+      <h2 id="security-keys">Unlocking with a security key</h2>
+      <p>A security key (a YubiKey, say) can unlock the lock screen with a touch. Your password always works too, so a
+        lost key never locks you out. Set it up under <strong>Security keys</strong> on the same page,
+        <span class="path"><i class="ti">&#xEB20;</i> Settings → Security → Face, Fingerprint &amp; Keys</span>. It
+        needs <strong>pam-u2f</strong>: install <code>pam-u2f</code> with your package manager (on Debian and Ubuntu,
+        <code>libpam-u2f</code> and <code>pamu2fcfg</code>).</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Your keys</td><td>Each key you've added, by the name you gave it, with <strong>Remove</strong> (it asks
+          first).</td></tr>
+        <tr><td>Your security key</td><td><strong>Add a key</strong> asks for a name, then has you touch the key, then
+          asks for your password to save it. A spare key keeps a way in if one's lost.</td></tr>
+        <tr><td>Unlock with your security key</td><td>The lock screen lets you in when you touch your key. Turning it
+          on or off asks for your password.</td></tr>
+      </table>
+      <p>Only each key's public half is kept, in a list Slate's helper looks after outside your home folder, so
+        nothing running as you can add a key behind your back.</p>
+
       <h2>Locking when you're away</h2>
       <p>Under <strong>When you're away</strong>, Slate can lock, turn the screen off and suspend after times you choose:</p>
       <table>

@@ -58,6 +58,11 @@ the gloss sheen like the bar's containers and no outline.
   said in Slate's words), `fprintd-verify` (Try it) and `fprintd-delete $USER -f <finger>`; only
   `enable`/`disable fingerprint` needs `slate-unlock`. In `slate-lock` the methods run in turn,
   face before fingerprint, so with both on the reader takes over once Howdy gives up.
+  Security keys: `pamu2fcfg -n` registers one as you (touch the key), then `slate-unlock key-add`
+  adds it to `/etc/slate/u2f_keys` (pam_u2f's `authfile`: root's, never in your home, readable by
+  anyone as it holds only public keys and the lock screen's PAM runs as you); `key-remove <n>`,
+  `key-list`. Only the asking user's line changes. Their names are Slate's, in
+  `~/.local/state/slate/keys.json` by handle. Keys come after face and fingerprint in `slate-lock`.
 - **Lockout:** after a failure Slate reads `faillock --user $USER`; at 3 failures within
   15 min it shows "Too many tries · you can try again in m:ss", disables the field and stops
   sending attempts. Wrong passwords show the tries left. Those numbers (and the 10 minutes it

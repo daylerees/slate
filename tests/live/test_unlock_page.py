@@ -179,8 +179,8 @@ class Fingerprint(LiveCase):
             os.chmod(p, 0o755)
         if os.path.exists(os.path.join(d, "asked")):
             os.remove(os.path.join(d, "asked"))
-        self.ipc("test", "settingsPoll", "fprintTools", d)
-        self.addCleanup(lambda: self.ipc("test", "settingsPoll", "fprintTools", ""))
+        self.ipc("test", "settingsPoll", "unlockTools", d)
+        self.addCleanup(lambda: self.ipc("test", "settingsPoll", "unlockTools", ""))
         return d
 
     def show(self, fingers=(), reader="Synaptics Sensors", fprintd=True, methods=()):
@@ -245,3 +245,84 @@ class Fingerprint(LiveCase):
         self.assertEqual(self.ipc("test", "settingsToggle", "Unlock with your fingerprint"), "pressed")
         self.wait(lambda st: st["settings"]["page"]["said"].startswith("On"), "it to say it's on")
         self.assertEqual(json.loads(self.pretend("unlockAsked")), ["enable", "fingerprint"])
+
+
+PAMU2FCFG = """#!/bin/sh
+echo "$0 $*" >> "$(dirname "$0")/asked"
+echo "Please touch the device." >&2
+sleep 0.3
+echo ":KEYHANDLE1234567890,PUBLICKEY1234567890,es256,+presence"
+"""
+
+
+class SecurityKeys(Fingerprint):
+    """Security keys: pamu2fcfg (a stand-in) registers the key as you, then the helper (its answer
+    given by the test) adds it to the list root keeps. Its name is yours, kept by Slate."""
+    # (Fingerprint's own tests run in their own class)
+    test_without_fprintd_or_a_reader = test_adding_a_finger_says_each_touch = None
+    test_the_next_finger_is_one_not_added = test_removing_a_finger_asks_first = None
+    test_try_it = test_turning_it_on = None
+
+    def show_keys(self, keys=(), u2f=True, methods=()):
+        self.ipc("settings", "page", "unlock")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "unlock", "Face, Fingerprint & Keys")
+        self.ipc("test", "settingsPoll", "unlock", json.dumps({"howdy": False, "cameras": [], "methods": list(methods),
+                                                                "fingerprint": {"fprintd": False, "reader": "", "fingers": []},
+                                                                "keys": {"u2f": u2f, "keys": list(keys)}}))
+        return self.wait(lambda st: st["settings"]["page"] and len(st["settings"]["page"]["keys"]) == len(keys), "the keys listed")
+
+    def test_without_pam_u2f(self):
+        self.show_keys(u2f=False)
+        self.assertEqual(self.waiting().get("Unlock with your security key"), "Needs pam-u2f to be installed")
+        self.assertEqual(self.waiting().get("Your security key"), "Needs pam-u2f to be installed")
+
+    def test_adding_a_key(self):
+        names = self.s.h(".local", "state", "slate", "keys.json")
+        if os.path.exists(names):
+            os.remove(names)
+        self.show_keys()
+        d = self.tools()
+        p = os.path.join(d, "pamu2fcfg")
+        with open(p, "w") as f:
+            f.write(PAMU2FCFG)
+        os.chmod(p, 0o755)
+        self.assertEqual(self.ipc("test", "settingsButton", "Your security key", "Add a key"), "pressed")
+        st = self.wait(lambda st: st["asking"] != "", "the question")
+        self.assertEqual(st["asking"], "Add a security key?")
+        self.ipc("test", "type", "YubiKey")
+        self.ipc("test", "answer", "true")
+        self.wait(lambda st: st["settings"]["page"]["said"].startswith("Added"), "it added")
+        self.assertEqual(self.asked(d), ["-n"])
+        self.assertEqual(json.loads(self.pretend("unlockAsked")), ["key-add", "KEYHANDLE1234567890,PUBLICKEY1234567890,es256,+presence"])
+        # Listed by its name, once the list has it
+        self.show_keys(keys=["KEYHANDLE1234567890"])
+        self.assertEqual(self.page()["keys"], ["YubiKey"])
+
+    def test_a_key_that_cant_be_read(self):
+        self.show_keys()
+        d = self.tools()
+        p = os.path.join(d, "pamu2fcfg")
+        with open(p, "w") as f:
+            f.write("#!/bin/sh\necho 'No FIDO devices found' >&2\nexit 1\n")
+        os.chmod(p, 0o755)
+        self.ipc("test", "settingsButton", "Your security key", "Add a key")
+        self.wait(lambda st: st["asking"] != "", "the question")
+        self.ipc("test", "answer", "true")
+        st = self.wait(lambda st: st["settings"]["page"]["keyProblem"], "it to say so")
+        self.assertIn("Check it's plugged in", st["settings"]["page"]["keySaid"])
+        self.assertEqual(self.pretend("unlockAsked"), "", "the helper was asked without a key")
+
+    def test_removing_one_asks_first(self):
+        self.show_keys(keys=["H1", "H2"])
+        self.assertEqual(self.ipc("test", "settingsButton", "Security key 2", "Remove"), "pressed")
+        st = self.wait(lambda st: st["asking"] != "", "the question")
+        self.assertEqual(st["asking"], "Remove “Security key 2”?")
+        self.ipc("test", "answer", "true")
+        self.wait(lambda st: st["settings"]["page"]["said"] == "Removed", "it removed")
+        self.assertEqual(json.loads(self.pretend("unlockAsked")), ["key-remove", "2"])
+
+    def test_turning_it_on(self):
+        self.show_keys(keys=["H1"])
+        self.assertEqual(self.ipc("test", "settingsToggle", "Unlock with your security key"), "pressed")
+        self.wait(lambda st: st["settings"]["page"]["said"].startswith("On"), "it to say it's on")
+        self.assertEqual(json.loads(self.pretend("unlockAsked")), ["enable", "key"])

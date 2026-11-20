@@ -90,8 +90,9 @@ class Unlock(Case):
         for m in ("key", "face", "key", "fingerprint", "face"):
             self.assertEqual(self.go("enable", m)[0], 0)
         self.assertEqual(self.go("status")[1], "face\nfingerprint\nkey\n")
-        self.assertEqual(self.auth_lines(), ["pam_howdy.so", "pam_fprintd.so", "pam_u2f.so authfile=/etc/slate/u2f_keys cue",
-                                             "pam_deny.so"])
+        # (the keys file the helper was given: Keys' tests give it a scratch one)
+        keys = getattr(self, "keys", "/etc/slate/u2f_keys")
+        self.assertEqual(self.auth_lines(), ["pam_howdy.so", "pam_fprintd.so", f"pam_u2f.so authfile={keys} cue", "pam_deny.so"])
 
     def test_off_again_and_none_left_takes_the_file_away(self):
         self.installed("pam_howdy.so", "pam_fprintd.so")
@@ -272,3 +273,84 @@ case "$*" in *"list --plain"*) printf '1,2026-11-20 13:55:00,Me\\n2,2026-11-20 1
     def test_not_installed(self):
         os.remove(self.howdy)
         self.assertEqual(self.go("face-list", env=self.asker)[0], 3)
+
+
+# Two registrations as pamu2fcfg -n gives them (handles and public keys made up, the shape real)
+REG1 = ":" + "A" * 43 + "x," + "B" * 87 + "y,es256,+presence"
+REG2 = ":" + "C" * 43 + "z," + "D" * 87 + "w,es256,+presence"
+
+
+class Keys(Unlock):
+    """Security keys are pam_u2f's, in /etc/slate/u2f_keys: root's, never in your home, and
+    readable by everyone (public keys only; the lock screen reads it as you). The helper adds and
+    removes the keys of whoever asked, and nobody else's, and takes only a registration's shape."""
+
+    def setUp(self):
+        super().setUp()
+        self.keys = os.path.join(self.h.dir, "etc-slate", "u2f_keys")
+        src = slate.read(self.helper)
+        self.assertIn("KEYS=/etc/slate/u2f_keys", src)
+        with open(self.helper, "w") as f:
+            f.write(src.replace("KEYS=/etc/slate/u2f_keys", f"KEYS={self.keys}"))
+        self.s.add("getent", by_args={"1000": "tester:x:1000:1000:Test:/home/tester:/bin/bash\n",
+                                      "1001": "sam:x:1001:1001:Sam:/home/sam:/bin/bash\n"})
+        self.me = {"PKEXEC_UID": "1000"}
+
+    def lines(self):
+        with open(self.keys) as f:
+            return f.read().splitlines()
+
+    def test_add_list_and_remove(self):
+        code, out = self.go("key-add", REG1, env=self.me)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out, "1," + "A" * 43 + "x\n")
+        code, out = self.go("key-add", REG2, env=self.me)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.lines(), ["tester:" + REG1[1:] + ":" + REG2[1:]])
+        self.assertEqual(stat.S_IMODE(os.stat(self.keys).st_mode), 0o644, "the lock screen reads it as you")
+        self.assertEqual(self.go("key-list", env=self.me)[1].splitlines(), ["1," + "A" * 43 + "x", "2," + "C" * 43 + "z"])
+        code, out = self.go("key-remove", "1", env=self.me)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.lines(), ["tester:" + REG2[1:]])
+        self.go("key-remove", "1", env=self.me)
+        self.assertEqual(self.lines(), [], "no keys left: your line goes")
+
+    def test_only_yours_change(self):
+        self.go("key-add", REG1, env={"PKEXEC_UID": "1001"})
+        self.go("key-add", REG2, env=self.me)
+        self.go("key-remove", "1", env=self.me)
+        self.assertEqual(self.lines(), ["sam:" + REG1[1:]])
+        self.assertEqual(self.go("key-list", env=self.me)[1], "")
+
+    def test_the_same_key_once(self):
+        self.go("key-add", REG1, env=self.me)
+        code, out = self.go("key-add", REG1, env=self.me)
+        self.assertNotEqual(code, 0)
+        self.assertIn("already added", out)
+
+    def test_only_a_registrations_shape(self):
+        for bad in ("hello", REG1 + ":more", REG1.replace("es256", "md5"), "x" * 20 + "," + "y" * 20 + ",es256,+presence\nroot:" + REG2,
+                    "../../etc/shadow", REG1.replace(",", ";")):
+            with self.subTest(bad[:30]):
+                code, out = self.go("key-add", bad, env=self.me)
+                self.assertNotEqual(code, 0, out)
+        self.assertFalse(os.path.exists(self.keys))
+
+    def test_only_whoever_asked(self):
+        code, out = self.go("key-add", REG1)
+        self.assertNotEqual(code, 0)
+        code, out = self.go("key-add", REG1, env={"PKEXEC_UID": "0"})
+        self.assertNotEqual(code, 0)
+        self.assertFalse(os.path.exists(self.keys))
+
+    def test_a_number_thats_there(self):
+        self.go("key-add", REG1, env=self.me)
+        for bad in ("0", "2", "-1", "1x", ""):
+            with self.subTest(bad):
+                self.assertNotEqual(self.go("key-remove", bad, env=self.me)[0], 0)
+        self.assertEqual(len(self.lines()), 1)
+
+    def test_the_lock_screen_line_reads_this_file(self):
+        self.installed("pam_u2f.so")
+        self.assertEqual(self.go("enable", "key")[0], 0)
+        self.assertIn(f"pam_u2f.so authfile={self.keys} cue", self.text())

@@ -20,11 +20,21 @@
 #                                   got first if it hasn't any; then your faces, as face-list
 #   slate-unlock face-remove <id>   remove one of your faces; then your faces, as face-list
 #   slate-unlock face-list          your faces, "<id>,<date>,<label>" a line
+#   slate-unlock key-add <registration>
+#                                   add one of your security keys: pamu2fcfg -n's line for it
+#                                   ("<handle>,<public key>,<type>,<flags>", made as you, touching
+#                                   the key); then your keys, as key-list
+#   slate-unlock key-remove <n>     remove your nth key; then your keys, as key-list
+#   slate-unlock key-list           your keys, "<n>,<handle>" a line (anyone can read the file)
 #   slate-unlock --table            each method and the PAM modules it can be (the tests)
 #
 # Faces are Howdy's (Howdy Next 3): kept in /etc/howdy, root's, so adding, removing and even
 # listing them is root's to do. Always the faces of whoever asked (pkexec's PKEXEC_UID), never
 # a name given here; Howdy only ever from a root-owned file in a fixed place.
+#
+# Security keys are pam_u2f's, in /etc/slate/u2f_keys: "<user>:<key>:<key>…" a line, root's, never
+# in your home (where anything running as you could add one). Anyone can read it: it holds only
+# public keys, and the lock screen's PAM runs as you. Only the lines of whoever asked change.
 #
 # The file is only ever these methods, each "sufficient", then pam_deny (nothing else gets in
 # through it), and the account checked as `login` does: the password is never in it, as the
@@ -37,6 +47,7 @@ umask 022
 TARGET_DIR=/usr/local/libexec/slate
 PAMD=/etc/pam.d
 FILE=$PAMD/slate-lock
+KEYS=/etc/slate/u2f_keys            # security keys (pam_u2f's authfile)
 MARK="# slate-unlock:"
 METHODS="face fingerprint key"
 # Where each method's PAM module can be, first found wins: "<module file> <line's module part>"
@@ -50,7 +61,7 @@ candidates() {
             face) echo "$d/pam_howdy.so pam_howdy.so"
                   echo "$d/howdy/pam.py pam_python.so $d/howdy/pam.py" ;;
             fingerprint) echo "$d/pam_fprintd.so pam_fprintd.so" ;;
-            key) echo "$d/pam_u2f.so pam_u2f.so authfile=/etc/slate/u2f_keys cue" ;;
+            key) echo "$d/pam_u2f.so pam_u2f.so authfile=$KEYS cue" ;;
         esac
     done
 }
@@ -84,7 +95,48 @@ howdy_bin() {
     done
     return 1
 }
-# Whose faces: the account that asked (pkexec says), as a name
+# ---- Security keys (pam_u2f) ----------------------------------------------------------------
+MAX_KEYS=10
+# Your keys, one a line
+keys_of() { [ -f "$KEYS" ] && grep -m1 "^$1:" "$KEYS" | cut -d: -f2- | tr ':' '\n' | grep -v '^$'; }
+# The file again, your line as given (none: gone), everyone else's as they were; all at once
+write_keys() {   # write_keys <user> <key>…
+    local user="$1" dir tmp; shift
+    dir=$(dirname "$KEYS")
+    [ ! -L "$dir" ] || { echo "slate-unlock: $dir is a link: not touching it" >&2; return 1; }
+    mkdir -p "$dir" && chmod 0755 "$dir" || return 1
+    [ ! -L "$KEYS" ] && { [ ! -e "$KEYS" ] || [ -f "$KEYS" ]; } || { echo "slate-unlock: $KEYS isn't a plain file: not touching it" >&2; return 1; }
+    tmp=$(mktemp "$dir/.u2f_keys.XXXXXX") || return 1
+    {
+        [ -f "$KEYS" ] && grep -v "^$user:" "$KEYS"
+        if [ "$#" -gt 0 ]; then (IFS=:; echo "$user:$*"); fi
+    } > "$tmp"
+    chown root:root "$tmp" && chmod 0644 "$tmp" && mv -f "$tmp" "$KEYS" || { rm -f "$tmp"; return 1; }
+}
+list_keys() { local n=0 k; while read -r k; do n=$((n + 1)); echo "$n,${k%%,*}"; done < <(keys_of "$1"); }
+key() {   # key <action> [arg]
+    local user reg k have=() n i
+    user=$(asker) || return 1
+    mapfile -t have < <(keys_of "$user")
+    case "$1" in
+        key-add)
+            reg=${2#:}
+            [[ "$reg" =~ ^[A-Za-z0-9+/=_-]{16,1024},[A-Za-z0-9+/=_-]{16,1024},(es256|eddsa|rs256),[+a-z]{0,40}$ ]] || {
+                echo "slate-unlock: that isn't a security key's registration" >&2; return 1; }
+            for k in "${have[@]}"; do
+                [ "${k%%,*}" != "${reg%%,*}" ] || { echo "slate-unlock: that key's already added" >&2; return 1; }
+            done
+            [ "${#have[@]}" -lt "$MAX_KEYS" ] || { echo "slate-unlock: you have $MAX_KEYS keys already" >&2; return 1; }
+            write_keys "$user" "${have[@]}" "$reg" || return 1 ;;
+        key-remove)
+            [[ "$2" =~ ^[0-9]{1,3}$ ]] && [ "$2" -ge 1 ] && [ "$2" -le "${#have[@]}" ] || { echo "slate-unlock: no key $2" >&2; return 1; }
+            n=$2; local keep=()
+            for i in "${!have[@]}"; do [ $((i + 1)) -eq "$n" ] || keep+=("${have[$i]}"); done
+            write_keys "$user" "${keep[@]}" || return 1 ;;
+    esac
+    list_keys "$user"
+}
+# Whose faces (or keys): the account that asked (pkexec says), as a name
 asker() {
     local uid="${PKEXEC_UID:-}"
     case "$uid" in ''|*[!0-9]*) echo "slate-unlock: faces are changed through pkexec (slate-system --root)" >&2; return 1 ;; esac
@@ -182,6 +234,14 @@ case "${1:-}" in
         [ "$#" -eq 2 ] || [ "$#" -eq 3 ] || { echo "slate-unlock: face-add takes a name, and a camera if you like" >&2; exit 1; }
         face "$@"
         exit $? ;;
+    key-add|key-remove)
+        [ "$#" -eq 2 ] || { echo "slate-unlock: $1 takes one more thing" >&2; exit 1; }
+        key "$1" "$2"
+        exit $? ;;
+    key-list)
+        [ "$#" -eq 1 ] || { echo "slate-unlock: key-list takes nothing else" >&2; exit 1; }
+        key "$1"
+        exit $? ;;
     face-models|face-list)
         [ "$#" -eq 1 ] || { echo "slate-unlock: $1 takes nothing else" >&2; exit 1; }
         face "$1"
@@ -191,5 +251,5 @@ case "${1:-}" in
         write
         exit $? ;;
     *)
-        echo "slate-unlock: enable <method>, disable <method>, remove, status or face-…" >&2; exit 1 ;;
+        echo "slate-unlock: enable <method>, disable <method>, remove, status, face-… or key-…" >&2; exit 1 ;;
 esac

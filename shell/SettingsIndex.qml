@@ -246,6 +246,7 @@ Singleton {
         ["Login screen", "lock", "greeter greetd sign in install update switch back display manager"],
         ["Face, Fingerprint & Keys", "unlock", "face unlock howdy camera infrared ir windows hello recognize recognise biometric fingerprint security key unlock without password"],
         ["Unlock with your face", "unlock", "face howdy lock screen unlock biometric"],
+        ["Unlock with your security key", "unlock", "security key yubikey fido u2f fido2 webauthn hardware token touch lock screen"],
         ["Unlock with your fingerprint", "unlock", "fingerprint finger reader fprintd touch id enroll biometric lock screen"],
         ["Firewall", "lock", "firewall ufw firewalld ports network blocking incoming connections security"],
         ["KDE Connect", "lock", "firewall phone gsconnect allow"],

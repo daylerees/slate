@@ -86,7 +86,8 @@ class UnlockInfo(Case):
         code, out = run([sys.executable, SCRIPT], env=dict(os.environ, SLATE_UNLOCK_TEST=self.root))
         self.assertEqual(code, 0, out)
         self.assertEqual(json.loads(out), {"howdy": False, "cameras": [], "methods": [],
-                                           "fingerprint": {"fprintd": False, "reader": "", "fingers": []}})
+                                           "fingerprint": {"fprintd": False, "reader": "", "fingers": []},
+                                           "keys": {"u2f": False, "keys": []}})
 
     # fprintd-list's answers, as fprintd 1.94 gives them
     LISTED = ("found 1 devices\nDevice at /net/reactivated/Fprint/Device/0\nUsing device /net/reactivated/Fprint/Device/0\n"
@@ -122,3 +123,20 @@ class UnlockInfo(Case):
     def test_no_reader(self):
         self.fprintd()
         self.assertEqual(self.mod.fingerprint(lambda: "No devices available\n"), {"fprintd": True, "reader": "", "fingers": []})
+
+    def test_your_keys_from_slates_file(self):
+        """Yours only, by their handles, in order; pam_u2f needs its module and pamu2fcfg."""
+        self.put("/etc/slate/u2f_keys", "sam:SAMKEY,pk,es256,+presence\n"
+                                        "alex:HANDLE1,pk1,es256,+presence:HANDLE2,pk2,eddsa,+presence\n")
+        self.addCleanup(os.environ.__setitem__, "USER", os.environ.get("USER", ""))
+        os.environ["USER"] = "alex"
+        self.assertEqual(self.mod.keys(), {"u2f": False, "keys": ["HANDLE1", "HANDLE2"]})
+        self.put("/usr/lib/security/pam_u2f.so")
+        d = os.path.join(self.root, "bin")
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "pamu2fcfg"), "w") as f:
+            f.write("#!/bin/sh\n")
+        os.chmod(os.path.join(d, "pamu2fcfg"), 0o755)
+        self.addCleanup(os.environ.__setitem__, "PATH", os.environ["PATH"])
+        os.environ["PATH"] = d + ":" + os.environ["PATH"]
+        self.assertTrue(self.mod.keys()["u2f"])

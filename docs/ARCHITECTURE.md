@@ -251,7 +251,8 @@ scripts/camera-watch.py       tells Slate when a camera starts and stops being u
 scripts/auto-brightness.py    Automatic brightness: claims the light sensor (iio-sensor-proxy, D-Bus
                               signals, no polling), eases the screen and keyboard light to the room
 scripts/unlock-info.py        Settings → Face, Fingerprint & Keys, as you: whether Howdy is installed,
-                              fprintd's reader and your fingers (fprintd-list),
+                              fprintd's reader and your fingers (fprintd-list), pam_u2f and your
+                              security keys (/etc/slate/u2f_keys),
                               the cameras and which are infrared (V4L2's format list, without
                               turning them on), and the ways in the lock screen takes now
                               with brightnessctl, learns your changes (~/.local/state/slate/
@@ -377,7 +378,8 @@ bin/slate-unlock              which of a face, a fingerprint and a security key 
                               writes /etc/pam.d/slate-lock (Slate's own PAM service, nothing else
                               reads it: each method "sufficient", then pam_deny), from a fixed
                               list of module paths and only once installed; adds, lists and
-                              removes the faces of whoever asked (Howdy, only root's own copy),
+                              removes the faces of whoever asked (Howdy, only root's own copy)
+                              and their security keys (/etc/slate/u2f_keys, pam_u2f's),
                               and sets its camera; runs only from /usr/local/libexec/slate, by
                               slate-system --root
 bin/slate-system-root         the half of slate-system that runs as root: installs packages and the
@@ -782,6 +784,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `xrdb` (Arch `xorg-xrdb`, Debian `x11-xserver-utils`, Gentoo `x11-apps/xrdb`, NixOS `xorg.xrdb`) | Settings → Displays → Sharp older apps: tells apps made for X11 the scale to draw at (`Xft.dpi`, from `slateApply` in `session/hypr/config/slate.lua`). Optional: without it Steam still scales itself (its own variable); other X11 apps stay at 100%, sharp but small |
 | Howdy (Arch AUR `howdy-next`; not packaged on most distros) | Settings → Security → Face, Fingerprint & Keys → Face: face unlock on the lock screen (`pam_howdy.so`, through `bin/slate-unlock`). Optional, and never installed by Slate: the page says what to get |
 | `fprintd` (Debian/Ubuntu also `libpam-fprintd`) | Settings → Security → Face, Fingerprint & Keys → Fingerprint: enrolling, listing, checking and removing your fingers (`fprintd-enroll`, `-list`, `-verify`, `-delete`, as you) and fingerprint unlock on the lock screen (`pam_fprintd.so`). Optional, and not installed by Slate (most computers have no reader): the page says to install it |
+| `pam-u2f` (Debian/Ubuntu `libpam-u2f` and `pamu2fcfg`; Fedora also `pamu2fcfg`) | Settings → Security → Face, Fingerprint & Keys → Security keys: registering a key (`pamu2fcfg`, as you) and unlocking with it (`pam_u2f.so`, keys in `/etc/slate/u2f_keys`, through `bin/slate-unlock`). Optional, and not installed by Slate: the page says to install it |
 | `power-profiles-daemon` | power profiles in the battery panel |
 | `greetd` | the Slate login screen |
 | `adw-gtk-theme`, `qt6ct` | GTK and Qt apps following Slate's colors |
