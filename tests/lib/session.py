@@ -343,6 +343,45 @@ class Session:
             except SessionError:
                 pass
 
+    def windows(self):
+        """The addresses of the app windows showing now."""
+        try:
+            return {c["address"] for c in self.hyprctl("clients", json_out=True) if c.get("mapped")}
+        except (SessionError, ValueError, TypeError):
+            return set()
+
+    def tidy_after(self, before, who):
+        """After a test class in the shared session: what it left on screen goes, so the next
+        file starts from the same desktop (a notification pop-up left up once sat over another
+        test's screenshots). The windows it opened close, notifications and their pop-ups clear,
+        open panels close. What was left is noted in tests/out/live/<part>/left-behind.txt, for
+        finding the tests that should tidy up after themselves."""
+        try:
+            st = self.state()
+        except SessionError:
+            return
+        left = []
+        new = [c for c in self.hyprctl("clients", json_out=True) if c.get("mapped") and c["address"] not in before]
+        if new:
+            left.append("%d window(s): %s" % (len(new), ", ".join(sorted({c.get("class") or "?" for c in new}))))
+        toasts = (st.get("notifications") or {}).get("toasts") or 0
+        if toasts:
+            left.append("%d notification pop-up(s)" % toasts)
+        if st.get("popout"):
+            left.append("the %s panel open" % st["popout"])
+        for c in new:
+            self.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.window.close({ window = "address:%s" })) end' % c["address"])
+        try:
+            self.ipc("notifications", "clear")
+        except SessionError:
+            pass
+        self.reset()
+        if new:
+            self._until(lambda: not (self.windows() - set(before)), 5, "the windows it left to close")
+        if left:
+            with open(os.path.join(self.out, "left-behind.txt"), "a") as f:
+                f.write("%s: %s\n" % (who, "; ".join(left)))
+
     def screenshot(self, path, output=OUTPUT):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         self.run(["grim", "-o", output, path], check=True)

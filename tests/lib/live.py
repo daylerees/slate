@@ -11,6 +11,20 @@ class LiveCase(slate.Case):
     @classmethod
     def setUpClass(cls):
         cls.s = Session.shared()
+        cls._windows_before = cls.s.windows()
+
+    @classmethod
+    def tearDownClass(cls):
+        # What this class left on screen goes, so the next file starts from the same desktop
+        # (Session.tidy_after; noted in left-behind.txt). Not for a class with a session of its
+        # own (it stops it), nor once the session has died (its own failure says so)
+        s = getattr(cls, "s", None)
+        if s is None or s is not Session._shared or s.died():
+            return
+        try:
+            s.tidy_after(cls._windows_before, cls.__module__.split(".")[-1] + "." + cls.__name__)
+        except Exception as e:  # tidying must never fail the file it follows
+            print(f"(tidying after {cls.__name__} failed: {e})")
 
     def setUp(self):
         super().setUp()

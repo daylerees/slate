@@ -102,6 +102,12 @@ minutes this way on an 8-core machine, where one after another it's about 24.
   the parts up. Each session's logs are in `tests/out/live/<part>/`.
 - A test that only fails side by side has found something (a race, or something left behind
   by another file): `--jobs 1` runs the old way for comparing, but isn't the fix.
+- After each test class in a shared session, what it left on screen goes, so the next file
+  starts from the same desktop (`LiveCase.tearDownClass` → `Session.tidy_after`): the windows
+  it opened close, notifications and their pop-ups clear, and open panels close. What it found
+  is noted, a line per class, in `tests/out/live/<part>/left-behind.txt`: the tests there are
+  the ones that should tidy up after themselves. Nothing fails for it (some leave a window
+  for the next test in the same class on purpose).
 
 The code is `tests/lib/parallel.py`, which starts `tests/lib/runner.py` once per part.
 
