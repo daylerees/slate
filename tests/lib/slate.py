@@ -12,6 +12,16 @@ FIXTURES = os.path.join(TESTS, "fixtures")
 OUT = os.environ.get("SLATE_TEST_OUT") or os.path.join(TESTS, "out")
 
 
+def in_slice(unit, i):
+    """Whether the i-th (from 0) of a file's shareable tests is this run's to run: all of them,
+    unless a parallel run gave this part slices of the file ("visual/test_visual@2/3": every
+    third from the second; tests/lib/parallel.py's SPLIT)."""
+    mine = [s.split("@")[1] for s in os.environ.get("SLATE_TEST_SLICES", "").split(",") if s.split("@")[0] == unit]
+    if not mine:
+        return True
+    return any(i % int(n) == int(k) - 1 for k, n in (m.split("/") for m in mine))
+
+
 def path(*parts):
     """A path inside the repo."""
     return os.path.join(ROOT, *parts)

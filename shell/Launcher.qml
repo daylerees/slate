@@ -157,7 +157,8 @@ PanelWindow {
     }
     function testScrolled() {
         const seen = Object.keys(testSeen);
-        return { seen: seen.length, ready: seen.filter(k => testSeen[k]).length, misplaced: Object.keys(testMisplaced).length };
+        return { seen: seen.length, ready: seen.filter(k => testSeen[k]).length, misplaced: Object.keys(testMisplaced).length,
+                 notReady: seen.filter(k => !testSeen[k]).slice(0, 10) };
     }
     FrameAnimation {
         running: Config.testMode && root.visible && (root.testOpenMs < 0 || root.testScrolling)

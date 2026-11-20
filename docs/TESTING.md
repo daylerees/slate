@@ -74,19 +74,26 @@ first alone (for load alongside one, start an ordinary run with its own `SLATE_T
 
 ## Side by side
 
-A run is split into parts that go at the same time, each in a container of its own: `static`
-and `unit` are one part, and the `live` and `visual` test files are shared out over several
-more, each with its own Hyprland and Slate. A whole run is about five minutes this way on an
-8-core machine, where one after another it's about 24.
+A run is split into parts that go at the same time, each in a container of its own: the `live`
+and `visual` test files are shared out over several, each with its own Hyprland and Slate, and
+`static` and `unit` over as few as keep them from finishing last. A whole run is about five
+minutes this way on an 8-core machine, where one after another it's about 24.
 
 - `--jobs N` says how many sessions: by default three quarters of the machine's processors, six
-  at most (each session draws in software, which is heavy on them). Six on 8 processors gives
-  the same results as one after another, now that the tests wait for things, not set times;
-  a full run takes about five minutes. On CI, and when re-shooting
-  screenshots, it's one.
-- A file is never split, so its tests keep their order; which files share a session changes
-  from run to run. They're shared out by how long each took last time
-  (`tests/out/durations.json`), so the parts finish together.
+  at most (each session draws in software, which is heavy on them), or on a big machine three eighths of its
+  processors, as long as there's 4 GB free for each. Six on 8 processors gives the same results
+  as one after another, now that the tests wait for things, not set times. On CI, and when
+  re-shooting screenshots, it's one.
+- Measured on a 24-thread Ryzen 9 5900X with 128 GB (2026-11-20), a full run of about 391,000
+  checks: 6 sessions, 594 s; 12 (its default), 361 s, the machine about three quarters busy and
+  67 GB still free; 16, 372 s and no faster, with the processors full, Slate died once in
+  `live/test_preview_closing` (its workaround for a Quickshell crash depends on timing) and two
+  assistant tests timed out. More than half the threads doesn't pay.
+- A file is never split, so its tests keep their order, except the visual scenes: one file that
+  took as long as a whole part, so it's shared out in slices (`visual/test_visual@2/3`, every
+  third scene from the second, still in order; `SPLIT` in `parallel.py`, and the test asks
+  `slate.in_slice`). Which files share a session changes from run to run. They're shared out by
+  how long each took last time (`tests/out/durations.json`), so the parts finish together.
 - Failures print as they happen, from whichever part; the tier lines and the summary add all
   the parts up. Each session's logs are in `tests/out/live/<part>/`.
 - A test that only fails side by side has found something (a race, or something left behind

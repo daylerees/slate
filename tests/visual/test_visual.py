@@ -116,9 +116,11 @@ class Visual(LiveCase):
         update = updating()
         filt = os.environ.get("SLATE_TEST_FILTER", "")
         changed, added = [], []
-        for name, scene in SCENES.items():
+        for i, (name, scene) in enumerate(SCENES.items()):
             if filt and filt not in name:
                 continue
+            if not slate.in_slice("visual/test_visual", i):
+                continue                 # (another part's share of the scenes: tests/lib/parallel.py)
             with self.subTest(name):
                 actual = self.shoot(name, scene)
                 approved = os.path.join(BASELINES, name + ".png")

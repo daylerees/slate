@@ -24,6 +24,7 @@ if behave == "die":
 failed = 1 if behave == "fail" else 0
 if failed:
     print(f"FAIL {only[0]} › something: it broke", flush=True)
+only = sorted({u.split("@")[0] for u in only})     # (slices of a file: the file, as the runner does)
 tiers = {}
 for u in only:
     t = tiers.setdefault(u.split("/")[0], {"ran": 0, "failed": 0, "seconds": 2.0})
@@ -88,12 +89,13 @@ class Parts(Standin):
     def test_every_file_runs_once_and_the_parts_add_up(self):
         code, out = self.go("--jobs", "3", "--tier", "all")
         asked = self.asked()
-        self.assertEqual(sorted(asked), ["display-1", "display-2", "display-3", "quick"], out)
+        self.assertEqual(sorted(n for n in asked if n.startswith("display")), ["display-1", "display-2", "display-3"], out)
+        self.assertTrue(any(n.startswith("quick") for n in asked), out)
         files = []
         for name, line in asked.items():
             words = line.split()
             only = words[words.index("--only") + 1].split(",")
-            self.assertTrue(all(u.split("/")[0] in (("static", "unit") if name == "quick" else ("live", "visual")) for u in only),
+            self.assertTrue(all(u.split("/")[0] in (("static", "unit") if name.startswith("quick") else ("live", "visual")) for u in only),
                             f"{name} was given {only}")
             files += only
         mod = module()
@@ -167,3 +169,92 @@ class Failed(Standin):
         self.assertEqual(only, ["live/test_bar", "live/test_dock", "unit/test_spaces"])
         self.assertTrue(all("--failed" in line for line in asked.values()), "each part runs just the failed tests")
         self.assertFalse(os.path.exists(os.path.join(self.out, "durations.json")), "timings kept from a partial run")
+
+
+class Slices(Standin):
+    """A file in SPLIT (the visual scenes, one file as long as a whole part) is shared out in
+    slices, and static and unit over a few parts, so neither is the last to finish."""
+
+    def known(self, **times):
+        with open(os.path.join(self.out, "durations.json"), "w") as f:
+            json.dump(times, f)
+
+    def only(self):
+        return {name: line.split("--only ")[1].split()[0].split(",") for name, line in self.asked().items()}
+
+    def test_a_long_visual_file_is_shared_out_in_slices(self):
+        mod = module()
+        times = {u: 100 for u in mod.units("live")}
+        times["visual/test_visual"] = 100 * len(times) // 2          # half of all live's time
+        self.known(**times)
+        code, out = self.go("--jobs", "4", "--tier", "live,visual", "-q")
+        self.assertEqual(code, 0, out)
+        slices = sorted(u for files in self.only().values() for u in files if u.startswith("visual/"))
+        n = len(slices)
+        self.assertGreater(n, 1, "the visual file ran in one part")
+        self.assertEqual(slices, sorted(f"visual/test_visual@{k}/{n}" for k in range(1, n + 1)), "each slice once")
+        with open(os.path.join(self.out, "durations.json")) as f:
+            self.assertEqual(json.load(f)["visual/test_visual"], 7.5 * len({p for p, files in self.only().items()
+                                                                              if any(u.startswith("visual/") for u in files)}),
+                             "a sliced file's time is all its slices' together")
+
+    def test_a_short_one_is_left_whole(self):
+        self.known(**{"visual/test_visual": 5})
+        self.go("--jobs", "4", "--tier", "live,visual")
+        self.assertIn(["visual/test_visual"], [[u for u in f if u.startswith("visual/")] for f in self.only().values()])
+
+    def test_failed_runs_the_whole_file(self):
+        self.known(**{"visual/test_visual": 100000})
+        with open(os.path.join(self.out, "failed.txt"), "w") as f:
+            f.write("tests.visual.test_visual.Visual.test_scenes\n")
+        self.go("--jobs", "4", "--tier", "visual", "--failed")
+        self.assertEqual(list(self.only().values()), [["visual/test_visual"]])
+
+    def test_a_filtered_run_keeps_the_file_whole(self):
+        """--filter settings-general: one session for the file, not one per slice (each slice
+        ran the filter, and they all shot the same scene into the same file)."""
+        self.known(**{"visual/test_visual": 100000})
+        self.go("--jobs", "4", "--tier", "visual", "--filter", "settings-general")
+        self.assertEqual(list(self.only().values()), [["visual/test_visual"]])
+
+    def test_a_lost_slice_runs_the_file_again(self):
+        self.known(**{"visual/test_visual": 100000})
+        self.go("--jobs", "2", "--tier", "visual", display_1="die")
+        with open(os.path.join(self.out, "failed.txt")) as f:
+            self.assertEqual(f.read(), "tests.visual.test_visual\n")
+
+    def test_static_and_unit_share_out_when_theyd_be_last(self):
+        mod = module()
+        quick = [u for t in ("static", "unit") for u in mod.units(t)]
+        self.known(**{u: 30 for u in quick}, **{u: 10 for u in mod.units("live")})
+        self.go("--jobs", "4", "--tier", "unit,static,live")
+        parts = {n: f for n, f in self.only().items() if n.startswith("quick")}
+        self.assertGreater(len(parts), 1, parts.keys())
+        self.assertLessEqual(len(parts), mod.QUICK_PARTS)
+        self.assertEqual(sorted(u for f in parts.values() for u in f), sorted(quick), "each file once")
+
+    def test_static_and_unit_stay_one_part_when_quick(self):
+        mod = module()
+        self.known(**{u: 1 for t in ("static", "unit") for u in mod.units(t)}, **{u: 100 for u in mod.units("live")})
+        self.go("--jobs", "4", "--tier", "unit,static,live")
+        self.assertEqual([n for n in self.only() if n.startswith("quick")], ["quick"])
+
+
+class InSlice(Case):
+    """slate.in_slice: which of a sliced file's tests are this part's."""
+
+    def test_the_slices(self):
+        old = os.environ.get("SLATE_TEST_SLICES")
+        try:
+            os.environ.pop("SLATE_TEST_SLICES", None)
+            self.assertTrue(all(slate.in_slice("visual/test_visual", i) for i in range(5)), "no slices: all of them")
+            os.environ["SLATE_TEST_SLICES"] = "visual/test_visual@2/3"
+            self.assertEqual([i for i in range(7) if slate.in_slice("visual/test_visual", i)], [1, 4])
+            self.assertTrue(slate.in_slice("live/test_dock", 0), "another file's slices don't count")
+            os.environ["SLATE_TEST_SLICES"] = "visual/test_visual@1/3,visual/test_visual@3/3"
+            self.assertEqual([i for i in range(7) if slate.in_slice("visual/test_visual", i)], [0, 2, 3, 5, 6])
+        finally:
+            if old is None:
+                os.environ.pop("SLATE_TEST_SLICES", None)
+            else:
+                os.environ["SLATE_TEST_SLICES"] = old

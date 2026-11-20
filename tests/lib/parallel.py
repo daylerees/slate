@@ -8,8 +8,11 @@ The parts:
   * the tiers that need no display (static, unit) are one part;
   * the files of the tiers that do (live, visual) are shared out over --jobs parts, each with
     a Hyprland + Slate session of its own. A file is never split, so its tests keep their
-    order. The files are shared out by how long each took last time (tests/out/durations.json),
-    so the parts finish at about the same moment.
+    order, except the ones in SPLIT (the visual scenes, a single file that took as long as a
+    whole part): those are shared out in slices, "visual/test_visual@2/3" being every third
+    scene from the second, still in order. The files are shared out by how long each took last
+    time (tests/out/durations.json), so the parts finish at about the same moment;
+  * static and unit too, over as few parts as keep them from being the last to finish.
 
 Each part is tests/lib/runner.py with --only and --part: it prints its failures as they
 happen (they come through here untouched) and leaves its totals in tests/out/parts/, which
@@ -22,6 +25,7 @@ their files are shared out, and each part runs just their tests.
 """
 import argparse
 import json
+import math
 import os
 import re
 import shutil
@@ -35,6 +39,14 @@ TESTS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.environ.get("SLATE_TEST_OUT") or os.path.join(TESTS, "out")
 TIERS = ["static", "unit", "live", "visual"]
 DISPLAY = ("live", "visual")
+# Files whose tests can be shared out in slices (the test takes SLATE_TEST_SLICES: slate.in_slice)
+SPLIT = {"visual/test_visual"}
+QUICK_PARTS = 4          # at most, for static and unit
+
+
+def base(unit):
+    """The file a slice is of ("visual/test_visual@2/3" → "visual/test_visual")."""
+    return unit.split("@")[0]
 
 
 def units(tier):
@@ -46,7 +58,10 @@ def units(tier):
 
 
 def weight(unit, known):
-    """How long a file is expected to take: last time's figure, or a guess from its size."""
+    """How long a file is expected to take: last time's figure, or a guess from its size (a
+    slice: its share of the file's)."""
+    if "@" in unit:
+        return max(weight(base(unit), known) / int(unit.split("/")[-1]), 1)
     if unit in known:
         return max(known[unit], 1)
     try:
@@ -111,9 +126,21 @@ def main(argv=None):
 
     parts = []                                   # (name, its files)
     quick = [u for t in tiers if t not in DISPLAY for u in chosen(t)]
-    if quick:
-        parts.append(("quick", quick))
     shown = [u for t in tiers if t in DISPLAY for u in chosen(t)]
+    # About how long each display part will take: what a part may take without holding up the rest
+    each = max(sum(weight(u, known) for u in shown) / max(a.jobs, 1), 60) if shown else 0
+    if again is None and not a.filter:
+        # (the failed tests run again from whole files, as they were found; and a filtered run's
+        # few tests in one session, not a session for each slice of a file the filter mostly skips)
+        def slices(u):
+            n = max(1, min(a.jobs, math.ceil(weight(u, known) / each))) if u in SPLIT else 1
+            return [f"{u}@{k}/{n}" for k in range(1, n + 1)] if n > 1 else [u]
+        shown = [s for u in shown for s in slices(u)]
+    if quick:
+        n = 1 if not each else max(1, min(QUICK_PARTS, math.ceil(sum(weight(u, known) for u in quick) / each)))
+        groups = share_out(quick, n, known)
+        for i, group in enumerate(groups):
+            parts.append(("quick" if len(groups) == 1 else f"quick-{i + 1}", group))
     for i, group in enumerate(share_out(shown, a.jobs, known) if shown else []):
         parts.append((f"display-{i + 1}", group))
     if not parts:
@@ -171,7 +198,7 @@ def main(argv=None):
         except (OSError, ValueError):
             # (a part that never reported: the container didn't start, or the runner died)
             lost.append(name)
-            failed_ids.update("tests." + u.replace("/", ".") for u in files)   # (its files run again)
+            failed_ids.update("tests." + base(u).replace("/", ".") for u in files)   # (its files run again)
             reason = f"this part of the run didn't finish (exit code {codes[name]}): {', '.join(files)}"
             if mode == "json":
                 print(json.dumps({"test": f"part {name}", "reason": reason, "log": None}))
@@ -182,7 +209,9 @@ def main(argv=None):
         failed += r["failed"]
         skipped += r["skipped"]
         failed_ids.update(r.get("failed_ids", []))
-        seconds.update(r["files"])
+        for u, t in r["files"].items():
+            # (a file run in slices took all of theirs together)
+            seconds[u] = seconds.get(u, 0) + t if u in SPLIT else t
         for tier, t in r["tiers"].items():
             s = per_tier.setdefault(tier, {"ran": 0, "failed": 0, "seconds": 0, "parts": 0})
             s["ran"] += t["ran"]

@@ -286,6 +286,13 @@ def main(argv=None):
     ap.add_argument("--part", default="", help="one part of a parallel run (tests/lib/parallel.py): its name")
     a = ap.parse_args(argv)
     only = {u.strip() for u in a.only.split(",") if u.strip()} or None
+    if only:
+        # Slices of a file (parallel.py's SPLIT: "visual/test_visual@2/3"): the file runs, and
+        # its test runs just its share (slate.in_slice)
+        sliced = sorted(u for u in only if "@" in u)
+        if sliced:
+            os.environ["SLATE_TEST_SLICES"] = ",".join(sliced)
+            only = {u.split("@")[0] for u in only}
     again = read_failed() if a.failed else None
     if again is not None and only is None:
         only = {unit_of(i) for i in again} - {None}

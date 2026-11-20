@@ -120,4 +120,5 @@ class LauncherScroll(LiveCase):
                 # Every app's row was drawn on the way down, in its place, its tile loaded by then
                 self.assertEqual(done["misplaced"], 0, f"{done['misplaced']} rows were drawn out of their place")
                 self.assertEqual(done["seen"], la["apps"], f"only {done['seen']} of {la['apps']} app rows came into view")
-                self.assertEqual(done["ready"], la["apps"], f"{done['seen'] - done['ready']} rows came into view without their tile")
+                self.assertEqual(done["ready"], la["apps"], f"{done['seen'] - done['ready']} rows came into view without their tile: "
+                                                            f"{done.get('notReady')}")
