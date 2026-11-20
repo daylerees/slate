@@ -33,6 +33,8 @@ end
 --   hyprctl dispatch 'function() fadeTo(hl.dsp.focus({ workspace = besideWorkspace(1) })) end'
 function besideWorkspace(dir)
     local cur = hl.get_active_workspace().id
+    -- (on a named workspace there's no number to be beside: a new one at the end)
+    if not cur then return newWorkspace() end
     local used = {}
     local maxId = cur
     for _, w in ipairs(hl.get_workspaces()) do

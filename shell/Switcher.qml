@@ -37,7 +37,7 @@ PanelWindow {
     function currentWindows() {
         // Normal workspaces only: the secret (special) workspace stays out of the switcher, and
         // so does Nova's window (Slate's own, on every workspace: Config.isNova)
-        const all = Hyprland.toplevels.values.filter(t => t.workspace && t.workspace.id > 0 && t.title !== undefined && !Config.isNova(t));
+        const all = Hyprland.toplevels.values.filter(t => Config.isShownWorkspace(t.workspace) && t.title !== undefined && !Config.isNova(t));
         const rank = a => { const i = mru.indexOf(a); return i < 0 ? 1e6 : i; };
         return all.slice().sort((a, b) => rank(a.address) - rank(b.address));
     }
@@ -220,9 +220,9 @@ PanelWindow {
         Gloss { radius: parent.radius }   // glass: a sheen, like the bar's workspace container
         readonly property real dot: 14
         readonly property real gap: 8
-        readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
+        readonly property var spaces: Config.workspaceList
         readonly property var selected: sw.strip.length ? sw.strip[Math.max(0, Math.min(sw.strip.length - 1, sw.index))] : null
-        readonly property int activeIndex: Math.max(0, spaces.findIndex(w => selected && selected.workspace && w.id === selected.workspace.id))
+        readonly property int activeIndex: Math.max(0, spaces.findIndex(w => selected && Config.sameWorkspace(w, selected.workspace)))
         // Ten at most: with more workspaces, the row scrolls to keep the selected window's in
         // view and shrinks away at an end with more beyond (WorkspaceDots)
         WorkspaceDots {

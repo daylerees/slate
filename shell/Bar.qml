@@ -118,7 +118,7 @@ PanelWindow {
                 continue;
             }
             rows.push({ id: id, tray: null, label: it.label, icon: it.icon, image: "",
-                        value: id === "workspaces" || id === "workspacename" ? Config.workspaceLabel(Config.focusedWorkspaceId) : (t.plain ? t.label : "") });
+                        value: id === "workspaces" || id === "workspacename" ? Config.focusedWorkspaceLabel : (t.plain ? t.label : "") });
         }
         return rows;
     }
@@ -659,6 +659,7 @@ PanelWindow {
     property var trayTest: ({ made: 0, measured: 0 })
     readonly property var dotsState: wsRow ? { shown: wsRow.shown, count: wsRow.count, first: wsRow.first,
                                               firstWanted: wsRow.firstWanted, active: wsRow.activeIndex, width: wsRow.width,
+                                              names: wsRow.spaces.map(w => Config.workspaceLabelOf(w)),
                                               occupied: Hyprland.workspaces.values.filter(w => w.id > 0 && wsRow.occupied(w)).map(w => w.id) } : null
     // (and the bell's unread count beside it, "" for none)
     readonly property string bellText: bellBtn.label
@@ -1521,12 +1522,12 @@ PanelWindow {
                     hover: false
                     readonly property real dot: 14
                     readonly property real dotGap: 5
-                    readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
-                    readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
+                    readonly property var spaces: Config.workspaceList
+                    readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Config.sameWorkspace(w, Hyprland.focusedWorkspace)))
                     length: (bar.vert ? wsRow.height : wsRow.width) + 16
                     // The label says which workspace the dot under the pointer is, as the
                     // overview calls it, under that dot
-                    tip: wsRow.litDot >= 0 && wsRow.spaces[wsRow.litDot] ? Config.workspaceLabel(wsRow.spaces[wsRow.litDot].id) : ""
+                    tip: wsRow.litDot >= 0 && wsRow.spaces[wsRow.litDot] ? Config.workspaceLabelOf(wsRow.spaces[wsRow.litDot]) : ""
                     tipAt: wsRow.litDot >= 0 ? wsRow.dotItem(wsRow.litDot) : null
                 // The dots and the accent marker, six at most: with more workspaces, the row
                 // scrolls to keep yours in view, and shrinks away at an end with more beyond
@@ -1557,7 +1558,7 @@ PanelWindow {
             // it leaves for More whole, early (Config.barOverflowDefault)
             Segment {
                 id: wsName
-                readonly property string says: Config.focusedWorkspaceId > 0 ? Config.workspaceLabel(Config.focusedWorkspaceId) : ""
+                readonly property string says: Config.focusedWorkspaceLabel
                 wanted: Config.s.barShowWorkspaceName && says !== ""
                 label: says             // (what it says: for the arranging panel's chips, and what's carried)
                 length: wsNameText.implicitWidth + 20

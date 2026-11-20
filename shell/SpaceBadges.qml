@@ -68,8 +68,9 @@ Scope {
                                     // width (Hyprland's units) and the space reserved at the top (the bar)
                                     w: (x.transform || 0) % 2 ? x.height / (x.scale || 1) : x.width / (x.scale || 1),
                                     top: (x.reserved || [0, 0, 0, 0])[1],
-                                    active: (x.activeWorkspace && x.activeWorkspace.id) || 0,
-                                    special: (x.specialWorkspace && x.specialWorkspace.id) || 0 };   // no id when none is open
+                                    // (workspaces by name, unique to each: a named one has no id in Hyprland 0.57)
+                                    active: (x.activeWorkspace && x.activeWorkspace.name) || "",
+                                    special: (x.specialWorkspace && x.specialWorkspace.name) || "" };   // no name when none is open
                     root.mons = m;
                     root.read();
                 } catch (e) {}
@@ -108,8 +109,8 @@ Scope {
         for (const t of tops) {
             const o = t.lastIpcObject;
             if (!o || !o.workspace) continue;
-            if (o.fullscreen === 2) fullOn[o.workspace.id] = true;
-            if (!o.floating && o.mapped && !o.hidden) tiled[o.workspace.id] = (tiled[o.workspace.id] || 0) + 1;
+            if (o.fullscreen === 2) fullOn[o.workspace.name] = true;
+            if (!o.floating && o.mapped && !o.hidden) tiled[o.workspace.name] = (tiled[o.workspace.name] || 0) + 1;
         }
         const byAddr = {};
         for (const t of tops) {
@@ -126,11 +127,11 @@ Scope {
             if (!o || !o.at || !o.size || !o.mapped || o.hidden) continue;
             const space = owners[String(o.stableId)];
             if (!space) continue;
-            const mon = mons[o.monitor], wsId = o.workspace ? o.workspace.id : 0;
-            if (!mon || !wsId) continue;
+            const mon = mons[o.monitor], ws = o.workspace ? String(o.workspace.name || "") : "";
+            if (!mon || !ws) continue;
             // Only on a workspace that's showing (a special one only while it's open)
-            const showing = wsId > 0 ? (mon.active === wsId && mon.special === 0) : mon.special === wsId;
-            if (!showing || o.fullscreen === 2 || fullOn[wsId]) continue;
+            const showing = /^special(:|$)/.test(ws) ? mon.special === ws : (mon.active === ws && mon.special === "");
+            if (!showing || o.fullscreen === 2 || fullOn[ws]) continue;
             const scr = Quickshell.screens.find(s => s.name === mon.name);
             if (!scr) continue;
             const k = Config.uiScale;
@@ -138,7 +139,7 @@ Scope {
             if (w < zone * 2 + inset * 2 || h < zone + inset * 2) continue;     // too small to wear one
             // The border follows the window's corners (Config.windowRadius: lone tiled and
             // maximised windows are square)
-            const radius = Config.windowRadius(o, tiled[wsId]);
+            const radius = Config.windowRadius(o, tiled[ws]);
             const underBar = Config.s.roundedScreenCorners && Config.barEdge === "top" && mon.top > 0
                 && Math.abs(o.at[1] - mon.y - mon.top) <= 1;
             out[String(o.stableId)] = { screen: scr, x: (o.at[0] - mon.x) / k, y: (o.at[1] - mon.y) / k, w: w, h: h,

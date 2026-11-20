@@ -2439,6 +2439,22 @@ Singleton {
         return own ? usableMode(own) : windowMode;
     }
     readonly property int focusedWorkspaceId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1
+    // What the workspace you're on is called: its own name or "Workspace 3", or a named
+    // workspace's name (one made by your own rules, which has no number)
+    readonly property string focusedWorkspaceLabel: workspaceLabelOf(Hyprland.focusedWorkspace)
+    // The workspaces as one list, in Hyprland's own order: the numbered ones by number, then any
+    // named ones by name. Hyprland 0.57 gives a named workspace no number (Quickshell has -1 for
+    // every one), so where there's none a workspace is told apart by its name. The secret
+    // (special) workspace stays out
+    function isShownWorkspace(w) {
+        return !!w && (w.id > 0 || (!!w.name && !/^special(:|$)/.test(String(w.name))));
+    }
+    readonly property var workspaceList: Hyprland.workspaces.values.filter(isShownWorkspace).sort((a, b) =>
+        (a.id > 0) !== (b.id > 0) ? (a.id > 0 ? -1 : 1) : a.id > 0 ? a.id - b.id : String(a.name).localeCompare(String(b.name)))
+    function sameWorkspace(a, b) { return !!a && !!b && (a.id > 0 ? a.id === b.id : b.id <= 0 && a.name === b.name); }
+    function workspaceLabelOf(w) { return !w ? "" : w.id > 0 ? workspaceLabel(w.id) : String(w.name || ""); }
+    // The workspace as goToWorkspace (binds.lua) takes it: its number, or a named one's name
+    function workspaceTarget(w) { return w.id > 0 ? String(w.id) : luaString("name:" + w.name); }
     readonly property string focusedMode: workspaceMode(focusedWorkspaceId)
     // Any workspace floating (title bars, click to focus)
     readonly property bool anyFloating: windowMode === "floating"

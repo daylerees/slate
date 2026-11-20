@@ -454,7 +454,7 @@ hl.on("window.open", function(win)
     if wants and not w.floating then
         hl.dispatch(hl.dsp.window.tag({ tag = "+slate-floated", window = target }))
         hl.dispatch(hl.dsp.window.float({ action = "enable", window = target }))
-    elseif not wants and w.floating and front and front.id ~= id and modeOf(front.id) == "floating"
+    elseif not wants and w.floating and front and front.id and front.id ~= id and modeOf(front.id) == "floating"
         and w.class ~= "slate-settings" and not isDialog(w, hl.get_windows({})) then
         hl.dispatch(hl.dsp.window.float({ action = "disable", window = target }))
         hl.dispatch(hl.dsp.window.tag({ tag = "-slate-floated", window = target }))

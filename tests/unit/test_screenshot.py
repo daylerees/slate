@@ -150,6 +150,19 @@ class Failures(Case):
     def saved(self):
         return os.listdir(self.folder) if os.path.isdir(self.folder) else []
 
+    def test_a_window_with_a_named_workspace_about(self):
+        """Choosing a window, with a window on a named workspace (Hyprland 0.57 gives it no id):
+        the list of windows stopped with a KeyError, and the chooser never opened."""
+        self.tool("hyprctl", "case \"$*\" in\n"
+                  "  *monitors*) echo '[{\"activeWorkspace\": {\"id\": 1, \"name\": \"1\"}}]' ;;\n"
+                  "  *clients*) echo '[{\"mapped\": true, \"workspace\": {\"name\": \"games\"}, \"at\": [0, 0], \"size\": [9, 9]},"
+                  " {\"mapped\": true, \"workspace\": {\"id\": 1, \"name\": \"1\"}, \"at\": [10, 10], \"size\": [100, 80]}]' ;;\n"
+                  "esac")
+        code, out = self.shot("window")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(self.s.calls("slurp")), 1, "the chooser didn't open")
+        self.assertEqual(len(self.saved()), 1)
+
     def test_all_well_says_saved(self):
         code, out = self.shot("region")
         self.assertEqual(code, 0, out)

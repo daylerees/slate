@@ -52,7 +52,7 @@ Item {
     // binds.lua: to an empty workspace the windows slide away rather than fading where they are)
     function go(i) {
         const ws = spaces && i >= 0 && i < spaces.length ? spaces[i] : null;
-        if (ws) Hyprland.dispatch(`function() goToWorkspace(${ws.id}) end`);
+        if (ws) Hyprland.dispatch(`function() goToWorkspace(${Config.workspaceTarget(ws)}) end`);
     }
     // The dot itself (for something to point at it: the menu bar's label)
     function dotItem(i) { return i >= 0 && i < dotsRep.count ? dotsRep.itemAt(i) : null; }

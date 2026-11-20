@@ -66,6 +66,28 @@ class NamedWorkspace(LiveCase):
         self.assertTrue(ok, out)
         self.until_true(lambda: self.active().get("id") == 1, "workspace 1")
 
+    def test_a_dot_of_its_own_at_the_end(self):
+        """One list, as Hyprland's own order has it: the numbered workspaces, then the named one,
+        with the marker on it while you're there, and its name where the workspace is named."""
+        dots = lambda st: st["bar"]["dots"]
+        st = self.wait(lambda st: dots(st)["names"][-1:] == [NAMED], "a dot for the named workspace, last")
+        self.assertEqual(dots(st)["names"][0], "Workspace 1")
+        self.go_named()
+        st = self.wait(lambda st: dots(st)["active"] == len(dots(st)["names"]) - 1, "the marker on its dot")
+        self.assertEqual(st["focusedWorkspace"]["label"], NAMED)
+
+    def test_its_dot_takes_you_there(self):
+        """A dot's click (WorkspaceDots.go): goToWorkspace with the workspace's name."""
+        ok, out = self.lua('goToWorkspace("name:%s")' % NAMED)
+        self.assertTrue(ok, out)
+        self.until_true(lambda: self.active().get("name") == NAMED, "the named workspace")
+
+    def test_its_windows_are_in_the_switcher(self):
+        self.ipc("switcher", "next")
+        st = self.wait(lambda st: st["switcher"]["open"], "the switcher")
+        self.assertEqual(st["switcher"]["windows"], 1, "the window on the named workspace isn't in the switcher")
+        self.ipc("switcher", "cancel")
+
     def test_slate_shows_it(self):
         """The bar, the overview, the switcher and the big dots, on and off it."""
         for where in ("numbered", "named"):

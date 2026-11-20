@@ -47,13 +47,15 @@ PanelWindow {
     onMovingElsewhereChanged: Config.titleBarAway = movingElsewhere
     property bool placedLook: false                  // the next look at the windows ends it
     Timer { id: placed; interval: Config.ms(420) + 60; onTriggered: { tb.placedLook = true; tb.query(); } }
-    readonly property int wsId: monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : -1
+    // (windows are matched to it by name, unique to each workspace: a named one has no id in
+    // Hyprland 0.57, where Quickshell has -1)
+    readonly property string wsName: monitor && monitor.activeWorkspace ? String(monitor.activeWorkspace.name || "") : ""
     function pickTop(list) {
         if (!mon || dragging || sizing !== "") return;
         let top = null;
         for (const c of list) {
             if (!c.mapped || c.hidden || !c.floating || c.monitor !== mon.id) continue;
-            if (!c.pinned && !(c.workspace && c.workspace.id === wsId)) continue;
+            if (!c.pinned && !(c.workspace && c.workspace.name === wsName)) continue;
             if (Config.isNova(c)) continue;         // (Nova has its own header and close button)
             top = c;
         }
@@ -105,7 +107,7 @@ PanelWindow {
     readonly property real winH: o && o.size ? o.size[1] / s : 0
     // On this screen, floating, not full screen or maximised, on the workspace showing here
     readonly property bool wanted: !!o && !!mon && o.floating === true && (o.fullscreen || 0) === 0
-        && o.monitor === mon.id && (o.pinned || (!!o.workspace && o.workspace.id === wsId))
+        && o.monitor === mon.id && (o.pinned || (!!o.workspace && o.workspace.name === wsName))
         && address !== "" && winW > 0
     // Kept away for a moment after switching workspace (the windows slide; the bar can't)
     property bool settling: false
@@ -131,7 +133,7 @@ PanelWindow {
     // at a few times a second while one floats (not while dragging: the drag knows where the
     // window is), and at once when windows open, close, change focus, float or go full screen:
     // TitleBarWindows.qml, for every screen's bar at once
-    onWsIdChanged: query()
+    onWsNameChanged: query()
     Component.onCompleted: { Hyprland.refreshMonitors(); query(); if (barWanted) fadeIn.restart(); }
 
     // ---- Look -------------------------------------------------------------------------

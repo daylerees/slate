@@ -352,6 +352,25 @@ class Restore(FakeHyprland, SpacesBase):
         # Everything opened: no notification
         self.assertEqual(self.s.calls("notify-send"), [])
 
+    def test_restore_with_a_named_workspace_about(self):
+        """A window on a named workspace (one made by your own rules): Hyprland 0.57 gives such a
+        workspace no id at all, and restoring stopped with a KeyError once its apps had started,
+        leaving them unsplit and unplaced."""
+        self.fake_hyprland()
+        state = os.path.join(self.h.dir, "hypr-state.json")
+        st = self.read(state)
+        st["workspaces"].append({"name": "games", "monitor": "DP-1", "windows": 1})
+        st["clients"].append({"address": "0xa9", "mapped": True, "class": "steam_app_1",
+                              "workspace": {"name": "games"}, "at": [0, 0], "size": [1920, 1080], "stableId": 9, "pid": 1})
+        with open(state, "w") as f:
+            json.dump(st, f)
+        self.write(self.store, {"spaces": [{"id": "aaaaaaaaaaaa", "name": "Work", "colour": "#3366ff", "icon": "edba",
+                                            "saved": 1, "workspaces": [{"monitor": "DP-1", "aspect": 1.7778,
+                                                                        "windows": [EDITOR, TERM]}]}]})
+        self.spaces("restore", "work")
+        d = self.dispatches()
+        self.assertIn("function() hl.dispatch(hl.dsp.layout([=[splitratio 1.000 exact]=])) end", d, d)
+
     def test_terminal_app_runs_inside_the_terminal(self):
         """A terminal app with a working folder: the line Hyprland is handed, run by a shell as
         Hyprland runs it, starts the app inside the terminal and in that folder. It used to

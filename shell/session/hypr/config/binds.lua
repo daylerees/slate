@@ -321,10 +321,12 @@ local shared = {
 -- Matches on the closed window's address so helper windows (Electron) and apps that hide
 -- to tray instead of exiting (Steam) still trigger it
 local pendingClose = nil
-local function otherWindowsOn(wsId, exceptAddr)
+-- (by name, unique to each workspace: a named one has no id in Hyprland 0.57, and every
+-- named one's nil would have matched every other's)
+local function otherWindowsOn(wsName, exceptAddr)
     local n = 0
     for _, w in ipairs(hl.get_windows()) do
-        if w.mapped and w.address ~= exceptAddr and w.workspace and w.workspace.id == wsId and not slateIsPinned(w) then
+        if w.mapped and w.address ~= exceptAddr and w.workspace and w.workspace.name == wsName and not slateIsPinned(w) then
             n = n + 1
         end
     end
@@ -334,8 +336,8 @@ function closeWindowSmart()
     local win = hl.get_active_window()
     pendingClose = nil
     if win and win.workspace and not tostring(win.workspace.name):find("^special")
-        and otherWindowsOn(win.workspace.id, win.address) == 0 then
-        pendingClose = { addr = win.address, ws = win.workspace.id }
+        and otherWindowsOn(win.workspace.name, win.address) == 0 then
+        pendingClose = { addr = win.address, ws = win.workspace.name }
     end
     hl.dispatch(hl.dsp.window.close())
 end
@@ -344,7 +346,7 @@ hl.on("window.close", function(win)
     local p = pendingClose
     pendingClose = nil
     local ws = hl.get_active_workspace()
-    if ws and ws.id == p.ws and otherWindowsOn(p.ws, p.addr) == 0 then
+    if ws and ws.name == p.ws and otherWindowsOn(p.ws, p.addr) == 0 then
         hl.dispatch(hl.dsp.focus({ workspace = "previous" }))
     end
 end)

@@ -112,9 +112,10 @@ print("yes" if d.get("recordMicrophone") else "")
         window)
             boxes=$(hyprctl -j monitors | python3 -c '
 import json, subprocess, sys
-shown = {m["activeWorkspace"]["id"] for m in json.load(sys.stdin)}
+# (by name: a named workspace has no id in Hyprland 0.57)
+shown = {m["activeWorkspace"].get("name") for m in json.load(sys.stdin)}
 for c in json.loads(subprocess.run(["hyprctl", "-j", "clients"], capture_output=True, text=True).stdout):
-    if c.get("mapped") and not c.get("hidden") and c["workspace"]["id"] in shown:
+    if c.get("mapped") and not c.get("hidden") and c.get("workspace", {}).get("name") in shown:
         (x, y), (w, h) = c["at"], c["size"]
         print("%d,%d %dx%d" % (x, y, w, h))')
             [ -n "$boxes" ] || exit 0

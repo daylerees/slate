@@ -27,7 +27,7 @@ Column {
     // Its name (or "Workspace 3"), with a pencil to rename it: asked in Slate's
     // confirmation window, which has a field for it. An empty name: the number again
     PanelTitle {
-        text: Config.workspaceLabel(wmView.ws)
+        text: Config.focusedWorkspaceLabel
         editCode: wmView.ws > 0 ? 0xEA98 : 0
         editName: "Rename this workspace"
         onEditClicked: pop.renameWorkspace(wmView.ws)

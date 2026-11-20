@@ -128,6 +128,24 @@ class Record(Case):
         run(["/bin/sh", SCRIPT, "stop"], env=self.s.env, timeout=10)
         p.wait(timeout=10)
 
+    def test_a_window_with_a_named_workspace_about(self):
+        """Choosing a window: the windows on the workspaces you can see are the boxes to click.
+        A window on a named workspace (Hyprland 0.57 gives it no id) stopped the list with a
+        KeyError, and choosing a window quietly did nothing."""
+        p = os.path.join(self.s.dir, "hyprctl")
+        with open(p, "w") as f:
+            f.write("#!/bin/sh\ncase \"$*\" in\n"
+                    "  *monitors*) echo '[{\"name\": \"DP-1\", \"focused\": true, \"activeWorkspace\": {\"id\": 1, \"name\": \"1\"}}]' ;;\n"
+                    "  *clients*) echo '[{\"mapped\": true, \"workspace\": {\"name\": \"games\"}, \"at\": [0, 0], \"size\": [9, 9]},"
+                    " {\"mapped\": true, \"workspace\": {\"id\": 1, \"name\": \"1\"}, \"at\": [10, 10], \"size\": [100, 80]}]' ;;\n"
+                    "esac\n")
+        os.chmod(p, 0o755)
+        proc = self.start("window")
+        self.wait_for(lambda: os.path.exists(self.calls), "no recording of the window")
+        self.assertEqual(self.recorder_args()[0][:3], ["-y", "-g", "10,10 100x80"])
+        run(["/bin/sh", SCRIPT, "stop"], env=self.s.env, timeout=10)
+        proc.wait(timeout=10)
+
     def test_sound_as_set(self):
         for computer, mic, want in ((True, False, "--audio=@DEFAULT_MONITOR@"), (False, True, "--audio=@DEFAULT_SOURCE@")):
             with self.subTest(computer=computer, mic=mic):

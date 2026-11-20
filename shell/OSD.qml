@@ -273,13 +273,13 @@ PanelWindow {
             anchors.centerIn: parent
             readonly property real dot: 20
             readonly property real gap: 10
-            readonly property var spaces: Hyprland.workspaces.values.filter(w => w.id > 0).sort((a, b) => a.id - b.id)
-            readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Hyprland.focusedWorkspace && w.id === Hyprland.focusedWorkspace.id))
+            readonly property var spaces: Config.workspaceList
+            readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Config.sameWorkspace(w, Hyprland.focusedWorkspace)))
             readonly property real step: dot + gap
             readonly property real dotsWidth: wsDots.width
             // The name of the workspace you're on (its own, or "Workspace 3"), shown in a holder of
             // its own under the dots' (Settings → Workspaces → Name when switching)
-            readonly property string name: Config.s.workspaceSwitchName && Hyprland.focusedWorkspace ? Config.workspaceLabel(Hyprland.focusedWorkspace.id) : ""
+            readonly property string name: Config.s.workspaceSwitchName ? Config.focusedWorkspaceLabel : ""
             width: dotsWidth
             height: dot
 

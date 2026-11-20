@@ -326,7 +326,7 @@ def snapshot():
     for wid in sorted(workspaces):
         ws = workspaces[wid]
         mon = monitors.get(ws.get("monitor"))
-        wins = [c for c in clients if c["workspace"]["id"] == wid]
+        wins = [c for c in clients if c["workspace"].get("id") == wid]
         tiled = sum(1 for c in wins if not c.get("floating"))
         if not mon or not wins:
             continue
@@ -484,7 +484,7 @@ class Restorer:
     def take(self, c, ws):
         """Put an open window on workspace ws, as if it had just been started there."""
         self.claimed.add(c["address"])
-        if c["workspace"]["id"] != ws:
+        if c["workspace"].get("id") != ws:
             dispatch("hl.dsp.window.move({ workspace = " + str(ws) + ", follow = false, window = "
                      + win_sel(c["address"]) + " })")
             time.sleep(0.3)
@@ -531,9 +531,9 @@ class Restorer:
             new = [c for a, c in self.clients().items() if a not in before and a not in self.claimed and c.get("mapped")]
             if not new:
                 continue
-            new.sort(key=lambda c: (c.get("class", "").lower() != want, c["workspace"]["id"] != ws))
+            new.sort(key=lambda c: (c.get("class", "").lower() != want, c["workspace"].get("id") != ws))
             c = new[0]
-            if c["workspace"]["id"] != ws:
+            if c["workspace"].get("id") != ws:
                 dispatch("hl.dsp.window.move({ workspace = " + str(ws) + ", follow = false, window = "
                          + win_sel(c["address"]) + " })")
             time.sleep(0.3)        # let it settle into its place
@@ -664,7 +664,7 @@ class Restorer:
         # Fullscreen and maximised windows last, once everything is in place
         by_class = {}
         for c in self.clients().values():
-            if c["workspace"]["id"] == ws:
+            if c["workspace"].get("id") == ws:
                 by_class.setdefault(c.get("class", "").lower(), []).append(c["address"])
         for w in wins:
             mode = w.get("fullscreen", 0)
@@ -799,7 +799,7 @@ def session_restore(startup):
     # reopened ones. One already open (reopened above) is left alone: starting it again would
     # only bring its window forward.
     open_entries = {find_entry(c.get("initialClass") or c.get("class")) for c in hypr("clients")}
-    used = {w["id"] for w in hypr("workspaces") if w.get("windows", 0) > 0}
+    used = {w["id"] for w in hypr("workspaces") if w.get("id", 0) > 0 and w.get("windows", 0) > 0}
     nxt = max(used | {w["id"] for w in data["workspaces"]}, default=0) + 1
     starter = Restorer(None)
     for desktop_id in startup:
