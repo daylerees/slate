@@ -195,10 +195,18 @@ class Fingerprint(LiveCase):
             return [l.split(" ", 1)[1].strip() if " " in l else "" for l in f.read().splitlines()]
 
     def test_without_fprintd_or_a_reader(self):
+        # (waiting for what each says: show() waits for the fingers listed, the same empty list
+        # both times, so the second returned before the page had the new state, under load)
+        def says(label, want):
+            got = lambda st: {w["label"]: w["needs"] for w in st["settings"]["waiting"]}.get(label)
+            try:
+                self.wait(lambda st: got(st) == want, f"{label}: {want}")
+            except AssertionError:
+                self.assertEqual(got(self.s.state()), want)
         self.show(fprintd=False, reader="")
-        self.assertEqual(self.waiting().get("Unlock with your fingerprint"), "Needs fprintd to be installed")
+        says("Unlock with your fingerprint", "Needs fprintd to be installed")
         self.show(reader="")
-        self.assertEqual(self.waiting().get("Your fingerprints"), "Needs a fingerprint reader")
+        says("Your fingerprints", "Needs a fingerprint reader")
 
     def test_adding_a_finger_says_each_touch(self):
         self.show()
