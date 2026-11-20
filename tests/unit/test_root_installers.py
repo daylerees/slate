@@ -230,7 +230,7 @@ class SessionFiles(RootCase):
 # test_distro_family.py does with /etc/os-release), and `install` writes only inside it.
 
 HELPERS = ["slate-system-root", "slate-session-install", "slate-greeter-install", "slate-private-camera", "slate-update-install",
-           "slate-firewall"]
+           "slate-firewall", "slate-unlock"]
 LISTS = ["arch", "artix", "debian", "fedora", "gentoo", "opensuse", "void"]
 REAL = "/usr/local/libexec/slate"
 

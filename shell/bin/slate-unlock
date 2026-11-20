@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Unlocking without the password (Settings → Security; LockScreen.qml's other way in): which
+# of a face, a fingerprint and a security key the lock screen takes, kept in a PAM service of
+# Slate's own, /etc/pam.d/slate-lock. Nothing else on the computer (sudo, logging in at a
+# terminal, other apps, the login screen) reads that file, so nothing else changes.
+#
+# It runs from /usr/local/libexec/slate, a root-owned copy (bin/slate-helpers-install puts it
+# there), by slate-system --root (pkexec, your password); never from your Slate folder, which
+# anything running as you could change.
+#
+#   slate-unlock enable <method>    the lock screen takes it (face, fingerprint or key)
+#   slate-unlock disable <method>   it doesn't any more; with none left the file goes
+#   slate-unlock remove             none at all: the file goes (uninstalling, factory reset)
+#   slate-unlock status             the methods it takes, one a line (anyone can read the file)
+#   slate-unlock --table            each method and the PAM modules it can be (the tests)
+#
+# The file is only ever these methods, each "sufficient", then pam_deny (nothing else gets in
+# through it), and the account checked as `login` does: the password is never in it, as the
+# lock screen asks for that through `login` itself, so a lost key or a camera that can't see
+# you never locks you out. A method's line comes from a fixed list of root-owned module paths,
+# and only once its module is installed. Exits 3 when a method's module isn't installed.
+set -uo pipefail
+umask 022
+
+TARGET_DIR=/usr/local/libexec/slate
+PAMD=/etc/pam.d
+FILE=$PAMD/slate-lock
+MARK="# slate-unlock:"
+METHODS="face fingerprint key"
+# Where each method's PAM module can be, first found wins: "<module file> <line's module part>"
+# (Howdy 3 has pam_howdy.so; Howdy 2 is a pam_python script. pam_u2f's keys are in a file root
+# owns, never in your home: SLT-252 manages it)
+candidates() {
+    local d
+    for d in /usr/lib/security /usr/lib64/security /lib/security /lib64/security \
+             /usr/lib/x86_64-linux-gnu/security /lib/x86_64-linux-gnu/security /usr/lib/aarch64-linux-gnu/security; do
+        case "$1" in
+            face) echo "$d/pam_howdy.so pam_howdy.so"
+                  echo "$d/howdy/pam.py pam_python.so $d/howdy/pam.py" ;;
+            fingerprint) echo "$d/pam_fprintd.so pam_fprintd.so" ;;
+            key) echo "$d/pam_u2f.so pam_u2f.so authfile=/etc/slate/u2f_keys cue" ;;
+        esac
+    done
+}
+
+if [ "${1:-}" = --table ]; then
+    for m in $METHODS; do candidates "$m" | while read -r file rest; do echo "$m $file $rest"; done; done
+    exit 0
+fi
+if [ "${1:-}" = status ]; then
+    [ -f "$FILE" ] && [ ! -L "$FILE" ] && sed -n "s/^$MARK //p" "$FILE"
+    exit 0
+fi
+
+[ "$(dirname "$(readlink -f "$0")")" = "$TARGET_DIR" ] || {
+    echo "slate-unlock: this only runs from $TARGET_DIR (bin/slate-system --root slate-unlock)" >&2; exit 1; }
+[ "$(id -u)" -eq 0 ] || { echo "slate-unlock: this is run as root (by slate-system --root)" >&2; exit 1; }
+[ -d "$PAMD" ] && [ ! -L "$PAMD" ] || { echo "slate-unlock: $PAMD isn't a folder here" >&2; exit 1; }
+[ ! -L "$FILE" ] || { echo "slate-unlock: $FILE is a link: not touching it" >&2; exit 1; }
+[ ! -e "$FILE" ] || [ -f "$FILE" ] || { echo "slate-unlock: $FILE isn't a plain file: not touching it" >&2; exit 1; }
+
+known() { case " $METHODS " in *" $1 "*) return 0 ;; esac; return 1; }
+# The methods on now, as the file says
+current() { [ -f "$FILE" ] && sed -n "s/^$MARK //p" "$FILE" | while read -r m _; do known "$m" && echo "$m"; done; }
+# A method's line, from the first of its modules that's installed
+line_for() {
+    local file rest
+    while read -r file rest; do
+        [ -f "$file" ] && { echo "auth       sufficient   $rest"; return 0; }
+    done < <(candidates "$1")
+    return 1
+}
+# Write the file for these methods (none: take it away), all at once
+write() {
+    local m tmp
+    if [ "$#" -eq 0 ]; then rm -f "$FILE"; return 0; fi
+    tmp=$(mktemp "$PAMD/.slate-lock.XXXXXX") || return 1
+    {
+        echo "#%PAM-1.0"
+        echo "# Unlocking Slate's lock screen without the password: written by Slate (slate-unlock)."
+        echo "# Settings → Security changes it; nothing else on this computer reads it. Remove the file"
+        echo "# and the lock screen takes only the password again."
+        for m in $METHODS; do
+            case " $* " in *" $m "*) ;; *) continue ;; esac
+            echo "$MARK $m"
+            line_for "$m" || { rm -f "$tmp"; echo "slate-unlock: $m isn't installed" >&2; return 3; }
+        done
+        echo "auth       required     pam_deny.so"
+        echo "account    include      login"
+    } > "$tmp" || { rm -f "$tmp"; return 1; }
+    chown root:root "$tmp" && chmod 0644 "$tmp" && mv -f "$tmp" "$FILE" || { rm -f "$tmp"; return 1; }
+}
+
+case "${1:-}" in
+    enable|disable)
+        [ "$#" -eq 2 ] || { echo "slate-unlock: $1 takes one method ($METHODS)" >&2; exit 1; }
+        known "$2" || { echo "slate-unlock: no method called $2 ($METHODS)" >&2; exit 1; }
+        if [ "$1" = enable ]; then
+            line_for "$2" >/dev/null || { echo "slate-unlock: $2 isn't installed" >&2; exit 3; }
+            mapfile -t on < <(current; echo "$2")
+        else
+            mapfile -t on < <(current | grep -vx "$2")
+        fi
+        # (each once: the file's order is METHODS', whatever order they came in)
+        mapfile -t on < <(printf '%s\n' "${on[@]}" | grep -v '^$' | sort -u)
+        write "${on[@]}"
+        exit $? ;;
+    remove)
+        [ "$#" -eq 1 ] || { echo "slate-unlock: remove takes nothing else" >&2; exit 1; }
+        write
+        exit $? ;;
+    *)
+        echo "slate-unlock: enable <method>, disable <method>, remove or status" >&2; exit 1 ;;
+esac

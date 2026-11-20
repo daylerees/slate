@@ -154,7 +154,8 @@ if [ "$UNINSTALL" -eq 1 ]; then
         if ask "Remove Slate's root helpers from $HELPERS (uses sudo)?"; then
             [ ! -e /run/udev/rules.d/72-slate-private-camera.rules ] || [ ! -x "$HELPERS/slate-private-camera" ] \
                 || sudo "$HELPERS/slate-private-camera" on || true
-            sudo rm -rf "$HELPERS" "$HELPERS-private-camera" /etc/polkit-1/rules.d/49-slate-private-camera.rules \
+            # (and Slate's own PAM service for unlocking without the password: the lock screen's alone)
+            sudo rm -rf "$HELPERS" "$HELPERS-private-camera" /etc/polkit-1/rules.d/49-slate-private-camera.rules /etc/pam.d/slate-lock \
                 && ok "Removed Slate's root helpers"
         fi
     fi
@@ -209,7 +210,7 @@ if [ "$UNINSTALL" -eq 1 ]; then
     # the fonts and the icon theme, and nothing marks them as Slate's rather than yours.
     left=()
     [ -z "$b" ] || left+=("Your settings and Slate's files: rm -r $b")
-    [ ! -d "$HELPERS" ] || left+=("Slate's root helpers: sudo rm -r $HELPERS /etc/polkit-1/rules.d/49-slate-private-camera.rules")
+    [ ! -d "$HELPERS" ] || left+=("Slate's root helpers: sudo rm -r $HELPERS /etc/polkit-1/rules.d/49-slate-private-camera.rules /etc/pam.d/slate-lock")
     [ ! -d "$DEST.previous" ] || left+=("The older copy of Slate: rm -r $DEST.previous")
     [ ! -f "$CODE/shell.qml" ] || left+=("Slate for everyone on this computer: sudo rm -r $CODE $CODE.previous")
     for d in "$DEST".before-shared*; do [ ! -d "$d" ] || left+=("Your copy of Slate from before it was installed for everyone: rm -r $d"); done

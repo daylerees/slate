@@ -35,6 +35,14 @@ the gloss sheen like the bar's containers and no outline.
   password is its own conversation, so neither waits on the other. `pam_faillock` isn't in
   that service, so a face that isn't recognized never counts towards the password's tries.
   Tests stand in for it with `slate ipc call lock autoService <dir> <service>` (test mode).
+  Slate's own is `/etc/pam.d/slate-lock`, which nothing else on the computer reads (sudo, TTY
+  logins, other apps and the login screen are untouched). `bin/slate-unlock` writes it, as a
+  root-owned copy run by `slate-system --root` (your password): each method that's on
+  (`# slate-unlock: <method>` above its line, `sufficient`, from a fixed list of module paths and
+  only once the module's installed), then `auth required pam_deny.so` and `account include
+  login`. The password is never in it. The last method off takes the file away;
+  `./install.sh --uninstall` and factory reset (asking first, while Slate can still ask for the
+  password) do too. The lock screen watches the file and uses it while it names a method.
 - **Lockout:** after a failure Slate reads `faillock --user $USER`; at 3 failures within
   15 min it shows "Too many tries · you can try again in m:ss", disables the field and stops
   sending attempts. Wrong passwords show the tries left. Those numbers (and the 10 minutes it

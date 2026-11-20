@@ -98,7 +98,21 @@ Scope {
     // towards the password's tries.
     property string testAutoService: ""
     property string testAutoDir: ""
-    readonly property string autoService: Config.testMode && testAutoService !== "" ? testAutoService : ""
+    // Slate's own (bin/slate-unlock writes it, from Settings → Security): only the methods, each
+    // marked "# slate-unlock: <method>". Watched, so turning one on or off counts at once
+    property var unlockMethods: []
+    property string testUnlockFile: ""   // (the tests: a slate-lock of their own, in a folder of theirs)
+    readonly property string unlockFile: Config.testMode ? testUnlockFile : "/etc/pam.d/slate-lock"
+    FileView {
+        path: root.unlockFile
+        watchChanges: true
+        printErrors: false               // (it isn't there unless something's been set up)
+        onFileChanged: reload()
+        onLoaded: root.unlockMethods = text().split("\n").filter(l => l.startsWith("# slate-unlock: ")).map(l => l.slice(16).trim())
+        onLoadFailed: root.unlockMethods = []
+    }
+    readonly property string autoService: Config.testMode && testAutoService !== "" ? testAutoService
+        : unlockFile !== "" && unlockMethods.length > 0 ? "slate-lock" : ""
     property string hint: ""
     property real autoStartedAt: 0
     property bool autoGaveUp: false
@@ -113,7 +127,8 @@ Scope {
     PamContext {
         id: autoPam
         config: root.autoService !== "" ? root.autoService : "login"
-        configDirectory: Config.testMode && root.testAutoDir !== "" ? root.testAutoDir : "/etc/pam.d"
+        configDirectory: Config.testMode && root.testAutoDir !== "" ? root.testAutoDir
+            : Config.testMode && root.testUnlockFile !== "" ? root.testUnlockFile.replace(/\/[^\/]*$/, "") : "/etc/pam.d"
         onPamMessage: {
             // (a question is for a password or a code: this conversation never answers one,
             // the password has its own)
@@ -594,6 +609,13 @@ Scope {
             root.stopAuto();              // (PAM won't take a new service while it's talking)
             root.autoGaveUp = false;
             root.testAutoDir = dir; root.testAutoService = name;
+        }
+        // (a slate-lock of the test's own, read as /etc/pam.d/slate-lock is: "" for none)
+        function unlockFile(path: string): void {
+            if (!Config.testMode) return;
+            root.stopAuto();
+            root.autoGaveUp = false;
+            root.testUnlockFile = path;
         }
         // (someone's back, as the pointer moving does)
         function activity(): void { if (Config.testMode) root.activity(); }

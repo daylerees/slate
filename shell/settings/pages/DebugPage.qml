@@ -114,6 +114,10 @@ Column {
                 + "forgotten. You'll be asked twice before anything changes, and can choose to clear your own files "
                 + "(~/.config/slate/hypr and user/) as well. Everything is kept in a backup folder "
                 + "(~/.local/share/slate/backups)"
+            // (whether unlocking without the password is set up: the reset turns it off too, with
+            // your password, so the question says so)
+            FileView { id: unlockSetUp; path: "/etc/pam.d/slate-lock"; printErrors: false; property bool on: false
+                       onLoaded: on = true; onLoadFailed: on = false }
             Button {
                 label: "Reset…"
                 destructive: true
@@ -131,7 +135,9 @@ Column {
                             + "launcher and clipboard history, notifications, display layout and app theming"
                             + (userFiles ? ", and your own files are replaced with blank ones: every keybind, monitor, "
                                 + "window rule and autostart you added in ~/.config/slate/hypr, and your QML in user/" : "")
-                            + ". Slate restarts and the welcome tour opens.\n\nThere's no undo in Settings. The old files are "
+                            + ". Slate restarts and the welcome tour opens."
+                            + (unlockSetUp.on ? " Unlocking with your face, a fingerprint or a key is turned off too, so Slate asks for your password first." : "")
+                            + "\n\nThere's no undo in Settings. The old files are "
                             + "moved to ~/.local/share/slate/backups, and you'd have to copy them back by hand.",
                         button: userFiles ? "Erase everything" : "Erase and reset",
                         destructive: true,

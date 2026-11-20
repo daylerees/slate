@@ -31,6 +31,7 @@ class LockCase(LiveCase):
             self.ipc("lock", "cancel")
         self.ipc("lock", "pamService", "", "")
         self.ipc("lock", "autoService", "", "")
+        self.ipc("lock", "unlockFile", "")
         if self.s.state()["lock"]["locked"]:
             self.wait(lambda st: not st["lock"]["busy"], "the last check to end", timeout=15)
             self.ipc("lock", "submit", PASSWORD)
@@ -280,3 +281,44 @@ class AnotherWayIn(LockCase):
         self.s.settle(1.5)
         st = self.s.state()["lock"]
         self.assertEqual((st["hint"], st["autoGaveUp"]), ("", False))
+
+
+class SlatesOwnService(LockCase):
+    """The lock screen reads Slate's own service (/etc/pam.d/slate-lock, written by
+    bin/slate-unlock; a copy of the test's here, laid out the same, with pam_exec standing in for
+    the face module): the methods it names, and unlocking through it, pam_deny and the account
+    lines included."""
+    def service(self, methods_line=True):
+        d = self.s.h("pam-own")
+        os.makedirs(d, exist_ok=True)
+        script = os.path.join(d, "fake-face")
+        with open(script, "w", encoding="utf-8") as f:
+            f.write('#!/bin/sh\necho "Attempting facial authentication"\nsleep 1\nexit 0\n')
+        os.chmod(script, 0o755)
+        with open(os.path.join(d, "slate-lock"), "w", encoding="utf-8") as f:
+            f.write("#%PAM-1.0\n# Written by Slate (slate-unlock)\n"
+                    + (f"# slate-unlock: face\nauth       sufficient   pam_exec.so stdout {script}\n" if methods_line else "")
+                    + "auth       required     pam_deny.so\naccount    include      login\n")
+        # (the account, as `login` checks it: here, simply allowed)
+        with open(os.path.join(d, "login"), "w", encoding="utf-8") as f:
+            f.write("account required pam_permit.so\n")
+        return os.path.join(d, "slate-lock")
+
+    def test_it_reads_the_methods_and_lets_you_in_through_them(self):
+        self.ipc("lock", "unlockFile", self.service())
+        st = self.wait(lambda st: st["lock"]["unlockMethods"] == ["face"], "the methods read")["lock"]
+        self.assertEqual(st["autoService"], "slate-lock")
+        self.lock()
+        self.wait(lambda st: st["lock"]["hint"] == "Looking for your face… or type your password", "it looking", timeout=10)
+        self.wait(lambda st: not st["lock"]["locked"], "it to let you in", timeout=15)
+
+    def test_no_methods_in_it_is_none(self):
+        self.ipc("lock", "unlockFile", self.service(methods_line=False))
+        self.s.settle(1.0)
+        st = self.s.state()["lock"]
+        self.assertEqual((st["unlockMethods"], st["autoService"]), ([], ""))
+
+    def test_no_file_is_none(self):
+        self.ipc("lock", "unlockFile", self.s.h("pam-own", "no-such-file"))
+        self.s.settle(1.0)
+        self.assertEqual(self.s.state()["lock"]["autoService"], "")

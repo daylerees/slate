@@ -53,6 +53,14 @@ F=/usr/local/libexec/slate/slate-firewall
 [ -x "$F" ] && [ "$(stat -c %U "$F")" = root ] && echo "firewall helper: ok, root'"'"'s" || echo "firewall helper: MISSING or not root'"'"'s"
 sudo "$F" allow telnet >/dev/null 2>&1 && echo "firewall helper took an unknown name: WRONG" || echo "firewall helper refuses an unknown name: ok"
 sudo $S/bin/slate-firewall on >/dev/null 2>&1 && echo "firewall helper ran from the Slate folder: WRONG" || echo "firewall helper refuses to run from the Slate folder: ok"
+# Unlocking without the password: the same, and nothing written to pam.d by asking it wrongly
+U=/usr/local/libexec/slate/slate-unlock
+[ -x "$U" ] && [ "$(stat -c %U "$U")" = root ] && echo "unlock helper: ok, root'"'"'s" || echo "unlock helper: MISSING or not root'"'"'s"
+sudo "$U" enable password >/dev/null 2>&1 && echo "unlock helper took an unknown method: WRONG" || echo "unlock helper refuses an unknown method: ok"
+rc=0; sudo "$U" enable face >/dev/null 2>&1 || rc=$?
+[ "$rc" -eq 3 ] && echo "unlock helper refuses a method that isn'"'"'t installed: ok" || echo "unlock helper and a missing module: WRONG ($rc)"
+sudo $S/bin/slate-unlock remove >/dev/null 2>&1 && echo "unlock helper ran from the Slate folder: WRONG" || echo "unlock helper refuses to run from the Slate folder: ok"
+[ ! -e /etc/pam.d/slate-lock ] && echo "no slate-lock written: ok" || echo "slate-lock written: WRONG"
 # Someone added later, who never ran the installer: what they get without doing anything
 useradd -m newbie
 echo "for someone new: slate dir = $(sudo -u newbie -H /usr/local/bin/slate dir 2>&1)"
