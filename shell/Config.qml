@@ -312,6 +312,19 @@ Singleton {
     // A saved name for something on the bar, as it's called now: Nova's button was "chalk"
     // (its old name) in arrangements and orders saved before it was renamed
     function barId(id) { return id === "chalk" ? "nova" : String(id); }
+    // A fixed space in the arrangement: "fixed:<n>px", or "fixed:<n>%" of the screen's width (its
+    // height on a side bar): { n, unit } for one, null for anything else. Kept as a word like the
+    // flexible space ("space"), so whatever passes over spaces passes over these too
+    function barFixed(e) {
+        const m = typeof e === "string" ? /^fixed:(\d{1,4})(px|%)$/.exec(e) : null;
+        return m ? { n: Number(m[1]), unit: m[2] } : null;
+    }
+    // (sizes kept sensible: 1 to 1000 pixels, 1 to 50% of the screen)
+    function barFixedEntry(n, unit) {
+        const u = unit === "%" ? "%" : "px";
+        const v = Math.round(Math.max(1, Math.min(u === "%" ? 50 : 1000, Number(n) || 0)));
+        return "fixed:" + v + u;
+    }
     // The arrangement in use: the saved one, tidied (only things Slate knows, each once; a
     // container with nothing left in it dropped; anything it leaves out given a container of
     // its own at the end, so nothing can be lost), or Slate's own when there's none
@@ -324,6 +337,7 @@ Singleton {
         for (let i = 0; i < saved.length; i++) {
             const e = saved[i];
             if (e === "space") { spaces++; out.push("space"); }
+            else if (barFixed(e)) { const f = barFixed(e); out.push(barFixedEntry(f.n, f.unit)); }
             // (from when the window's icon and title were one thing of its own on the line)
             else if (e === "title") {
                 const items = ["windowicon", "windowtitle"].filter(id => !seen[id]);
@@ -430,6 +444,7 @@ Singleton {
         if (!c || !t) return false;
         if (c.kind === "item") { barSetShown(c.id, true); barMoveItem(c.id, t.to, t.join ? t.slot : -1); }
         else if (c.kind === "space") barAddSpace(t.to);
+        else if (c.kind === "fixed") barAddFixed(t.to);
         else if (c.kind === "box") barAddBox(t.to);
         else if (c.kind === "tuck") {
             if (!t.join) return false;
@@ -552,12 +567,26 @@ Singleton {
         list.splice(Math.max(0, Math.min(list.length, to)), 0, "space");
         barSave(list);
     }
+    // A fixed space, 32 pixels to start with (its options change it)
+    function barAddFixed(to) {
+        const list = barCopy();
+        list.splice(Math.max(0, Math.min(list.length, to)), 0, barFixedEntry(32, "px"));
+        barSave(list);
+    }
+    // A fixed space's size: n pixels, or n% of the screen
+    function barSetFixed(at, n, unit) {
+        const list = barCopy();
+        if (!barFixed(list[at])) return;
+        list[at] = barFixedEntry(n, unit);
+        barSave(list);
+    }
     // Take a flexible space away; for a container, put its items back in the pool (they keep
     // their place, for when they're put back)
     function barRemoveEntry(at) {
         const list = barCopy();
         const e = list[at];
         if (e === "space") { if (barSpaces < 2) return; list.splice(at, 1); barSave(list); }      // (the last one stays)
+        else if (barFixed(e)) { list.splice(at, 1); barSave(list); }
         else if (e && e.items.length === 0) { list.splice(at, 1); barSave(list); }      // (an empty one, fresh from the pool)
         else if (e) for (const id of e.items) barSetShown(id, false);
         barSelected = -1;
@@ -645,7 +674,7 @@ Singleton {
         if (spec.reset) { barReset(); return; }
         if (spec.layout) {
             const old = barCopy();
-            const list = spec.layout.map(e => e === "space" ? "space"
+            const list = spec.layout.map(e => e === "space" ? "space" : barFixed(e) ? barFixedEntry(barFixed(e).n, barFixed(e).unit)
                 : { items: e.items.map(barId), collapse: ["never", "always", "needed"].indexOf(e.collapse) >= 0 ? e.collapse : "needed",
                     tuckFrom: e.collapseAt === "start" ? "start" : "end", tuckIcon: "" });
             // (a container keeps the icon its collapse button had, found by its first thing)

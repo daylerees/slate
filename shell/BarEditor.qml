@@ -85,7 +85,9 @@ PanelWindow {
     readonly property var picked: Config.barSelected >= 0 ? (Config.barLayout[Config.barSelected] || null) : null
     readonly property string pickedItem: Config.barSelectedItem
     readonly property string kind: !picked ? "none" : picked === "space" ? "space"
-        : pickedItem !== "" ? "item" : "box"
+        : Config.barFixed(picked) ? "fixed" : pickedItem !== "" ? "item" : "box"
+    // (a picked fixed space's size: { n, unit })
+    readonly property var pickedFixed: kind === "fixed" ? Config.barFixed(picked) : null
     readonly property var pickedThings: picked && typeof picked !== "string" ? picked.items.filter(id => id !== "tuck") : []
     // (how the picked container collapses: "never", "always" or "needed"; and whether it has a
     // collapse button at all, to set up)
@@ -94,15 +96,20 @@ PanelWindow {
     function nameOf(id) { const it = Config.barItem(id); return it ? it.label : id; }
     readonly property string textKey: kind === "item" ? (Config.barTextKeys[pickedItem] || "") : ""
     // What the options are headed with: the picked thing's name and icon, and a line about it
-    readonly property string pickedName: kind === "space" ? "Flexible space" : kind === "box" ? "Container"
+    readonly property string pickedName: kind === "space" ? "Flexible space" : kind === "fixed" ? "Fixed space" : kind === "box" ? "Container"
         : kind === "item" ? nameOf(pickedItem) : ""
-    readonly property int pickedIcon: kind === "space" ? 0xEB59 : kind === "box" ? 0xEAD5
+    readonly property int pickedIcon: kind === "space" ? 0xEB59 : kind === "fixed" ? 0xEF54 : kind === "box" ? 0xEAD5
         : kind === "item" ? ((Config.barItem(pickedItem) || { icon: 0 }).icon || 0) : 0
     readonly property string pickedAbout: kind === "space" ? "Takes up the spare room, pushing what's either side of it apart."
             + (Config.barSpaces < 2 ? " The bar always keeps one." : "")
+        : kind === "fixed" ? "Keeps a gap of the same size, however much else is on the bar."
         : kind === "item" && pickedItem === "more" ? "What there isn't room for waits behind it. It shows only when something's there, and always stays on the bar."
         : kind === "box" ? (pickedThings.length > 0 ? "Holds " + listOf(pickedThings.map(nameOf)) + "." : "Empty for now. Drag things into it.")
         : ""
+    // The sizes a fixed space offers, in each unit (pixels: the bar's own; %: of the screen)
+    readonly property var fixedSizes: ({ "px": [8, 16, 32, 48, 64, 128], "%": [1, 2, 5, 10, 15, 25] })
+    readonly property real screenLength: Config.barEdge === "left" || Config.barEdge === "right"
+        ? (screen ? screen.height : 0) : (screen ? screen.width : 0)
     function listOf(names) { return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1]; }
 
     // ---- The pool, and carrying a chip to the bar ------------------------------------
@@ -530,11 +537,16 @@ PanelWindow {
                                     carry: ({ kind: "space", id: "" })
                                     onClicked: Config.barAddSpace(Config.barLayout.length)
                                 }
+                                PoolChip {
+                                    icon: 0xEF54; label: "Fixed space"
+                                    carry: ({ kind: "fixed", id: "" })
+                                    onClicked: Config.barAddFixed(Config.barLayout.length)
+                                }
                             }
                         }
                         Para {
                             color: root.dim
-                            text: root.pool.length === 0 ? "Drag something off the bar and it waits here, or add a container or a flexible space."
+                            text: root.pool.length === 0 ? "Drag something off the bar and it waits here, or add a container or a space."
                                 : "Drag one onto the bar, or click it to add it at the end."
                         }
                     }
@@ -640,6 +652,30 @@ PanelWindow {
                             onToggled: v => Config.s.barClockSeconds = v
                         }
 
+                        // A fixed space: its size, in pixels or as a share of the screen
+                        Choices {
+                            visible: root.kind === "fixed"
+                            title: "Size in"
+                            options: [{ value: "px", label: "Pixels" }, { value: "%", label: "% of screen" }]
+                            current: root.pickedFixed ? root.pickedFixed.unit : ""
+                            // (switching keeps it about the same size: the nearest choice in the other unit)
+                            onChose: v => {
+                                if (!root.pickedFixed || v === root.pickedFixed.unit) return;
+                                const sl = root.screenLength > 0 ? root.screenLength : 1920;
+                                const now = root.pickedFixed.unit === "%" ? sl * root.pickedFixed.n / 100 : root.pickedFixed.n;
+                                const to = v === "%" ? now * 100 / sl : now;
+                                const near = root.fixedSizes[v].reduce((a, b) => Math.abs(b - to) < Math.abs(a - to) ? b : a);
+                                Config.barSetFixed(Config.barSelected, near, v);
+                            }
+                        }
+                        Choices {
+                            visible: root.kind === "fixed"
+                            title: "Size"
+                            options: root.pickedFixed ? root.fixedSizes[root.pickedFixed.unit].map(n => ({ value: n, label: n + (root.pickedFixed.unit === "%" ? "%" : "") })) : []
+                            current: root.pickedFixed ? root.pickedFixed.n : 0
+                            onChose: v => Config.barSetFixed(Config.barSelected, v, root.pickedFixed.unit)
+                        }
+
                         // A container
                         // How it collapses: tucked behind a button always, only when the bar's short of
                         // room, or never (with one thing in it there's nothing to tuck)
@@ -686,7 +722,7 @@ PanelWindow {
                                 danger: true
                                 code: 0xEB41
                                 iconColor: root.danger; textColor: root.danger
-                                text: root.kind === "space" ? "Take away" : "Take off the bar"
+                                text: root.kind === "space" || root.kind === "fixed" ? "Take away" : "Take off the bar"
                                 onClicked: {
                                     if (root.kind === "item") Config.barSetShown(root.pickedItem, false);
                                     else Config.barRemoveEntry(Config.barSelected);
@@ -1094,7 +1130,7 @@ PanelWindow {
         Rectangle {
             id: floater
             readonly property var f: Config.barFloat
-            readonly property bool hollow: !!f && (f.kind === "space" || (f.kind === "box" && f.icons.length === 0))
+            readonly property bool hollow: !!f && (f.kind === "space" || f.kind === "fixed" || (f.kind === "box" && f.icons.length === 0))
             x: Config.barFloatAt.x - (root.screen ? root.screen.x : 0) - width / 2
             y: Config.barFloatAt.y - (root.screen ? root.screen.y : 0) - height / 2
             Behavior on x { enabled: Config.barLanding; NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }

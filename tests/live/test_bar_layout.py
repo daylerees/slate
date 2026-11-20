@@ -75,7 +75,7 @@ class BarLayout(LiveCase):
         import json as _json
         old = [{"items": ["control"]}, {"items": ["apps", "chalk"]}, {"items": ["spaces", "windowmode", "workspaces"]},
                "space", {"items": ["clock"]}, {"items": ["power"]}]
-        self.do("load", _json.dumps(old))
+        self.do("load", _json.dumps({"layout": old}))
         self.steady(self.bar, floor=0.5)
         boxes = [e["items"] for e in self.layout() if not isinstance(e, str)]
         self.assertIn(["apps", "nova"], boxes, boxes)
@@ -126,6 +126,46 @@ class BarLayout(LiveCase):
         self.do("addSpace", 0)
         self.do("remove", self.layout().index("space", 1))
         self.assertEqual(self.layout().count("space"), 1)
+
+    def test_a_fixed_space(self):
+        """A gap of a set size, in pixels or as a share of the screen's width, whatever else is on
+        the bar. Put between the clock and the power button: the power button stays at the
+        screen's edge, so the room between the two grows by just that much."""
+        line = lambda: self.bar()["line"]
+        between = lambda l: l["power"]["x"] - (l["clock"]["x"] + l["clock"]["w"])
+        before = between(line())         # (nothing between them: one of the line's gaps)
+        at = self.where("power")
+        self.do("start")
+        self.do("carry", "fixed", "", json.dumps({"join": False, "to": at, "slot": -1}))
+        self.assertEqual(self.layout()[at], "fixed:32px", "a new one is 32 pixels")
+        self.do("fixed", at, 128, "px")
+        self.do("done")
+        self.assertEqual(self.layout()[at], "fixed:128px")
+        gap = self.until(line, lambda l: between(l) > before + 100)
+        self.assertAlmostEqual(between(gap), 2 * before + 128, delta=1.5)
+        # As a share of the screen: 5% of its width
+        self.do("fixed", at, 5, "%")
+        width = self.s.state()["screens"][0]["width"]
+        gap = self.until(line, lambda l: abs(between(l) - (2 * before + width * 0.05)) < 1.5)
+        self.assertAlmostEqual(between(gap), 2 * before + width * 0.05, delta=1.5)
+        # Only sensible sizes, and taken away again
+        self.do("fixed", at, 900, "%")
+        self.assertEqual(self.layout()[at], "fixed:50%")
+        self.do("remove", at)
+        self.assertNotIn("fixed:50%", self.layout())
+        self.assertEqual(self.until(line, lambda l: abs(between(l) - before) < 1.5) and between(line()), before)
+
+    def test_a_saved_fixed_space_is_kept_and_a_wrong_one_tidied(self):
+        """Read from the saved arrangement as it is (a size out of range brought into it); one
+        that isn't a fixed space at all is dropped, as anything else unknown is."""
+        layout = [{"items": ["control"]}, "fixed:12px", "space", "fixed:0px", "fixed:7em", "fixed:",
+                  {"items": ["clock"]}, {"items": ["power"]}]
+        self.do("load", json.dumps({"layout": layout}))
+        self.steady(self.bar, floor=0.5)
+        got = self.layout()
+        self.assertIn("fixed:12px", got)
+        self.assertIn("fixed:1px", got, "a size of 0 is brought up to 1 pixel")
+        self.assertFalse([e for e in got if isinstance(e, str) and e not in ("space", "fixed:12px", "fixed:1px")])
 
     def test_shortcuts_stand_down_while_arranging(self):
         """Hyprland's shortcuts are off while the bar's arranged (a set of keys of its own), and

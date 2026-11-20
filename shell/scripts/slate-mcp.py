@@ -1338,8 +1338,13 @@ def bar_layout_checked(layout):
         if e == "space":
             out.append("space")
             continue
+        # (a fixed space: "fixed:<n>px", or "fixed:<n>%" of the screen; Slate keeps the size sensible)
+        if isinstance(e, str) and re.fullmatch(r"fixed:\d{1,4}(px|%)", e):
+            out.append(e)
+            continue
         if not isinstance(e, dict) or set(e) - {"items", "collapse", "collapseAt"} or "items" not in e:
-            raise Sorry("Each thing in layout is \"space\" (a flexible space) or a container: "
+            raise Sorry("Each thing in layout is \"space\" (a flexible space), \"fixed:<n>px\" or \"fixed:<n>%\" "
+                        "(a fixed space, in pixels or a share of the screen), or a container: "
                         "{\"items\": [names], \"collapse\": needed|always|never, \"collapseAt\": start|end}.")
         items = bar_names(e["items"], "A container's items")
         if not items:
@@ -1366,7 +1371,8 @@ def bar_now():
 
 @tool("bar_arrange", "Arrange the menu bar",
       "See or arrange the menu bar. With no arguments: how it is now, and every name. layout: the whole bar "
-      "in order, each \"space\" or a container {items, collapse: needed|always|never, collapseAt: start|end}; "
+      "in order, each \"space\" (flexible), \"fixed:<n>px\" or \"fixed:<n>%\" (a fixed gap), or a container "
+      "{items, collapse: needed|always|never, collapseAt: start|end}; "
       "what it leaves out comes off the bar. leaveFirst: what leaves first when it's short of room. "
       "alwaysStay: what never leaves. reset: Slate's own arrangement.",
       {"layout": {"type": "array", "description": "The whole bar, in order", "items": {"type": ["string", "object"]}},
@@ -1391,8 +1397,8 @@ def bar_arrange(layout=None, leaveFirst=None, alwaysStay=None, reset=False):
     else:
         if layout is not None:
             spec["layout"] = bar_layout_checked(layout)
-            on = [i for e in spec["layout"] if e != "space" for i in e["items"]]
-            was = [i for e in before.get("layout", []) if e != "space" for i in e["items"]]
+            on = [i for e in spec["layout"] if isinstance(e, dict) for i in e["items"]]
+            was = [i for e in before.get("layout", []) if isinstance(e, dict) for i in e["items"]]
             gone = [BAR_ITEMS[k] for k in was if k not in on and k not in ("more", "nova")]
             new = [BAR_ITEMS[k] for k in on if k not in was and k != "nova"]
             parts.append("arrange what's on it" + ("".join([", adding %s" % ", ".join(new) if new else "",

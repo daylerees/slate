@@ -61,6 +61,7 @@ MouseArea {
         if (h.kind === "item" && h.name === "tuck") return { kind: "tuck", icons: [{ code: h.obj.iconCode, item: "" }] };
         if (h.kind === "item") return { kind: "item", icons: [icon(h.name)] };
         if (e === "space") return { kind: "space", icons: [{ code: win.vert ? 0xEB5B : 0xEB59, item: "" }] };
+        if (Config.barFixed(e)) return { kind: "fixed", icons: [{ code: win.vert ? 0xEF55 : 0xEF54, item: "" }] };
         return { kind: "box", icons: e.items.filter(id => id !== "tuck" && Config.barShown(id)).map(icon) };
     }
     function carry(h, on) {
@@ -79,6 +80,7 @@ MouseArea {
             if (!c.visible) continue;
             const a = win.vert ? c.y : c.x, b = a + (win.vert ? c.height : c.width);
             if (c.isSpace) out.push({ kind: "space", obj: c, index: c.index, a0: a, a1: b });
+            else if (c.isFixed) out.push({ kind: "fixed", obj: c, index: c.index, a0: a, a1: b });
             else if (c.isBox) out.push({ kind: "box", obj: c, index: c.index, a0: a, a1: b });
         }
         return out;
@@ -266,7 +268,7 @@ MouseArea {
                 if (c.kind === "tuck" && !t.join) t = null;      // (a collapse button only goes in a container)
             }
         }
-        if (t && !held) gapLen = c.kind === "space" ? 30 : c.kind === "box" ? 44 : win.capsuleHeight + 8;
+        if (t && !held) gapLen = c.kind === "space" || c.kind === "fixed" ? 30 : c.kind === "box" ? 44 : win.capsuleHeight + 8;
         if (!t && !held) edge = -1;
         carryTarget = t;
         if (t) Config.barCarryTarget = { join: t.join, to: t.to, slot: t.slot, bar: win };

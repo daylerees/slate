@@ -762,6 +762,16 @@ SCENES["bar-arranging-picked"] = {
     "wait": lambda st: st["bar"]["arranging"] and st["bar"]["editor"] and st["bar"]["picked"] == 2,
     "settle": 1.2, "undo": [("test", "arrange", "done", "", "", "")],
 }
+# ...and a fixed space picked (put between the clock and the power button, 64 pixels): its size,
+# in pixels or as a share of the screen
+SCENES["bar-arranging-fixed"] = {
+    "do": [("notifications", "clear"), ("test", "arrange", "start", "", "", ""),
+           lambda st: st["bar"]["editor"],
+           ("test", "arrange", "carry", "fixed", "", '{"join": false, "to": 9, "slot": -1}'),
+           ("test", "arrange", "fixed", "9", "64", "px"), ("test", "arrange", "pick", "9", "", "")],
+    "wait": lambda st: st["bar"]["arranging"] and st["bar"]["editor"] and st["bar"]["picked"] == 9,
+    "settle": 1.2, "undo": [("test", "arrange", "done", "", "", ""), ("test", "arrange", "reset", "", "", "")],
+}
 SCENES["bar-arranging-priority"] = {
     "do": [("notifications", "clear"), ("test", "arrange", "start", "", "", ""),
            lambda st: st["bar"]["editor"], ("test", "arrange", "priority", "open", "", "")],

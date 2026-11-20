@@ -216,7 +216,7 @@ to ask about every change.
 | `look_apply` | Switches to one of Slate's finished looks |
 | `panel_open` | Opens one of the menu bar's panels |
 | `timer` | The timers (Settings → Timers): a drink had (the next wait starts), or the focus timer's start, pause, skip or reset |
-| `bar_arrange` | Shows how the menu bar is arranged, or arranges it: what's on it and in which containers, how each collapses, the order things leave when it's short of room, what always stays, or Slate's own arrangement again. Nova's button keeps its place and its switch |
+| `bar_arrange` | Shows how the menu bar is arranged, or arranges it: what's on it and in which containers, flexible and fixed spaces, how each collapses, the order things leave when it's short of room, what always stays, or Slate's own arrangement again. Nova's button keeps its place and its switch |
 | `app_open` | Starts an installed app. Only an app: no file, address or command |
 | `window_focus`, `window_move`, `window_state` | Goes to a window, moves it to a workspace, floats, tiles, maximizes or full-screens it |
 | `workspace_go`, `workspace_mode`, `workspace_rename` | Switches workspace, changes how one lays out its windows, names it |

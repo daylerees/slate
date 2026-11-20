@@ -158,7 +158,8 @@ ShellRoot {
             else if (what === "done") Config.barArranging = false;
             else if (what === "reset") Config.barReset();
             // (an arrangement as saved, JSON: one from an older Slate, say)
-            else if (what === "load") Config.s.barLayout = JSON.parse(a);
+            // (as {"layout": […]}: qs ipc takes the brackets off an argument that starts with one)
+            else if (what === "load") Config.s.barLayout = JSON.parse(a).layout;
             else if (what === "moveItem") Config.barMoveItem(a, n(b), n(c));
             else if (what === "moveEntry") Config.barMoveEntry(n(a), n(b));
             else if (what === "moveTuck") Config.barMoveTuck(n(a), n(b), n(c));
@@ -192,6 +193,7 @@ ShellRoot {
             else if (what === "priority") { if (a === "move") { if (barEditor.item) barEditor.item.priorityMove(b, n(c)); } else if (a === "scroll") { if (barEditor.item) barEditor.item.priorityScroll(Number(b)); } else Config.barPrioritising = a === "open"; }
             else if (what === "scroll") topBar.scrollBy(Number(a));
             else if (what === "more") topBar.moreClick({ id: a, tray: null }, b === "right");
+            else if (what === "fixed") Config.barSetFixed(n(a), Number(b), c);
             else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
         }
         // Hot corners: is this point (Hyprland's pixels, as `hyprctl cursorpos` says) in that

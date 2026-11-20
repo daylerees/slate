@@ -1397,6 +1397,17 @@ class SettingsTools(Base):
         items = re.findall(r'\{ id: "(\w+)", label: "([^"]+)"', config.split("readonly property var barItems")[1].split("\n    ]")[0])
         self.assertEqual(list(mcp.BAR_ITEMS.items()), items, "bar_arrange's names aren't the bar's (Config.barItems)")
 
+    def test_bar_layout_takes_fixed_spaces(self):
+        """A fixed space in bar_arrange's layout: "fixed:<n>px" or "fixed:<n>%", as Slate saves it."""
+        mcp = self.module()
+        box = {"items": ["clock"]}
+        got = mcp.bar_layout_checked(["space", "fixed:40px", box, "fixed:5%"])
+        self.assertEqual([e for e in got if isinstance(e, str)], ["space", "fixed:40px", "fixed:5%"])
+        for bad in ("fixed:", "fixed:40", "fixed:4em", "fixed:-1px", "gap", "fixed:12345px"):
+            with self.subTest(bad):
+                with self.assertRaises(mcp.Sorry):
+                    mcp.bar_layout_checked([bad, box])
+
     def test_every_setting_has_a_name(self):
         """Each setting in SettingsData.qml is linked to what Settings calls it (by
         settings-index.py, or NAMED in the server) or is one of the hidden ones: a new

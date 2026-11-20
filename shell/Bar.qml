@@ -988,7 +988,7 @@ PanelWindow {
                     onClicked: m => {
                         const p = bar.lineAt(mapToItem(null, m.x, m.y));
                         const c = left.childAt(p.x, p.y);
-                        const onItem = left.contains(p) && c !== null && !c.isSpace;       // (a flexible space is empty bar)
+                        const onItem = left.contains(p) && c !== null && !c.isSpace && !c.isFixed;       // (a space, flexible or fixed, is empty bar)
                         if (!onItem && bar.popouts) bar.popouts.close();
                     }
                 }
@@ -1096,6 +1096,42 @@ PanelWindow {
                 }
             }
         }
+        // A fixed space: room of a set size, whatever else is on the bar ("fixed:<n>px", or <n>% of
+        // the screen's width, its height on a side bar). While arranging, outlined like the
+        // flexible space, with its own icon. It counts as fixed room, like a container, so the
+        // flexible spaces and the title share what's left
+        Component {
+            id: fixedSpace
+            Item {
+                id: fx
+                readonly property bool isFixed: true
+                property int index: -1
+                property string spec: ""
+                property bool carried: false    // being dragged: off the line till it lands
+                visible: !carried
+                readonly property var size: Config.barFixed(spec) || { n: 0, unit: "px" }
+                readonly property real screenLength: bar.screen ? (bar.vert ? bar.screen.height : bar.screen.width) : 0
+                readonly property real len: Math.max(1, size.unit === "%" ? screenLength * size.n / 100 : size.n)
+                width: bar.vert ? bar.capsuleHeight : len
+                height: bar.vert ? len : bar.capsuleHeight
+                Rectangle {
+                    visible: bar.arrangeLook > 0
+                    opacity: bar.arrangeLook
+                    anchors.fill: parent
+                    radius: Config.corner(bar.capsuleRadius)
+                    readonly property bool picked: Config.barSelected === fx.index
+                    color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
+                    Dashes { picked: parent.picked }
+                    Text {
+                        visible: fx.len >= 18
+                        anchors.centerIn: parent
+                        text: bar.glyph(bar.vert ? 0xEF55 : 0xEF54)
+                        color: bar.dimTextColor
+                        font.family: bar.iconFont; font.pixelSize: 14
+                    }
+                }
+            }
+        }
         BarLine {
             id: left
             opacity: bar.dimmed ? 0.4 : 1
@@ -1175,6 +1211,7 @@ PanelWindow {
                     const entry = o.entry;
                     fresh.push(slotComp.createObject(left, { to: o.at }));
                     if (entry === "space") fresh.push(flexSpace.createObject(left, { index: o.at }));
+                    else if (Config.barFixed(entry)) fresh.push(fixedSpace.createObject(left, { index: o.at, spec: entry }));
                     else {
                         const box = boxComp.createObject(left, { index: o.at, collapse: entry.collapse || "needed", tuckFrom: entry.tuckFrom || "end" });
                         if (entry.tuckIcon) box.tuckIcon = parseInt(entry.tuckIcon, 16) || 0xEC38;
