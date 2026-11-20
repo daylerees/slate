@@ -144,6 +144,9 @@ class EveryPanelControl(LiveCase):
     def test_nothing_takes_a_click_but_not_the_keyboard(self):
         self.addCleanup(lambda: self.ipc("test", "wifi", ""))
         self.ipc("test", "wifi", json.dumps({"Home": 0.9, "Cafe": 0.6}))
+        # (an urgent notification's pop-up stays until it's dismissed: left, it sat over whatever
+        # the next tests in this session showed, and a picture of a panel's shadow under it changed)
+        self.addCleanup(lambda: self.ipc("notifications", "clear"))
         self.s.run(["notify-send", "-u", "critical", "-A", "open=Open", "--", "A note", "with an action"])
         self.wait(lambda st: st["notifications"]["history"] > 0, "the notification")
         # (a window, for New Space's workspace cards, and a space saved with it for the Spaces
@@ -177,6 +180,7 @@ class EveryPanelControl(LiveCase):
         if not shutil.which("wtype"):
             self.skipTest("wtype isn't installed")
         self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.addCleanup(lambda: self.ipc("notifications", "clear"))   # (if Delete didn't: see above)
         self.ipc("notifications", "clear")
         self.s.run(["notify-send", "-u", "critical", "--", "To dismiss", "by keyboard"])
         self.wait(lambda st: st["notifications"]["history"] == 1, "the notification")
