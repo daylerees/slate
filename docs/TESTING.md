@@ -80,15 +80,19 @@ and `visual` test files are shared out over several, each with its own Hyprland 
 minutes this way on an 8-core machine, where one after another it's about 24.
 
 - `--jobs N` says how many sessions: by default three quarters of the machine's processors, six
-  at most (each session draws in software, which is heavy on them), or on a big machine three eighths of its
-  processors, as long as there's 4 GB free for each. Six on 8 processors gives the same results
-  as one after another, now that the tests wait for things, not set times. On CI, and when
-  re-shooting screenshots, it's one.
+  at most (each session draws in software, which is heavy on them), or on a big machine three
+  eighths of its processors, as long as there's 4 GB free for each. Six on 8 processors gives the
+  same results as one after another, now that the tests wait for things, not set times. On CI,
+  and when re-shooting screenshots, it's one.
 - Measured on a 24-thread Ryzen 9 5900X with 128 GB (2026-11-20), a full run of about 391,000
-  checks: 6 sessions, 594 s; 12 (its default), 361 s, the machine about three quarters busy and
-  67 GB still free; 16, 372 s and no faster, with the processors full, Slate died once in
-  `live/test_preview_closing` (its workaround for a Quickshell crash depends on timing) and two
-  assistant tests timed out. More than half the threads doesn't pay.
+  checks: 6 sessions, 594 s; 9 (its default), 417–423 s, two clean runs in a row; 12, about
+  350–360 s, but busy enough that the launcher's rows now and then came into view a frame
+  before their icons (`live/test_launcher_scroll`); 16, 372 s and no faster, with the processors
+  full, Slate died once in `live/test_preview_closing` (its workaround for a Quickshell crash
+  depends on timing) and two assistant tests timed out.
+- More sessions, and the parts sharing sessions differently, flushed out several tests that
+  failed now and then (keys pressed before the keyboard moved, state left behind for the next
+  test, waits that took an in-between state); the patterns are worth knowing when writing one.
 - A file is never split, so its tests keep their order, except the visual scenes: one file that
   took as long as a whole part, so it's shared out in slices (`visual/test_visual@2/3`, every
   third scene from the second, still in order; `SPLIT` in `parallel.py`, and the test asks
