@@ -18,7 +18,8 @@
 #                                 what else it leaves, with how to remove each)
 #
 # What it does:
-#   1. installs the packages Slate needs (packaging/<distro>.txt)
+#   1. installs the packages Slate needs (packaging/<distro>.txt), and sets up Flathub for Slate
+#      Software where the distro's flatpak package doesn't
 #   2. checks Hyprland (0.57+, Lua config) and Quickshell (0.3+) are new enough
 #   3. installs the bundled Geist and Geist Mono fonts for your other apps, unless already there
 #   4. puts Slate in /usr/local/share/slate, once for everyone on the computer (needs sudo), with
@@ -29,6 +30,7 @@
 #      puts Slate's root helpers in /usr/local/libexec/slate (root-owned: what Slate later
 #      runs with your password is never a script in your home)
 #   6. optionally (--login-screen) switches greetd to Slate's login screen
+#   And gets Flathub's list of apps, so Slate Software isn't empty the first time
 # Anything that reaches your other desktops (packages, services, the icon theme) is asked first,
 # and ~/.config/hypr is not changed: pick "Slate" at login to use it.
 set -euo pipefail
@@ -435,6 +437,27 @@ fi
 
 # --update: this version may need packages the last one didn't. If any are missing, stop
 # (code 3) so the full installer can be run instead.
+# Slate Software's apps come from Flathub: set up for everyone along with the packages, where the
+# distro's flatpak package doesn't do it itself (Arch's does)
+add_flathub() {
+    have flatpak || return 0
+    flatpak remotes --columns=name 2>/dev/null | grep -qx flathub && return 0
+    if sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+        ok "Flathub set up, for Slate Software's apps"
+    else warn "Couldn't set up Flathub; Slate Software says how when you open it"; fi
+}
+# ...and its list of apps got now: Flatpak only gets it on its first update or install, so Slate
+# Software was empty on a new computer. (Software gets it itself too, if it's still missing.)
+# Through Flatpak's own helper, as you: no password
+fetch_flathub_apps() {
+    have flatpak || return 0
+    local said
+    # (it says "progress" only when it got it: already there, or no Flathub, is a plain "ok")
+    if said=$(python3 "$1/scripts/software.py" fetch-catalog --if-missing 2>/dev/null); then
+        case "$said" in *progress*) ok "Flathub's list of apps, for Slate Software" ;; esac
+    else warn "Couldn't get Flathub's list of apps just now (offline?); Slate Software gets it when you open it"; fi
+}
+
 needs_installer() { echo; warn "$*"; warn "Run ./install.sh from this version of Slate to finish updating."; exit 3; }
 if [ "$UPDATE" -eq 1 ]; then
     step "1. Packages"
@@ -460,6 +483,7 @@ if [ "$DEPS" -eq 1 ]; then
             else warn "Skipped; install them yourself before using Slate"; fi
             ensure_one "terminal" kitty kitty foot alacritty ghostty wezterm konsole gnome-terminal kgx ptyxis xfce4-terminal
             ensure_one "file manager" nautilus nautilus dolphin thunar nemo pcmanfm pcmanfm-qt caja
+            add_flathub
             enable_services ;;
         nixos)
             warn "On NixOS, add the packages in packaging/nixos.nix to your configuration, rebuild, then run: ./install.sh --no-deps"
@@ -644,6 +668,7 @@ else
     your_folder
 fi
 SLATE=$(code_in_use)          # where your Slate runs from now
+[ "$UPDATE" -eq 1 ] || fetch_flathub_apps "$SLATE"
 # Files for your own tweaks, with instructions in them, where they don't exist yet
 sh "$SLATE/scripts/user-files.sh" "$DEST" >/dev/null && ok "Your own tweaks go in $DEST/hypr and $DEST/user (instructions inside)"
 mkdir -p "$(dirname "$BIN_LINK")"

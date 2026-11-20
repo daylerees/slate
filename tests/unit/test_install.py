@@ -891,3 +891,88 @@ class SessionStarter(Case):
         for rel in (("install.sh",), ("shell", "session", "slate-session")):
             with self.subTest(rel[-1]):
                 self.assertNotIn("quickshell/slate", slate.read(*rel))
+
+
+class Flathub(Case):
+    """Slate Software's apps come from Flathub. A new computer had it set up (Arch's flatpak
+    package does) but no list of apps: Flatpak only gets that on its first update or install,
+    so Software was empty (Bug, 2026-11-20). The installer sets Flathub up with the packages
+    where the distro doesn't, and gets its list of apps, through software.py as you."""
+    scratch = True
+
+    def setUp(self):
+        super().setUp()
+        self.s = Stubs(self.h)
+        src = slate.read("install.sh")
+        self.fns = "".join(name + "() {" + src.split("\n" + name + "() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
+                           for name in ("add_flathub", "fetch_flathub_apps"))
+        # A stand-in for Slate's code: software.py says what it's told, and notes what it was asked
+        self.code = os.path.join(self.h.dir, "code")
+        os.makedirs(os.path.join(self.code, "scripts"))
+        self.asked = os.path.join(self.h.dir, "asked")
+
+    def software(self, said, code=0):
+        """software.py, answering fetch-catalog --if-missing with `said` and `code`."""
+        with open(os.path.join(self.code, "scripts", "software.py"), "w") as f:
+            f.write("import sys\nopen(%r, 'a').write(' '.join(sys.argv[1:]) + '\\n')\n" % self.asked +
+                    "print(%r); sys.exit(%d)\n" % (said, code))
+
+    def bash(self, call):
+        script = ('ok() { echo "OK $*"; }\nwarn() { echo "WARN $*"; }\nhave() { command -v "$1" >/dev/null 2>&1; }\n'
+                  + self.fns + call + "\n")
+        code, out = run(["bash", "-c", script], env=self.s.env)
+        self.assertEqual(code, 0, out)
+        return out
+
+    def asked_for(self):
+        return open(self.asked).read().split("\n")[:-1] if os.path.exists(self.asked) else []
+
+    def test_set_up_where_the_distro_does_not(self):
+        self.s.add("flatpak", by_args={"remotes": ""})
+        self.s.add("sudo")
+        out = self.bash("add_flathub")
+        self.assertIn("OK Flathub set up", out)
+        self.assertEqual(self.s.calls("sudo"), [["flatpak", "remote-add", "--if-not-exists", "flathub",
+                                                 "https://dl.flathub.org/repo/flathub.flatpakrepo"]])
+
+    def test_left_alone_where_it_is_set_up(self):
+        self.s.add("flatpak", by_args={"remotes": "flathub\n"})
+        self.s.add("sudo")
+        self.assertEqual(self.bash("add_flathub"), "")
+        self.assertEqual(self.s.calls("sudo"), [])
+
+    def test_list_of_apps_got_when_missing(self):
+        self.s.add("flatpak")
+        self.software("progress 100\nok")
+        out = self.bash(f"fetch_flathub_apps {shlex.quote(self.code)}")
+        self.assertIn("OK Flathub's list of apps", out)
+        self.assertEqual(self.asked_for(), ["fetch-catalog --if-missing"])
+
+    def test_quiet_when_it_is_there(self):
+        """Already there (or no Flathub): software.py says a plain "ok", and so nothing's said."""
+        self.s.add("flatpak")
+        self.software("ok")
+        self.assertEqual(self.bash(f"fetch_flathub_apps {shlex.quote(self.code)}"), "")
+
+    def test_offline_says_software_will_get_it(self):
+        self.s.add("flatpak")
+        self.software("error Slate couldn't reach Flathub", code=1)
+        out = self.bash(f"fetch_flathub_apps {shlex.quote(self.code)}")
+        self.assertIn("WARN Couldn't get Flathub's list of apps", out)
+        self.assertIn("Slate Software gets it when you open it", out)
+
+    def test_nothing_without_flatpak(self):
+        self.s.add("flatpak", missing=True)
+        self.s.add("sudo")
+        self.software("ok")
+        self.assertEqual(self.bash(f"add_flathub; fetch_flathub_apps {shlex.quote(self.code)}"), "")
+        self.assertEqual(self.asked_for(), [])
+        self.assertEqual(self.s.calls("sudo"), [])
+
+    def test_with_the_packages_and_after_installing(self):
+        """add_flathub runs with the packages (it needs sudo), and the list of apps is got once
+        Slate is in place, never on an update from Settings."""
+        src = slate.read("install.sh")
+        deps = src.split('if [ "$DEPS" -eq 1 ]; then\n    step "1. Packages"', 1)[1].split("\nfi\n", 1)[0]
+        self.assertIn("add_flathub", deps)
+        self.assertIn('[ "$UPDATE" -eq 1 ] || fetch_flathub_apps "$SLATE"', src)

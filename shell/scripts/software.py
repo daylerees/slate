@@ -11,6 +11,12 @@ Usage:
                                   fetched at most every 6 hours, and the last answer kept for when
                                   there's no connection
   software.py installed           the apps installed with Flatpak, as JSON
+  software.py fetch-catalog [--if-missing]
+                                  get Flathub's catalogue now, through Flatpak (an action): Flatpak
+                                  only gets it on its first update or install otherwise, so on a
+                                  new computer there's none and Software would be empty. With
+                                  --if-missing, only when there's none (just "ok" otherwise, and
+                                  when Flathub isn't set up: nothing to get)
   software.py updates             app updates (Flatpak) and the system's own updates, as JSON
   software.py install <id>        install an app from Flathub, for everyone on the computer
   software.py remove <id>         remove an installed app
@@ -22,8 +28,10 @@ Actions print "progress <0-100>" lines as they go, then one line: "ok", or "erro
 words for people ("error canceled" when the password prompt was closed).
 
 The catalogue is Flatpak's own copy of Flathub's (appstream.xml.gz, with the apps' icons), read
-from this computer; nothing is fetched for it. Only `discover` goes to the network: Flathub's
-public lists, at an address built here, over https, with nothing about you in it. Installing
+from this computer. When there's none yet, fetch-catalog has Flatpak itself get it from
+Flathub (the window does that by itself, and so does install.sh). Otherwise only `discover`
+goes to the network: Flathub's public lists, at an address built here, over https, with
+nothing about you in it. Installing
 and removing go through Flatpak itself, which asks for a password (polkit, Slate's own card)
 when the system says it should. System updates: PackageKit's pkcon where it's installed,
 otherwise the distro's own way of listing them (checkupdates, apt, dnf, zypper), as you; the
@@ -514,6 +522,24 @@ def update_apps(ids):
     return next((r for r in results if r != "ok"), "ok")
 
 
+def fetch_catalogue(if_missing=False):
+    """Flathub's catalogue, got now through Flatpak, for each installation that has Flathub: the
+    system's through Flatpak's own helper (no password: polkit lets you refresh catalogues),
+    and yours."""
+    if if_missing:
+        st = status()
+        if not st["flathub"] or st["catalogue"]:
+            return "ok"
+    results = []
+    for flag in ("--system", "--user"):
+        if REMOTE in (run(["flatpak", "remotes", flag, "--columns=name"]) or "").split():
+            code, said = follow(["flatpak", "update", flag, "--appstream", "-y", REMOTE])
+            results.append(words(code, said, "get the list of apps from Flathub"))
+    if not results:
+        return "error Flathub isn't set up for Flatpak yet"
+    return next((r for r in results if r != "ok"), "ok")
+
+
 def update_system():
     code, said = follow([os.path.join(SLATE, "bin", "slate-system"), "--upgrade"])
     return words(code, said, "update the system")
@@ -586,7 +612,7 @@ def main(argv):
     if what == "app" and len(args) == 1:
         print(json.dumps(app(args[0])))
         return 0
-    if not shutil.which("flatpak") and what in ("install", "remove", "update-apps"):
+    if not shutil.which("flatpak") and what in ("install", "remove", "update-apps", "fetch-catalog"):
         print("error Flatpak isn't installed (install the flatpak package)")
         return 1
     if what == "install" and len(args) == 1:
@@ -595,6 +621,8 @@ def main(argv):
         line = remove(args[0])
     elif what == "update-apps":
         line = update_apps(args)
+    elif what == "fetch-catalog" and args in ([], ["--if-missing"]):
+        line = fetch_catalogue(bool(args))
     elif what == "update-system" and not args:
         line = update_system()
     else:

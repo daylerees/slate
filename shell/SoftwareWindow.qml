@@ -93,6 +93,7 @@ FloatingWindow {
     property var pretend: ({})
     function refresh() {
         Config.rereadFlathubColours();
+        fetchTried = false;
         load("status", statusRun);
         if (catalogue.length === 0) load("catalogue", catalogueRun);
         load("lists", listsRun);
@@ -110,7 +111,39 @@ FloatingWindow {
         const p = pretend[what];
         try { then(p !== undefined ? p : JSON.parse(text)); } catch (e) {}
     }
-    Process { id: statusRun; command: [sw.script, "status"]; stdout: StdioCollector { onStreamFinished: sw.take("status", text, v => sw.status = v) } }
+    Process {
+        id: statusRun; command: [sw.script, "status"]
+        stdout: StdioCollector {
+            onStreamFinished: sw.take("status", text, v => {
+                sw.status = v;
+                if (v.flatpak && v.flathub && !v.catalogue && !sw.fetchTried) sw.fetchCatalogue();
+            })
+        }
+    }
+    // Flathub set up, but no catalogue yet: Flatpak only gets it on its first update or install,
+    // so on a new computer Software was empty with nothing said. It's got now, once each time
+    // Software opens (and Try again), then everything's read again.
+    // fetching: "" (not now), "busy", or what went wrong, in words
+    property string fetching: ""
+    property bool fetchTried: false
+    function fetchCatalogue() { fetchTried = true; fetching = "busy"; load("fetch", fetchRun); }
+    function fetched(line) {
+        if (line === "ok") {
+            fetching = "";
+            load("status", statusRun);
+            load("catalogue", catalogueRun);
+            load("lists", listsRun);
+            return;
+        }
+        const why = line.replace(/^error /, "");
+        fetching = why === "canceled" || why === "" ? "Slate couldn't get the list of apps from Flathub." : why;
+    }
+    Process {
+        id: fetchRun; command: [sw.script, "fetch-catalog"]
+        stdout: StdioCollector {
+            onStreamFinished: sw.fetched(sw.pretend.fetch !== undefined ? sw.pretend.fetch : (text.trim().split("\n").pop() || ""))
+        }
+    }
     Process {
         id: catalogueRun
         command: [sw.script, "catalogue"]
@@ -398,6 +431,29 @@ FloatingWindow {
                                 text: !sw.status.flatpak ? "Flatpak isn't installed, so Software can't install apps yet. Install the flatpak package, then open this again."
                                     : "Flathub isn't set up for Flatpak yet. In a terminal: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
                                 color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(13)
+                            }
+                        }
+                    }
+                    // ---- Getting the catalogue, the first time ----
+                    Group {
+                        visible: sw.status.flatpak && sw.status.flathub && (!sw.status.catalogue || sw.fetching !== "")
+                        Column {
+                            width: parent.width
+                            topPadding: 16; bottomPadding: 16; spacing: 12
+                            Text {
+                                anchors { left: parent.left; right: parent.right; margins: 16 }
+                                wrapMode: Text.Wrap
+                                textFormat: Text.PlainText        // (it can quote what Flatpak said)
+                                text: sw.fetching === "busy" || sw.fetching === ""
+                                    ? "Getting the list of apps from Flathub. This takes a few seconds the first time."
+                                    : sw.fetching
+                                color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(13)
+                            }
+                            Button {
+                                x: 16
+                                visible: sw.fetching !== "busy" && sw.fetching !== ""
+                                label: "Try again"; icon: 0xEB13
+                                onClicked: sw.fetchCatalogue()
                             }
                         }
                     }

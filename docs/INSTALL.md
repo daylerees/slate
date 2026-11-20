@@ -228,7 +228,10 @@ packages in [ARCHITECTURE.md → Dependencies](ARCHITECTURE.md#dependencies), th
    Nautilus (Slate's shortcuts, dock and desktop menu open them; any you already have are
    used instead, and Settings → Default Apps picks between them). It also offers to switch on
    Bluetooth and NetworkManager if they're off (some distros leave them off), leaving another
-   network service alone if one is running.
+   network service alone if one is running. It sets up Flathub for Slate Software where your
+   distro's flatpak package doesn't (Arch's does), and once Slate is in place gets Flathub's
+   list of apps (Flatpak only fetches it on its first update or install otherwise, so Software
+   would start empty; Software also gets it itself if it's still missing).
 2. **Checks** Hyprland and Quickshell are new enough.
 3. **Fonts** — [Geist and Geist Mono](https://vercel.com/font) ship with Slate (and Slate
    loads them itself); the installer also installs each to `~/.local/share/fonts` for your

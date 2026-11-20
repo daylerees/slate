@@ -299,6 +299,49 @@ class Actions(SoftwareCase):
                          {"flatpak": False, "flathub": False, "catalogue": False})
 
 
+class FetchCatalogue(SoftwareCase):
+    """A new computer has Flathub set up but no catalogue: Flatpak only gets it on its first
+    update or install, so Software was empty with nothing said (Bug, 2026-11-20). Flatpak
+    itself gets it now, for each installation that has Flathub."""
+    def test_for_everyone(self):
+        self.flatpak({"remotes --system": "flathub\n", "remotes --user": "", "update": "Updating appstream data for remote flathub\n"})
+        self.assertEqual(self.act("fetch-catalog"), (0, ["progress 100", "ok"]))
+        calls = [c for c in self.s.calls("flatpak") if c and c[0] == "update"]
+        self.assertEqual(calls, [["update", "--system", "--appstream", "-y", "flathub"]])
+
+    def test_yours(self):
+        self.flatpak({"remotes --system": "", "remotes --user": "flathub\n", "update": "\n"})
+        self.assertEqual(self.act("fetch-catalog")[1][-1], "ok")
+        calls = [c for c in self.s.calls("flatpak") if c and c[0] == "update"]
+        self.assertEqual(calls, [["update", "--user", "--appstream", "-y", "flathub"]])
+
+    def test_offline(self):
+        self.flatpak({"remotes --system": "flathub\n", "remotes --user": "",
+                      "update": ["error: Could not resolve hostname dl.flathub.org\n", 1]})
+        self.assertEqual(self.act("fetch-catalog"),
+                         (1, ["error Slate couldn't reach Flathub. Check you're online, then try again"]))
+
+    def test_if_missing_only_when_missing(self):
+        """--if-missing (the installer's): nothing fetched when the catalogue's there, or when
+        there's no Flathub to get it from; fetched when it isn't."""
+        self.flatpak({"remotes --system": "flathub\n", "remotes --user": "", "remotes": "flathub\n", "update": "\n"})
+        self.assertEqual(self.act("fetch-catalog", "--if-missing"), (0, ["ok"]))
+        self.assertFalse([c for c in self.s.calls("flatpak") if c and c[0] == "update"])
+        self.mod.SYSTEM_FLATPAK = os.path.join(self.h.dir, "empty")
+        self.assertEqual(self.act("fetch-catalog", "--if-missing"), (0, ["progress 100", "ok"]))
+        self.flatpak({"remotes": ""})
+        self.assertEqual(self.act("fetch-catalog", "--if-missing"), (0, ["ok"]))
+
+    def test_without_flathub(self):
+        self.flatpak({"remotes": ""})
+        self.assertEqual(self.act("fetch-catalog"), (1, ["error Flathub isn't set up for Flatpak yet"]))
+        self.assertFalse([c for c in self.s.calls("flatpak") if c and c[0] == "update"])
+
+    def test_without_flatpak(self):
+        self.hide("flatpak")
+        self.assertEqual(self.act("fetch-catalog")[1], ["error Flatpak isn't installed (install the flatpak package)"])
+
+
 class Jobs(SoftwareCase):
     """`job`: an action run as a process of its own, keeping how it's going in a private file
     Slate follows (so a reload of Slate can't cut it off or lose it)."""

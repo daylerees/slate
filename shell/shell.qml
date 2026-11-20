@@ -505,7 +505,7 @@ ShellRoot {
                         return o;
                     }, {}), app: w.app, query: w.query,
                     apps: w.catalogue.length, installed: w.installed.map(a => a.id), updates: w.updateCount,
-                    busy: w.busy ? w.busy.what + " " + w.busy.id : "", queued: w.queue.length, note: w.note, progress: w.progress, jobFile: SoftwareJobs.jobFile,
+                    busy: w.busy ? w.busy.what + " " + w.busy.id : "", queued: w.queue.length, note: w.note, fetching: w.fetching, progress: w.progress, jobFile: SoftwareJobs.jobFile,
                     found: w.query.trim() !== "" ? w.found(w.query).map(a => a.id) : [],
                     detail: w.detail ? w.detail.name : ""
                 }))(softwareLoader.item) : { built: false, open: false },

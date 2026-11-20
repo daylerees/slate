@@ -285,3 +285,27 @@ class DailyLook(LiveCase):
         st = self.daily()
         self.assertEqual(st["notices"], before["notices"], "told with it off, or on a metered connection")
         self.assertEqual(st["looks"], before["looks"] + 1, "a metered connection counted as a look")
+
+
+class FirstCatalogue(LiveCase):
+    """A new computer: Flathub set up, but Flatpak hasn't got its catalogue yet (it only does on
+    its first update or install), so Software was empty with nothing said. Bug, 2026-11-20.
+    Software gets it as it opens, says so, and says what went wrong with a Try again if that
+    fails."""
+    def open_with(self, **changes):
+        self.ipc("software", "close")
+        self.ipc("test", "softwarePretend", json.dumps(dict(PRETEND, **changes)))
+        self.ipc("software", "open")
+
+    def test_got_as_software_opens(self):
+        self.addCleanup(lambda: self.ipc("software", "close"))
+        none = {"flatpak": True, "flathub": True, "catalogue": False}
+        offline = "error Slate couldn't reach Flathub. Check you're online, then try again"
+        self.open_with(status=none, catalogue=[], fetch=offline)
+        st = self.wait(lambda st: st["software"]["open"] and st["software"]["fetching"] == offline[len("error "):],
+                       "what went wrong, said")["software"]
+        self.assertEqual(st["apps"], 0)
+        # Opened again, online: it's got, and the apps are read
+        self.open_with(status=none, catalogue=APPS, fetch="ok")
+        self.wait(lambda st: st["software"]["open"] and st["software"]["fetching"] == "" and st["software"]["apps"] == len(APPS),
+                  "the apps, once the catalogue's been got")
