@@ -349,6 +349,41 @@ class Sync(GreeterCase):
         with open(os.path.join(self.dest, "settings.json")) as f:
             self.assertEqual(json.load(f)["accent"], "#a1b2c3")
 
+    def test_leaves_the_people_folder_alone(self):
+        """The login screen's people/ is root's (sticky, so each person keeps their own folder in
+        it), and others' folders in it are theirs: the sync opened up the whole folder at the end
+        (chmod -R a+rX), which isn't allowed there, so installing the login screen failed with
+        "chmod: changing permissions of '/var/lib/slate-greeter/people'" (Bug, 2026-11-20). A
+        stand-in chmod refuses those as the real one does for you; everything else still opens up."""
+        people = os.path.join(self.dest, "people")
+        os.makedirs(os.path.join(people, "someone"))
+        log = os.path.join(self.h.dir, "chmods")
+        real = shutil.which("chmod")
+        with open(os.path.join(self.s.dir, "chmod"), "w") as f:
+            f.write(f"""#!/bin/sh
+# (-R from a folder people/ is in reaches it too, as it did for real)
+rec=0; for a; do [ "$a" = -R ] && rec=1; done
+for a; do
+    case "$a" in
+        {people}|{people}/someone*) bad=1 ;;
+        {self.dest}|{self.dest}/) bad=$rec ;;
+        *) bad=0 ;;
+    esac
+    if [ "$bad" = 1 ]; then
+        echo "chmod: changing permissions of '{people}': Operation not permitted" >&2; echo "refused $*" >> {log}; exit 1
+    fi
+done
+echo "ok $*" >> {log}
+exec {real} "$@"
+""")
+        os.chmod(os.path.join(self.s.dir, "chmod"), 0o755)
+        code, out = self.sync()
+        self.assertEqual(code, 0, out)
+        with open(log) as f:
+            said = f.read()
+        self.assertNotIn("refused", said)
+        self.assertTrue(os.stat(os.path.join(self.dest, "settings.json")).st_mode & 0o004, "settings.json isn't readable by the login screen")
+
     def test_copies_appearance(self):
         os.makedirs(os.path.join(self.dest, "fonts"))
         open(os.path.join(self.dest, "fonts", "OldFont.ttf"), "w").close()

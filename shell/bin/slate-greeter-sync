@@ -216,5 +216,13 @@ for f in "$DEST"/fonts/*; do
     [ -f "$f" ] && [ -z "${wanted[$(basename "$f")]:-}" ] && rm -f "$f"
 done
 
-chmod -R a+rX "$DEST"
+# All of it readable by the login screen, except people/: that's root's (each person keeps their
+# own folder in it, opened up above), and neither it nor anyone else's folder there is yours to
+# change (opening up the whole folder made installing the login screen fail)
+chmod a+rX "$DEST"
+for f in "$DEST"/* "$DEST"/.[!.]*; do
+    [ -e "$f" ] && [ ! -L "$f" ] || continue        # (never through a link: -R from above didn't)
+    [ "$f" = "$PEOPLE" ] && continue
+    chmod -R a+rX "$f"
+done
 echo "slate-greeter-sync: login screen appearance updated"
