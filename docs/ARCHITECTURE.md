@@ -177,6 +177,8 @@ scripts/screensaver-videos.py  downloads scenery videos for it (Settings → Scr
 Updates.qml             singleton: new releases (scripts/update.py): daily check, notification,
                         install and go back (Settings → Updates)
 AppTile.qml             an app's icon tile by desktop id (Spaces panel)
+AppFolders.qml          asks to restart when an app folder missing at startup appears (Quickshell
+                        only watches those there as it starts: the first Flatpak install)
 SpaceBadges.qml         a space's icon on the windows it opened ("slate-space-badge")
 SpaceBadge.qml          one space badge (icon on colour): window corners, switcher, overview
 SmoothWheel.qml         momentum wheel/touchpad scrolling for lists
