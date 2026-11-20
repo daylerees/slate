@@ -16,6 +16,9 @@ from stubs import Stubs
 SCRIPT = slate.path("shell", "scripts", "accounts.py")
 AVATAR = slate.path("shell", "scripts", "set-avatar.sh")
 ME = os.getuid()
+# The pretend people: ordinary uids, never the one running the tests (a GitHub runner is uid
+# 1001, so a Sam with 1001 was "you", and Slate rightly wouldn't remove your own account)
+SAM, ROBIN = [u for u in range(1001, 1100) if u != ME][:2]
 
 
 def load_module():
@@ -95,8 +98,8 @@ class AccountsCase(Case):
 
     def everyone(self, me_admin=True):
         return [person(ME, "me", "Me Myself", 1 if me_admin else 0),
-                person(1001, "sam", "Sam Lee"),
-                person(1002, "robin", "Robin Park", 1),
+                person(SAM, "sam", "Sam Lee"),
+                person(ROBIN, "robin", "Robin Park", 1),
                 person(977, "polkitd", "", system=True)]
 
     def act(self, *argv, stdin=""):
@@ -109,13 +112,13 @@ class AccountsCase(Case):
 
 class Listing(AccountsCase):
     def test_people_only_you_first_then_by_name(self):
-        with PretendAccounts(self.mod, self.everyone(), sessions=[ME, 1002]):
+        with PretendAccounts(self.mod, self.everyone(), sessions=[ME, ROBIN]):
             got = self.mod.listing()
         self.assertEqual(got["service"], "on")
         self.assertTrue(got["admin"])
         self.assertEqual([u["username"] for u in got["users"]], ["me", "robin", "sam"])
         robin = got["users"][1]
-        self.assertEqual(robin, {"uid": 1002, "username": "robin", "home": "/home/robin", "name": "Robin Park",
+        self.assertEqual(robin, {"uid": ROBIN, "username": "robin", "home": "/home/robin", "name": "Robin Park",
                                  "admin": True, "picture": "", "me": False, "loggedIn": True, "locked": False})
         self.assertTrue(got["users"][0]["me"])
 
@@ -189,22 +192,22 @@ class Adding(AccountsCase):
 class Changing(AccountsCase):
     def test_remove_keeps_their_files(self):
         with PretendAccounts(self.mod, self.everyone()) as pa:
-            self.assertEqual(self.act("remove", "1001"), (0, "ok"))
-        self.assertNotIn(1001, pa.people)
-        self.assertIn(("DeleteUser", (1001, False), True), pa.calls)
+            self.assertEqual(self.act("remove", str(SAM)), (0, "ok"))
+        self.assertNotIn(SAM, pa.people)
+        self.assertIn(("DeleteUser", (SAM, False), True), pa.calls)
 
     def test_remove_and_delete_their_files(self):
         """Only when asked: the confirmation's "Delete their files too" switch."""
         with PretendAccounts(self.mod, self.everyone()) as pa:
-            self.assertEqual(self.act("remove", "1001", "delete"), (0, "ok"))
-            self.assertEqual(self.act("remove", "1002", "keep"), (0, "ok"))
-        self.assertIn(("DeleteUser", (1001, True), True), pa.calls)
-        self.assertIn(("DeleteUser", (1002, False), True), pa.calls)
+            self.assertEqual(self.act("remove", str(SAM), "delete"), (0, "ok"))
+            self.assertEqual(self.act("remove", str(ROBIN), "keep"), (0, "ok"))
+        self.assertIn(("DeleteUser", (SAM, True), True), pa.calls)
+        self.assertIn(("DeleteUser", (ROBIN, False), True), pa.calls)
 
     def test_remove_with_an_unknown_word_does_nothing(self):
         with PretendAccounts(self.mod, self.everyone()) as pa:
-            self.assertEqual(self.act("remove", "1001", "yes")[0], 1)
-        self.assertIn(1001, pa.people)
+            self.assertEqual(self.act("remove", str(SAM), "yes")[0], 1)
+        self.assertIn(SAM, pa.people)
         self.assertEqual([m for m, _, _ in pa.calls if m == "DeleteUser"], [])
 
     def test_the_page_only_deletes_files_when_the_switch_is_on(self):
@@ -219,36 +222,36 @@ class Changing(AccountsCase):
         self.assertIn(ME, pa.people)
 
     def test_someone_logged_in_isnt_removed(self):
-        with PretendAccounts(self.mod, self.everyone(), sessions=[1001]) as pa:
-            code, line = self.act("remove", "1001")
+        with PretendAccounts(self.mod, self.everyone(), sessions=[SAM]) as pa:
+            code, line = self.act("remove", str(SAM))
         self.assertEqual(code, 1)
         self.assertIn("logged in", line)
-        self.assertIn(1001, pa.people)
+        self.assertIn(SAM, pa.people)
 
     def test_the_last_administrator_stays_one(self):
-        people = [person(ME, "me", "Me", 1), person(1001, "sam", "Sam")]
+        people = [person(ME, "me", "Me", 1), person(SAM, "sam", "Sam")]
         with PretendAccounts(self.mod, people) as pa:
             code, line = self.act("type", str(ME), "standard")
             self.assertEqual(code, 1, line)
             self.assertEqual(pa.people[ME]["AccountType"], 1)
             # With another, it can
-            self.assertEqual(self.act("type", "1001", "admin"), (0, "ok"))
+            self.assertEqual(self.act("type", str(SAM), "admin"), (0, "ok"))
             self.assertEqual(self.act("type", str(ME), "standard"), (0, "ok"))
             self.assertEqual(pa.people[ME]["AccountType"], 0)
 
     def test_name(self):
         with PretendAccounts(self.mod, self.everyone()) as pa:
-            self.assertEqual(self.act("name", "1001", "  Samantha Lee "), (0, "ok"))
-            self.assertEqual(pa.people[1001]["RealName"], "Samantha Lee")
+            self.assertEqual(self.act("name", str(SAM), "  Samantha Lee "), (0, "ok"))
+            self.assertEqual(pa.people[SAM]["RealName"], "Samantha Lee")
             for bad in ["", "   ", "Sam:Lee"]:
                 with self.subTest(bad):
-                    self.assertEqual(self.act("name", "1001", bad)[0], 1)
-            self.assertEqual(pa.people[1001]["RealName"], "Samantha Lee")
+                    self.assertEqual(self.act("name", str(SAM), bad)[0], 1)
+            self.assertEqual(pa.people[SAM]["RealName"], "Samantha Lee")
 
     def test_password(self):
         with PretendAccounts(self.mod, self.everyone()) as pa:
-            self.assertEqual(self.act("password", "1001", stdin="new one\n"), (0, "ok"))
-        self.assertTrue(pa.people[1001]["password"].startswith("$"))
+            self.assertEqual(self.act("password", str(SAM), stdin="new one\n"), (0, "ok"))
+        self.assertTrue(pa.people[SAM]["password"].startswith("$"))
 
     def test_someone_gone(self):
         with PretendAccounts(self.mod, self.everyone()):
@@ -281,10 +284,10 @@ class SomeoneElsesPicture(Case):
         return " ".join(" ".join(c) if isinstance(c, list) else str(c) for c in self.s.calls("gdbus"))
 
     def test_theirs(self):
-        code, out = run([AVATAR, "--", self.img, "1001"], env=self.env)
+        code, out = run([AVATAR, "--", self.img, str(SAM)], env=self.env)
         self.assertEqual(code, 0, out)
         said = self.said()
-        self.assertIn("/org/freedesktop/Accounts/User1001", said)
+        self.assertIn(f"/org/freedesktop/Accounts/User{SAM}", said)
         self.assertIn("--interactive", said)
         self.assertFalse(os.path.exists(self.face), "their picture became your ~/.face")
 
@@ -295,7 +298,7 @@ class SomeoneElsesPicture(Case):
         self.assertIn(f"/org/freedesktop/Accounts/User{ME}", self.said())
 
     def test_a_uid_is_a_number(self):
-        code, out = run([AVATAR, "--", self.img, "1001; rm -rf ~"], env=self.env)
+        code, out = run([AVATAR, "--", self.img, f"{SAM}; rm -rf ~"], env=self.env)
         self.assertNotEqual(code, 0)
         self.assertEqual(self.s.calls("gdbus"), [])
 
