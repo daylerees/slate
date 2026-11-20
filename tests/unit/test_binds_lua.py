@@ -70,9 +70,13 @@ local function window()
     return { address = "0xabc", floating = now.floating ~= false, mapped = true, workspace = { id = id, name = tostring(id) },
              class = now.nova and "slate-settings" or "foot", title = now.nova and "Nova" or "~" }
 end
+-- (a named workspace, like the "gaming" one games go to, has no id at all in Hyprland 0.57:
+-- older ones gave it a negative number)
 local function workspaces()
-    return { { id = 1, name = "1", windows = 1, monitor = { name = "DP-1" } },
-             { id = 2, name = "2", windows = (now.onLast or now.nextBusy) and 1 or 0, monitor = { name = "DP-1" } } }
+    local all = { { id = 1, name = "1", windows = 1, monitor = { name = "DP-1" } },
+                  { id = 2, name = "2", windows = (now.onLast or now.nextBusy) and 1 or 0, monitor = { name = "DP-1" } } }
+    if now.named or now.onNamed then all[#all + 1] = { name = "gaming", windows = 1, monitor = { name = "DP-1" } } end
+    return all
 end
 
 local binds, events, submap = {}, {}, ""
@@ -109,7 +113,7 @@ hl = setmetatable({
     get_windows = function() return { window() } end,
     get_active_window = window,
     get_workspaces = workspaces,
-    get_active_workspace = function() return workspaces()[now.onLast and 2 or 1] end,
+    get_active_workspace = function() return workspaces()[now.onNamed and 3 or now.onLast and 2 or 1] end,
     get_active_special_workspace = function() return now.special and { name = "special:special" } or nil end,
 }, { __index = function(_, name) return function(...) did("hl." .. name .. "(" .. shownArgs(...) .. ")") end end })
 
@@ -182,6 +186,10 @@ SCENARIOS = (
     ("windows on the next workspace", "nextBusy = true"),
     ("on the last workspace", "onLast = true"),
     ("on the last workspace, no wrapping", "onLast = true, wrap = false"),
+    # Steam's window went to the "gaming" workspace, and from then Super+Left/Right failed
+    # ("attempt to compare nil with number") on every press, until it closed
+    ("a named workspace", "named = true"),
+    ("on a named workspace", "onNamed = true"),
 )
 
 

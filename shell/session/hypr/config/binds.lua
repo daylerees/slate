@@ -681,11 +681,19 @@ end
 -- workspaces, so only enable wraparound animation when this press actually wraps
 function cycleWorkspace(step)
     local current = hl.get_active_workspace()
+    -- On a named workspace (the "gaming" one games go to): it has no number to step from, so
+    -- Hyprland's own next or previous, with nothing worked out
+    if not current or not current.id then
+        hl.dispatch(hl.dsp.focus({ workspace = step > 0 and "m+1" or "m-1" }))
+        hl.exec_cmd(slate("osd workspace"))
+        return
+    end
     local monitor = current.monitor.name
     local minId, maxId = current.id, current.id
     local nextId, prevId = nil, nil
     for _, ws in ipairs(hl.get_workspaces()) do
-        if ws.monitor and ws.monitor.name == monitor and not tostring(ws.name):find("^special") then
+        -- (only numbered ones: a named workspace has no id in Hyprland 0.57)
+        if ws.id and ws.monitor and ws.monitor.name == monitor and not tostring(ws.name):find("^special") then
             minId = math.min(minId, ws.id)
             maxId = math.max(maxId, ws.id)
             if ws.id > current.id and (not nextId or ws.id < nextId) then nextId = ws.id end
