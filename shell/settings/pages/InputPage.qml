@@ -60,6 +60,7 @@ Column {
     readonly property string curOptions: cur["input:kb_options"] || ""
     readonly property string capsValue: Config.s.capsLock !== "" ? Config.s.capsLock
         : curOptions.includes("caps:ctrl_modifier") ? "ctrl" : curOptions.includes("caps:escape") ? "escape"
+        : curOptions.includes("caps:super") ? "super"
         : curOptions.includes("caps:none") ? "off" : "default"
     readonly property string switchValue: Config.s.kbSwitch !== "" ? Config.s.kbSwitch
         : curOptions.includes("grp:alt_shift_toggle") ? "alt_shift" : curOptions.includes("grp:ctrl_space_toggle") ? "ctrl_space"
@@ -117,9 +118,12 @@ Column {
         DropdownSetting {
             label: "Caps Lock key"
             settingKey: "capsLock"
-            detail: inputPane.switchValue === "caps" && inputPane.layouts.length > 1 ? "It switches layouts (above)" : "What the Caps Lock key does"
+            detail: inputPane.switchValue === "caps" && inputPane.layouts.length > 1 ? "It switches layouts (above)"
+                : Config.s.capsLock === "super" ? "Held, it works as Super for every shortcut; tapped, it's a tap of Super"
+                : "What the Caps Lock key does"
             options: [{ value: "default", label: "Caps Lock" }, { value: "ctrl", label: "Another Ctrl" },
-                      { value: "escape", label: "Escape" }, { value: "off", label: "Nothing" }]
+                      { value: "escape", label: "Escape" }, { value: "super", label: "Super" },
+                      { value: "off", label: "Nothing" }]
             value: inputPane.capsValue
             onPicked: v => Config.s.capsLock = v
         }

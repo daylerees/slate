@@ -87,7 +87,7 @@ JsonAdapter {
     property string kbLayouts: ""             // xkb layouts, comma-separated, e.g. "gb,us"
     property string kbVariants: ""            // their variants, comma-separated ("" for each = the usual)
     property string kbSwitch: ""              // switching layouts: alt_shift, ctrl_space, caps or none
-    property string capsLock: ""              // Caps Lock: default, ctrl, escape or off
+    property string capsLock: ""              // Caps Lock: default, ctrl, escape, super or off
     property int keyRepeatDelay: 500          // ms before a held key repeats (0 or less: Hyprland's own)
     property int keyRepeatRate: 16            // repeats per second (0 or less: Hyprland's own)
     property real mouseSpeed: -2              // -1 … 1 (0 = the device's own speed)

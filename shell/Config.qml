@@ -1102,7 +1102,7 @@ Singleton {
         if (s.kbLayouts !== "") t.push(`kb_layout = ${q(s.kbLayouts)}, kb_variant = ${q(s.kbVariants)}`);
         if (s.capsLock !== "" || s.kbSwitch !== "") {
             const opts = [];
-            const caps = { ctrl: "caps:ctrl_modifier", escape: "caps:escape", off: "caps:none" }[s.capsLock];
+            const caps = { ctrl: "caps:ctrl_modifier", escape: "caps:escape", super: "caps:super", off: "caps:none" }[s.capsLock];
             const sw = { alt_shift: "grp:alt_shift_toggle", ctrl_space: "grp:ctrl_space_toggle", caps: "grp:caps_toggle" }[s.kbSwitch];
             if (caps && !(sw === "grp:caps_toggle")) opts.push(caps);
             if (sw) opts.push(sw);

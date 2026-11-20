@@ -293,6 +293,18 @@ class HyprlandGetsSettings(LiveCase):
         settings_in_hyprland(self, after=pushes)
         self.assertTrue(self.until("FILE_MANAGER", "foot"), "FILE_MANAGER was lost when Hyprland reloaded")
 
+    def test_caps_lock_as_super(self):
+        """Settings → Input → Caps Lock key → Super: Hyprland's keyboard gets caps:super, so a
+        held Caps Lock is Super for every shortcut, and Caps Lock again takes it away."""
+        options = lambda: self.s.hyprctl("getoption", "input:kb_options", json_out=True).get("str")
+        self.keep_setting("capsLock")
+        self.keep_setting("kbSwitch")
+        self.config("kbSwitch", "none")
+        self.config("capsLock", "super")
+        self.wait(lambda st: options() == "caps:super", "Hyprland's keyboard options to be caps:super")
+        self.config("capsLock", "default")
+        self.wait(lambda st: "caps:super" not in (options() or ""), "caps:super gone again")
+
     def test_pointer_style(self):
         """Settings → Input → Pointer style: Hyprland's cursor theme follows, and "" brings back
         the session's own."""
