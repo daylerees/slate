@@ -1798,7 +1798,8 @@ PanelWindow {
                         iconCode: !has ? 0xEA38 : charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
                         sample: has ? "80%" : ""; textOn: Config.s.barValueBattery && has
                         label: Config.s.barValueBattery && has ? Math.round(pct * 100) + "%" : ""
-                        tipText: !has ? "" : "Battery: " + Math.round(pct * 100) + "%" + (dev.state === UPowerDeviceState.FullyCharged ? ", full"
+                        // (without a battery it's the way into power: so it says, not "Battery")
+                        tipText: !has ? "Power" : "Battery: " + Math.round(pct * 100) + "%" + (dev.state === UPowerDeviceState.FullyCharged ? ", full"
                             : charging ? ", charging" : !UPower.onBattery ? ", plugged in" : "")
                         onClicked: bar.openPopout("battery", batSeg)
                     }

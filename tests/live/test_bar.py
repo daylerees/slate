@@ -424,6 +424,17 @@ class Label(LiveCase):
         self.point(-1, -1, "leave")
         self.gone("the pointer off the bar")
 
+    def test_power_on_a_computer_without_a_battery(self):
+        """Without a battery the battery item is a bolt and the way into the power panel, so it
+        says "Power", not "Battery" (it fell back to its name). The test session has none."""
+        self.at("top")
+        self.addCleanup(lambda: self.ipc("test", "barHover", ""))
+        self.keep_setting("barShowBattery")
+        self.config("barShowBattery", "true")
+        self.wait(lambda st: st["bar"]["line"]["battery"]["visible"], "the battery item on the bar")
+        self.ipc("test", "barHover", "battery")
+        self.showing("Power", "the power item with no battery")
+
     def test_says_more_than_a_name(self):
         """The clock says the whole date, as Settings → Region writes dates; a status icon says
         how it is, not only what it is."""
