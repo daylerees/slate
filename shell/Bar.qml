@@ -1279,8 +1279,17 @@ PanelWindow {
                 // (all it likes while the bar's arranged: the line scrolls then, if it has to)
                 readonly property real room: Config.barShowAll ? 100000 : Math.max(0, bar.lineLength - bar.lineFixed - bar.spacesLeast)
                 length: (bar.vert ? titleBody.height : titleBody.width) + pad
-                // (eased from the window's title to "Window" and back as arranging starts and ends)
-                Behavior on length { enabled: bar.arrangeMoving; NumberAnimation { duration: Config.ms(130); easing.type: Easing.OutCubic } }
+                // Eased: from the window's title to "Window" and back as arranging starts and ends,
+                // and from one title to the next, so the flexible spaces either side (worked out
+                // from this length) and everything beyond them slide to their new places rather
+                // than jump (bar.flex). Not while being dragged about, which follows the pointer
+                Behavior on length {
+                    enabled: Config.animate && (bar.arrangeMoving || !Config.barArranging)
+                    NumberAnimation { id: titleSlide; duration: Config.ms(bar.arrangeMoving ? 130 : 220); easing.type: Easing.OutCubic }
+                }
+                // (a longer title is wider than its box until the box has grown to it: kept
+                // inside, so it never runs under its neighbours on the way)
+                clip: titleSlide.running
                 // The title (turned to run down a side bar)
                 Item {
                     id: titleBody

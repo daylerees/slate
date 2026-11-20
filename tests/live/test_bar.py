@@ -540,6 +540,57 @@ class Label(LiveCase):
         st = self.steady(self.s.state, floor=0.6)
         self.assertGreater(st["bar"]["titleWidth"], 200, "the title's tags were read as markup, not shown")
 
+    def test_things_slide_as_the_title_changes_length(self):
+        """With a flexible space either side of the window's title (nice on very wide screens),
+        a longer or shorter title moves the title's container: it slides there with animations
+        on, rather than jumping, and goes at once with them off."""
+        self.close_windows()
+        self.addCleanup(self.close_windows)
+        self.keep_setting("barShowTitle")
+        self.config("barShowTitle", "true")
+        self.keep_setting("barLayout")
+        self.keep_setting("animations")
+        # A space before the window's icon and title too (Slate's own has one after them)
+        at = next(i for i, e in enumerate(self.s.state()["bar"]["layout"])
+                  if not isinstance(e, str) and "windowtitle" in e["items"])
+        self.ipc("test", "arrange", "addSpace", str(at), "", "")
+        self.wait(lambda st: st["bar"]["layout"].count("space") == 2, "a flexible space either side of the title")
+        short, long_ = "Short", "A much longer title, to move the things either side of it along the bar"
+        for t in (short, long_):
+            self.s.hyprctl("eval", 'hl.exec_cmd("foot -T \'%s\' sleep 60")' % t)
+        windows = {}
+        for t in (short, long_):
+            st = self.wait(lambda st: any(w["title"] == t for w in st["windows"]), f"the window called {t!r}", timeout=15)
+            windows[t] = next(w["address"] for w in st["windows"] if w["title"] == t)
+
+        def focus(t):
+            self.s.hyprctl("dispatch", 'function() hl.dispatch(hl.dsp.focus({ window = "address:0x%s" })) end' % windows[t])
+
+        def icon_x():
+            return self.s.state()["bar"]["line"]["windowicon"]["x"]
+
+        def switch(t):
+            """Focus t's window: where the title's container was, every place seen on the way, and where it ended."""
+            before = icon_x()
+            focus(t)
+            seen = []
+            for _ in range(40):
+                seen.append(icon_x())
+                self.s.settle(0.02)
+            return before, seen, self.steady(icon_x, floor=0.4)
+
+        for anim, sliding in (("normal", True), ("off", False)):
+            self.config("animations", anim)
+            focus(short)
+            self.steady(icon_x, floor=0.4)
+            before, seen, after = switch(long_)
+            self.assertLess(after, before - 50, f"the title's container didn't move along for the longer title ({anim})")
+            between = [x for x in seen if after + 2 < x < before - 2]
+            if sliding:
+                self.assertGreaterEqual(len(between), 2, f"it jumped rather than slid: {seen}")
+            else:
+                self.assertEqual(between, [], f"it slid with animations off: {seen}")
+
     def test_tray_names_tidied(self):
         """What a tray icon is called: its title, then its tooltip's, then its id; a raw id tidied."""
         for (id_, title, tip), want in {
