@@ -668,8 +668,9 @@ SCENES["notification-glass"] = {
     "do": [("!notify-send", "-a", "Tests", "Backup finished", "1,204 files copied to the external drive")],
     "wait": lambda st: st["notifications"]["history"] > 0, "settle": 5,     # (glass: its blur is made the first time)
     # Just the toast: the bar and dock on glass shade a little differently with what ran
-    # before (desktop-glass covers them)
-    "mask": [(0, 0, 1440, 40), (0, 760, 1440, 140)],
+    # before (desktop-glass covers them). And not its countdown bar: how far it's gone is how
+    # long the wait before the picture took, longer under a full run's load
+    "mask": [(0, 0, 1440, 40), (0, 760, 1440, 140), (1076, 120, 348, 12)],
 }
 
 # The dock magnified under the pointer, on glass, with whole icons (tiles behind them): Slate's

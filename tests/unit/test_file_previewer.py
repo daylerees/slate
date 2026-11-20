@@ -122,6 +122,10 @@ class FilePreviewer(Case):
         got = []
         self.bus.signal_subscribe(None, "org.gnome.NautilusPreviewer2", "SelectionEvent", "/org/gnome/NautilusPreviewer",
                                   None, Gio.DBusSignalFlags.NONE, lambda *a: got.append(a[5].unpack()[0]))
+        # (subscribing is a message to the bus too: one call answered after it means it's in
+        # place, so the signals below can't go out before anyone's listening. Under load they did)
+        self.bus.call_sync("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "GetId",
+                           None, None, Gio.DBusCallFlags.NONE, 3000, None)
         p.stdin.write("select right\nselect left\n")
         p.stdin.flush()
         ctx, end = GLib.MainContext.default(), time.time() + 5
