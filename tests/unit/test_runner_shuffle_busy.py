@@ -68,3 +68,22 @@ class TestsRun(Case):
         for args in (["--busy", "200"], ["--shuffle", "1x"]):
             with self.subTest(args):
                 self.assertEqual(run([TESTS_RUN, *args], timeout=20)[0], 2)
+
+
+class Quiet(Case):
+    """--quiet-tests: only the tests marked @slate.quiet, or only the rest."""
+    def test_only_and_skip(self):
+        import unittest
+        mod = runner_module()
+
+        class T(unittest.TestCase):
+            @slate.quiet
+            def test_a(self):
+                pass
+
+            def test_b(self):
+                pass
+        suite = unittest.defaultTestLoader.loadTestsFromTestCase(T)
+        names = lambda s: [t._testMethodName for t in s]
+        self.assertEqual(names(mod.quiet_or_not(suite, True)), ["test_a"])
+        self.assertEqual(names(mod.quiet_or_not(suite, False)), ["test_b"])

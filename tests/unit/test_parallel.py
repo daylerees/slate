@@ -25,14 +25,16 @@ failed = 1 if behave == "fail" else 0
 if failed:
     print(f"FAIL {only[0]} › something: it broke", flush=True)
 only = sorted({u.split("@")[0] for u in only})     # (slices of a file: the file, as the runner does)
+# (the quiet part runs only the few tests marked quiet: one a file here)
+each = 1 if "--quiet-tests" in a and a[a.index("--quiet-tests") + 1] == "only" else 10
 tiers = {}
 for u in only:
     t = tiers.setdefault(u.split("/")[0], {"ran": 0, "failed": 0, "seconds": 2.0})
-    t["ran"] += 10
+    t["ran"] += each
 tiers[only[0].split("/")[0]]["failed"] = failed
 os.makedirs(os.path.join(out, "parts"), exist_ok=True)
 with open(os.path.join(out, "parts", part + ".json"), "w") as f:
-    json.dump({"passed": 10 * len(only) - failed, "failed": failed, "seconds": 2.0,
+    json.dump({"passed": each * len(only) - failed, "failed": failed, "seconds": 2.0,
                "skipped": [], "tiers": tiers, "files": {u: 7.5 for u in only},
                "failed_ids": ["tests." + only[0].replace("/", ".") + ".Case.test_something"] if failed else []}, f)
 sys.exit(failed)
@@ -121,6 +123,8 @@ class Parts(Standin):
         self.assertTrue(any(n.startswith("quick") for n in asked), out)
         files = []
         for name, line in asked.items():
+            if name == "quiet":                  # (its files' quiet tests: they're in a display part too)
+                continue
             words = line.split()
             only = words[words.index("--only") + 1].split(",")
             self.assertTrue(all(u.split("/")[0] in (("static", "unit") if name.startswith("quick") else ("live", "visual")) for u in only),
@@ -130,14 +134,15 @@ class Parts(Standin):
         every = [u for t in mod.TIERS for u in mod.units(t)]
         self.assertEqual(sorted(files), sorted(every), "each test file in exactly one part")
         self.assertEqual(code, 0, out)
-        self.assertIn(f"PASS {10 * len(every)}/{10 * len(every)}", out)
+        n = 10 * len(every) + len(mod.quiet_units(mod.units("live") + mod.units("visual")))
+        self.assertIn(f"PASS {n}/{n}", out)
         self.assertIn("at once)", out, "the live tier's line says it ran in parts")
 
     def test_a_failure_comes_through_and_fails_the_run(self):
         code, out = self.go("--jobs", "2", "--tier", "live", "-q", display_2="fail")
         self.assertEqual(code, 1, out)
         self.assertIn("› something: it broke", out)
-        n = 10 * len(module().units("live"))
+        n = 10 * len(module().units("live")) + len(module().quiet_units(module().units("live")))
         self.assertEqual(out.strip().splitlines()[-1].split(" (")[0], f"FAIL {n - 1}/{n}")
 
     def test_a_part_that_dies_fails_the_run_and_names_its_files(self):
@@ -156,6 +161,22 @@ class Parts(Standin):
         with open(os.path.join(self.out, "durations.json")) as f:
             self.assertEqual(json.load(f)["live/test_dock"], 7.5)
 
+    def test_quiet_tests_wait_for_the_rest_and_run_alone(self):
+        """Tests marked @slate.quiet are left out of every part, and run in a part of their own
+        ("quiet") once the others have all finished, from just their files."""
+        code, out = self.go("--jobs", "3", "--tier", "live")
+        self.assertEqual(code, 0, out)
+        with open(os.path.join(self.out, "asked.txt")) as f:
+            lines = f.read().splitlines()
+        self.assertTrue(lines[-1].startswith("quiet "), "the quiet part didn't come last")
+        quiet = lines[-1].split()
+        self.assertEqual(quiet[quiet.index("--quiet-tests") + 1], "only")
+        marked = module().quiet_units(module().units("live"))
+        self.assertIn("live/test_launcher_scroll", marked)
+        self.assertEqual(quiet[quiet.index("--only") + 1].split(","), marked)
+        for line in lines[:-1]:
+            self.assertIn("--quiet-tests skip", line)
+
     def test_shuffle_and_busy_reach_every_part(self):
         self.go("--jobs", "2", "--tier", "live", "--shuffle", "7", "--busy", "2")
         for line in self.asked().values():
@@ -165,8 +186,9 @@ class Parts(Standin):
     def test_json_summary(self):
         code, out = self.go("--jobs", "2", "--tier", "live", "--json", display_1="fail")
         summary = json.loads(out.strip().splitlines()[-1])["summary"]
-        self.assertEqual((summary["failed"], summary["parts"], summary["tiers"]), (1, 2, ["live"]))
-        self.assertEqual(summary["total"], 10 * len(module().units("live")))
+        # (two parts, and the quiet tests' own once they've finished)
+        self.assertEqual((summary["failed"], summary["parts"], summary["tiers"]), (1, 3, ["live"]))
+        self.assertEqual(summary["total"], 10 * len(module().units("live")) + len(module().quiet_units(module().units("live"))))
 
 
 class Failed(Standin):
@@ -198,9 +220,11 @@ class Failed(Standin):
         code, out = self.go("--jobs", "3", "--tier", "unit,live", "--failed", "-q")
         self.assertEqual(code, 0, out)
         asked = self.asked()
-        self.assertEqual(sorted(asked), ["display-1", "display-2", "quick"], "a part for each file, and no more")
-        only = sorted(f for line in asked.values() for f in line.split("--only ")[1].split()[0].split(","))
+        # (and test_bar's quiet test in the quiet part, as it has one)
+        self.assertEqual(sorted(asked), ["display-1", "display-2", "quick", "quiet"], "a part for each file, and no more")
+        only = sorted(f for name, line in asked.items() if name != "quiet" for f in line.split("--only ")[1].split()[0].split(","))
         self.assertEqual(only, ["live/test_bar", "live/test_dock", "unit/test_spaces"])
+        self.assertIn("--only live/test_bar ", asked["quiet"])
         self.assertTrue(all("--failed" in line for line in asked.values()), "each part runs just the failed tests")
         self.assertFalse(os.path.exists(os.path.join(self.out, "durations.json")), "timings kept from a partial run")
 

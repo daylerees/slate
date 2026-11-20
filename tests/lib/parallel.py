@@ -73,6 +73,21 @@ def weight(unit, known):
     return 20 + 3 * len(re.findall(r"^\s+def test_", text, re.M))
 
 
+def quiet_units(units_):
+    """Of these live and visual files, the ones with a test marked @slate.quiet: those tests wait
+    for every other part to finish, then run in a part of their own ("quiet"), on a computer
+    that's quiet by then."""
+    out = []
+    for u in sorted({base(u) for u in units_}):
+        try:
+            with open(os.path.join(TESTS, u + ".py"), encoding="utf-8") as f:
+                if re.search(r"^\s*@slate\.quiet\b", f.read(), re.M):
+                    out.append(u)
+        except OSError:
+            pass
+    return out
+
+
 def share_out(files, jobs, known, rng=None):
     """`files` in at most `jobs` groups of about the same expected length: longest first,
     each to whichever group is shortest so far. With `rng` (--shuffle), in that random order
@@ -160,6 +175,8 @@ def main(argv=None):
     partdir = os.path.join(OUT, "parts")
     shutil.rmtree(partdir, ignore_errors=True)
     os.makedirs(partdir, exist_ok=True)
+    # The tests marked quiet: left out of every part, and run once they've all finished
+    quiet = quiet_units(shown)
     passthrough = [f for f, on in (("-q", a.quiet), ("-v", a.verbose), ("--json", a.json)) if on]
     if a.filter:
         passthrough += ["--filter", a.filter]
@@ -179,14 +196,17 @@ def main(argv=None):
                 sys.stdout.write(line)
                 sys.stdout.flush()
 
-    t0 = time.monotonic()
-    for name, files in parts:
-        p = subprocess.Popen(command + ["--tier", ",".join(tiers), "--only", ",".join(files), "--part", name] + passthrough,
-                             stdout=subprocess.PIPE, text=True, start_new_session=True)
+    def start(name, files, extra=()):
+        p = subprocess.Popen(command + ["--tier", ",".join(tiers), "--only", ",".join(files), "--part", name]
+                             + passthrough + list(extra), stdout=subprocess.PIPE, text=True, start_new_session=True)
         procs[name] = p
         th = threading.Thread(target=relay, args=(p,), daemon=True)
         th.start()
         threads.append(th)
+
+    t0 = time.monotonic()
+    for name, files in parts:
+        start(name, files, ["--quiet-tests", "skip"] if quiet and name.startswith("display") else [])
 
     def stop_all(*_):
         for p in procs.values():
@@ -199,7 +219,11 @@ def main(argv=None):
     signal.signal(signal.SIGINT, stop_all)
     signal.signal(signal.SIGTERM, stop_all)
 
-    codes = {name: p.wait() for name, p in procs.items()}
+    codes = {name: p.wait() for name, p in list(procs.items())}
+    if quiet:
+        parts.append(("quiet", quiet))
+        start("quiet", quiet, ["--quiet-tests", "only"])
+        codes["quiet"] = procs["quiet"].wait()
     for th in threads:
         th.join(5)
     took = time.monotonic() - t0
@@ -225,8 +249,9 @@ def main(argv=None):
         skipped += r["skipped"]
         failed_ids.update(r.get("failed_ids", []))
         for u, t in r["files"].items():
-            # (a file run in slices took all of theirs together)
-            seconds[u] = seconds.get(u, 0) + t if u in SPLIT else t
+            # (a file run in slices took all of theirs together, and one with quiet tests its
+            # part's time and the quiet part's)
+            seconds[u] = seconds.get(u, 0) + t if u in SPLIT or u in quiet else t
         for tier, t in r["tiers"].items():
             s = per_tier.setdefault(tier, {"ran": 0, "failed": 0, "seconds": 0, "parts": 0})
             s["ran"] += t["ran"]

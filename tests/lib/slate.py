@@ -12,6 +12,21 @@ FIXTURES = os.path.join(TESTS, "fixtures")
 OUT = os.environ.get("SLATE_TEST_OUT") or os.path.join(TESTS, "out")
 
 
+def quiet(test):
+    """A test that checks something only a quiet computer can (a slide drawn frame by frame, icons
+    ready before their rows come into view): in a run of several parts side by side, it waits
+    for the others to finish and runs in a part of its own (tests/lib/parallel.py, QUIET), so a
+    busy moment can't fail it and the number of sessions isn't held down for it. Mark the test,
+    never loosen what it checks."""
+    test.slate_quiet = True
+    return test
+
+
+def is_quiet(test):
+    """Whether a test (a TestCase, by its method) is marked quiet."""
+    return bool(getattr(getattr(test, getattr(test, "_testMethodName", ""), None), "slate_quiet", False))
+
+
 def in_slice(unit, i):
     """Whether the i-th (from 0) of a file's shareable tests is this run's to run: all of them,
     unless a parallel run gave this part slices of the file ("visual/test_visual@2/3": every

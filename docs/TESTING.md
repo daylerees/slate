@@ -92,8 +92,8 @@ files shared one, or how busy the computer was. Two options do it on purpose:
 Before a release, run them together a few times, a different seed each, in the background:
 `tests/run -q --shuffle --busy` (or `--repeat 3 --shuffle --busy`). What they find is a real
 race more often than not: fix the test or the code, as for any failure. One that checks something
-only a quiet computer can (a smooth slide, icons ready before they're seen) belongs with the
-tests that run in a quiet moment, not with a looser check.
+only a quiet computer can (a smooth slide, icons ready before they're seen) is marked
+`@slate.quiet` (Writing tests), not given a looser check.
 
 ## Side by side
 
@@ -251,6 +251,12 @@ as its own check.
   side it's sometimes too short. Wait for what you expect with `self.wait(…)`, or, when you
   read the state to check it, `self.steady(read, floor=…)` (at least `floor` seconds, then
   until two reads agree). A check that something *doesn't* happen keeps its pause as `floor`.
+- **Quiet tests.** A test that checks something only a quiet computer can (a slide drawn
+  frame by frame, every icon ready before its row comes into view) is marked `@slate.quiet`.
+  In a run of several parts side by side, every part leaves it out, and once they've all
+  finished it runs in a part of its own, `quiet`, on a computer that's quiet by then; a run in
+  one part (`--jobs 1`, CI) runs it where it is. Mark it, never loosen what it checks; most
+  tests that fail under load have a wait to fix instead (see Shaking them out on purpose).
 - **Kinds of session.** Most live tests and every screenshot share one session: one headless
   output, `TEST`, 1440×900. A test file that needs another kind starts its own in
   `setUpClass` (after `Session.stop_shared()`) and stops it in `tearDownClass`, so the shared

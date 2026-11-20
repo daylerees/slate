@@ -203,6 +203,19 @@ class Result(unittest.TestResult):
         return self.passed + len(self.failed)
 
 
+def quiet_or_not(suite, want):
+    """The suite with only the tests marked @slate.quiet (want True), or only the rest."""
+    out = unittest.TestSuite()
+    for t in suite:
+        if isinstance(t, unittest.TestSuite):
+            sub = quiet_or_not(t, want)
+            if sub.countTestCases():
+                out.addTest(sub)
+        elif slate.is_quiet(t) == want:
+            out.addTest(t)
+    return out
+
+
 def busy(n):
     """n processes spinning on the processor until this run ends, however it ends (tests/run
     --busy): a loaded computer on purpose, to find tests that pass only on a quiet one. Started
@@ -311,6 +324,8 @@ def main(argv=None):
     ap.add_argument("--part", default="", help="one part of a parallel run (tests/lib/parallel.py): its name")
     ap.add_argument("--shuffle", type=int, default=None, help="the files in an order of this seed's, not by name")
     ap.add_argument("--busy", type=int, default=0, help="this many busy loops beside the tests (in the container)")
+    ap.add_argument("--quiet-tests", choices=("skip", "only"), default=None,
+                    help="leave out (skip) or run only (only) the tests marked @slate.quiet")
     a = ap.parse_args(argv)
     if a.busy:
         busy(a.busy)
@@ -347,6 +362,8 @@ def main(argv=None):
             suite = only_failed(suite, again)
         if a.filter:
             suite = filtered(suite, a.filter)
+        if a.quiet_tests:
+            suite = quiet_or_not(suite, a.quiet_tests == "only")
         n_before, f_before = result.total, len(result.failed)
         tt = time.monotonic()
         # Keep tests' own stray output out of the report

@@ -540,6 +540,9 @@ class Label(LiveCase):
         st = self.steady(self.s.state, floor=0.6)
         self.assertGreater(st["bar"]["titleWidth"], 200, "the title's tags were read as markup, not shown")
 
+    # (quiet: seeing the slide takes frames drawn often enough to land between its ends, which a
+    # busy computer doesn't)
+    @slate.quiet
     def test_things_slide_as_the_title_changes_length(self):
         """With a flexible space either side of the window's title (nice on very wide screens),
         a longer or shorter title moves the title's container: it slides there with animations
