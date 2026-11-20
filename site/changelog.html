@@ -39,6 +39,47 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.35.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.35.0 <time datetime="2026-11-20">20 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Unlock and log in with your face, a fingerprint or a security key.</strong> Settings → Security → Face, Fingerprint &amp; Keys sets each one up (faces through Howdy and an IR camera, fingerprints through fprintd, keys like a YubiKey through pam_u2f), and lets you choose whether it works on the lock screen, Slate's login screen, or both. The screen says what it's waiting for, face unlock waits until you're back at the computer, and your password always works.</li>
+        <li><strong>A firewall in Settings → Security.</strong> Turn it on and off, and let in KDE Connect, file sharing, remote login or game streaming from your own network with a switch each. Where there's no firewall, Slate offers to install your distro's usual one. Nova can see whether it's on.</li>
+        <li><strong>Caps Lock can act as Super</strong> (Settings → Input → Caps Lock key).</li>
+        <li><strong>Sharp older apps at a scale like 125%.</strong> Settings → Displays → Sharp older apps draws apps made for X11, like Steam, at your screen's own pixels instead of stretching them.</li>
+        <li><strong>Fixed spaces on the menu bar,</strong> sized in pixels or as a share of the screen, beside the flexible one in Edit layout.</li>
+        <li><strong>The menu bar slides things along smoothly</strong> as the window's title changes length.</li>
+        <li><strong>Every control in the menu bar's panels works by keyboard.</strong></li>
+        <li>Notifications and Power are now on All Settings (and in search) rather than the sidebar, so the sidebar fits without scrolling.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Displays:</strong> screens start at their native mode (an Odyssey G9 at 5120x1440, 240 Hz, not the 3840x1080 it recommends), and the question asking you to keep a change can't be missed. The login screen starts each monitor the same way as your desktop, so the screen doesn't change mode again as you log in.</li>
+        <li><strong>Workspaces:</strong> games go to a numbered workspace of their own, and named workspaces from your own rules work everywhere: dots, switching, the switcher and title bars.</li>
+        <li><strong>The menu bar, dock and panels</strong> come back when your only screen drops off for a moment.</li>
+        <li><strong>The screensaver and screen-off wait</strong> while a player plays full screen, even one that doesn't ask the screen to stay awake.</li>
+        <li><strong>Software</strong> gets Flathub's list of apps on a new computer, rather than showing nothing, and the launcher finds Flatpak apps (the first ones installed, and everyone's) without a restart.</li>
+        <li><strong>App theming:</strong> Vesktop counts as installed before its first run.</li>
+        <li><strong>The login screen</strong> installs again where its people folder was already set up.</li>
+        <li><strong>App icons:</strong> an app shown for the first time takes its own colored tile straight away, rather than up to half a minute later, and an app that goes straight into the dock's More (with no room left on the dock) shows its icon there rather than an empty space.</li>
+        <li><strong>Spaces:</strong> the first space you save shows straight away.</li>
+        <li>The battery item says "Power" on a computer without a battery.</li>
+        <li>The tests' virtual screen stays off on your own desktop.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>The full test suite passed (391,322 checks) twice in a row on the packages this release was tested with. On today's Arch packages one test failed, the panel shadow test; its cause, a notification left on screen by another test, has since been fixed.</li>
+        <li>The tests run faster on a big machine (about 7 minutes rather than 10 here), and several tests that failed now and then wait for the right moment now.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.34.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.34.0 <time datetime="2026-11-19">19 November 2026</time></h2>
   <div class="cl-grid">
