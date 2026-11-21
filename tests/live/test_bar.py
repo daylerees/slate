@@ -540,6 +540,28 @@ class Label(LiveCase):
         st = self.steady(self.s.state, floor=0.6)
         self.assertGreater(st["bar"]["titleWidth"], 200, "the title's tags were read as markup, not shown")
 
+    def test_no_window_icon_for_an_app_without_one(self):
+        """An app Slate finds no icon for gets an empty tile, which says nothing on the bar: the
+        window's icon steps out and its title stays. An app with an icon keeps it. Asked for,
+        2026-11-21."""
+        self.close_windows()
+        self.addCleanup(self.close_windows)
+        for key in ("barShowTitle", "barShowTitleIcon"):
+            self.keep_setting(key)
+            self.config(key, "true")
+
+        def icon_shown(st):
+            return st["bar"]["line"]["windowicon"]["visible"]
+
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot --app-id slate-test-no-icon -T Iconless sleep 60")')
+        self.wait(lambda st: any(w["title"] == "Iconless" for w in st["windows"]), "the window with no icon", timeout=15)
+        self.wait(lambda st: st["bar"]["titleWidth"] > 0, "its title on the bar")
+        st = self.wait(lambda st: not icon_shown(st), "the empty icon to step out", timeout=10)
+        self.assertGreater(st["bar"]["titleWidth"], 0, "the title went with the icon")
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot -T WithIcon sleep 60")')
+        self.wait(lambda st: any(w["title"] == "WithIcon" for w in st["windows"]), "a terminal, which has an icon", timeout=15)
+        self.wait(icon_shown, "the terminal's icon on the bar", timeout=10)
+
     # (quiet: seeing the slide takes frames drawn often enough to land between its ends, which a
     # busy computer doesn't)
     @slate.quiet

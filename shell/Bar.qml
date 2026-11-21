@@ -1256,7 +1256,8 @@ PanelWindow {
             Segment {
                 id: winIcon
                 hover: false
-                wanted: Config.s.barShowTitleIcon && (bar.arrangeShown || !!appTile.focusedTop)
+                // (and not for an app Slate found no icon for: an empty tile says nothing)
+                wanted: Config.s.barShowTitleIcon && (bar.arrangeShown || (!!appTile.focusedTop && !appTile.noIcon))
                 length: bar.capsuleHeight + 4
                 Item {
                     id: appTile
@@ -1281,6 +1282,21 @@ PanelWindow {
                     }
                     property int version: 0
                     property string tried: ""      // drawn once per icon file
+                    // Drawn without an icon: appicon.py leaves "<tile>.placeholder" beside a tile
+                    // it found no icon for, and takes it away once it finds one. Looked at again
+                    // whenever the tile's drawn (version) or the icons change (tileVersion)
+                    property bool noIcon: false
+                    FileView {
+                        id: placeholderMark
+                        path: appTile.key ? appTile.path + ".placeholder" : ""
+                        printErrors: false
+                        onPathChanged: appTile.noIcon = false
+                        onLoaded: appTile.noIcon = true
+                        onLoadFailed: appTile.noIcon = false
+                    }
+                    function lookAgain() { if (placeholderMark.path !== "") placeholderMark.reload(); }
+                    onVersionChanged: lookAgain()
+                    Connections { target: Config; function onTileVersionChanged() { appTile.lookAgain(); } }
                     Image {
                         anchors { fill: parent; margins: 3 }
                         visible: appTile.key !== ""
