@@ -25,6 +25,8 @@
 #   tests/run --update-baselines [scene…]   re-shoot approved screenshots (all, or these)
 #   tests/run --docs-shots [shot…] take the docs' pictures again (all, or these): not a test,
 #                                  they go straight into site/docs/img (tools/docs-shots/README.md)
+#   tests/run --only live/test_dock,live/test_bar   just these files, in one session, in name
+#                                  order (one part of a full run, to reproduce it)
 #   tests/run --shuffle [seed]     which files share a session, and their order, by a seed (printed,
 #                                  to run it the same way again): finds tests that rely on another
 #   tests/run --busy [n]           n busy loops in each part's container beside the tests (1 if
@@ -62,6 +64,7 @@ while [ $# -gt 0 ]; do
         --fresh) fresh=1 ;;
         --failed) failed=1 ;;
         --shuffle) shuffle=random; case "${2-}" in [0-9]*) shuffle=$2; shift ;; esac ;;
+        --only) pass+=(--only "$2"); filtered=1; jobs=1; shift ;;
         --busy) busy=1; case "${2-}" in [0-9]*) busy=$2; shift ;; esac ;;
         --jobs) jobs=$2; shift ;;
         --jobs=*) jobs=${1#*=} ;;

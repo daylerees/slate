@@ -1767,6 +1767,11 @@ Singleton {
     // (a function, asked only when the hook runs: as a bool binding, a reload tearing Config
     // down still evaluated it to undefined now and then, "Unable to assign [undefined] to
     // bool", whatever the expression)
+    // (the tests: each thing iconsBusy waits on, for a wait that never ends)
+    function iconsBusyWhy() {
+        return { tileAll: !!tileAll?.running, tileAllRun: !!tileAllRun?.running, coloursSoon: !!iconColoursSoon?.running,
+                 coloursRun: !!iconColoursRun?.running, coloursReading: !!iconColoursReading, drawing: tilesDrawing };
+    }
     function iconsBusy() {
         return !!(tileAll?.running || tileAllRun?.running || iconColoursSoon?.running
             || iconColoursRun?.running || iconColoursReading || tilesDrawing > 0);

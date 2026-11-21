@@ -544,7 +544,9 @@ ShellRoot {
                             apps: (appLauncher.results || []).filter(r => !r.kind && !r.calc && !r.setting && !r.action).length,
                             tileVersion: Config.tileVersion },
                 // App icons: still being drawn or their colours noted (busy), and how many colours are known
-                icons: { busy: Config.iconsBusy(), colours: Object.keys(Config.iconColours).length, tileDir: Config.tileDir },
+                icons: { busy: Config.iconsBusy(), colours: Object.keys(Config.iconColours).length, tileDir: Config.tileDir,
+                         // (what's keeping it busy, for a wait that never ends)
+                         why: Config.iconsBusyWhy() },
                 picker: { open: picker.shown, mode: picker.mode },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
                 weather: { now: popouts.weather ? opt(popouts.weather.temperature_2m) : null, days: popouts.forecast ? popouts.forecast.time.length : 0 },

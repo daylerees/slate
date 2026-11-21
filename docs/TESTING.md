@@ -28,6 +28,7 @@ tests/run --no-container            # static + unit straight on this machine, fo
 tests/run --filter dock             # only tests (or scenes) whose name has "dock" in it
 tests/run --failed                  # only the tests that failed last time
 tests/run --repeat 5                # the chosen tests 5 times over: only what didn't pass every time
+tests/run --only live/test_dock,live/test_bar   # just these files, in one session (a part of a run, again)
 tests/run --shuffle [seed]          # files shared out and ordered by a seed (said, to run it again)
 tests/run --busy [n]                # n busy loops in each part's container (1 if not said)
 tests/run --jobs 3                  # how many Slate sessions run side by side (1: one after another)
