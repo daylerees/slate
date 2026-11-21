@@ -198,7 +198,7 @@ save_crash() {
         else
             echo "(no backtrace: crashes don't go to systemd-coredump on this computer)"
         fi
-    } >"$f"
+    } >"$f.tmp" && mv -f "$f.tmp" "$f"     # (whole, never half-written for whoever reads it)
     # Only the last few
     ls -1t "$CRASHES"/crash-*.txt 2>/dev/null | tail -n +$((KEEP_REPORTS + 1)) | while IFS= read -r old; do rm -f "$old"; done
 }
