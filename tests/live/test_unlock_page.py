@@ -353,8 +353,11 @@ class OnTheLoginScreen(UnlockPage):
         self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "unlock", "Face, Fingerprint & Keys")
         self.ipc("test", "settingsPoll", "unlock", json.dumps({"howdy": True, "cameras": BRIO, "methods": ["face"],
                                                                 "loginScreen": login_screen, "loginMethods": list(login_methods)}))
+        # (all three, login_screen too: in another order, the page still had the last test's
+        # "not installed" when it was read)
         return self.wait(lambda st: st["settings"]["page"] and st["settings"]["page"]["faces"] == list(faces)
-                         and st["settings"]["page"]["loginMethods"] == list(login_methods), "the page to look")
+                         and st["settings"]["page"]["loginMethods"] == list(login_methods)
+                         and st["settings"]["page"]["loginScreen"] == login_screen, "the page to look")
 
     def test_needs_slates_login_screen(self):
         self.show(login_screen=False)

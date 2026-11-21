@@ -111,13 +111,16 @@ Column {
         // One of your apps drawn in each shape, filled and whole (scripts/appicon.py --preview)
         readonly property string previewDir: Quickshell.env("HOME") + "/.cache/slate/tiles/preview"
         property int previewVersion: 0
-        Process {
+        // (a first look, counted while it draws: a picture of the page taken sooner showed the
+        // tiles before their colour, on a busy computer)
+        FirstLook {
             running: true
             command: [Config.tileScript, "--preview", iconGroup.previewDir, "96"]
             onExited: { iconGroup.previewVersion++; previewColourFile.reload(); }
         }
-        // The previewed icon's main colour, so its tile shows Tiles in the icon's colour too
-        FileView { id: previewColourFile; path: iconGroup.previewDir + "/colour.txt"; printErrors: false }
+        // The previewed icon's main colour, so its tile shows Tiles in the icon's colour too (read
+        // at once as the preview's done, so it's there by the time the page counts as looked)
+        FileView { id: previewColourFile; path: iconGroup.previewDir + "/colour.txt"; printErrors: false; blockLoading: true }
         readonly property var previewShade: Config.iconTileShadeOf(previewColourFile.text().trim())
         SettingRow {
             label: "Shape"

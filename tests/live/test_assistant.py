@@ -915,7 +915,14 @@ class NovaWindowChecks:
         grab = (c["at"][0] + self.u(120), c["at"][1] + self.u(28))
         with self.pointer() as ptr:
             ptr.drag(grab, (grab[0] - 160, grab[1] + 96))
-        self.s._until(lambda: self.client()["at"] != c["at"], 5, "the window to follow the pointer")
+        # (until it's where the drag takes it: under load the pointer's moves come apart, and a
+        # window still on its way looked settled between two of them, 14 px short)
+        want = (c["at"][0] - 160, c["at"][1] + 96)
+        try:
+            self.s._until(lambda: (lambda a: abs(a[0] - want[0]) <= 3 and abs(a[1] - want[1]) <= 3)(self.client()["at"]),
+                          8, "the window to follow the pointer")
+        except Exception:
+            pass                          # (the checks below say where it stopped)
         d = self.placed()
         self.assertAlmostEqual(d["at"][0], c["at"][0] - 160, delta=3)
         self.assertAlmostEqual(d["at"][1], c["at"][1] + 96, delta=3)

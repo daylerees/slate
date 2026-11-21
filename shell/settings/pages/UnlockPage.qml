@@ -217,7 +217,7 @@ Column {
 
     readonly property var testState: ({ looked: looked, howdy: !!info.howdy, faces: faces.map(f => f.label), faceOn: faceOn,
                                         camera: chosen ? chosen.path : "", said: said, problem: saidProblem, doing: doing,
-                                        loginMethods: loginMethods,
+                                        loginMethods: loginMethods, loginScreen: loginScreen,
                                         fingers: fingers, fingerOn: fingerOn, adding: addingFinger, fpSaid: fpSaid, fpProblem: fpProblem,
                                         keys: keyHandles.map((h, i) => keyName(h, i)), keyOn: keyOn, keySaid: keySaid, keyProblem: keyProblem })
     // (the tests: what's here and what the helper answers, given in place of the real ones)
