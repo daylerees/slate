@@ -605,7 +605,7 @@ ShellRoot {
                 polkit: { open: polkitAgent.shown },
                 welcome: { built: welcome.built, open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps, newHere: welcome.newHere },
                 fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
-                notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.quiet, dndHand: notifs.dnd, dndWhy: notifs.autoWhy, dndSays: notifs.quietWhy, quietHours: notifs.quietHours, toasts: notifs.toastsShowing,
+                notifications: { history: notifs.history.length, unread: notifs.unread, dnd: notifs.quiet, paused: notifs.paused, held: notifs.held.length, dndHand: notifs.dnd, dndWhy: notifs.autoWhy, dndSays: notifs.quietWhy, quietHours: notifs.quietHours, toasts: notifs.toastsShowing,
                                  latest: notifs.history.length > 0 ? notifs.history[0].summary : "",
                                  // (the last few, newest first: one that arrives just after another hides it from latest)
                                  recent: notifs.history.slice(0, 5).map(n => n.summary), toast: notifs.toastLook() },
@@ -701,7 +701,7 @@ ShellRoot {
     PrivateMode { id: privateMode; confirm: powerConfirm }
     SwitchHardware {}
     PolkitAgent { id: polkitAgent }          // password prompts for apps (pkexec, system settings…)
-    Notifications { id: notifs; bar: topBar }
+    Notifications { id: notifs; bar: topBar; lockScreen: lockScreen }
     // Settings, built the first time it's wanted (an IPC call, the dock's menu, or being open when
     // Slate reloaded) rather than at every start: it's the biggest window Slate has, and most
     // sessions only open it now and then. Once built it stays, and is built afresh whenever it's

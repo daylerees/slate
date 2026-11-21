@@ -14,6 +14,7 @@ import Quickshell.Hyprland
 Scope {
     id: notifs
     required property var bar
+    property var lockScreen: null           // (shell.qml's: notifications pause while it's locked)
 
     // ---- Settings ----------------------------------------------------------
     readonly property int defaultTimeout: Config.s.notificationSeconds * 1000   // ms, when the app doesn't set one
@@ -43,6 +44,33 @@ Scope {
         fullscreen: "while a window is full screen",
         call: "while you're on a call",
         focus: "while you focus" })[autoWhy] || ""
+    // ---- Paused: while the screen's locked, and for a few seconds after logging in or unlocking --
+    // (apps starting up or catching up all at once). Nothing pops up or chimes meanwhile; it all
+    // goes to the history, and the bell counts it. Urgent ones held back pop up as it ends, if
+    // they're still open, so a warning isn't missed
+    readonly property int settleAfterLogin: 10000
+    readonly property int settleAfterUnlock: 5000
+    readonly property bool locked: !!lockScreen && lockScreen.locked
+    property bool settling: false
+    readonly property bool paused: locked || settling
+    property var held: []                   // urgent ones that came while paused (their keys)
+    function settle(ms) { settling = true; settleTimer.interval = ms; settleTimer.restart(); }
+    Timer { id: settleTimer; onTriggered: notifs.settling = false }
+    onLockedChanged: if (locked) { settleTimer.stop(); settling = false; } else settle(settleAfterUnlock)
+    onPausedChanged: if (!paused) letHeldThrough()
+    // (logging in: the first Slate of the session, the one that fades in with the welcome sound;
+    // not a reload or restart)
+    Component.onCompleted: if (Config.welcoming) settle(settleAfterLogin)
+    function letHeldThrough() {
+        const keys = held;
+        held = [];
+        if (Config.gameMode) return;
+        const items = keys.filter(k => notifs.live[k]).map(k => notifs.history.find(h => h.key === k)).filter(h => !!h);
+        if (items.length === 0) return;
+        for (const item of items.slice().reverse()) showToast(item);   // (oldest first: the newest ends on top)
+        Config.attention();
+    }
+
     function setQuiet(on) {
         if (on) { dnd = true; return; }
         dnd = false;
@@ -217,7 +245,12 @@ Scope {
             notifs.save();
             // Do Not Disturb (by hand or by itself) holds back all but urgent ones and the apps
             // allowed through; game mode holds back every one (they
-            // still go to the history, and the bell counts them)
+            // still go to the history, and the bell counts them). Paused (locked, or just logged
+            // in or unlocked): every one waits, and the urgent ones pop up as it ends
+            if (notifs.paused) {
+                if (n.urgency === NotificationUrgency.Critical) notifs.held = notifs.held.concat([key]);
+                return;
+            }
             if (!Config.gameMode && (!notifs.quiet || n.urgency === NotificationUrgency.Critical || notifs.allowedThrough(n.appName))) {
                 notifs.showToast(item);
                 notifs.chime(n);
@@ -293,6 +326,8 @@ Scope {
             if (what === "fullscreen") notifs.testFullscreen = on;
             if (what === "call") notifs.testOnCall = on;
         }
+        // (the tests: as just after logging in, for this long)
+        function testSettle(ms: int): void { if (Config.testMode) notifs.settle(ms); }
         // The latest ones, newest first: [{"app", "summary", "body", "time"}]
         function list(): string {
             return JSON.stringify(notifs.history.slice(0, 20).map(h => ({ app: h.appName || "", summary: h.summary || "", body: h.body || "", time: h.time || 0 })));
