@@ -39,6 +39,25 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.35.1" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.35.1 <time datetime="2026-11-21">21 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li><strong>Previewing a file from your file manager works straight after logging in.</strong> Pressing Space in Nautilus or Nemo opens Slate's Quick Look; just after Slate started, the file manager could ask before Slate was really listening, and nothing opened.</li>
+        <li><strong>Crash reports are written whole.</strong> If Slate ever stops unexpectedly, its report could for a moment hold only its first line on a busy computer.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>Slate's tests are much steadier under load and in any order: keys are pressed only once the keyboard has arrived, each test tidies away what it left on screen, waits name the exact state they expect, and the few checks only a quiet computer can pass run on their own at the end. Two new options, <code>tests/run --shuffle</code> and <code>--busy</code>, shake out fragile tests on purpose, and were run before this release.</li>
+        <li>Every test passes (391,201 checks) with the pinned packages and with today's Arch packages.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.35.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.35.0 <time datetime="2026-11-20">20 November 2026</time></h2>
   <div class="cl-grid">
