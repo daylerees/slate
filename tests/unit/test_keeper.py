@@ -134,7 +134,8 @@ class Keeper(Case):
 
     def reports(self):
         d = os.path.join(self.h.cache, "slate", "crashes")
-        return sorted(os.path.join(d, f) for f in os.listdir(d)) if os.path.isdir(d) else []
+        # (the reports themselves: crash-*.txt, as Slate keeps them; one being written has a hidden name)
+        return sorted(os.path.join(d, f) for f in os.listdir(d) if f.startswith("crash-") and f.endswith(".txt")) if os.path.isdir(d) else []
 
     def plan(self, *steps):
         with open(os.path.join(self.stubs, "plan"), "w") as f:
