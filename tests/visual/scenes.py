@@ -303,6 +303,23 @@ SCENES["settings-changed-dot"] = {
     "settle": 1.2, "undo": [("settings", "close")],
 }
 
+# Settings → Updates with a new version: Update now on the row that says so, what's new right
+# under it; and the same row while it downloads (step, megabytes and a bar)
+_UPDATE = {"latest": "v9.9.9", "newer": True, "status": "idle", "how": "own", "notes": "- Something new\n- Something better",
+           "url": "https://github.com/daylerees/slate/releases/tag/v9.9.9", "published": "2026-11-20T10:00:00Z"}
+SCENES["settings-updates-available"] = {
+    "do": [("test", "updatesPretend", json.dumps(_UPDATE)), ("settings", "page", "updates")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "updates"
+                       and (st["settings"]["page"] or {}).get("update") and st["settings"].get("checking", 0) == 0,
+    "settle": 1.2, "undo": [("settings", "close"), ("test", "updatesPretend", "{}")],
+}
+SCENES["settings-updates-downloading"] = dict(SCENES["settings-updates-available"],
+    do=[("test", "updatesPretend", json.dumps(dict(_UPDATE, status="downloading", got=3000000, size=12000000))),
+        ("settings", "page", "updates")],
+    wait=lambda st: st["settings"]["open"] and st["settings"]["section"] == "updates"
+                    and (st["settings"]["page"] or {}).get("meter", -1) >= 0,
+    mask=[(1096, 466, 26, 26)])   # (the busy icon, turning: caught at any angle)
+
 # A setting greyed out because another one is off: its "Needs … to be off" line, with the
 # arrow that goes there (scrolled to it; settled once its highlight has faded)
 SCENES["settings-needs"] = {

@@ -239,7 +239,9 @@ class Internet:
                 if page is None:
                     raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
                 if isinstance(page, bytes):
-                    return io.BytesIO(page)
+                    reply = io.BytesIO(page)
+                    reply.headers = {"Content-Length": str(len(page))}   # (as GitHub's downloads say)
+                    return reply
                 # A redirect: asked of urllib's redirect handler, as a real one would be
                 handler = next(h for h in opener.handlers if isinstance(h, urllib.request.HTTPRedirectHandler))
                 url = handler.redirect_request(urllib.request.Request(url), None, 302, "Found", {}, page[1]).full_url
@@ -327,6 +329,22 @@ class Install(Releases):
         self.assertEqual((st["status"], st["current"], st["error"]), ("done", self.TAG, ""))
         with open(self.mod.LOG) as f:
             self.assertIn("matched the checksum", f.read())
+
+    def test_says_how_much_has_downloaded(self):
+        """While the release downloads, Settings → Updates is told how much has come and how big
+        it is (written now and then, not for every piece), and once it's installing the
+        numbers are cleared, so the page shows that step instead."""
+        big = self.good + b"\0" * (1 << 20)        # (a few pieces' worth: trailing zeros gzip ignores)
+        self.release(self.TAG, big)
+        written, save = [], self.mod.save
+        self.mod.save = lambda st: (written.append(dict(st)), save(st))
+        self.install()
+        during = [(w["got"], w["size"]) for w in written if w.get("status") == "downloading" and w.get("got")]
+        self.assertTrue(during, "nothing said how much had downloaded")
+        self.assertEqual(during[-1], (len(big), len(big)), "the last word wasn't the whole download")
+        self.assertLess(len(during), 10, "written for every piece that arrived")
+        first_installing = next(w for w in written if w.get("status") == "installing")
+        self.assertEqual((first_installing["got"], first_installing["size"]), (0, 0))
 
     def test_address_in_the_reply_is_ignored(self):
         """Only GitHub's own hosts are asked, at addresses built from the repository and the

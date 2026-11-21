@@ -270,6 +270,8 @@ ShellRoot {
         // "system": n}): it notifies as it would (SoftwareUpdates)
         function softwareDaily(json: string): void { SoftwareUpdates.found(JSON.parse(json)); }
         function softwareDailyReset(): void { SoftwareUpdates.known = ({}); }
+        // Settings → Updates as the updater would leave it (update.json): a new version, its download, a failure
+        function updatesPretend(json: string): void { Updates.state = JSON.parse(json); }
         // Slate Software: a screenshot on the app's page clicked (it shows large, in Quick Look)
         function softwareShot(at: int): void { root.softwareWindow().showShots(at); }
         // Slate Software's Remove on an app's page (it asks first)

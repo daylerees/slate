@@ -172,10 +172,16 @@ def fetch_latest():
         return json.load(r)
 
 
-def download(url, dest, limit, timeout=120):
-    """Download url to dest (at most limit bytes), returning its SHA-256."""
+def download(url, dest, limit, timeout=120, progress=None):
+    """Download url to dest (at most limit bytes), returning its SHA-256. progress, if given,
+    is called with (bytes so far, the whole size or 0 when the server doesn't say) as it goes."""
     h, got = hashlib.sha256(), 0
     with open_url(url, timeout) as r, open(dest, "wb") as out:
+        try:
+            size = int((getattr(r, "headers", None) or {}).get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            size = 0
+        size = size if 0 < size <= limit else 0
         while True:
             chunk = r.read(1 << 16)
             if not chunk:
@@ -185,6 +191,8 @@ def download(url, dest, limit, timeout=120):
                 raise RuntimeError("the download was much bigger than expected")
             h.update(chunk)
             out.write(chunk)
+            if progress:
+                progress(got, size)
     return h.hexdigest()
 
 
@@ -209,7 +217,7 @@ def newer_than_installed(tag):
         raise Refused("%s isn't newer than the Slate you have (%s), so there's nothing to install." % (tag, have))
 
 
-def fetch_release(tag, folder):
+def fetch_release(tag, folder, progress=None):
     """Download a release's archive into folder and check it against the SHA-256 published
     with it. Returns (the archive's path, its SHA-256); raises Refused, with nothing unpacked,
     when there's no checksum to check against or the download doesn't match it."""
@@ -230,7 +238,7 @@ def fetch_release(tag, folder):
         raise Refused("Slate couldn't check this download, so it wasn't installed: the checksum published with %s "
                       "couldn't be read. Your Slate is just as it was, and you can try again later." % tag)
     archive = os.path.join(folder, name)
-    got = download("%s/%s/%s" % (DOWNLOADS, tag, name), archive, MAX_BYTES)
+    got = download("%s/%s/%s" % (DOWNLOADS, tag, name), archive, MAX_BYTES, progress=progress)
     if got != want:
         os.remove(archive)
         raise Refused("The download didn't match the checksum published with %s, so Slate didn't install it. "
@@ -318,7 +326,7 @@ def install():
     if how == "shared":
         install_for_everyone(st)
         return
-    st.update(status="downloading", error="", log=LOG)
+    st.update(status="downloading", error="", log=LOG, got=0, size=0)
     save(st)
     tmp = tempfile.mkdtemp(prefix="slate-update-")
     try:
@@ -330,14 +338,14 @@ def install():
         newer_than_installed(tag)
         st.update(latest=tag, notes=rel.get("body") or "", url=rel.get("html_url", ""))
         save(st)
-        archive, digest = fetch_release(tag, tmp)
+        archive, digest = fetch_release(tag, tmp, progress=lambda got, size: show_progress(st, got, size))
         src = os.path.join(tmp, "src")
         with tarfile.open(archive) as t:
             t.extractall(src, filter="data")
         root = os.path.join(src, os.listdir(src)[0])
         with open(os.path.join(root, "shell", "VERSION"), "w") as f:
             f.write(tag + "\n")
-        st["status"] = "installing"
+        st.update(status="installing", got=0, size=0)
         save(st)
         with open(LOG, "w") as log:
             log.write("%s matched the checksum published with %s (sha256 %s)\n\n" % (os.path.basename(archive), tag, digest))
@@ -376,6 +384,20 @@ def install():
                   % (getattr(e, "reason", None) or e))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    save(st)
+
+
+_last_shown = [0.0]
+
+
+def show_progress(st, got, size, every=0.25):
+    """How much of the download has come, for Settings → Updates: written a few times a second
+    at most (and when it's all there), not for every piece that arrives."""
+    now = time.monotonic()
+    if not (size and got >= size) and now - _last_shown[0] < every:
+        return
+    _last_shown[0] = now
+    st.update(got=got, size=size)
     save(st)
 
 

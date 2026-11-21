@@ -388,3 +388,57 @@ class TabBetweenBoxes(LiveCase):
         self.focus_is("locationSearch", "Tab to the page's own box")
         self.ipc("test", "settingsTab", "false")
         self.focus_is("pageFind", "Shift+Tab back to the search box")
+
+
+class UpdatesPage(LiveCase):
+    """Settings → Updates: where it says there's a new version is where its Update now button
+    is, with what's new right under it; while it updates, that row says which step it's on and
+    how much has downloaded. (They were far apart: the notice at the top, the button below the
+    notes and the apps' updates. Asked for, 2026-11-21.)"""
+    NEW = {"latest": "v9.9.9", "newer": True, "status": "idle", "how": "own", "notes": "- Something new",
+           "url": "https://github.com/daylerees/slate/releases/tag/v9.9.9", "published": "2026-11-20T10:00:00Z",
+           "checked": 1795300000}
+
+    def pretend(self, **st):
+        self.ipc("test", "updatesPretend", json.dumps(dict(self.NEW, **st)))
+
+    def page(self, want, what):
+        return self.wait(lambda st: st["settings"]["page"] is not None and want(st["settings"]["page"]), what)["settings"]["page"]
+
+    def setUp(self):
+        super().setUp()
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.addCleanup(lambda: self.ipc("test", "updatesPretend", "{}"))
+        self.ipc("settings", "page", "updates")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "updates", "Settings → Updates")
+
+    def test_the_button_is_where_it_says_so(self):
+        self.pretend()
+        p = self.page(lambda p: p["update"] and p["notes"], "the new version offered, with its notes")
+        self.assertEqual(p["label"], "Slate v9.9.9 is available")
+        self.assertFalse(p["check"], "Check now beside Update now")
+        self.assertTrue(p["rowY"] <= p["buttonY"] < p["rowY"] + p["rowH"],
+                        f"Update now isn't on the row that says there's a new version: {p}")
+        self.assertGreater(p["notesY"], p["rowY"], "what's new isn't under it")
+        self.assertLess(p["notesY"] - (p["rowY"] + p["rowH"]), 200, f"what's new is far below it: {p}")
+
+    def test_says_how_the_update_is_going(self):
+        self.pretend(status="downloading", got=3_000_000, size=12_000_000)
+        p = self.page(lambda p: p["meter"] >= 0, "the download's progress")
+        self.assertEqual(p["label"], "Updating to v9.9.9…")
+        self.assertIn("Step 1 of 2: downloading, 3.0 MB of 12.0 MB", p["detail"])
+        self.assertAlmostEqual(p["meter"], 0.25, places=2)
+        self.assertFalse(p["update"] or p["check"], "a button to press while it's updating")
+        self.pretend(status="installing", got=0, size=0)
+        p = self.page(lambda p: "Step 2 of 2" in p["detail"], "the installing step")
+        self.assertEqual(p["meter"], -1, "the download's bar stayed")
+        self.pretend(status="failed", error="Slate couldn't download the update (offline). Your Slate is just as it was.")
+        p = self.page(lambda p: p["update"], "Try again")
+        self.assertEqual(p["label"], "The update didn't finish")
+        self.assertIn("couldn't download", p["detail"])
+
+    def test_up_to_date(self):
+        self.pretend(newer=False, latest="v0.1.0")
+        p = self.page(lambda p: p["check"], "Check now")
+        self.assertFalse(p["update"] or p["notes"], "an update offered with none to have")
+        self.assertIn("you're up to date", p["detail"])
