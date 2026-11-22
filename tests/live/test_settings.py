@@ -414,7 +414,9 @@ class UpdatesPage(LiveCase):
 
     def test_the_button_is_where_it_says_so(self):
         self.pretend()
-        p = self.page(lambda p: p["update"] and p["notes"], "the new version offered, with its notes")
+        self.page(lambda p: p["update"] and p["notes"], "the new version offered, with its notes")
+        # (laid out: the notes are placed a frame or more after they're shown, later on a busy computer)
+        p = self.steady(lambda: self.s.state()["settings"]["page"], floor=0.4)
         self.assertEqual(p["label"], "Slate v9.9.9 is available")
         self.assertFalse(p["check"], "Check now beside Update now")
         self.assertTrue(p["rowY"] <= p["buttonY"] < p["rowY"] + p["rowH"],
