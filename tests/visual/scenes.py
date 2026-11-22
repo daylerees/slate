@@ -433,6 +433,9 @@ SCENES["assistant-working"] = {
     "do": [("test", "nova", _json.dumps({"agents": _NOVA_AGENTS, "asked": "make the dock smaller", "working": True,
             "actions": [{"id": 1, "text": "Set Icon size to 40", "state": "done"}]})), ("assistant", "open")],
     "wait": lambda st: st["assistant"]["open"] and st["assistant"]["window"]["mapped"] and st["assistant"]["working"] and st["assistant"]["stopShown"],
+    # (the typing dots: with animations off they take turns to light up, one every 380 ms, so the
+    # picture caught whichever was lit and matched one time in four)
+    "mask": [(462, 338, 46, 24)],
     "undo": [("assistant", "close"), ("test", "nova", "{}")],
 }
 SCENES["assistant-long"] = {
