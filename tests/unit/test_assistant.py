@@ -290,9 +290,11 @@ class Claude(Base):
 
     def test_stop(self):
         """Stopping the runner stops the agent too (its whole process group)."""
-        p = subprocess.Popen([sys.executable, SCRIPT, "run", "--agent", "claude", "--run", "r1"], stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE, text=True, env=dict(self.s.env, STUB_CLAUDE="hang"))
-        self.addCleanup(p.kill)
+        p = self.spawn([sys.executable, SCRIPT, "run", "--agent", "claude", "--run", "r1"], stdin=subprocess.PIPE,
+                       stdout=subprocess.PIPE, text=True, env=dict(self.s.env, STUB_CLAUDE="hang"))
+        # (the runner gives the agent a process group of its own: if the test fails before
+        # stopping it, the stand-in agent is stopped by name)
+        self.addCleanup(run, ["pkill", "-KILL", "-f", os.path.join(self.s.dir, "claude")])
         p.stdin.write("is glass on?")
         p.stdin.close()
         for _ in range(100):

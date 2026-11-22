@@ -32,9 +32,8 @@ class TrayWatcher(Case):
             self.skipTest("PyGObject isn't installed")
         need("dbus-daemon")
         # A private session bus for this test
-        self.bus_proc = subprocess.Popen(["dbus-daemon", "--session", "--nofork", "--print-address"],
-                                         stdout=subprocess.PIPE, text=True, env=self.h.env)
-        self.addCleanup(self.bus_proc.kill)
+        self.bus_proc = self.spawn(["dbus-daemon", "--session", "--nofork", "--print-address"],
+                                   stdout=subprocess.PIPE, text=True, env=self.h.env)
         self.address = self.bus_proc.stdout.readline().strip()
         self.env = dict(self.h.env, DBUS_SESSION_BUS_ADDRESS=self.address)
         self.procs = []

@@ -52,9 +52,8 @@ class FilePreviewer(Case):
             # (the bus refusing Nautilus's name, for the test that needs a name it won't give)
             deny = '\n    <deny own="org.gnome.NautilusPreviewer"/>' if self._testMethodName == "test_a_name_the_bus_wont_give_isnt_said_ready" else ""
             f.write(CONFIG % (self.h.runtime, self.services, deny))
-        self.daemon = subprocess.Popen(["dbus-daemon", "--config-file=" + conf, "--print-address", "--nofork"],
-                                       stdout=subprocess.PIPE, text=True)
-        self.addCleanup(self.daemon.kill)
+        self.daemon = self.spawn(["dbus-daemon", "--config-file=" + conf, "--print-address", "--nofork"],
+                                 stdout=subprocess.PIPE, text=True)
         self.address = self.daemon.stdout.readline().strip()
         self.bus = Gio.DBusConnection.new_for_address_sync(
             self.address, Gio.DBusConnectionFlags.AUTHENTICATION_CLIENT | Gio.DBusConnectionFlags.MESSAGE_BUS_CONNECTION, None, None)

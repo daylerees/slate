@@ -353,9 +353,7 @@ class Remove(BuildCase):
         with open(script, "w") as f:
             f.write("import fcntl, os, sys, time\nf = open(sys.argv[1], 'w')\nfcntl.flock(f, fcntl.LOCK_EX)\n"
                     "f.write(str(os.getpid()) + '\\n'); f.flush()\nprint('held', flush=True)\ntime.sleep(60)\n")
-        p = subprocess.Popen([sys.executable, script, lock], stdout=subprocess.PIPE, text=True)
-        self.addCleanup(p.wait)
-        self.addCleanup(p.kill)
+        p = self.spawn([sys.executable, script, lock], stdout=subprocess.PIPE, text=True)
         self.assertEqual(p.stdout.readline().strip(), "held")
         return p
 

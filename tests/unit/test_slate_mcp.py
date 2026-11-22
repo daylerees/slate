@@ -822,9 +822,8 @@ class Gate(Base):
         """Nobody answers: the question is taken back and nothing happens."""
         self.state["answer"] = ""
         self.put_state()
-        p = subprocess.Popen([sys.executable, SCRIPT], env=dict(self.s.env, SLATE_MCP_ASK_TIMEOUT="0.8"),
-                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-        self.addCleanup(p.kill)
+        p = self.spawn([sys.executable, SCRIPT], env=dict(self.s.env, SLATE_MCP_ASK_TIMEOUT="0.8"),
+                       stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         p.stdin.write(json.dumps(call("window_close", {"address": "0xa1"})) + "\n")
         p.stdin.flush()
         reply = json.loads(p.stdout.readline())
@@ -850,8 +849,7 @@ class Gate(Base):
         """The agent gives up on the request (notifications/cancelled): the question is taken back at once."""
         self.state["answer"] = ""
         self.put_state()
-        p = subprocess.Popen([sys.executable, SCRIPT], env=self.s.env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-        self.addCleanup(p.kill)
+        p = self.spawn([sys.executable, SCRIPT], env=self.s.env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         p.stdin.write(json.dumps(call("window_close", {"address": "0xa1"}, mid=7)) + "\n")
         p.stdin.flush()
         for _ in range(100):

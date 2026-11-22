@@ -47,9 +47,8 @@ class OneChooser(Case):
             return len(f.read().split())
 
     def test_second_press_does_not_open_another(self):
-        first = subprocess.Popen(["/bin/sh", SCRIPT, "region"], env=dict(self.env, STUB_SLURP_SECONDS="2"),
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        self.addCleanup(first.kill)
+        first = self.spawn(["/bin/sh", SCRIPT, "region"], env=dict(self.env, STUB_SLURP_SECONDS="2"),
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         for _ in range(40):
             if self.choosers() == 1:
                 break
@@ -73,9 +72,8 @@ class OneChooser(Case):
 
     def test_whole_screen_needs_no_chooser(self):
         """Super+Print takes the screen at once, even while a chooser is open."""
-        first = subprocess.Popen(["/bin/sh", SCRIPT, "region"], env=dict(self.env, STUB_SLURP_SECONDS="2"),
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        self.addCleanup(first.kill)
+        first = self.spawn(["/bin/sh", SCRIPT, "region"], env=dict(self.env, STUB_SLURP_SECONDS="2"),
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(0.5)
         code, out = run(["/bin/sh", SCRIPT, "screen"], env=self.env, timeout=10)
         self.assertEqual(code, 0, out)

@@ -51,8 +51,7 @@ class CameraWatch(Case):
     def test_on_and_off(self):
         p = self.watcher()
         self.assertEqual(self.line(p), {"on": False, "apps": []})
-        app = subprocess.Popen([sys.executable, self.hold, self.cam, "2"])
-        self.addCleanup(app.kill)
+        app = self.spawn([sys.executable, self.hold, self.cam, "2"])
         got = self.line(p)
         self.assertTrue(got["on"])
         self.assertEqual(got["apps"], ["Python3"] if "python3" in os.path.basename(sys.executable) else got["apps"])
@@ -78,8 +77,7 @@ class CameraWatch(Case):
         cam = os.path.join(self.dev, "video2")
         open(cam, "w").close()
         time.sleep(0.6)
-        app = subprocess.Popen([sys.executable, self.hold, cam, "1.5"])
-        self.addCleanup(app.kill)
+        app = self.spawn([sys.executable, self.hold, cam, "1.5"])
         self.assertTrue(self.line(p)["on"])
 
     def test_ends_with_slate(self):

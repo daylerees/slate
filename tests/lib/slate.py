@@ -1,6 +1,7 @@
 """Shared helpers for Slate's tests: where things are, running commands, scratch homes."""
 import os
 import shutil
+import signal
 import subprocess
 import tempfile
 import unittest
@@ -179,6 +180,18 @@ class ScratchHome:
         self.cleanup()
 
 
+def stop_group(p):
+    """Kill a process started in a group of its own (Case.spawn), and all it started."""
+    try:
+        os.killpg(p.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+    try:
+        p.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        pass
+
+
 class Case(unittest.TestCase):
     """Base for Slate's tests: a scratch home per test (self.h), cleaned up after."""
     maxDiff = 4000
@@ -189,6 +202,14 @@ class Case(unittest.TestCase):
         if self.scratch:
             self.h = ScratchHome()
             self.addCleanup(self.h.cleanup)
+
+    def spawn(self, cmd, **kw):
+        """subprocess.Popen(cmd, **kw), in a process group of its own, stopped with everything it
+        started when the test ends, passed or not. A cleanup that killed only the process left
+        what it had started running (a stand-in recorder kept going on the desktop)."""
+        p = subprocess.Popen(cmd, start_new_session=True, **kw)
+        self.addCleanup(stop_group, p)
+        return p
 
     def log(self, name, text):
         """Save longer output under tests/out/logs; returns the path, for a failure message."""

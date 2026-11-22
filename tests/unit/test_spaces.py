@@ -65,9 +65,7 @@ class SpacesBase(Case):
         """Stub hyprctl with the fixture replies (the notes window gets a real process's pid,
         for its command line)."""
         if clients is None:
-            notes = subprocess.Popen(["sleep", "3600"])
-            self.addCleanup(notes.wait)
-            self.addCleanup(notes.kill)
+            notes = self.spawn(["sleep", "3600"])
             clients = json.loads(fixture_text("spaces", "clients.json"))
             for c in clients:
                 if c["pid"] == 0:

@@ -141,9 +141,8 @@ class Webcam(Case):
     def test_users(self):
         """An app with the camera open is listed; nothing else is."""
         self.assertEqual(json.loads(self.webcam("users")), [])
-        app = subprocess.Popen([sys.executable, "-c", "import time; f = open(%r); print('open', flush=True); time.sleep(30)"
-                                % (self.dev + "/video0")], stdout=subprocess.PIPE, text=True)
-        self.addCleanup(app.kill)
+        app = self.spawn([sys.executable, "-c", "import time; f = open(%r); print('open', flush=True); time.sleep(30)"
+                          % (self.dev + "/video0")], stdout=subprocess.PIPE, text=True)
         app.stdout.readline()
         users = json.loads(self.webcam("users"))
         self.assertEqual([(u["pid"], u["device"]) for u in users], [(app.pid, self.dev + "/video0")])
