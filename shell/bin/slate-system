@@ -12,6 +12,9 @@
 #                                   password): Slate Software's system updates
 #   slate-system --install <pkg>…   install these packages from the distro's repositories (asks
 #                                   for your password); Settings → App Theming's Install buttons
+#   slate-system --ollama <pkg>     install Ollama (the distro's own package, one of a few names)
+#                                   and turn on its service (asks for your password);
+#                                   Settings → Assistant's Set up Ollama (scripts/ollama-setup.py)
 #   slate-system --root <helper> …  run one of Slate's root helpers (asks for your password):
 #                                   slate-session-install, slate-greeter-install,
 #                                   slate-private-camera, slate-update-install, slate-firewall or
@@ -141,6 +144,18 @@ install() {
     as_root slate-system-root "$@"
 }
 
+# ---- ollama: Ollama and its service, for Nova with a model on this computer ------------------
+# (the root half takes only its own list of names, per family, and checks again)
+ollama() {
+    [ "$#" -eq 1 ] && [[ "$1" =~ ^ollama(-cuda|-vulkan|-rocm)?$ ]] || { echo "slate-system: --ollama takes one of Ollama's packages" >&2; return 1; }
+    case "$FAMILY" in
+        arch|fedora|opensuse) ;;
+        nixos) echo "slate-system: on NixOS, add services.ollama to your configuration" >&2; return 1 ;;
+        *) echo "slate-system: this system has no Ollama package" >&2; return 1 ;;
+    esac
+    as_root slate-system-root --ollama "$1"
+}
+
 # ---- upgrade: the whole system's updates, with an administrator's password (Slate Software) ---
 upgrade() {
     case "$FAMILY" in
@@ -155,6 +170,7 @@ case "${1:-}" in
     --check) check; exit 0 ;;
     --upgrade) upgrade; exit $? ;;
     --install) shift; install "$@"; exit $? ;;
+    --ollama) shift; ollama "$@"; exit $? ;;
     --fix) [ "${2:-}" = --packages ] && only=1 || only=0; fix "$only"; exit $? ;;
     --root) shift; root "$@"; exit $? ;;
     --prompt) ;;

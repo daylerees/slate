@@ -320,6 +320,19 @@ SCENES["settings-updates-downloading"] = dict(SCENES["settings-updates-available
                     and (st["settings"]["page"] or {}).get("meter", -1) >= 0,
     mask=[(1096, 466, 26, 26)])   # (the busy icon, turning: caught at any angle)
 
+# Settings → Assistant setting up Ollama: its model downloading, with progress on the agent's row
+# (the setting up's state file as scripts/ollama-setup.py writes it)
+_OLLAMA_STATE = json.dumps({"step": "downloading", "model": "qwen3:4b", "got": 1500000000, "size": 2500000000, "problem": ""})
+SCENES["settings-assistant-ollama-setup"] = {
+    "settings": {"assistantAgent": "ollama"},
+    "do": [("!sh", "-c", 'mkdir -p "$XDG_STATE_HOME/slate" && printf %s "$1" > "$XDG_STATE_HOME/slate/ollama-setup.json"', "sh", _OLLAMA_STATE),
+           ("settings", "page", "assistant")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "assistant"
+                       and (st["settings"]["page"] or {}).get("step") == "downloading",
+    "settle": 1.2, "mask": [(1096, 691, 26, 26)],      # (the busy icon, turning: caught at any angle)
+    "undo": [("settings", "close"), ("!sh", "-c", 'rm -f "$XDG_STATE_HOME/slate/ollama-setup.json"')],
+}
+
 # A setting greyed out because another one is off: its "Needs … to be off" line, with the
 # arrow that goes there (scrolled to it; settled once its highlight has faded)
 SCENES["settings-needs"] = {

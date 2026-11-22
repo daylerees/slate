@@ -534,6 +534,31 @@ class SystemRoot(HelpersCase):
                 self.assertNotEqual(code, 0, out)
         self.assertEqual(self.s.calls("pacman"), [])
 
+    def test_ollama_and_its_service_and_nothing_else(self):
+        """--ollama (Settings → Assistant's Set up Ollama): the family's own package, by one of a
+        few names, then its service turned on; any other name, family or extra is refused."""
+        self.s.add("systemctl")
+        self.s.add("zypper")
+        for release, pkg, tool, expected in (("ID=arch\n", "ollama-cuda", "pacman", ["-S", "--needed", "--noconfirm", "ollama-cuda"]),
+                                             ("ID=fedora\n", "ollama", "dnf", ["install", "-y", "ollama"]),
+                                             ("ID=opensuse-tumbleweed\n", "ollama-vulkan", "zypper", ["--non-interactive", "install", "ollama-vulkan"])):
+            with self.subTest(pkg=pkg, tool=tool):
+                self.on(release)
+                for t in (tool, "systemctl"):
+                    os.remove(self.s._log(t)) if os.path.exists(self.s._log(t)) else None
+                code, out = run([self.root, "--ollama", pkg], env=self.s.env, timeout=10)
+                self.assertEqual(code, 0, out)
+                self.assertEqual(self.s.calls(tool), [expected])
+                self.assertEqual(self.s.calls("systemctl"), [["enable", "--now", "ollama.service"]])
+        os.remove(self.s._log("systemctl"))
+        for release, args in (("ID=fedora\n", ["ollama-cuda"]), ("ID=debian\n", ["ollama"]), ("ID=arch\n", ["kitty"]),
+                              ("ID=arch\n", ["ollama", "kitty"]), ("ID=arch\n", ["--session"]), ("ID=arch\n", [])):
+            with self.subTest(release=release, args=args):
+                self.on(release)
+                code, out = run([self.root, "--ollama", *args], env=self.s.env, timeout=10)
+                self.assertNotEqual(code, 0, out)
+        self.assertEqual(self.s.calls("systemctl"), [])
+
     def test_repositories_come_from_the_root_owned_list(self):
         """Fedora's COPRs are read from root's own copy of the list: one added to your folder's
         list afterwards isn't switched on (it would be someone else's packages, as root)."""

@@ -280,6 +280,9 @@ scripts/assistant.py          hands a prompt to the person's own agent CLI (`det
                               Ollama, a command of your own); scripts/ollama-agent.py is Slate's
                               own agent loop for a model on this computer (Ollama's HTTP API,
                               Slate's server spoken to as an MCP client);
+                              scripts/ollama-setup.py is Settings → Assistant's Set up for it (the
+                              distro's package by graphics card, its service, a model sized for the
+                              computer, running on its own with its progress in a state file);
                               scripts/slate_common.py is what the scripts that run as you share: a
                               private file write, the prompt file's blocks and a capped, checksummed
                               download (root helpers never import it, they keep their own);
@@ -386,8 +389,9 @@ bin/slate-unlock              which of a face, a fingerprint and a security key 
                               and sets its camera; runs only from /usr/local/libexec/slate, by
                               slate-system --root
 bin/slate-system-root         the half of slate-system that runs as root: installs packages and the
-                              login session; runs only from /usr/local/libexec/slate, reading that
-                              folder's own copy of the package lists
+                              login session, and Ollama (only its own names, then ollama.service);
+                              runs only from /usr/local/libexec/slate, reading that folder's own
+                              copy of the package lists
 bin/slate-helpers-install     puts those copies there: slate-system-root (the half of slate-system
                               that installs packages), slate-session-install,
                               slate-greeter-install, slate-private-camera, slate-update-install,
@@ -799,7 +803,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `cups` (+ `system-config-printer`, optional) | Settings → Printers: printers, adding driverless (IPP Everywhere) ones, test pages (`scripts/printers.py`); the printer settings app for ones that need a driver, else CUPS's web page |
 | `sane` (Debian `sane-utils`, Fedora/openSUSE `sane-backends`), `sane-airscan`, `simple-scan` | Settings → Printers: finding scanners (network ones through airscan) and opening an app to scan with (optional) |
 | `papirus-icon-theme` | The default icon theme (Papirus-Dark); its colored folders back Settings → Icons → Folder color |
-| `ollama` (Fedora, openSUSE, Void, NixOS; Debian and Ubuntu: Ollama's own installer; Gentoo: GURU `sci-ml/ollama`) | Nova with a model on this computer (Settings → Assistant → Ollama), through its HTTP API on 127.0.0.1:11434 (`scripts/ollama-agent.py`, standard library only). Never installed by Slate (a large install): it's yours to add, and Settings says when it isn't there, isn't running or has no model yet. The agent CLIs Nova can use (Claude Code, Codex, OpenCode, Goose, Antigravity) are the person's own, found at run time and never installed by Slate |
+| `ollama` (Arch: `ollama`, `ollama-cuda` or `ollama-vulkan`; Fedora; openSUSE: `ollama` or `ollama-vulkan`; NixOS: `services.ollama`; Debian, Ubuntu and Void: Ollama's own installer; Gentoo: GURU `sci-ml/ollama`) | Nova with a model on this computer (Settings → Assistant → Ollama), through its HTTP API on 127.0.0.1:11434 (`scripts/ollama-agent.py`, standard library only). Never installed with Slate (a large install). On Arch, Fedora and openSUSE, Settings → Assistant's Set up installs it when asked (`scripts/ollama-setup.py`: the package for the graphics card, then `slate-system --ollama`, which installs only those names and turns on `ollama.service`), then downloads a model sized for the computer through Ollama's API. Elsewhere Settings links to Ollama's site, and says when it isn't running or has no model yet. The agent CLIs Nova can use (Claude Code, Codex, OpenCode, Goose, Antigravity) are the person's own, found at run time and never installed by Slate |
 
 Bundled (no package): Geist and Geist Mono (`fonts/`, SIL OFL), the Tabler icon font (`fonts/`, MIT) and emoji data (`data/emoji.json`).
 

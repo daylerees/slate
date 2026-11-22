@@ -64,6 +64,61 @@ Column {
         Quickshell.execDetached(["hyprctl", "dispatch",
             `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${String(cmd).replace(/[^\w. -]/g, "")}") end`]);
     }
+    // ---- Set up Ollama (scripts/ollama-setup.py): its package and service, with an
+    // administrator's password (slate-system --ollama), then a model that can use Slate's tools,
+    // chosen for this computer. Asked first, with the download's size. The setting up runs on
+    // its own (closing Settings doesn't stop a download), saying how it's going in a file
+    property var ollamaPlan: null           // ollama-setup.py plan, looked at once Ollama's chosen
+    readonly property bool ollamaChosen: !!chosen && chosen.local
+    onOllamaChosenChanged: if (ollamaChosen) lookAtOllama()
+    function lookAtOllama() { if (!planProc.running) planProc.running = true; }
+    function gb(bytes) { return (bytes / 1e9).toFixed(1) + " GB"; }
+    Process {
+        id: planProc
+        command: ["python3", Quickshell.shellPath("scripts/ollama-setup.py"), "plan"]
+        stdout: StdioCollector { onStreamFinished: { try { assistantPane.ollamaPlan = JSON.parse(text); } catch (e) {} } }
+    }
+    // {step: installing|starting|downloading|done|failed, model, got, size, problem}
+    property var ollamaSetup: ({})
+    FileView {
+        path: Config.stateHome + "/slate/ollama-setup.json"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: { try { assistantPane.ollamaSetup = JSON.parse(text()); assistantPane.nowS = Date.now() / 1000; } catch (e) {} }
+    }
+    // A step still going, unless it's gone quiet for long (cut short by a restart): the password
+    // prompt can wait a while, the others write every moment
+    property real nowS: Date.now() / 1000
+    Timer { interval: 30000; repeat: true; running: assistantPane.ollamaStepWritten !== ""; onTriggered: assistantPane.nowS = Date.now() / 1000 }
+    readonly property string ollamaStepWritten: ["installing", "starting", "downloading"].indexOf(ollamaSetup.step) >= 0 ? ollamaSetup.step : ""
+    readonly property string ollamaStep: ollamaStepWritten !== "" && (!ollamaSetup.at || nowS - ollamaSetup.at < (ollamaStepWritten === "installing" ? 900 : 300))
+        ? ollamaStepWritten : ""
+    readonly property string ollamaProblem: ollamaSetup.step === "failed" ? (ollamaSetup.problem || "") : ""
+    // (finished: what's there now, and the model it chose)
+    onOllamaStepChanged: if (ollamaStep === "" && ollamaChosen) { lookAtOllama(); detectProc.running = false; detectProc.running = true; }
+    // (for the tests: the agent's row, and Set up)
+    readonly property var testState: ({ agent: agentRow.visible ? agentRow.detail : "", setUp: setUpButton.visible,
+                                        plan: ollamaPlan, step: ollamaStep, problem: ollamaProblem })
+    function askOllamaSetup() {
+        const p = ollamaPlan;
+        if (!p) return;
+        const install = !p.running;
+        win.ask = {
+            title: "Set up Ollama?",
+            body: (install ? "Slate installs Ollama from your system's packages (" + p.package + ") and turns it on, which asks for an administrator's password. Then it downloads "
+                           : "Slate downloads ")
+                + p.model + " (about " + gb(p.modelSize) + "), a model that suits this computer and can use Slate's tools. "
+                + "It runs on this computer, and nothing you ask Nova leaves it. You can remove it at any time with ollama rm " + p.model + ".",
+            button: "Set up", code: 0xEA96,
+            run: () => {
+                assistantPane.ollamaSetup = { step: install ? "installing" : "downloading", model: p.model, got: 0, size: 0, problem: "" };
+                Quickshell.execDetached(["setsid", "-f", "python3", Quickshell.shellPath("scripts/ollama-setup.py"), "setup",
+                                         install ? p.package : "-", p.model]);
+            }
+        };
+    }
+
     // What Slate adds to a prompt (scripts/assistant.py briefing), read when asked for
     property bool showAdds: false
     property string adds: ""
@@ -132,26 +187,80 @@ Column {
         // An agent Slate knows: whether it's ready, and its model
         Separator { visible: !!assistantPane.chosen }
         SettingRow {
+            id: agentRow
             visible: !!assistantPane.chosen
             readonly property var a: assistantPane.chosen
+            readonly property bool ready: !!a && a.installed && a.signedIn
             // (a model on this computer: Ollama running, with a model, rather than signed in)
             readonly property bool idle: !!a && a.local && a.installed && !a.running
+            // Ollama, and Slate can set it up here: the distro has a package, or it's running
+            // and only needs a model
+            readonly property var plan: assistantPane.ollamaPlan
+            readonly property bool canSetUp: !!a && a.local && !ready && !!plan && (plan.package !== "" || plan.running)
+            readonly property string step: assistantPane.ollamaStep
+            readonly property string stepModel: assistantPane.ollamaSetup.model || (plan ? plan.model : "")
             label: a ? a.label : ""
-            detail: !a ? "" : a.installed && a.signedIn ? "Ready"
+            detail: !a ? ""
+                : step === "installing" ? "Installing Ollama… Your password lets it in"
+                : step === "starting" ? "Turning Ollama on…"
+                : step === "downloading" ? "Downloading " + stepModel
+                    + (assistantPane.ollamaSetup.size > 0 ? ": " + assistantPane.gb(assistantPane.ollamaSetup.got) + " of " + assistantPane.gb(assistantPane.ollamaSetup.size) : "…")
+                    + ". You can close Settings: it carries on"
+                : ready ? "Ready"
+                : assistantPane.ollamaProblem !== "" && a.local ? assistantPane.ollamaProblem
+                : canSetUp ? (plan.running ? "No models yet. Set up downloads " + plan.model + " (about " + assistantPane.gb(plan.modelSize) + "), which suits this computer"
+                                           : "Not set up yet. Set up installs Ollama from your system's packages, then downloads " + plan.model
+                                             + " (about " + assistantPane.gb(plan.modelSize) + "), which suits this computer")
+                : a.local && plan && plan.package === "" && !a.installed ? "Your system doesn't have a package for Ollama. Its own site shows how to install it"
                 : !a.installed ? "Not installed yet"
                 : idle ? "Ollama isn't running. Start it (ollama serve in a terminal, or its service), then check again"
                 : a.local ? "No models yet. Open a terminal and run " + a.signIn + " to get one, then check again"
                 : "Not signed in. Open a terminal and run " + a.signIn + " once"
-            Button {
-                visible: !!parent.a && !(parent.a.installed && parent.a.signedIn) && !parent.idle
-                primary: true
-                label: parent.a && !parent.a.installed ? "Get it" : parent.a && parent.a.local ? "Get a model" : "Sign in"
-                onClicked: { if (!parent.a.installed) Qt.openUrlExternally(parent.a.url); else assistantPane.signIn(parent.a.signIn); }
-            }
-            Button {
-                visible: !!parent.a && !(parent.a.installed && parent.a.signedIn)
-                label: "Check again"
-                onClicked: { detectProc.running = false; detectProc.running = true; }
+            below: [
+                Meter {
+                    id: ollamaMeter
+                    visible: agentRow.step === "downloading" && assistantPane.ollamaSetup.size > 0
+                    width: Math.min(320, agentRow.width - 32)
+                    value: assistantPane.ollamaSetup.size > 0 ? Math.min(1, assistantPane.ollamaSetup.got / assistantPane.ollamaSetup.size) : 0
+                    colour: win.accent
+                    trackColour: win.control
+                    minFill: 0
+                    slideMs: 200
+                }
+            ]
+            Row {
+                spacing: 8
+                // (while it's being set up: turning, as Bluetooth's search does)
+                Text {
+                    visible: agentRow.step !== ""
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: win.glyph(0xF226)
+                    color: win.accent
+                    font.family: win.bar.iconFont; font.pixelSize: 16
+                    RotationAnimation on rotation { running: parent.visible; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                }
+                Button {
+                    id: setUpButton
+                    visible: agentRow.canSetUp && agentRow.step === ""
+                    primary: true
+                    icon: 0xEA96
+                    label: assistantPane.ollamaProblem !== "" ? "Try again" : "Set up"
+                    onClicked: assistantPane.askOllamaSetup()
+                }
+                Button {
+                    visible: !!agentRow.a && !agentRow.ready && !agentRow.idle && !agentRow.canSetUp && agentRow.step === ""
+                    primary: true
+                    label: agentRow.a && !agentRow.a.installed ? "Get it" : agentRow.a && agentRow.a.local ? "Get a model" : "Sign in"
+                    onClicked: {
+                        if (!agentRow.a.installed) Qt.openUrlExternally(agentRow.a.local && agentRow.plan && agentRow.plan.link ? agentRow.plan.link : agentRow.a.url);
+                        else assistantPane.signIn(agentRow.a.signIn);
+                    }
+                }
+                Button {
+                    visible: !!agentRow.a && !agentRow.ready && agentRow.step === ""
+                    label: "Check again"
+                    onClicked: { detectProc.running = false; detectProc.running = true; if (assistantPane.ollamaChosen) assistantPane.lookAtOllama(); }
+                }
             }
         }
         // A model on this computer (Ollama): one of those it has

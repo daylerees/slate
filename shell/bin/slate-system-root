@@ -4,6 +4,8 @@
 # could have changed: slate-helpers-install puts a root-owned copy in /usr/local/libexec/slate,
 # and slate-system calls that one with pkexec (your password).
 #   slate-system-root [<package>…] [--session[=<Slate folder>]]
+#   slate-system-root --ollama <pkg> Ollama, from the distro's own package (only the names below,
+#                                    for its family), then its service turned on
 #   slate-system-root --upgrade      the distro's full system upgrade (Slate Software's Update):
 #                                    one fixed command per distro, never only some packages (a
 #                                    partial upgrade can break Arch)
@@ -49,6 +51,19 @@ if [ "${1:-}" = --upgrade ]; then
         opensuse) exec zypper --non-interactive update ;;
         *) echo "slate-system: don't know how to update this system" >&2; exit 1 ;;
     esac
+fi
+
+# Ollama for Nova (Settings → Assistant → Set up Ollama): the family's own package, by one of
+# these names only (scripts/ollama-setup.py's PACKAGES), and the service it comes with
+if [ "${1:-}" = --ollama ]; then
+    [ "$#" -eq 2 ] || { echo "slate-system: --ollama takes one package" >&2; exit 1; }
+    case "$FAMILY:$2" in
+        arch:ollama|arch:ollama-cuda|arch:ollama-vulkan) pacman -S --needed --noconfirm "$2" || exit 1 ;;
+        opensuse:ollama|opensuse:ollama-vulkan) zypper --non-interactive install "$2" || exit 1 ;;
+        fedora:ollama) dnf install -y ollama || exit 1 ;;
+        *) echo "slate-system: Slate can't install $2 here" >&2; exit 1 ;;
+    esac
+    exec systemctl enable --now ollama.service
 fi
 
 pkgs=(); session=0; folder=""

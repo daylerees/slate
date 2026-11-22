@@ -75,8 +75,12 @@
           to <code>permissions.allow</code>.</li>
         <li><strong>Ollama (on this computer)</strong> runs a model on your own computer, with Slate running the agent
           itself: the model gets Slate's tools and nothing else, and nothing you ask leaves the computer. No account or
-          keys. Settings says if Ollama isn't running or has no model yet (<code>ollama pull qwen3</code> gets a small
-          one that's good with tools). Small models can be unreliable with tools, and on a computer without a strong
+          keys. Not set up yet? On Arch, Fedora and openSUSE, <strong>Set up</strong> beside it installs Ollama from your
+          system's packages (the build for your graphics card), turns it on, and downloads a model that suits your
+          computer and is good with tools. It tells you the model and its size first, asks for an administrator's
+          password to install, and shows the download's progress; you can close Settings meanwhile. Elsewhere,
+          <strong>Get it</strong> goes to Ollama's own instructions, and once it's running, <strong>Set up</strong>
+          gets the model. Small models can be unreliable with tools, and on a computer without a strong
           graphics card an answer can take a minute or more.
           <p><strong>Slow on a laptop?</strong> Ollama leaves built-in graphics (Intel, AMD) unused unless you ask it to,
             so the model runs on the processor alone. To use them, give Ollama's service
