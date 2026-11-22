@@ -30,11 +30,16 @@ Item {
     property string noneLabel: ""
     // A search box at the top of the open list, filtering it as you type (long lists)
     property bool searchable: false
+    // Across the whole row, with no name beside it (a picker that is the row: App Rules' Choose an
+    // app); its list opens as wide
+    property bool wide: false
     property alias button: ddButton
     SettingRow {
       id: ddRow
-      label: dropdown.label
-      detail: dropdown.detail
+      // (wide: the button is the row, so no name or description beside it; the dropdown keeps its
+      // label, for the tests and for what search finds)
+      label: dropdown.wide ? "" : dropdown.label
+      detail: dropdown.wide ? "" : dropdown.detail
       settingKey: dropdown.settingKey
       needs: dropdown.needs; needsMet: dropdown.needsMet
       needsPage: dropdown.needsPage; needsLabel: dropdown.needsLabel
@@ -49,7 +54,7 @@ Item {
         // As wide as its choice needs, up to a bit under half the row (long names shorten in the middle)
         readonly property real naturalWidth: ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0) + (ddApp.visible ? ddApp.width + 8 : 0)
             + (ddIcon.visible ? ddIcon.width + 8 : 0)
-        width: Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: Config.corner(8)
+        width: dropdown.wide ? dropdown.width - 32 : Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: Config.corner(8)
         color: "transparent"
         HoverFill { base: win.control; hovered: ddButton.open || ddHover.hovered; radius: ddButton.radius }
         border.width: open ? 1 : 0; border.color: win.accent

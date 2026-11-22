@@ -57,6 +57,31 @@ Column {
         .concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => ({ value: n, label: Config.workspaceLabel(n) })))
     readonly property var screenNames: Quickshell.screens.map(s => s.name)
 
+    GroupLabel { text: "Add a rule" }
+    Group {
+        DropdownSetting {
+            wide: true
+            label: "Choose an app"
+            searchable: true
+            noneLabel: "Choose an app…"
+            value: ""
+            options: rulesPane.choices
+            onPicked: v => {
+                const c = rulesPane.choices.find(o => o.value === v);
+                Config.s.appRules = rulesPane.rules.concat([{ cls: v, entry: c ? c.entry : "", name: c ? c.name : v,
+                                                             workspace: 0, as: "", monitor: "" }]);
+            }
+        }
+    }
+    // (none yet: a gentle word where they'll be)
+    GroupLabel { visible: rulesPane.rules.length === 0; text: "Your rules" }
+    Group {
+        visible: rulesPane.rules.length === 0
+        SettingRow {
+            label: "No rules yet"
+            detail: "Choose an app above, then pick where and how its windows open. Apps with a window open are at the top of the list"
+        }
+    }
     Repeater {
         model: rulesPane.rules
         delegate: Column {
@@ -125,27 +150,5 @@ Column {
         }
     }
 
-    GroupLabel { text: "Add a rule" }
-    Group {
-        SettingRow {
-            visible: rulesPane.rules.length === 0
-            label: "No rules yet"
-            detail: "Pick an app below, then choose where and how its windows open"
-        }
-        Separator { visible: rulesPane.rules.length === 0 }
-        DropdownSetting {
-            label: "Choose an app"
-            detail: "Type to find it. Apps with a window open are at the top"
-            searchable: true
-            noneLabel: "Choose"
-            value: ""
-            options: rulesPane.choices
-            onPicked: v => {
-                const c = rulesPane.choices.find(o => o.value === v);
-                Config.s.appRules = rulesPane.rules.concat([{ cls: v, entry: c ? c.entry : "", name: c ? c.name : v,
-                                                             workspace: 0, as: "", monitor: "" }]);
-            }
-        }
-    }
     Footnote { text: "Rules match an app by its window class. Your own window rules in ~/.config/slate/hypr/ still apply too." }
 }
