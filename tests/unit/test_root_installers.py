@@ -266,7 +266,8 @@ class HelpersCase(RootCase):
     def swapped(self, src, keep_real=False):
         """A script's source, with the scratch system where it named the real one. slate-system
         keeps the real folder's name (what it hands to pkexec is what's being checked)."""
-        src = src.replace("/etc/os-release", self.os_release).replace("/usr/local/bin/slate-session", self.sys + "/slate-session")
+        src = src.replace("/etc/os-release", self.os_release).replace("/usr/local/bin/slate-session", self.sys + "/slate-session") \
+                 .replace("/run/systemd/system", self.sys + "/run-systemd")
         if keep_real:
             return src
         self.assertTrue("/usr/local/libexec" in src)
@@ -539,6 +540,7 @@ class SystemRoot(HelpersCase):
         few names, then its service turned on; any other name, family or extra is refused."""
         self.s.add("systemctl")
         self.s.add("zypper")
+        os.makedirs(os.path.join(self.sys, "run-systemd"))          # (systemd running)
         for release, pkg, tool, expected in (("ID=arch\n", "ollama-cuda", "pacman", ["-S", "--needed", "--noconfirm", "ollama-cuda"]),
                                              ("ID=fedora\n", "ollama", "dnf", ["install", "-y", "ollama"]),
                                              ("ID=opensuse-tumbleweed\n", "ollama-vulkan", "zypper", ["--non-interactive", "install", "ollama-vulkan"])):
@@ -557,6 +559,13 @@ class SystemRoot(HelpersCase):
                 self.on(release)
                 code, out = run([self.root, "--ollama", *args], env=self.s.env, timeout=10)
                 self.assertNotEqual(code, 0, out)
+        self.assertEqual(self.s.calls("systemctl"), [])
+        # Installed, but systemd isn't running: said, and its service left alone
+        os.rmdir(os.path.join(self.sys, "run-systemd"))
+        self.on("ID=arch\n")
+        code, out = run([self.root, "--ollama", "ollama"], env=self.s.env, timeout=10)
+        self.assertEqual(code, 1, out)
+        self.assertIn("start its service with your system's own tools", out)
         self.assertEqual(self.s.calls("systemctl"), [])
 
     def test_repositories_come_from_the_root_owned_list(self):

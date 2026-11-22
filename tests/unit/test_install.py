@@ -171,6 +171,7 @@ class NoStraySystemdCalls(Case):
         "shell/greeter/emergency/shell.qml": "as the login screen",
         "shell/session/slate-session": "uwsm only where systemd runs",
         "shell/bin/slate-firewall": "a root-owned copy, which can't use slate-init (it's in your folder): ufw's service enabled only where systemd runs",
+        "shell/bin/slate-system-root": "a root-owned copy, as slate-firewall: Ollama's service turned on only where systemd runs",
     }
 
     def test_none(self):

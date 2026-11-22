@@ -63,7 +63,13 @@ if [ "${1:-}" = --ollama ]; then
         fedora:ollama) dnf install -y ollama || exit 1 ;;
         *) echo "slate-system: Slate can't install $2 here" >&2; exit 1 ;;
     esac
-    exec systemctl enable --now ollama.service
+    # (a root-owned copy can't use slate-init, which is in your folder: as slate-firewall, the
+    # service only where systemd runs, which is every family above)
+    if command -v systemctl >/dev/null && [ -d /run/systemd/system ]; then
+        exec systemctl enable --now ollama.service
+    fi
+    echo "slate-system: Ollama is installed; start its service with your system's own tools" >&2
+    exit 1
 fi
 
 pkgs=(); session=0; folder=""
