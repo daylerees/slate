@@ -111,7 +111,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │     │  IntroText.qml, Footnote.qml, Separator.qml, IconButton.qml, Button.qml, FieldFrame.qml,
 │     │  FirstLook.qml (a process a page runs to see how things stand),
 │     │  ToggleSetting.qml and SettingToggle.qml (the switches), ValueSlider.qml, SoundSetting.qml,
-│     │  DropdownSetting.qml, FontSetting.qml, ChoiceSetting.qml, SearchPicker.qml, ListItemRow.qml,
+│     │  DropdownSetting.qml, FontSetting.qml, ChoiceSetting.qml, ListItemRow.qml,
 │     │  ThemePacks.qml, WallTile.qml (a wallpaper's thumbnail)
 │     └─ pages/           one file per page, named for it (shell/settings/pages/): OverviewPage.qml,
 │        GeneralPage.qml, AppearancePage.qml, WallpaperPage.qml, IconsPage.qml, AppThemingPage.qml,

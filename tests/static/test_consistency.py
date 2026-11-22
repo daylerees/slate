@@ -1152,7 +1152,8 @@ class OutsideTextIsPlain(Case):
         ("SettingsWindow.qml", "text: label; color: win.text"),      # SettingRow: rows named after apps, devices, downloads
         ("SettingsWindow.qml", "text: detail; color: win.dim"),
         ("SettingsWindow.qml", "text: dropdown.current ? dropdown.current.label"),   # devices, apps, files as options
-        ("SettingsWindow.qml", "text: parent.parent.modelData.label; color: win.text"),
+        # a dropdown's list (Settings' own, win.drop): apps, layouts, devices and files as options
+        ("SettingsWindow.qml", "text: parent.modelData.label\n                        color: parent.picked"),
         ("SettingsWindow.qml", "text: (wifiPane.facts.find(f => f.k === factRow.modelData) ?? { v: \"\" }).v"),         # a network's own details
         ("SettingsWindow.qml", "text: printersPane.note"),           # what the printing service said
     ]

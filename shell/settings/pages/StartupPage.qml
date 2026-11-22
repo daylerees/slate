@@ -54,11 +54,12 @@ Column {
             }
         }
         Separator {}
-        SearchPicker {
+        DropdownSetting {
             label: "Add an app"
-            detail: "It opens each time you log in"
-            buttonLabel: "Add…"
-            buttonIcon: 0xEB0B
+            detail: "It opens each time you log in. Type to find it"
+            searchable: true
+            noneLabel: "Choose"
+            value: ""
             options: startupPane.all.filter(e => !(Config.s.startupApps || []).includes(e.id))
                 .map(e => ({ value: e.id, label: e.name, detail: e.genericName || e.comment || "" }))
             onPicked: v => Config.s.startupApps = (Config.s.startupApps || []).concat([v])

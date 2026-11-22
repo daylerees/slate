@@ -68,11 +68,12 @@ Column {
 
     GroupLabel { text: "Keyboard" }
     Group {
-        SearchPicker {
+        DropdownSetting {
             label: "Add a layout"
-            detail: "Search by language or name, e.g. French or Dvorak"
-            buttonLabel: "Add…"
-            buttonIcon: 0xEB0B
+            detail: "Type a language or a name, e.g. French or Dvorak"
+            searchable: true
+            noneLabel: "Choose"
+            value: ""
             options: inputPane.layoutOptions
             onPicked: v => {
                 const parts = String(v).split(":");

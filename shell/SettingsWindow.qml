@@ -1007,7 +1007,7 @@ FloatingWindow {
             const all = owner ? owner.options || [] : [];
             const q = query.trim().toLowerCase().replace(/[_\s]+/g, " ");
             if (!searching || q === "") return all;
-            return all.filter(o => (String(o.label) + " " + String(o.value)).toLowerCase().replace(/[_\s]+/g, " ").includes(q));
+            return all.filter(o => (String(o.label) + " " + String(o.value) + " " + String(o.detail || "")).toLowerCase().replace(/[_\s]+/g, " ").includes(q));
         }
         onQueryChanged: { pick = 0; menuList.positionViewAtBeginning(); }
         readonly property real searchH: searching ? 40 : 0

@@ -42,14 +42,14 @@ Column {
             if (!cls || seen.has(cls) || Config.isNova(t) || Config.isDropdown(t) || cls === "slate-settings") continue;
             seen.add(cls);
             const e = Config.appEntry(cls);
-            out.push({ value: cls, label: e ? e.name : cls, detail: "Open now", entry: e ? e.id : "" });
+            out.push({ value: cls, label: (e ? e.name : cls) + " · open now", name: e ? e.name : cls, detail: "", entry: e ? e.id : "" });
         }
         const installed = DesktopEntries.applications.values.filter(e => !e.noDisplay).slice().sort((a, b) => a.name.localeCompare(b.name));
         for (const e of installed) {
             const cls = Config.ruleClassOf(e);
             if (!cls || seen.has(cls)) continue;
             seen.add(cls);
-            out.push({ value: cls, label: e.name, detail: e.genericName || e.comment || "", entry: e.id });
+            out.push({ value: cls, label: e.name, name: e.name, detail: e.genericName || e.comment || "", entry: e.id });
         }
         return out;
     }
@@ -133,15 +133,16 @@ Column {
             detail: "Pick an app below, then choose where and how its windows open"
         }
         Separator { visible: rulesPane.rules.length === 0 }
-        SearchPicker {
+        DropdownSetting {
             label: "Choose an app"
-            detail: "Apps with a window open are at the top"
-            buttonLabel: "Add…"
-            buttonIcon: 0xEB0B
+            detail: "Type to find it. Apps with a window open are at the top"
+            searchable: true
+            noneLabel: "Choose"
+            value: ""
             options: rulesPane.choices
             onPicked: v => {
                 const c = rulesPane.choices.find(o => o.value === v);
-                Config.s.appRules = rulesPane.rules.concat([{ cls: v, entry: c ? c.entry : "", name: c ? c.label : v,
+                Config.s.appRules = rulesPane.rules.concat([{ cls: v, entry: c ? c.entry : "", name: c ? c.name : v,
                                                              workspace: 0, as: "", monitor: "" }]);
             }
         }
