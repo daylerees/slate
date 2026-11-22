@@ -39,6 +39,38 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.36.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.36.0 <time datetime="2026-11-22">22 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Pick up where you left off.</strong> Slate keeps the apps you had open whenever you log out, restart or shut down, and at your next login it can bring them back, every window on the same workspace and in the same place. Choose how in Settings → Startup Apps → Reopen your apps: Ask (the default: a notification offers Reopen or Not now), Always, or Never. This replaces the restart dialog's "Reopen my apps afterwards" switch; if you'd turned that off, you start on Never.</li>
+        <li><strong>App Rules.</strong> A new Settings page for where and how an app's windows open: on a workspace of their own, floating, tiled, maximized or full screen, and on which monitor. Pick the app from a searchable list, with the apps you have open at the top.</li>
+        <li><strong>A drop-down terminal.</strong> Super+` brings a terminal down from the top of the screen over whatever you're doing, and puts it away again with what's running in it still going. Set its height in Settings → Windows.</li>
+        <li><strong>Set up Ollama from Settings.</strong> On Arch, Fedora and openSUSE, Settings → Assistant can install Ollama from your system's packages (the build for your graphics card), turn it on, and download a model sized for your computer, telling you its size first and showing the download's progress. Elsewhere it links to Ollama's own instructions.</li>
+        <li><strong>Quiet after unlocking.</strong> Notifications wait quietly in the history while your screen is locked and for a few seconds after you log in or unlock, so you don't come back to a burst of pop-ups. Urgent ones pop up as soon as that's over.</li>
+        <li><strong>Updating is clearer.</strong> In Settings → Updates, Update now sits right beside the line saying there's a new version, with what's new underneath, and while it updates you can see which step it's on and how much has downloaded.</li>
+        <li><strong>Friendlier pickers in Settings.</strong> Choosing an app (App Rules, Startup Apps) or a keyboard layout is now a search-as-you-type list like the rest of Settings, and lists of apps show each app's icon.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>A Settings dropdown now closes when you click its button again, instead of popping straight back open.</li>
+        <li>The menu bar no longer shows an empty tile for a window whose app has no icon.</li>
+        <li>Nova reads list settings properly, and Slate's own test runs no longer leave one test's settings behind for the next.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li>The test suite is steadier: it keeps a virtual keyboard plugged in for its whole run, stops everything a test starts when it ends, and puts list settings back as they were.</li>
+        <li>Every test passes (396,518 checks) with the pinned packages. With today's Arch packages, one fails: in Settings, Tab from the search box didn't reach the page's own search box. A heads-up that the next Quickshell or Qt update may change how Tab moves there.</li>
+      </ul>
+    </article>
+  </div>
+</section>
 <section id="v0.35.1" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.35.1 <time datetime="2026-11-21">21 November 2026</time></h2>
   <div class="cl-grid">
