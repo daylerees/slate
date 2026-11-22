@@ -20,6 +20,7 @@ TERMINAL_CLASSES = table.concat({
     "org\\.gnome\\.Ptyxis",
     "xfce[0-9]?-terminal",
     "com\\.raggesilver\\.BlackBox",
+    "org\\.slate\\.dropdown",             -- (the drop-down terminal, below: whichever terminal it is)
 }, "|")
 
 -- Apps opened by the keyboard shortcuts in binds.lua: the first of each list that's installed
@@ -67,6 +68,31 @@ TERMINAL_RUN_FLAGS = {
     ["ptyxis"]         = "--",
     ["xfce4-terminal"] = "-x",
 }
+-- The drop-down terminal (Super+`; Settings → Windows): a terminal of its own class, so Slate
+-- can tell it from your others and keep it on a special workspace of its own. Only some terminals
+-- can be given a class; the default one is used when it's one of them, else the first of them
+-- that's installed. DROPDOWN_COMMAND() gives that terminal's command name and the command line
+DROPDOWN_CLASS = "org.slate.dropdown"
+DROPDOWN_CLASS_FLAGS = {
+    ["kitty"]     = "--class ",
+    ["foot"]      = "--app-id ",
+    ["alacritty"] = "--class ",
+    ["ghostty"]   = "--class=",          -- (a GTK app id: it needs the dots DROPDOWN_CLASS has)
+    ["wezterm"]   = "start --class ",
+}
+function DROPDOWN_COMMAND()
+    local function line(cmd, bin) return cmd .. " " .. DROPDOWN_CLASS_FLAGS[bin] .. DROPDOWN_CLASS end
+    local cmd = (TERMINAL or ""):match("^(%S+)") or ""
+    local bin = cmd:match("([^/]+)$") or ""
+    if DROPDOWN_CLASS_FLAGS[bin] then return bin, line(cmd, bin) end
+    for _, b in ipairs({ "kitty", "foot", "alacritty", "ghostty", "wezterm" }) do
+        if installed(b) then return b, line(b, b) end
+    end
+    return "kitty", line("kitty", "kitty")
+end
+-- How far down it reaches, as a share of the screen (Slate sets it from Settings → Windows)
+DROPDOWN_HEIGHT = DROPDOWN_HEIGHT or 0.45
+
 -- TERMINAL_RUN("sh -c 'htop'") is the command line that opens the default terminal running it
 function TERMINAL_RUN(args)
     local bin = ((TERMINAL or "kitty"):match("^(%S+)") or "kitty"):match("([^/]+)$")

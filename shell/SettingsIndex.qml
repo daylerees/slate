@@ -214,6 +214,8 @@ Singleton {
         ["Launcher settings", "launcher", "app search descriptions usage"],
         ["Window borders", "windows", "border outline frame width"],
         ["Dim inactive windows", "windows", "dimming darken focus unfocused"],
+        ["Drop-down terminal", "windows", "dropdown quake guake yakuake scratchpad terminal console super backtick grave"],
+        ["Height", "windows", "drop-down terminal dropdown how tall size"],
         ["Folder color", "icons", "folders nautilus dolphin files papirus icon color colour"],
         ["Icons", "icons", "icon theme pack app icons papirus breeze adwaita look"],
         ["More icon styles", "icons", "install download icon theme pack kora morewaita numix circle zafiro nordzy get more icons"],

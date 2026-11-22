@@ -42,6 +42,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + SUPER_L"]            = "Apps: Tap Super on its own: the app launcher",
     ["SUPER + Space"]              = "Apps: The app launcher",
     ["SUPER + Return"]             = "Apps: A terminal",
+    ["SUPER + grave"]              = "Apps: Show or hide the drop-down terminal",
     ["SUPER + E"]                  = "Apps: Files",
     ["SUPER + T"]                  = "Apps: Text editor",
     ["SUPER + C"]                  = "Apps: Calculator",
@@ -174,6 +175,21 @@ local function app(cmd, what)
     return launchPrefix .. cmd
 end
 
+-- The drop-down terminal (Super+`): shown over whatever you're doing, or hidden again. Started
+-- the first time (windowrules.lua puts it on its special workspace and places it), then kept
+-- running while hidden. (A global, so the tests can call it)
+function dropdownTerminal()
+    for _, w in ipairs(hl.get_windows() or {}) do
+        if w.class == DROPDOWN_CLASS then
+            if not (w.workspace and w.workspace.name == "special:dropdown" and w.visible) then placeDropdown() end
+            hl.dispatch(hl.dsp.workspace.toggle_special("dropdown"))
+            return
+        end
+    end
+    local bin, cmd = DROPDOWN_COMMAND()
+    hl.exec_cmd(needing(bin, "The drop-down terminal", launchPrefix .. cmd))
+end
+
 -- Is one of Slate's overlays open and holding the keyboard? (by layer name, e.g. "slate-launcher";
 -- gestures.lua asks too)
 function slateOverlayOpen(name)
@@ -255,6 +271,7 @@ local shared = {
         if slateOverlayOpen("slate-launcher") then hl.exec_cmd(slate("launcher launchOnNewWorkspace")); return end
         hl.exec_cmd(app(TERMINAL, "The terminal"))
     end,
+    dropdown = function() dropdownTerminal() end,
     files         = function() hl.exec_cmd(app(FILE_MANAGER, "The file manager")) end,
     editor        = function() hl.exec_cmd(app(EDITOR, "The text editor")) end,
     calculator    = function() hl.exec_cmd(app(CALCULATOR, "The calculator")) end,
@@ -555,6 +572,7 @@ end
 -- (Slate's set)
 if SLATE_KEYS then
     hl.bind(mainMod .. " + Return",     shared.terminal)
+    hl.bind(mainMod .. " + grave",      shared.dropdown)
     hl.bind(mainMod .. " + E",          shared.files)
     hl.bind(mainMod .. " + T",          shared.editor)
     hl.bind(mainMod .. " + C",          shared.calculator)
@@ -833,6 +851,7 @@ if EXTRAS then
     hl.bind("ALT + Tab",                shared.nextWindow)
     hl.bind(mainMod .. " + Space",      shared.launcher)
     hl.bind(mainMod .. " + Return",     shared.terminal)
+    hl.bind(mainMod .. " + grave",      shared.dropdown)
     hl.bind(mainMod .. " + T",          shared.editor)
     hl.bind(mainMod .. " + W",          shared.toNewWorkspace)
     hl.bind("CONTROL + SHIFT + Escape", shared.systemMonitor)

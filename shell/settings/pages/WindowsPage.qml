@@ -183,6 +183,16 @@ Column {
             ValueSlider { from: 0; to: 80; stepSize: 5; suffix: "%"; value: Config.s.inactiveDim; onMoved: v => Config.s.inactiveDim = v }
         }
     }
+    GroupLabel { text: "Drop-down terminal" }
+    Group {
+        SettingRow {
+            label: "Height"
+            settingKey: "dropdownHeight"
+            detail: "Super+` brings a terminal down from the top of the screen over whatever you're doing, and puts it away again. "
+                + "What's running in it keeps going while it's hidden"
+            ValueSlider { from: 20; to: 90; stepSize: 5; suffix: "%"; value: Config.s.dropdownHeight; onMoved: v => Config.s.dropdownHeight = v }
+        }
+    }
     GroupLabel { text: "Window switcher (Super+Tab)" }
     Group {
         // What each window's card shows (switcherPreviews and switcherAppIcons), as the

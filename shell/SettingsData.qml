@@ -83,6 +83,7 @@ JsonAdapter {
     property bool roundedElements: true       // rounded corners on everything Slate draws, and on windows (off: all hard squares; app icons and workspace dots keep their own shapes)
     property int windowBorderSize: 3          // px, around windows on workspaces with more than one (0 = none)
     property int inactiveDim: 50              // %, how much windows without focus are dimmed (0 = off)
+    property int dropdownHeight: 45           // %, how far down the drop-down terminal reaches (Super+`)
     // ---- Input (Settings → Input). "" / -1 / -2 = not set here: whatever
     // Hyprland's config (and your ~/.config/slate/hypr/hyprland.lua) sets is left alone
     property string kbLayouts: ""             // xkb layouts, comma-separated, e.g. "gb,us"

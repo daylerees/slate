@@ -1183,6 +1183,8 @@ Singleton {
         t.push(`sharp_x11 = ${s.sharpX11Apps ? "true" : "false"}, x11_scale = ${x11Scale.toFixed(2)}`);
         // Set directly (not through slateApply), so a Hyprland config of your own can read it too
         return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}; `
+            // The drop-down terminal's height (Settings → Windows): placed again, if it's open
+            + `DROPDOWN_HEIGHT = ${(Math.max(20, Math.min(90, s.dropdownHeight)) / 100).toFixed(2)}; if placeDropdown then placeDropdown() end; `
             + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `
             // Accessibility → Zoom (binds.lua's setZoom; the keys tell Slate where they got to)
             + `if setZoom then setZoom(${s.zoom ? "true" : "false"}, ${Math.max(1.25, Math.min(5, Number(s.zoomLevel) || 2)).toFixed(2)}, ${s.zoomFollow === "center" ? "true" : "false"}) end; `
@@ -2289,6 +2291,15 @@ Singleton {
         if (!t) return "";
         const id = t.appId || "";
         return id === "slate-settings" && t.title === softwareTitle ? "slate-software" : id;
+    }
+    // The drop-down terminal (Super+`, binds.lua): Slate's own, on a hidden workspace of its own,
+    // so it isn't a running app in the dock or a window to find in the launcher
+    readonly property string dropdownClass: "org.slate.dropdown"
+    function isDropdown(t) {
+        if (!t) return false;
+        const o = t.lastIpcObject;
+        const cls = t.appId !== undefined ? t.appId : t.wayland ? t.wayland.appId : o && o.class !== undefined ? o.class : "";
+        return cls === dropdownClass;
     }
     function isNova(t) {
         if (!t || t.title !== novaTitle) return false;

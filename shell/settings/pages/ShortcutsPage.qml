@@ -32,7 +32,7 @@ Column {
         if (m & 4) keys.push("Ctrl");
         if (m & 8) keys.push("Alt");
         if (m & 1) keys.push("Shift");
-        const names = { Return: "Enter", period: ".", Minus: "−", Plus: "+", Print: "Print Screen", Escape: "Esc",
+        const names = { Return: "Enter", period: ".", grave: "`", Minus: "−", Plus: "+", Print: "Print Screen", Escape: "Esc",
                         Space: "Space", Tab: "Tab", Left: "←", Right: "→", Up: "↑", Down: "↓",
                         "mouse:272": "Drag", "mouse:273": "Right-drag", mouse_up: "Scroll up", mouse_down: "Scroll down" };
         let k = b.key || (b.keycode ? "code:" + b.keycode : "");

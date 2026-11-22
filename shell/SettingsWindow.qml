@@ -374,7 +374,7 @@ FloatingWindow {
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator", "quickLookInFileManagers"],
         startup: ["startupApps"],
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName", "recordComputerSound", "recordMicrophone"],
-        windows: ["windowMode", "focusFollowsMouse", "titleBarStyle", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "switcherPreviews", "switcherAppIcons",
+        windows: ["windowMode", "focusFollowsMouse", "titleBarStyle", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "dropdownHeight", "switcherPreviews", "switcherAppIcons",
                   "switcherMoveAnimation", "switcherPickAnimation"],
         workspaces: ["workspaceAnimation", "workspaceSwitchName", "wrapWorkspaces", "keepEmptyWorkspace", "workspaceShape", "overviewCardWidth", "overviewPreviews", "overviewAppIcons",
                      "overviewMoveAnimation", "overviewPickAnimation", "overviewGridSize"],

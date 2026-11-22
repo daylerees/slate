@@ -198,11 +198,10 @@ def other_config_functions():
     slateKeepUnderBar, workspaces.lua's newWorkspace…): the only ones binds.lua may lean on."""
     names = set()
     for n in os.listdir(CONFIG_DIR):
-        if n.endswith(".lua") and n != "binds.lua":
+        # (variables.lua's own are loaded for real, not stood in for: TERMINAL_RUN, DROPDOWN_COMMAND)
+        if n.endswith(".lua") and n not in ("binds.lua", "variables.lua"):
             with open(os.path.join(CONFIG_DIR, n)) as f:
                 names.update(re.findall(r"^function ([A-Za-z_]\w*)\(", f.read(), re.M))
-    # variables.lua's own are loaded for real (TERMINAL_RUN), not stood in for
-    names.discard("TERMINAL_RUN")
     return sorted(names)
 
 

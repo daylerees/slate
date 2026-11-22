@@ -509,7 +509,7 @@ PanelWindow {
         if (mode !== "normal" || !Config.s.launcherWindows || q.length < 2) return [];
         const out = [];
         for (const t of ToplevelManager.toplevels.values) {
-            if (Config.isNova(t)) continue;          // (Nova's window: Slate's own)
+            if (Config.isNova(t) || Config.isDropdown(t)) continue;   // (Nova's window and the drop-down terminal: Slate's own)
             const e = Config.appEntry(Config.appIdOf(t));
             const appName = e ? e.name : Config.appIdOf(t);
             if (!((t.title || "") + " " + appName).toLowerCase().includes(q)) continue;

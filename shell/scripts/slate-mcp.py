@@ -1083,7 +1083,7 @@ RANGES = {
     "welcomeVolume": (0, 100), "goodbyeVolume": (0, 100), "attentionVolume": (0, 100),
     "answeredVolume": (0, 100),
     "nightLightTemperature": (2500, 6000), "uiScale": (0.75, 1.5), "iconTintStrength": (20, 100),
-    "windowBorderSize": (0, 12), "inactiveDim": (0, 80), "keyRepeatDelay": (150, 1000), "keyRepeatRate": (10, 80),
+    "windowBorderSize": (0, 12), "inactiveDim": (0, 80), "dropdownHeight": (20, 90), "keyRepeatDelay": (150, 1000), "keyRepeatRate": (10, 80),
     "mouseSpeed": (-1, 1), "touchpadScrollSpeed": (0.1, 2), "cursorSize": (16, 64),
     "gestureFingers": (3, 4),
     "windowGap": (0, 32), "soloWindowGap": (0, 32),

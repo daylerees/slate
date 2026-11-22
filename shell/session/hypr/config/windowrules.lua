@@ -141,8 +141,10 @@ local modalMatches = {
 }
 for _, m in ipairs(modalMatches) do hl.window_rule({ match = m, float = true, center = true }) end
 
--- Keep floating windows (file pickers etc.) within the screen
-hl.window_rule({ match = { float = true }, max_size = { "monitor_w*0.90", "monitor_h*0.90" } })
+-- Keep floating windows (file pickers etc.) within the screen. Not the drop-down terminal, which
+-- is placed across the screen on purpose (placeDropdown, below): the rule is applied again when
+-- Slate's settings arrive, and squeezed it back to nine tenths of the width
+hl.window_rule({ match = { float = true, class = "negative:^(org\\.slate\\.dropdown)$" }, max_size = { "monitor_w*0.90", "monitor_h*0.90" } })
 
 -- Ignore apps asking to maximise themselves (tiling decides window sizes)
 hl.window_rule({
@@ -518,3 +520,32 @@ function setWorkspaceMode(id, mode)
     convertWindows(this)
     soloSpread(this)
 end
+
+-- ---- The drop-down terminal (Super+`) ------------------------------------------------------
+-- It floats on a special workspace of its own, across the top of the monitor you're on, under
+-- the bar (the room Hyprland keeps for it: the monitor's `reserved`), as tall as DROPDOWN_HEIGHT.
+-- Placed each time it's shown, so a changed height or another monitor is followed
+hl.window_rule({ name = "slate-dropdown", match = { class = "^(org\\.slate\\.dropdown)$" }, float = true,
+                 workspace = "special:dropdown" })
+local DROPDOWN_GAP = 10
+function placeDropdown()
+    local m = hl.get_active_monitor()
+    if not m then return end
+    for _, w in ipairs(hl.get_windows() or {}) do
+        if w.class == DROPDOWN_CLASS then
+            local r = m.reserved or {}
+            local scale = (m.scale and m.scale > 0) and m.scale or 1
+            local mw, mh = m.width / scale, m.height / scale
+            local left, right, top, bottom = (r.left or 0) + DROPDOWN_GAP, (r.right or 0) + DROPDOWN_GAP, (r.top or 0) + DROPDOWN_GAP, (r.bottom or 0) + DROPDOWN_GAP
+            local h = math.min(math.floor(mh * (DROPDOWN_HEIGHT or 0.45)), mh - top - bottom)
+            local target = "address:" .. w.address
+            hl.dispatch(hl.dsp.window.resize({ x = math.floor(mw - left - right), y = h, window = target }))
+            hl.dispatch(hl.dsp.window.move({ x = m.x + left, y = m.y + top, window = target }))
+        end
+    end
+end
+hl.on("window.open", function()
+    for _, w in ipairs(hl.get_windows() or {}) do
+        if w.class == DROPDOWN_CLASS then placeDropdown(); return end
+    end
+end)

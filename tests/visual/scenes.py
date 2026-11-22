@@ -333,6 +333,17 @@ SCENES["settings-assistant-ollama-setup"] = {
     "undo": [("settings", "close"), ("!sh", "-c", 'rm -f "$XDG_STATE_HOME/slate/ollama-setup.json"')],
 }
 
+# The drop-down terminal (Super+`): across the top under the bar, over the desktop
+_DROPDOWN_CLOSE = ('function() for _, w in ipairs(hl.get_windows()) do if w.class == DROPDOWN_CLASS then '
+                   'hl.dispatch(hl.dsp.window.close({ window = "address:" .. w.address })) end end end')
+SCENES["dropdown-terminal"] = {
+    "do": [("!hyprctl", "dispatch", "function() dropdownTerminal() end")],
+    # (a window on a special workspace: they have negative ids)
+    "wait": lambda st: any(w["workspace"] < 0 for w in st["windows"]),
+    "settle": 2.5,
+    "undo": [("!hyprctl", "dispatch", _DROPDOWN_CLOSE), ("!hyprctl", "dispatch", 'function() if hl.get_active_special_workspace() then hl.dispatch(hl.dsp.workspace.toggle_special("dropdown")) end end')],
+}
+
 # A setting greyed out because another one is off: its "Needs … to be off" line, with the
 # arrow that goes there (scrolled to it; settled once its highlight has faded)
 SCENES["settings-needs"] = {
