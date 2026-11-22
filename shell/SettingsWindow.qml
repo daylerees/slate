@@ -225,6 +225,21 @@ FloatingWindow {
         b.clicked();
         return true;
     }
+    // (the tests: where the dropdown on the row with this label has its button, in the window,
+    // for a real click; and which dropdown's list is open)
+    function testDropButton(label) {
+        const find = (it, want) => {
+            if (!it) return null;
+            if (it.visible && want(it) && it !== pageLoader.item) return it;
+            for (const c of it.children) { const r = find(c, want); if (r) return r; }
+            return null;
+        };
+        const d = find(pageLoader.item, it => it.label === label && it.searchable !== undefined && it.button !== undefined);
+        if (!d) return null;
+        const p = d.button.mapToItem(null, 0, 0);
+        return { x: Math.round(p.x), y: Math.round(p.y), w: Math.round(d.button.width), h: Math.round(d.button.height) };
+    }
+    readonly property string dropOpen: dropLayer.owner ? String(dropLayer.owner.label || "") : ""
     function pageTestState() { const p = pageLoader.item; return p && p.testState !== undefined ? p.testState : null; }
     function testToggle(label) {
         const row = it => {
@@ -1024,8 +1039,25 @@ FloatingWindow {
             if (searching) pick = Math.max(0, i);
             Qt.callLater(() => { menuList.positionViewAtIndex(Math.max(0, i), ListView.Contain); if (dropLayer.searching) dropFind.forceActiveFocus(); });
         }
-        // Click anywhere else to close
-        MouseArea { anchors.fill: parent; onPressed: dropLayer.owner = null }
+        // Click anywhere else to close. A press on the open list's own button closes it too, and
+        // the tap that press ends in mustn't open it again (it did: the list popped straight back),
+        // so the button asks reopening() first
+        property var closedBy: null
+        property real closedAt: 0
+        function reopening(o) { const r = closedBy === o && Date.now() - closedAt < 800; closedBy = null; return r; }
+        MouseArea {
+            anchors.fill: parent
+            onPressed: mouse => {
+                const o = dropLayer.owner, b = o ? o.button : null;
+                if (b) {
+                    const p = b.mapToItem(dropLayer, 0, 0);
+                    if (mouse.x >= p.x && mouse.x < p.x + b.width && mouse.y >= p.y && mouse.y < p.y + b.height) {
+                        dropLayer.closedBy = o; dropLayer.closedAt = Date.now();
+                    }
+                }
+                dropLayer.owner = null;
+            }
+        }
         Rectangle {
             id: menu
             x: dropLayer.menuX; y: dropLayer.menuY

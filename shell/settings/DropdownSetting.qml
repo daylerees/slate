@@ -87,7 +87,7 @@ Item {
             color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
         }
         HoverHandler { id: ddHover }
-        ClickTap { onTapped: win.drop.owner = ddButton.open ? null : dropdown }
+        ClickTap { onTapped: { if (!win.drop.reopening(dropdown)) win.drop.owner = ddButton.open ? null : dropdown; } }
       }
     }
 }

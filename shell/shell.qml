@@ -247,6 +247,7 @@ ShellRoot {
         // Press the switch on the Settings row with this label, as a click does ("pressed" or "none")
         function settingsToggle(label: string): string { return settingsLoader.item && settingsLoader.item.testToggle(label) ? "pressed" : "none"; }
         function settingsPollValue(what: string): string { return settingsLoader.item ? String(settingsLoader.item.pretendPolls[what] ?? "") : ""; }
+        function settingsDropButton(label: string): string { return JSON.stringify(settingsLoader.item ? settingsLoader.item.testDropButton(label) : null); }
         function settingsButton(row: string, label: string): string { return settingsLoader.item && settingsLoader.item.testButton(row, label) ? "pressed" : "none"; }
         function newSpace(): void { popouts.newSpaceAsked(); }
         // Saving a space as New Space's Save does (Spaces.save), workspaces as "1,3"
@@ -526,6 +527,7 @@ ShellRoot {
                             scroll: settings ? settings.scrolledTo : 0, viewHeight: settings ? Math.round(settings.scrollView.height) : 0,
                             thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
                             checking: settings ? settings.checking : 0,
+                            drop: settings ? settings.dropOpen : "",
                             // Settings greyed out for another one, with what each says it needs
                             // (SettingRow's needs), and the setting last gone to (goTo)
                             waiting: settings && settings.visible ? settings.waitingRows().map(r => ({ label: r.label, needs: r.needs })) : [],

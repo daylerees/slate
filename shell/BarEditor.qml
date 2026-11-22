@@ -289,7 +289,7 @@ PanelWindow {
                 color: root.dim; font.pixelSize: 16
             }
             HoverHandler { id: shortHover }
-            ClickTap { onTapped: dropLayer.owner = shortButton.open ? null : shorter }
+            ClickTap { onTapped: { if (!dropLayer.reopening(shorter)) dropLayer.owner = shortButton.open ? null : shorter; } }
         }
     }
     // The workspace dots as a picture of themselves: four, the first the one you're on, the
@@ -1027,8 +1027,25 @@ PanelWindow {
                 function onPrioritisingChanged() { dropLayer.owner = null; }
                 function onShownChanged() { dropLayer.owner = null; }
             }
-            // Click anywhere else to close
-            MouseArea { anchors.fill: parent; onPressed: dropLayer.owner = null }
+            // Click anywhere else to close. A press on the open list's own button closes it too, and
+            // the tap that press ends in mustn't open it again (it did: the list popped straight back),
+            // so the button asks reopening() first
+            property var closedBy: null
+            property real closedAt: 0
+            function reopening(o) { const r = closedBy === o && Date.now() - closedAt < 800; closedBy = null; return r; }
+            MouseArea {
+                anchors.fill: parent
+                onPressed: mouse => {
+                    const o = dropLayer.owner, b = o ? o.button : null;
+                    if (b) {
+                        const p = b.mapToItem(dropLayer, 0, 0);
+                        if (mouse.x >= p.x && mouse.x < p.x + b.width && mouse.y >= p.y && mouse.y < p.y + b.height) {
+                            dropLayer.closedBy = o; dropLayer.closedAt = Date.now();
+                        }
+                    }
+                    dropLayer.owner = null;
+                }
+            }
             Rectangle {
                 id: menu
                 x: dropLayer.menuX; y: dropLayer.menuY

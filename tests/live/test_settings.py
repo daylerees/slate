@@ -444,3 +444,47 @@ class UpdatesPage(LiveCase):
         p = self.page(lambda p: p["check"], "Check now")
         self.assertFalse(p["update"] or p["notes"], "an update offered with none to have")
         self.assertIn("you're up to date", p["detail"])
+
+
+class DropdownsByPointer(LiveCase):
+    """A Settings dropdown, clicked with a real pointer: its button opens the list, and its button
+    again closes it (it used to close on the press and open again on the click, so the list
+    popped straight back). Reported 2026-11-22."""
+
+    def setUp(self):
+        super().setUp()
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.ipc("settings", "page", "windows")
+        self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "windows", "Settings → Windows")
+        self.s.settle(0.8)
+
+    def click(self, at):
+        """(one pointer for the whole test: a new one for each click, and the second click went nowhere)"""
+        if not hasattr(self, "pointer"):
+            from pointer import Pointer
+            self.pointer = Pointer(self.s.env, self.s.width, self.s.height).__enter__()
+            self.addCleanup(self.pointer.close)
+        self.pointer.move(*at)
+        self.s.settle(0.15)
+        self.pointer.button(True)
+        self.s.settle(0.08)
+        self.pointer.button(False)
+
+    def button(self, label):
+        r = json.loads(self.ipc("test", "settingsDropButton", label))
+        self.assertTrue(r, f"no dropdown called {label!r}")
+        win = next(c for c in self.s.hyprctl("clients", json_out=True) if c.get("class") == "slate-settings" and c.get("title") == "Settings")
+        return win["at"][0] + r["x"] + r["w"] // 2, win["at"][1] + r["y"] + r["h"] // 2
+
+    def test_its_button_closes_it_again(self):
+        at = self.button("Default window mode")
+        self.click(at)
+        self.wait(lambda st: st["settings"]["drop"] == "Default window mode", "the list open")
+        self.click(at)
+        self.wait(lambda st: st["settings"]["drop"] == "", "the list closed by its button")
+        self.s.settle(0.6)
+        self.assertEqual(self.s.state()["settings"]["drop"], "", "it opened again")
+        self.click(at)
+        self.wait(lambda st: st["settings"]["drop"] == "Default window mode", "the list open once more")
+        self.click((at[0] - 300, at[1] + 200))     # (elsewhere on the page)
+        self.wait(lambda st: st["settings"]["drop"] == "", "a click elsewhere closing it")
