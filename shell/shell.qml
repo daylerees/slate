@@ -486,7 +486,7 @@ ShellRoot {
                                               dots: b.dotsState, bell: b.bellText, shot: b.shotState, clock: b.clockText })),
                 wakes: Config.wakes,
                 storage: { checks: storageWatch.checks, said: storageWatch.said, warned: Object.keys(storageWatch.warned) },
-                popout: popouts.current, popoutKeyFocus: popouts.keyFocusText, popoutKeyPath: popouts.keyFocusPath,
+                popout: popouts.current, popoutKeyFocus: popouts.keyFocusText, popoutKeyPath: popouts.keyFocusPath, popoutActive: popouts.windowActive,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
                 popoutBox: popouts.panelBox,
                 // What's in effect after game mode and Accessibility have had their say

@@ -234,6 +234,15 @@ class Session:
         self.settle(1.5)
         self.dbus = self._session_bus()
         self.startup_errors = self.new_log_errors()
+        # A keyboard that stays plugged in, as a real one does. The tests type through wtype, and
+        # each wtype run is a keyboard of its own that goes away when it ends; with nothing else,
+        # the seat was left without a keyboard between runs, and a panel opened then never got
+        # the keyboard back when the next run came, or lost it partway (only in some orders of
+        # the tests, whichever left it so). A wtype that only waits is one that never types.
+        if shutil.which("wtype"):
+            self.procs.append(subprocess.Popen(["wtype", "-s", str(24 * 3600 * 1000)], env=self.env,
+                                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                               start_new_session=True))
 
     def only_test_output(self):
         """Switch off every output but the test ones (on CI the vkms screen comes up too)."""

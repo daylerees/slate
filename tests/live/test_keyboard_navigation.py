@@ -4,8 +4,9 @@ presses what's selected (a panel opened from the bar has the keyboard, and the b
 ends), and Escape or the shortcut again gives the keyboard back.
 
 Keys are typed for real with wtype, each sequence in one run (in the background, watched as it
-goes): every wtype run is a new keyboard, and the old one going away takes the keyboard's focus
-with it, which a real keyboard never does."""
+goes): every wtype run is a new keyboard that goes away when it ends. The test session keeps one
+more that never types (tests/lib/session.py), as a real keyboard stays plugged in: without it a
+panel opened between runs could be left without the keyboard."""
 import json
 import os
 import shutil
@@ -30,7 +31,8 @@ class KeyboardNavigation(LiveCase):
             return self.wait(cond, what, timeout=timeout)
         except AssertionError:
             st = self.s.state()
-            self.fail(f"{what}: keys {st['keys']}, panel {st['popout']!r}, panel keys {st.get('popoutKeyPath')}")
+            self.fail(f"{what}: keys {st['keys']}, panel {st['popout']!r} (has the keyboard: {st.get('popoutActive')}), "
+                      f"panel keys {st.get('popoutKeyPath')}")
 
     def setUp(self):
         super().setUp()
@@ -82,13 +84,15 @@ class KeyboardNavigation(LiveCase):
         self.ipc("test", "wifi", json.dumps({"Home": 0.1, "Cafe": 0.6, "Library": 0.3, "Station": 0.95}))
         order = self.until(lambda st: st["lists"]["panel"]["order"] == ["Station", "Cafe", "Library", "Home"], "the new order")["lists"]["panel"]["order"]
         self.type_keys(*(["Down"] * 12), gap=250).wait(timeout=30)
-        path = self.s.state()["popoutKeyPath"]
+        st = self.s.state()
+        path = st["popoutKeyPath"]
         seen = []
         for step in path:
             for name in order:
                 if name in step and name not in seen:
                     seen.append(name)
-        self.assertEqual(seen, order, f"Down didn't walk the networks in the order shown: {path}")
+        self.assertEqual(seen, order, f"Down didn't walk the networks in the order shown: {path} "
+                                      f"(the panel has the keyboard: {st['popoutActive']})")
 
     def test_no_keys_coming_lets_go(self):
         """If no key reaches the bar or the dock at all, it doesn't keep the keyboard: after ten
@@ -102,8 +106,7 @@ class KeyboardNavigation(LiveCase):
                 self.until(lambda st: not st["keys"][target], "let go with no keys coming", timeout=5)
 
     def test_zz_keys_coming_keep_it(self):
-        # (last: it ends with its wtype keyboard gone while the bar holds the keyboard, and in the
-        # test session no later wtype keyboard reaches the bar after that; a real keyboard stays)
+        # (last: it ends with its wtype keyboard gone while the bar still holds the keyboard)
         """Once keys arrive there's no time limit."""
         self.ipc("keys", "bar")
         self.until(lambda st: st["keys"]["bar"] and st["keys"]["barFocus"] != "", "the bar's first thing selected")
