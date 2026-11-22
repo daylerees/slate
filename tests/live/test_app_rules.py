@@ -58,3 +58,16 @@ class AppRules(LiveCase):
                     {"cls": "slate.ruled", "workspace": 0, "as": "float", "monitor": 'x"y'}])
         self.assertEqual(lua(self, "SLATE_APP_RULES_FOR"), "slate.ruled|0|float|", "an odd name went into the rules")
         self.assertTrue(self.s.alive(), "Hyprland or Slate went away")
+
+    def test_read_and_put_back(self):
+        """config get gives a list as JSON, and a test can put it back as it was. It gave "" for no
+        rules and "[object Object]" for some, so they were never put back, and leaked into the
+        tests and pictures after."""
+        rules = [{"cls": "slate.ruled", "name": "Ruled", "workspace": 3, "as": "float", "monitor": ""}]
+        self.rules(rules)
+        saved = self.setting("appRules")
+        self.assertEqual(json.loads(saved), rules)
+        self.rules([])
+        self.assertEqual(self.setting("appRules"), "[]")
+        self.set_back("appRules", saved)
+        self.wait(lambda st: json.loads(self.setting("appRules")) == rules, "the rules put back")

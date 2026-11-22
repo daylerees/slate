@@ -867,7 +867,9 @@ Singleton {
             root.s[key] = v;
             root.hyprKeyEdited(key, cur);
         }
-        function get(key: string): string { return String(root.s[key]); }
+        // (a list or an object as JSON, as set takes it back: as String() it came out as "" for an
+        // empty list and "[object Object]" for App Rules' rules, so tests couldn't put one back)
+        function get(key: string): string { const v = root.s[key]; return v !== null && typeof v === "object" ? JSON.stringify(v) : String(v); }
     }
     // What a setting given as text (config set) becomes, going by the kind of value it holds
     // now, or undefined when the text isn't one of those: the setting is then left alone. A
