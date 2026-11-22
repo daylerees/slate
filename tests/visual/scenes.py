@@ -344,6 +344,17 @@ SCENES["dropdown-terminal"] = {
     "undo": [("!hyprctl", "dispatch", _DROPDOWN_CLOSE), ("!hyprctl", "dispatch", 'function() if hl.get_active_special_workspace() then hl.dispatch(hl.dsp.workspace.toggle_special("dropdown")) end end')],
 }
 
+# Settings → App Rules with two rules: a card each, then Add a rule
+SCENES["settings-apprules-rules"] = {
+    # (a space first: qs ipc strips the brackets from an argument starting with "[")
+    "settings": {"appRules": " " + json.dumps([
+        {"cls": "foot", "entry": "foot", "name": "Foot", "workspace": 3, "as": "float", "monitor": ""},
+        {"cls": "org.gnome.Calculator", "entry": "", "name": "Calculator", "workspace": 0, "as": "maximize", "monitor": ""}])},
+    "do": [("settings", "page", "apprules")],
+    "wait": lambda st: st["settings"]["open"] and st["settings"]["section"] == "apprules",
+    "settle": 1.2, "undo": [("settings", "close")],
+}
+
 # A setting greyed out because another one is off: its "Needs … to be off" line, with the
 # arrow that goes there (scrolled to it; settled once its highlight has faded)
 SCENES["settings-needs"] = {

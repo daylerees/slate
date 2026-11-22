@@ -373,6 +373,7 @@ FloatingWindow {
         power: ["lidAction", "powerKeyAction", "profileOnBattery", "profileOnAC", "reopenAppsAfterRestart"],
         apps: ["defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator", "quickLookInFileManagers"],
         startup: ["startupApps"],
+        apprules: ["appRules"],
         screenshots: ["screenshotAfter", "screenshotFolder", "screenshotName", "recordComputerSound", "recordMicrophone"],
         windows: ["windowMode", "focusFollowsMouse", "titleBarStyle", "titleButtons", "windowBorderSize", "windowGap", "soloWindowGap", "inactiveDim", "dropdownHeight", "switcherPreviews", "switcherAppIcons",
                   "switcherMoveAnimation", "switcherPickAnimation"],
@@ -932,7 +933,7 @@ FloatingWindow {
                     active: win.visible
                     sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, control: controlPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
                         displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        unlock: unlockPage, apps: appsPage, startup: startupPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, users: usersPage, accessibility: accessibilityPage, timers: timersPage, storage: storagePage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, wallpaper: wallpaperPage, icons: iconsPage, assistant: assistantPage })[win.section]
+                        unlock: unlockPage, apps: appsPage, startup: startupPage, apprules: appRulesPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, users: usersPage, accessibility: accessibilityPage, timers: timersPage, storage: storagePage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, wallpaper: wallpaperPage, icons: iconsPage, assistant: assistantPage })[win.section]
                     onLoaded: {
                         scroller.contentY = 0; dropLayer.owner = null;
                         if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound));
@@ -1195,6 +1196,7 @@ FloatingWindow {
     Component { id: appsPage; AppsPage {} }
 
     Component { id: startupPage; StartupPage {} }
+    Component { id: appRulesPage; AppRulesPage {} }
 
     Component { id: timePage; DateTimePage {} }
 

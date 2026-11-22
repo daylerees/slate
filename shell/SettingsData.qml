@@ -137,6 +137,9 @@ JsonAdapter {
     // ---- Sound, startup, screenshots
     property var themedApps: []               // Settings → App Theming: app ids that follow Slate's colours (none until switched on)
     property var startupApps: []              // desktop entry ids opened at each login
+    // App rules (Settings → App Rules): [{ cls: window class, entry: desktop entry id, name,
+    // workspace: 0 (any) or 1–10, as: "" | float | tile | maximize | fullscreen, monitor: "" or a name }]
+    property var appRules: []
     property string screenshotFolder: ""      // "" = ~/Pictures/Screenshots
     property string screenshotName: "default" // default, compact or gnome (see scripts/screenshot.sh)
     property string screenshotAfter: "edit"   // edit (swash, when installed) or save

@@ -25,6 +25,7 @@ const SECTIONS = [
     { id: "workspaces", title: "Workspaces and the overview", icon: 0xEDBA, about: "Moving between them, naming them, the secret workspace", covers: ["workspaces"] },
     { id: "spaces", title: "Spaces", icon: 0xEEF6, about: "Saving a set of workspaces and bringing it back", covers: ["spaces"] },
     { id: "hot-corners", title: "Hot corners", icon: 0xF7A0, about: "Actions for the corners of the screen", covers: ["hotcorners"] },
+    { id: "app-rules", title: "App rules", icon: 0xEFD6, about: "Where and how an app's windows open", covers: ["apprules"] },
   ]},
   { title: "Look and feel", pages: [
     { id: "appearance", title: "Appearance", icon: 0xEB01, about: "Theme, colors, glass, shadows, fonts, size and motion", covers: ["appearance"] },

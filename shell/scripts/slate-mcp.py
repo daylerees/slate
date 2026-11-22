@@ -996,6 +996,8 @@ REFUSE = {
     # hold a command, or reach outside Slate
     "defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator",
     "launcherCommands", "logLevel", "clipboardHistory",
+    # where and how other apps' windows open: one could put an app's windows out of sight
+    "appRules",
     # change other apps' own settings (as App Theming's list does, refused with every list)
     "pointerInApps", "codeFontInApps", "quickLookInFileManagers",
     # folders and files (wallpaper: wallpaper_set, from the list only)

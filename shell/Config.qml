@@ -1185,6 +1185,7 @@ Singleton {
         return `if slateApply then slateApply({ ${t.join(", ")} }) end; WRAP_WORKSPACES = ${s.wrapWorkspaces ? "true" : "false"}; `
             // The drop-down terminal's height (Settings → Windows): placed again, if it's open
             + `DROPDOWN_HEIGHT = ${(Math.max(20, Math.min(90, s.dropdownHeight)) / 100).toFixed(2)}; if placeDropdown then placeDropdown() end; `
+            + appRulesLua
             + `if setWorkspaceAnimation then setWorkspaceAnimation(${q(s.workspaceAnimation || "slidefade")}) end; `
             // Accessibility → Zoom (binds.lua's setZoom; the keys tell Slate where they got to)
             + `if setZoom then setZoom(${s.zoom ? "true" : "false"}, ${Math.max(1.25, Math.min(5, Number(s.zoomLevel) || 2)).toFixed(2)}, ${s.zoomFollow === "center" ? "true" : "false"}) end; `
@@ -1852,7 +1853,7 @@ Singleton {
         workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0", users: "#e8b8c8", accessibility: "#9fc6e8", timers: "#e8b0a0", storage: "#b8c8a0",
         bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", unlock: "#a6c4e0", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
-        apps: "#8fd8d0", startup: "#e8b0a0", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",
+        apps: "#8fd8d0", startup: "#e8b0a0", apprules: "#b8c8a6", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",
         screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a",
         // Slate Software's sections and Flathub's categories (SoftwareWindow.qml), the same way
         "software-discover": "#8fb3e8", "software-installed": "#e8c48f", "software-updates": "#a6d8a6",
@@ -2291,6 +2292,29 @@ Singleton {
         if (!t) return "";
         const id = t.appId || "";
         return id === "slate-settings" && t.title === softwareTitle ? "slate-software" : id;
+    }
+    // App rules (Settings → App Rules) as Hyprland window rules, one per app, matched on its whole
+    // window class. Made again only when the rules change (SLATE_APP_RULES_FOR), the old ones
+    // switched off. Only plain names reach Hyprland: a class or monitor with anything but
+    // letters, digits, dots, dashes and underscores is left out, never quoted into the rule
+    function ruleClassOf(e) { return e ? String(e.startupClass || e.id || "") : ""; }
+    readonly property string appRulesLua: {
+        const plain = v => /^[A-Za-z0-9._-]+$/.test(String(v || ""));
+        const made = [], key = [];
+        for (const r of s.appRules || []) {
+            if (!r || !plain(r.cls)) continue;
+            const ws = Math.round(Number(r.workspace) || 0), as = String(r.as || ""), mon = plain(r.monitor) ? r.monitor : "";
+            const fx = [];
+            if (ws >= 1 && ws <= 10) fx.push(`workspace = "${ws}"`);
+            if (["float", "tile", "maximize", "fullscreen"].includes(as)) fx.push(`${as} = true`);
+            if (mon) fx.push(`monitor = "${mon}"`);
+            if (fx.length === 0) continue;
+            key.push(`${r.cls}|${ws}|${as}|${mon}`);
+            made.push(`SLATE_APP_RULES[#SLATE_APP_RULES + 1] = hl.window_rule({ match = { class = "^(${r.cls.replace(/\./g, "\\\\.")})$" }, ${fx.join(", ")} })`);
+        }
+        return `if SLATE_APP_RULES_FOR ~= "${key.join(";")}" then `
+            + `for _, r in ipairs(SLATE_APP_RULES or {}) do r:set_enabled(false) end; `
+            + `SLATE_APP_RULES = {}; SLATE_APP_RULES_FOR = "${key.join(";")}"; ${made.join("; ")} end; `;
     }
     // The drop-down terminal (Super+`, binds.lua): Slate's own, on a hidden workspace of its own,
     // so it isn't a running app in the dock or a window to find in the launcher
