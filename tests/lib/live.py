@@ -87,10 +87,16 @@ class LiveCase(slate.Case):
     def setting(self, key):
         return self.ipc("config", "get", key)
 
+    def set_back(self, key, value):
+        """Set a setting to a value config get gave. A list (or anything starting with "[") goes
+        with a space first: qs ipc strips the brackets from an argument starting with "[", and a
+        list put back that way never arrived (App Rules' rules stayed for the next test)."""
+        self.ipc("config", "set", key, " " + value if str(value).startswith("[") else value)
+
     def keep_setting(self, key):
         """Put a setting back as it was when the test ends."""
         old = self.setting(key)
-        self.addCleanup(lambda: self.ipc("config", "set", key, old))
+        self.addCleanup(lambda: self.set_back(key, old))
         return old
 
     def play(self, *args):

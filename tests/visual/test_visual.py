@@ -108,7 +108,7 @@ class Visual(LiveCase):
                 if callable(step):
                     self.wait(step, f"the {name} scene to be undone")
             for k, v in old.items():
-                self.ipc("config", "set", k, v)
+                self.set_back(k, v)
             if old:
                 self.s.settle(0.8)
 
