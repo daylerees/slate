@@ -206,12 +206,14 @@ class Session(SpacesBase):
 
     def test_session_save(self):
         self.hyprland()
+        self.s.env["HYPRLAND_INSTANCE_SIGNATURE"] = "this-session"
         before = int(time.time())
         self.spaces("session-save")
         data = self.read(self.session)
         self.assertGreaterEqual(data.pop("saved"), before)
         self.assertEqual(data, {
             "boot": self.boot(),
+            "instance": "this-session",
             "workspaces": [
                 {"id": 1, "monitor": "DP-1", "aspect": 1.8286, "windows": [EDITOR, TERM]},
                 {"id": 2, "monitor": "DP-1", "aspect": 1.8286, "windows": [NOTES]},
@@ -220,7 +222,7 @@ class Session(SpacesBase):
             "active": [{"monitor": "DP-1", "workspace": 1}, {"monitor": "HDMI-A-1", "workspace": 3}],
             "focused": "DP-1",
         })
-        # Saved this boot: nothing to reopen until the restart
+        # Saved in this session: nothing to reopen until you've left it and come back
         self.spaces("session-pending", code=1)
 
     def test_pending(self):
@@ -232,9 +234,14 @@ class Session(SpacesBase):
             ("no apps", {"boot": "another-boot", "saved": now, "workspaces": []}, 1, True),
             ("not an object", [1, 2], 1, True),
             ("bad json", "{oops", 1, True),
-            # Kept over a day ago: forgotten
-            ("too old", {"boot": "another-boot", "saved": now - 2 * 86400, "workspaces": ws}, 1, False),
+            # Kept in a session you've since left: a log out and back in, without a restart
+            ("another session, this boot", {"boot": self.boot(), "instance": "an-earlier-session", "saved": now, "workspaces": ws}, 0, True),
+            ("this session", {"boot": "another-boot", "instance": "this-session", "saved": now, "workspaces": ws}, 1, True),
+            # Over a weekend, or a week away: still offered; over a month: forgotten
+            ("a week ago", {"boot": "another-boot", "instance": "an-earlier-session", "saved": now - 7 * 86400, "workspaces": ws}, 0, True),
+            ("too old", {"boot": "another-boot", "saved": now - 31 * 86400, "workspaces": ws}, 1, False),
         ]
+        self.s.env["HYPRLAND_INSTANCE_SIGNATURE"] = "this-session"
         for name, data, code, kept in cases:
             with self.subTest(name):
                 self.write(self.session, data)

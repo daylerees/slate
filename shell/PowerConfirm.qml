@@ -1,8 +1,8 @@
 // Confirmation dialog in the middle of the screen over a dimmed desktop: for log out /
 // restart / shut down, and for anything else that needs a yes first (deleting a space…).
 // Keyboard: Left/Right or Tab pick a button (the action is picked first), Enter or Space
-// presses it, Escape or a click outside cancels. Restart also has a switch to reopen your
-// apps afterwards (Settings → Power): Up or Tab reaches it, Enter or Space flips it.
+// presses it, Escape or a click outside cancels. (Your apps are kept for the next login as you
+// leave, whichever you choose: Settings → Startup Apps → Your apps from last time.)
 // Open with powerConfirm.ask("<logout|reboot|shutdown>"), or from anywhere with:
 //   slate ipc call power confirm shutdown
 // For other questions:
@@ -45,15 +45,11 @@ PanelWindow {
     property bool customOption: false          // the question's own switch (custom.option), off to start
     readonly property var info: action === "custom" && custom ? custom : (actions[action] ?? actions.shutdown)
 
-    property int focusedButton: 1          // 0 = Cancel, 1 = the action, 2 = the reopen switch
-    readonly property bool hasReopen: action === "reboot"
-    // The switch row: Restart's "reopen my apps", or a question's own option
-    readonly property bool hasOption: hasReopen || (action === "custom" && !!custom && !!custom.option)
-    readonly property bool optionOn: hasReopen ? Config.s.reopenAppsAfterRestart : customOption
-    function flipOption() {
-        if (hasReopen) Config.s.reopenAppsAfterRestart = !Config.s.reopenAppsAfterRestart;
-        else customOption = !customOption;
-    }
+    property int focusedButton: 1          // 0 = Cancel, 1 = the action, 2 = the question's switch
+    // The switch row: a question's own option (Up or Tab reaches it, Enter or Space flips it)
+    readonly property bool hasOption: action === "custom" && !!custom && !!custom.option
+    readonly property bool optionOn: customOption
+    function flipOption() { customOption = !customOption; }
     readonly property var focusOrder: hasOption ? [2, 0, 1] : [0, 1]   // Tab order, top to bottom
     function ask(name) {
         if (!actions[name]) return;
@@ -265,7 +261,7 @@ PanelWindow {
                 }
                 Item { width: 1; height: 16; visible: root.hasInput }
 
-                // Restart: reopen your apps afterwards; or the question's own option
+                // The question's own option
                 Rectangle {
                     id: reopen
                     visible: root.hasOption
@@ -292,7 +288,7 @@ PanelWindow {
                         spacing: 2
                         Text {
                             width: parent.width
-                            text: root.hasReopen ? "Reopen my apps afterwards" : root.custom && root.custom.option ? root.custom.option.label : ""
+                            text: root.custom && root.custom.option ? root.custom.option.label : ""
                             color: root.textColor
                             font.family: root.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.DemiBold
                         }
@@ -300,8 +296,7 @@ PanelWindow {
                             width: parent.width
                             wrapMode: Text.WordWrap
                             visible: text !== ""
-                            text: root.hasReopen ? "On the same workspaces, just where you left them"
-                                : root.custom && root.custom.option ? root.custom.option.detail || "" : ""
+                            text: root.custom && root.custom.option ? root.custom.option.detail || "" : ""
                             color: root.dimTextColor
                             font.family: root.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                         }

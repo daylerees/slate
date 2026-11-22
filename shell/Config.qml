@@ -1087,27 +1087,54 @@ Singleton {
         onExited: code => { if (code === 0) loginSettle.start(); }
     }
     Timer { id: loginSettle; interval: 2500; onTriggered: root.atLogin() }
-    // Startup apps (Settings → Startup Apps). After a restart that kept your apps (the restart
-    // dialog's "Reopen apps"), spaces.py reopens those first, back where they were, then opens
-    // the startup apps, each on a workspace of its own, and returns to your last workspace.
-    // Not on the login screen, which loads this file with a copy of your settings: there,
+    // Your apps from last time and the startup apps (Settings → Startup Apps). Apps kept as you
+    // left (session.sh) come back with Always: spaces.py reopens them, back where they were, then
+    // opens the startup apps, each on a workspace of its own, and returns to your last workspace.
+    // With Ask, the startup apps open as usual and a notification offers the rest (Reopen / Not
+    // now). Not on the login screen, which loads this file with a copy of your settings: there,
     // spaces.py isn't installed, so the check failed and every startup app was launched
     onAtLogin: if (!isLoginScreen && !testMode) {
-        reopenCheck.running = true;
+        pickUpAtLogin();
         // Webcams forget their picture settings when unplugged or restarted: put yours back
         Quickshell.execDetached([Quickshell.shellPath("scripts/webcam.py"), "apply"]);
     }
+    // "ask", "always" or "never" (the old restart switch, turned off, reads as never)
+    readonly property string reopenMode: ["always", "never"].includes(s.reopenApps) ? s.reopenApps
+        : s.reopenAppsAfterRestart === false ? "never" : "ask"
+    function pickUpAtLogin() { reopenCheck.running = false; reopenCheck.running = true; }
+    readonly property string spacesScript: Quickshell.shellPath("scripts/spaces.py")
     Process {
         id: reopenCheck
-        command: ["python3", Quickshell.shellPath("scripts/spaces.py"), "session-pending"]
+        command: ["python3", root.spacesScript, "session-pending"]
         onExited: code => {
-            if (code === 0) {
-                Quickshell.execDetached(["python3", Quickshell.shellPath("scripts/spaces.py"), "session-restore"].concat(root.s.startupApps || []));
+            if (code === 0 && root.reopenMode === "always") {
+                Quickshell.execDetached(["python3", root.spacesScript, "session-restore"].concat(root.s.startupApps || []));
                 return;
             }
+            if (code === 0 && root.reopenMode === "ask") { reopenAsk.running = false; reopenAsk.running = true; }
+            else if (code === 0) Quickshell.execDetached(["python3", root.spacesScript, "session-forget"]);
             for (const id of (root.s.startupApps || [])) {
                 const e = DesktopEntries.byId(id);
                 if (e) e.execute();
+            }
+        }
+    }
+    // The question, as a notification that stays until it's answered (it waits for the quiet
+    // spell after logging in, Notifications.qml). Reopen brings them back (the startup apps are
+    // open already, and an app that's open isn't started twice); Not now forgets them. Closed
+    // without an answer, they're kept, and replaced as you next leave
+    readonly property string reopenTitle: "Pick up where you left off?"
+    Process {
+        id: reopenAsk
+        command: ["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
+            "--urgency=critical", "--hint=string:x-slate-page:startup", "--action=reopen=Reopen", "--action=later=Not now", "--wait",
+            "--", root.reopenTitle,
+            "Slate can open the apps you had last time, on the same workspaces and just where you left them. Nothing opens unless you say so."]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const said = text.trim();
+                if (said === "reopen") Quickshell.execDetached(["python3", root.spacesScript, "session-restore"]);
+                else if (said === "later") Quickshell.execDetached(["python3", root.spacesScript, "session-forget"]);
             }
         }
     }
@@ -2875,7 +2902,7 @@ Singleton {
     }
     function runSessionAction() {
         Quickshell.execDetached([Quickshell.shellPath("scripts/session.sh"), leaveAction, (soundVolume("goodbye") / 100).toFixed(2)]
-            .concat(leaveAction === "reboot" && s.reopenAppsAfterRestart ? ["reopen"] : []));
+            .concat(reopenMode !== "never" ? ["reopen"] : []));
     }
     Timer { id: leaveAfterFade; interval: root.leaveFade; onTriggered: root.runSessionAction() }
     Timer { id: leaveGiveUp; interval: 20000; onTriggered: root.leaving = false }

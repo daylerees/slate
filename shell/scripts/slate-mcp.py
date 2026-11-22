@@ -174,6 +174,7 @@ PATHS = {"wallpaper", "wallpaperFolder", "screenshotFolder", "screensaverVideoFo
 # them through a function, or is shared): key → (page, what Settings calls it)
 NAMED = {
     "themeMode": ("appearance", "Theme"),
+    "reopenApps": ("startup", "Reopen your apps from last time at login: ask, always or never"),
     "wallpaper": ("wallpaper", "Wallpaper"),
     "wallpaperFolder": ("wallpaper", "Wallpaper folder"),
     "folderColour": ("icons", "Folder color"),
@@ -996,6 +997,8 @@ REFUSE = {
     # hold a command, or reach outside Slate
     "defaultTerminal", "defaultBrowser", "defaultFileManager", "defaultEditor", "defaultCalculator",
     "launcherCommands", "logLevel", "clipboardHistory",
+    # old: the restart dialog's switch, now reopenApps (only read so a saved "off" still counts)
+    "reopenAppsAfterRestart",
     # where and how other apps' windows open: one could put an app's windows out of sight
     "appRules",
     # change other apps' own settings (as App Theming's list does, refused with every list)
@@ -1026,6 +1029,7 @@ MOVES = ["slide", "hop", "wheel", "tilt", "orbit", "deck", "fan", "instant"]
 # What each text setting takes: a list of values, or a pattern (with how to say it)
 VALUES = {
     "themeMode": ["dark", "light", "auto"],
+    "reopenApps": ["ask", "always", "never"],
     "zoomFollow": ["smooth", "center"],
     "accent": (r"#[0-9a-fA-F]{6}", "a color like #8fb3e8"),
     "wallpaperMinSize": (r"\d{3,5}x\d{3,5}", "a size like 1280x720"),
@@ -1108,7 +1112,7 @@ SWITCHES = {
     "reduceTransparency", "reduceMotion", "zoom", "highContrast", "onScreenKeyboard", "screenReader", "pointerTrail",
     "dndSchedule", "dndFullscreen", "dndCalls", "recordComputerSound", "recordMicrophone",
     "drinkReminder", "focusTimer", "focusQuiet", "storageWarning", "barShowDrink", "dockShowDrink", "barShowFocus", "dockShowFocus",
-    "roundedScreenCorners", "shadows", "roundedElements", "reopenAppsAfterRestart",
+    "roundedScreenCorners", "shadows", "roundedElements",
     "keepEmptyWorkspace", "barBlur", "barPanelBlur", "barAutoHide", "barShowControl",
     "barShowClock", "barShowApps", "barShowSpaces", "spaceBorders", "spaceBadges",
     "spaceSwitcherBadges", "spaceBarTint", "barShowWorkspaces", "barShowWindowMode",

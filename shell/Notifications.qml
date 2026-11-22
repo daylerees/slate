@@ -328,6 +328,14 @@ Scope {
         }
         // (the tests: as just after logging in, for this long)
         function testSettle(ms: int): void { if (Config.testMode) notifs.settle(ms); }
+        // (the tests: press a button on the newest notification with this summary, by its action's id)
+        function testAct(summary: string, action: string): string {
+            if (!Config.testMode) return "";
+            const h = notifs.history.find(x => x.summary === summary);
+            if (!h || !notifs.live[h.key]) return "none";
+            notifs.invokeAction(h.key, action);
+            return "pressed";
+        }
         // The latest ones, newest first: [{"app", "summary", "body", "time"}]
         function list(): string {
             return JSON.stringify(notifs.history.slice(0, 20).map(h => ({ app: h.appName || "", summary: h.summary || "", body: h.body || "", time: h.time || 0 })));

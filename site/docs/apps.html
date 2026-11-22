@@ -65,11 +65,28 @@
         and pick one from the list. It opens each time you log in. Your startup apps are listed under <strong>At
         login</strong>, and you can remove one with the button beside it; Slate asks first, and you can always add it
         again.</p>
-      <p>If you restart with <a href="power.html#reopening-your-apps-after-a-restart">your apps reopening</a>, each
-        startup app opens on a workspace of its own, so it doesn't crowd the windows coming back.</p>
+      <p>When <a href="#your-apps-from-last-time">your apps from last time</a> come back too, each startup app opens on
+        a workspace of its own, so it doesn't crowd the windows coming back.</p>
       <div class="callout"><i class="ti">&#xEA51;</i>
         <p>Anything started from your own <code>~/.config/slate/hypr/autostart.lua</code> still opens too, alongside
           the apps listed here.</p></div>
+
+      <h2 id="your-apps-from-last-time">Your apps from last time</h2>
+      <p>As you log out, restart or shut down, Slate keeps a note of the apps you had open: which workspace and screen
+        each window was on, and whether it was tiled or floating. At your next login it can bring them all back, just where
+        you left them, and return you to the workspace you were on.</p>
+      <p><strong>Reopen your apps</strong>, in <span class="path"><i class="ti">&#xEB20;</i> Settings → Startup Apps → Your
+        apps from last time</span>, says how:</p>
+      <table>
+        <tr><th>Choice</th><th>What happens as you log in</th></tr>
+        <tr><td>Ask</td><td>A notification asks <strong>Pick up where you left off?</strong> <strong>Reopen</strong> brings
+          them back; <strong>Not now</strong> starts fresh. Nothing opens unless you say so. This is the default.</td></tr>
+        <tr><td>Always</td><td>They come back by themselves.</td></tr>
+        <tr><td>Never</td><td>Slate doesn't keep them, and every login starts fresh.</td></tr>
+      </table>
+      <p>Your startup apps open either way. Apps reopen fresh, as when you start them yourself: a terminal comes back
+        empty, while apps that restore their own tabs and documents (most browsers and editors) do that too. Apps kept more
+        than a month ago aren't offered.</p>
 
       <h2>Opening apps</h2>
       <p>To find and open any app, use the <a href="launcher.html">launcher</a>

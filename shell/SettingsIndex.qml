@@ -168,7 +168,7 @@ Singleton {
         ["Charging limit", "power", "battery charge limit 80% full health threshold maximum"],
         ["On battery", "power", "power mode profile saver battery"],
         ["Plugged in", "power", "power mode profile performance charger"],
-        ["Reopen apps after restarting", "power", "restart reboot reopen restore apps windows workspaces session"],
+        ["Reopen your apps", "startup", "reopen your apps from last time restore session restart reboot log in login pick up where you left off windows workspaces"],
         ["Tiles in the icon's color", "icons", "icon tile background color colorful dock launcher plate match colour colourful"],
         ["Windows show", "workspaces", "overview live previews app icons windows cards thumbnails screenshots"],
         ["Windows show", "windows", "switcher alt tab super tab live previews app icons thumbnails"],

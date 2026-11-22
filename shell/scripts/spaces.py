@@ -10,10 +10,13 @@
     spaces.py delete <id>                   forget a space
     spaces.py restore <id-or-name>          open each of its workspaces as a new workspace,
                                             start its apps and put their windows back
-    spaces.py session-save                  before a restart: keep every workspace's apps
+    spaces.py session-save                  as you log out, restart or shut down: keep every
+                                            workspace's apps (Settings → Startup Apps → Your
+                                            apps from last time: not with Never)
+    spaces.py session-forget                forget them (Never, or "Not now" at login)
     spaces.py session-pending               exit 0 if there are apps to reopen at this login
     spaces.py session-restore [<desktop-id>…]
-                                            after the restart: reopen them on the same
+                                            at the next login: reopen them on the same
                                             workspaces, in the same places; then open the
                                             startup apps given, each on a workspace of its own
 
@@ -118,7 +121,7 @@ def set_workspace_mode(ws, mode):
 
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate")
 SESSION = os.path.join(STATE, "session.json")
-SESSION_MAX_AGE = 24 * 3600     # a session kept longer ago than this isn't reopened
+SESSION_MAX_AGE = 30 * 86400    # a session kept longer ago than this isn't reopened (a long holiday)
 
 # Seconds to wait for an app's window: slow starters (Steam, big IDEs) take this long. The
 # override is for tests only, so an app that never opens doesn't hold them up
@@ -735,7 +738,8 @@ def session_save():
     for w in workspaces:
         w["windows"] = [{k: v for k, v in win.items() if k not in ("address", "rounding")} for win in w["windows"]]
     monitors = hypr("monitors")
-    data = {"boot": boot_id(), "saved": int(time.time()), "workspaces": workspaces,
+    data = {"boot": boot_id(), "instance": os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", ""),
+            "saved": int(time.time()), "workspaces": workspaces,
             "active": [{"monitor": m["name"], "workspace": m.get("activeWorkspace", {}).get("id", 0)} for m in monitors],
             "focused": next((m["name"] for m in monitors if m.get("focused")), "")}
     os.makedirs(STATE, exist_ok=True)
@@ -753,7 +757,9 @@ def session_forget():
 
 
 def session_pending():
-    """The kept session, if this is the first login since the restart it was kept for."""
+    """The kept session, if this is a login after the one it was kept in (a log out and back
+    in, or a restart). Kept by this Hyprland session, it's still to come: you haven't left yet.
+    One kept before sessions were told apart goes by the boot instead, as it used to."""
     try:
         with open(SESSION, encoding="utf-8") as fh:
             data = json.load(fh)
@@ -761,7 +767,10 @@ def session_pending():
         return None
     if not isinstance(data, dict) or not data.get("workspaces"):
         return None
-    if data.get("boot") == boot_id():
+    if data.get("instance"):
+        if data["instance"] == os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", ""):
+            return None         # kept in this session: you haven't left it (yet)
+    elif data.get("boot") == boot_id():
         return None             # the restart hasn't happened (yet)
     if time.time() - data.get("saved", 0) > SESSION_MAX_AGE:
         session_forget()

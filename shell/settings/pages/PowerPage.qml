@@ -97,12 +97,4 @@ Column {
             SettingToggle { checked: powerPane.limitOn; onToggled: v => powerPane.askLimit(v) }
         }
     }
-    GroupLabel { text: "Restarting" }
-    Group {
-        ToggleSetting {
-            label: "Reopen apps after restarting"
-            detail: "Your apps open again on the same workspaces, right where you left them. Also on the restart dialog"
-            key: "reopenAppsAfterRestart"
-        }
-    }
 }

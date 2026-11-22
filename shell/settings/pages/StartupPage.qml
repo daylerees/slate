@@ -65,4 +65,20 @@ Column {
         }
     }
     Footnote { text: "Apps started in ~/.config/slate/hypr/autostart.lua still open too." }
+    // Your apps from last time (Config.reopenMode): kept as you log out, restart or shut down
+    GroupLabel { text: "Your apps from last time" }
+    Group {
+        DropdownSetting {
+            label: "Reopen your apps"
+            settingKey: "reopenApps"
+            detail: ({
+                always: "As you log in, the apps you had open come back on the same workspaces, just where you left them",
+                never: "Slate doesn't keep them, and every login starts fresh"
+            })[Config.reopenMode] ?? "As you log in, Slate asks whether to bring back the apps you had open, on the same workspaces and just where you left them"
+            options: [{ value: "ask", label: "Ask" }, { value: "always", label: "Always" }, { value: "never", label: "Never" }]
+            value: Config.reopenMode
+            // (and the old restart switch out of the way, or Ask and Always would still read as Never)
+            onPicked: v => { Config.s.reopenAppsAfterRestart = true; Config.s.reopenApps = v; }
+        }
+    }
 }
