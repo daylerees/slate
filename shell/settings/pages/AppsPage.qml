@@ -23,7 +23,7 @@ Column {
     // Apps of a kind (by their categories), or every app if none say so
     function optionsFor(cats) {
         const fit = all.filter(e => (e.categories || []).some(c => cats.includes(c)));
-        return (fit.length > 0 ? fit : all).map(e => ({ value: e.id, label: e.name }));
+        return (fit.length > 0 ? fit : all).map(e => ({ value: e.id, label: e.name, app: e.id }));
     }
     function nameOf(id) { const e = id ? DesktopEntries.byId(id) : null; return e ? e.name : ""; }
     // (each a dropdown with a search box, as Settings' other long lists are)

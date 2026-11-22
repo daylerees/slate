@@ -355,6 +355,15 @@ SCENES["settings-apprules-rules"] = {
     "settle": 1.2, "undo": [("settings", "close")],
 }
 
+# App Rules' Choose an app, open: the apps to pick from, each with its icon
+SCENES["settings-apprules-choose"] = {
+    "do": [("settings", "page", "apprules"),
+           lambda st: st["settings"]["open"] and st["settings"]["section"] == "apprules",
+           ("test", "settingsOpenDrop", "Choose an app")],
+    "wait": lambda st: st["settings"]["drop"] == "Choose an app",
+    "settle": 1.5, "undo": [("settings", "close")],
+}
+
 # A setting greyed out because another one is off: its "Needs … to be off" line, with the
 # arrow that goes there (scrolled to it; settled once its highlight has faded)
 SCENES["settings-needs"] = {

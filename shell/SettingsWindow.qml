@@ -240,6 +240,18 @@ FloatingWindow {
         return { x: Math.round(p.x), y: Math.round(p.y), w: Math.round(d.button.width), h: Math.round(d.button.height) };
     }
     readonly property string dropOpen: dropLayer.owner ? String(dropLayer.owner.label || "") : ""
+    // (the tests: open that dropdown's list, as its button does)
+    function testOpenDrop(label) {
+        const find = (it, want) => {
+            if (!it) return null;
+            if (it.visible && want(it) && it !== pageLoader.item) return it;
+            for (const c of it.children) { const r = find(c, want); if (r) return r; }
+            return null;
+        };
+        const d = find(pageLoader.item, it => it.label === label && it.searchable !== undefined && it.button !== undefined);
+        if (d) dropLayer.owner = d;
+        return !!d;
+    }
     function pageTestState() { const p = pageLoader.item; return p && p.testState !== undefined ? p.testState : null; }
     function testToggle(label) {
         const row = it => {
@@ -1022,7 +1034,7 @@ FloatingWindow {
             let widest = 0;
             for (const o of (owner.options || [])) {
                 rowMetrics.text = String(o.label);
-                widest = Math.max(widest, rowMetrics.advanceWidth + (o.folder || o.icon ? 28 : 0));
+                widest = Math.max(widest, rowMetrics.advanceWidth + (o.folder || o.icon || o.app ? 28 : 0));
             }
             // + the row's padding, the tick and the list's own margins (and room for a scrollbar)
             menuW = Math.min(width - 16, Math.max(200, b.width, widest + 12 + 34 + 12 + 8));
@@ -1138,16 +1150,24 @@ FloatingWindow {
                         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                         colour: parent.modelData.folder || "transparent"
                     }
+                    // ...or an app's own icon (app: its desktop id or window class), its tile as the dock draws it
+                    AppTile {
+                        id: rowApp
+                        visible: !rowFolder.visible && !!parent.modelData.app
+                        anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                        width: 20; height: 20
+                        app: parent.modelData.app || ""
+                    }
                     Text {
                         id: rowIcon
-                        visible: !rowFolder.visible && !!parent.modelData.icon
+                        visible: !rowFolder.visible && !rowApp.visible && !!parent.modelData.icon
                         anchors { left: parent.left; leftMargin: 11; verticalCenter: parent.verticalCenter }
                         text: visible ? win.glyph(parent.modelData.icon) : ""
                         color: parent.picked ? win.accentText : parent.current ? win.accent : win.dim
                         font.family: win.bar.iconFont; font.pixelSize: 17
                     }
                     Text {
-                        readonly property Item lead: rowFolder.visible ? rowFolder : rowIcon.visible ? rowIcon : null
+                        readonly property Item lead: rowFolder.visible ? rowFolder : rowApp.visible ? rowApp : rowIcon.visible ? rowIcon : null
                         anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 10 : 12; right: tick.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         textFormat: Text.PlainText        // never markup: an option can be a device's, an app's or a file's name
                         text: parent.modelData.label

@@ -47,7 +47,7 @@ Item {
         id: ddButton
         readonly property bool open: win.drop.owner === dropdown
         // As wide as its choice needs, up to a bit under half the row (long names shorten in the middle)
-        readonly property real naturalWidth: ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0)
+        readonly property real naturalWidth: ddText.implicitWidth + 44 + (ddFolder.visible ? ddFolder.width + 8 : 0) + (ddApp.visible ? ddApp.width + 8 : 0)
             + (ddIcon.visible ? ddIcon.width + 8 : 0)
         width: Math.max(150, Math.min(naturalWidth, dropdown.width * 0.45)); height: 32; radius: Config.corner(8)
         color: "transparent"
@@ -61,17 +61,25 @@ Item {
             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
             colour: dropdown.current && dropdown.current.folder ? dropdown.current.folder : "transparent"
         }
+        // ...or an app's own icon (app: its desktop id or window class), as the dock draws it
+        AppTile {
+            id: ddApp
+            visible: !ddFolder.visible && !!dropdown.current && !!dropdown.current.app
+            anchors { left: parent.left; leftMargin: 9; verticalCenter: parent.verticalCenter }
+            width: 18; height: 18
+            app: dropdown.current && dropdown.current.app ? dropdown.current.app : ""
+        }
         // ...or an icon (icon: a glyph code)
         Text {
             id: ddIcon
-            visible: !ddFolder.visible && !!dropdown.current && !!dropdown.current.icon
+            visible: !ddFolder.visible && !ddApp.visible && !!dropdown.current && !!dropdown.current.icon
             anchors { left: parent.left; leftMargin: 11; verticalCenter: parent.verticalCenter }
             text: visible ? win.glyph(dropdown.current.icon) : ""
             color: win.text; font.family: win.bar.iconFont; font.pixelSize: 16
         }
         Text {
             id: ddText
-            readonly property Item lead: ddFolder.visible ? ddFolder : ddIcon.visible ? ddIcon : null
+            readonly property Item lead: ddFolder.visible ? ddFolder : ddApp.visible ? ddApp : ddIcon.visible ? ddIcon : null
             anchors { left: lead ? lead.right : parent.left; leftMargin: lead ? 8 : 12; verticalCenter: parent.verticalCenter }
             width: Math.min(implicitWidth, ddButton.width - x - 32)
             textFormat: Text.PlainText        // never markup: an option can be a device's, an app's or a file's name

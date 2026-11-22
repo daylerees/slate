@@ -105,10 +105,13 @@ Column {
             noneLabel: "Choose"
             value: ""
             options: {
-                const seen = [];
+                const seen = [], apps = {};
                 for (const h of (win.notifs ? win.notifs.history : []))
-                    if (h.appName && seen.indexOf(h.appName) < 0 && (Config.s.dndAllowed || []).indexOf(h.appName) < 0) seen.push(h.appName);
-                return seen.sort((a, b) => a.localeCompare(b)).map(n => ({ value: n, label: n }));
+                    if (h.appName && seen.indexOf(h.appName) < 0 && (Config.s.dndAllowed || []).indexOf(h.appName) < 0) {
+                        seen.push(h.appName);
+                        apps[h.appName] = h.entryId || "";
+                    }
+                return seen.sort((a, b) => a.localeCompare(b)).map(n => ({ value: n, label: n, app: apps[n] }));
             }
             onPicked: v => { if (v) Config.s.dndAllowed = (Config.s.dndAllowed || []).concat([v]); }
         }

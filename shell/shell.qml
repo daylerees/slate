@@ -247,6 +247,7 @@ ShellRoot {
         // Press the switch on the Settings row with this label, as a click does ("pressed" or "none")
         function settingsToggle(label: string): string { return settingsLoader.item && settingsLoader.item.testToggle(label) ? "pressed" : "none"; }
         function settingsPollValue(what: string): string { return settingsLoader.item ? String(settingsLoader.item.pretendPolls[what] ?? "") : ""; }
+        function settingsOpenDrop(label: string): string { return settingsLoader.item && settingsLoader.item.testOpenDrop(label) ? "open" : "none"; }
         function settingsDropButton(label: string): string { return JSON.stringify(settingsLoader.item ? settingsLoader.item.testDropButton(label) : null); }
         function settingsButton(row: string, label: string): string { return settingsLoader.item && settingsLoader.item.testButton(row, label) ? "pressed" : "none"; }
         function newSpace(): void { popouts.newSpaceAsked(); }

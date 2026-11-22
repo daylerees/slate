@@ -61,7 +61,7 @@ Column {
             noneLabel: "Choose"
             value: ""
             options: startupPane.all.filter(e => !(Config.s.startupApps || []).includes(e.id))
-                .map(e => ({ value: e.id, label: e.name, detail: e.genericName || e.comment || "" }))
+                .map(e => ({ value: e.id, label: e.name, detail: e.genericName || e.comment || "", app: e.id }))
             onPicked: v => Config.s.startupApps = (Config.s.startupApps || []).concat([v])
         }
     }

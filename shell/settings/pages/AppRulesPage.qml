@@ -42,14 +42,14 @@ Column {
             if (!cls || seen.has(cls) || Config.isNova(t) || Config.isDropdown(t) || cls === "slate-settings") continue;
             seen.add(cls);
             const e = Config.appEntry(cls);
-            out.push({ value: cls, label: (e ? e.name : cls) + " · open now", name: e ? e.name : cls, detail: "", entry: e ? e.id : "" });
+            out.push({ value: cls, label: (e ? e.name : cls) + " · open now", name: e ? e.name : cls, detail: "", entry: e ? e.id : "", app: e ? e.id : cls });
         }
         const installed = DesktopEntries.applications.values.filter(e => !e.noDisplay).slice().sort((a, b) => a.name.localeCompare(b.name));
         for (const e of installed) {
             const cls = Config.ruleClassOf(e);
             if (!cls || seen.has(cls)) continue;
             seen.add(cls);
-            out.push({ value: cls, label: e.name, name: e.name, detail: e.genericName || e.comment || "", entry: e.id });
+            out.push({ value: cls, label: e.name, name: e.name, detail: e.genericName || e.comment || "", entry: e.id, app: e.id });
         }
         return out;
     }
