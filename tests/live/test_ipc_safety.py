@@ -45,7 +45,8 @@ class ConfigSet(LiveCase):
     def test_a_list_takes_only_a_list(self):
         """Stored as text, every place reading the list stopped with an error."""
         saved = lambda: json.load(open(os.path.join(self.s.slate_home, "settings.json"))).get("startupApps", [])
-        self.assertEqual(self.setting("startupApps"), "")
+        # (config get gives a list as JSON, as config set takes it back)
+        self.assertEqual(self.setting("startupApps"), "[]")
         # (a space first: `qs ipc call` itself takes "[…]" apart)
         self.addCleanup(lambda: self.ipc("config", "set", "startupApps", " []"))
         self.unchanged("startupApps", "foot.desktop", "", '{"foot.desktop": true}', '"foot.desktop"', "7", "null", " [")
@@ -57,7 +58,7 @@ class ConfigSet(LiveCase):
                 break
             self.s.settle(0.1)
         self.assertEqual(saved(), ["foot.desktop", "kitty.desktop"])
-        self.assertEqual(self.setting("startupApps"), "foot.desktop,kitty.desktop")
+        self.assertEqual(json.loads(self.setting("startupApps")), ["foot.desktop", "kitty.desktop"])
 
     def test_a_number_takes_only_a_number(self):
         self.keep_setting("dockIconSize")

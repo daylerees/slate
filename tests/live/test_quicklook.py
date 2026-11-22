@@ -244,7 +244,9 @@ class QuickLook(LiveCase):
                 self.ipc("quicklook", "close")
                 self.closed()
                 self.ipc("test", "quickLookList", json.dumps({"paths": paths, "at": at}))
-            st = self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["index"] == at
-                           and st["quicklook"]["view"] == "image" and st["quicklook"]["arrows"], f"picture {at + 1}")["quicklook"]
-            places.append(tuple(st["arrows"]))
+            self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["index"] == at
+                      and st["quicklook"]["view"] == "image" and st["quicklook"]["arrows"], f"picture {at + 1}")
+            # (where they settle: read as it opened, the card was still finding its place on a busy
+            # computer, and one reading in a full run was 282 px over)
+            places.append(self.steady(lambda: tuple(self.s.state()["quicklook"]["arrows"]), floor=0.3))
         self.assertEqual(len(set(places)), 1, f"the arrows moved: {places}")
