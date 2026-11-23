@@ -172,6 +172,7 @@ Column {
         // Slate's own files changed by hand: an update replaces them (the old copy is kept)
         Text {
             id: changedNote
+            textFormat: Text.PlainText        // (your files' names)
             x: 16; width: parent.width - 32
             visible: updatesPane.touched.length > 0 && !Updates.busy
             topPadding: 12; bottomPadding: 4

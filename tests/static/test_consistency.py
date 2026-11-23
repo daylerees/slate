@@ -1164,8 +1164,9 @@ class OutsideTextIsPlain(Case):
     ]
     # Text you type into has no markup to read
     TYPED = {"TextInput", "TextEdit", "TextField"}
-    # Slate's own components whose words are plain inside them (Tooltip.qml: named in ALSO, so checked)
-    PLAIN = {"Tooltip"}
+    # Slate's own components whose words are plain inside them (Tooltip.qml: named in ALSO, so checked;
+    # GroupLabel, Settings' headings: test_settings_headings_are_plain)
+    PLAIN = {"Tooltip", "GroupLabel"}
     # The login screen's files that draw nothing from outside (LoginScreen.qml, which shows the
     # login's message and this computer's account names, is checked like the rest)
     LOGIN_SCREEN = {"Config.qml", "SettingsData.qml", "RoundImage.qml", "WallBlur.qml", "Gloss.qml", "GlassFill.qml"}
@@ -1244,10 +1245,13 @@ class OutsideTextIsPlain(Case):
     def test_text_from_outside_is_plain(self):
         seen = 0
         names = sorted(os.listdir(slate.SHELL)) + ["panels/" + n for n in sorted(os.listdir(os.path.join(slate.SHELL, "panels")))]
+        # (and Settings' own building blocks and pages)
+        names += ["settings/" + n for n in sorted(os.listdir(os.path.join(slate.SHELL, "settings")))]
+        names += ["settings/pages/" + n for n in sorted(os.listdir(os.path.join(slate.SHELL, "settings", "pages")))]
         for name in names:
             if not name.endswith(".qml") or name in self.LOGIN_SCREEN or name in self.SLATES_OWN:
                 continue
-            src = slate.read("shell", name)
+            src = slate.read("shell", *name.split("/"))
             for m in re.finditer(r"(?<![\w.])text:[ \t]*([^\n]+)", src):
                 # (the binding alone: not what follows it on a one-line item, nor a comment)
                 words = re.split(r";\s+\w[\w.]*:|\s//", m.group(1))[0]
@@ -1265,6 +1269,11 @@ class OutsideTextIsPlain(Case):
             while (at := src.find(binding, at + 1)) >= 0:
                 with self.subTest(file=name, binding=binding):
                     self.check(name, src, at, "a name something else chose")
+
+    def test_settings_headings_are_plain(self):
+        """Settings' section headings (GroupLabel) are plain text: App Rules names one after an
+        app, Updates after a version from the network, and markup in either was read as markup."""
+        self.assertRegex(slate.read("shell", "settings", "GroupLabel.qml"), r"\n\s*textFormat: Text\.PlainText\b")
 
     def test_the_panels_label_is_plain(self):
         """panels/Label.qml (every panel's words) is plain, and the one use that wants markup

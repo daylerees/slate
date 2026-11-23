@@ -162,6 +162,7 @@ Column {
                     visible: !(previewLoader.item && previewLoader.item.showing)
                     color: win.dim
                     font.family: win.font; font.pixelSize: Config.text(13)
+                    textFormat: Text.PlainText        // (the camera's own error)
                     text: !camPane.preview ? "The preview is off, so the camera isn't on"
                         : previewLoader.status === Loader.Error ? "The preview needs Qt Multimedia" + Packages.named("qtmultimedia")
                         : previewLoader.item && previewLoader.item.problem !== "" ? "No picture: " + previewLoader.item.problem
