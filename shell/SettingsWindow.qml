@@ -253,6 +253,7 @@ FloatingWindow {
         return !!d;
     }
     function pageTestState() { const p = pageLoader.item; return p && p.testState !== undefined ? p.testState : null; }
+    function pageItem() { return pageLoader.item; }
     function testToggle(label) {
         const row = it => {
             if (!it) return null;

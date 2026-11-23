@@ -27,6 +27,11 @@ Column {
     readonly property var cam: cams.find(c => c.device === chosen) || cams[0] || null
     property bool preview: false          // the camera (and its light) only on when asked
     property var usedBy: []
+    // (the tests: what it shows, and the cameras handed to it, as the container has none)
+    readonly property var testState: ({ cams: cams.length, preview: preview,
+                                        previewLoaded: previewLoader.status === Loader.Ready,
+                                        previewFailed: previewLoader.status === Loader.Error })
+    function testPretend(d) { if (d.cams) { cams = d.cams; looked = true; } if (d.preview !== undefined) preview = d.preview; }
     // Plain words for the camera's own names for its settings: [label, detail]
     readonly property var words: ({
         brightness: ["Brightness", ""],
@@ -146,7 +151,7 @@ Column {
                     id: previewLoader
                     anchors.fill: parent
                     active: camPane.preview && win.visible && !!camPane.cam
-                    source: Qt.resolvedUrl("WebcamPreview.qml")
+                    source: Quickshell.shellPath("WebcamPreview.qml")    // (in Slate's own folder, not this page's)
                     onLoaded: item.device = Qt.binding(() => camPane.cam ? camPane.cam.device : "")
                 }
                 Text {

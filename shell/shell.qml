@@ -246,6 +246,14 @@ ShellRoot {
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
         // Press the switch on the Settings row with this label, as a click does ("pressed" or "none")
         function settingsToggle(label: string): string { return settingsLoader.item && settingsLoader.item.testToggle(label) ? "pressed" : "none"; }
+        // The open Settings page's own test hook, where it has one: testPretend(json), handing it
+        // what it would otherwise find out (Webcam: the cameras)
+        function settingsPagePretend(json: string): string {
+            const p = settingsLoader.item ? settingsLoader.item.pageItem() : null;
+            if (!p || typeof p.testPretend !== "function") return "none";
+            p.testPretend(JSON.parse(json));
+            return "done";
+        }
         function settingsPollValue(what: string): string { return settingsLoader.item ? String(settingsLoader.item.pretendPolls[what] ?? "") : ""; }
         function settingsOpenDrop(label: string): string { return settingsLoader.item && settingsLoader.item.testOpenDrop(label) ? "open" : "none"; }
         function settingsDropButton(label: string): string { return JSON.stringify(settingsLoader.item ? settingsLoader.item.testDropButton(label) : null); }
