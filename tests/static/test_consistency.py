@@ -1416,7 +1416,9 @@ class TileDrawing(Case):
                     self.assertTrue(block, "Config.tileCommand used outside a Process")
                     self.assertIn(self.STARTS, block, "doesn't count itself as drawing (Config.tileDrawing)")
                     self.assertIn(self.GONE, block, "isn't uncounted if it's taken away while drawing")
-        self.assertGreaterEqual(found, 5, "the tile-drawing Processes weren't found")
+        # (TileDrawer.qml, which AppTile, the menu bar and the dock share, and the others)
+        self.assertGreaterEqual(found, 3, "the tile-drawing Processes weren't found")
+        self.assertIn("Config.tileCommand(", slate.read("shell", "TileDrawer.qml"))
 
     def test_one_tile_is_only_drawn_through_tile_command(self):
         for f in slate.files("shell", ".qml"):

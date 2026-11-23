@@ -43,7 +43,6 @@ Scope {
     readonly property color accentText: Config.tint("#12151a")
     readonly property color danger: Config.tint("#f28b8b")
     readonly property string fontFamily: Config.s.fontFamily
-    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
     // Code in an answer: the monospaced font (Settings → Appearance), on a plate a step darker
     // than the bubble (solid, so on glass it isn't a lighter patch laid over the bubble)
     readonly property string codeFont: String(Config.s.codeFontFamily || "monospace").replace(/[^\w .-]/g, "")
@@ -573,7 +572,7 @@ Scope {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: String.fromCodePoint(0xF014)
-                                color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 17
+                                color: Config.pageColour("assistant"); font.family: Config.iconFont; font.pixelSize: 17
                             }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
@@ -595,7 +594,7 @@ Scope {
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: String.fromCodePoint(0xEBD2)
-                                        color: trial.ink; font.family: tabler.name; font.pixelSize: 13
+                                        color: trial.ink; font.family: Config.iconFont; font.pixelSize: 13
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
@@ -616,7 +615,7 @@ Scope {
                                 color: closeHover.hovered ? root.textColor : root.dimTextColor
                                 // (with the fill behind it, not ahead of it)
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                                font.family: tabler.name; font.pixelSize: 18
+                                font.family: Config.iconFont; font.pixelSize: 18
                             }
                             HoverHandler { id: closeHover }
                             ClickTap { onTapped: root.closeWindow() }
@@ -688,7 +687,7 @@ Scope {
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: String.fromCodePoint(0xF014)
-                                            color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
+                                            color: Config.pageColour("assistant"); font.family: Config.iconFont; font.pixelSize: 13
                                         }
                                         Text {
                                             text: "Nova"
@@ -778,7 +777,7 @@ Scope {
                                                 Text {
                                                     anchors.verticalCenter: parent.verticalCenter
                                                     text: String.fromCodePoint(0xF014)
-                                                    color: Config.pageColour("assistant"); font.family: tabler.name; font.pixelSize: 13
+                                                    color: Config.pageColour("assistant"); font.family: Config.iconFont; font.pixelSize: 13
                                                 }
                                                 Text {
                                                     text: "Nova"
@@ -947,16 +946,14 @@ Scope {
                                                                 visible: !actionRow.waiting
                                                                 text: String.fromCodePoint(actionRow.undone ? 0xEB77 : actionRow.ok ? 0xEA5E : 0xEB55)      // put back, tick, cross
                                                                 color: actionRow.undone ? root.dimTextColor : actionRow.ok ? Config.pageColour("power") : root.danger
-                                                                font.family: tabler.name; font.pixelSize: 14
+                                                                font.family: Config.iconFont; font.pixelSize: 14
                                                             }
-                                                            Text {
+                                                            Spinner {
                                                                 anchors.centerIn: parent
                                                                 visible: actionRow.waiting
-                                                                text: String.fromCodePoint(0xF226)                               // Slate's loading spinner
-                                                                color: root.accent
-                                                                font.family: tabler.name; font.pixelSize: 14
-                                                                // (a spinner: one of the animations that isn't a transition)
-                                                                RotationAnimation on rotation { running: actionRow.waiting && root.shown && Config.animate && !Config.gameMode; from: 0; to: 360; duration: 900; loops: Animation.Infinite }
+                                                                colour: root.accent
+                                                                size: 14
+                                                                spinning: root.shown
                                                             }
                                                         }
                                                         Text {
@@ -1094,7 +1091,7 @@ Scope {
                                 anchors.centerIn: parent
                                 text: String.fromCodePoint(0xED4A)
                                 color: root.accentText
-                                font.family: tabler.name; font.pixelSize: 15
+                                font.family: Config.iconFont; font.pixelSize: 15
                             }
                             ClickTap { enabled: root.working; onTapped: root.stop() }
                         }
@@ -1104,7 +1101,7 @@ Scope {
                             visible: root.micShown
                             anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
                             voice: root.voice
-                            iconFont: tabler.name
+                            iconFont: Config.iconFont
                             ink: root.dimTextColor; accent: root.accent; accentText: root.accentText
                         }
                     }
@@ -1220,7 +1217,7 @@ Scope {
                     anchors.verticalCenter: parent.verticalCenter
                     text: String.fromCodePoint(box.done ? 0xEA5E : 0xEA7A)      // tick, copy
                     color: box.done ? Config.pageColour("power") : root.dimTextColor
-                    font.family: tabler.name; font.pixelSize: 13
+                    font.family: Config.iconFont; font.pixelSize: 13
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -1283,7 +1280,7 @@ Scope {
             anchors.centerIn: parent
             text: String.fromCodePoint(chip.done ? 0xEA5E : 0xEA7A)      // tick, copy
             color: chipHover.hovered ? chip.hoverInk : chip.ink
-            font.family: tabler.name; font.pixelSize: 14
+            font.family: Config.iconFont; font.pixelSize: 14
         }
         HoverHandler { id: chipHover; cursorShape: Qt.PointingHandCursor }
         ClickTap { onTapped: chip.pressed() }
@@ -1312,7 +1309,7 @@ Scope {
                 anchors.verticalCenter: parent.verticalCenter
                 text: pill.icon ? String.fromCodePoint(pill.icon) : ""
                 color: pill.fg
-                font.family: tabler.name; font.pixelSize: 15
+                font.family: Config.iconFont; font.pixelSize: 15
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter

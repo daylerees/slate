@@ -22,7 +22,7 @@ Column {
         Text {
             id: findIcon
             anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-            text: win.glyph(0xEB1C)
+            text: Config.glyph(0xEB1C)
             color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 18
         }
         TextInput {
@@ -61,7 +61,7 @@ Column {
             id: clearFind
             visible: findField.text !== ""
             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            text: win.glyph(0xEB55)
+            text: Config.glyph(0xEB55)
             color: clearHover.hovered ? win.text : win.dim
             // (with the fill behind it, not ahead of it)
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -109,7 +109,7 @@ Column {
                             Text {
                                 id: hitIcon
                                 anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                                text: win.glyph(SettingsIndex.pageIcons[hitRow.modelData.page] || 0xEB20)
+                                text: Config.glyph(SettingsIndex.pageIcons[hitRow.modelData.page] || 0xEB20)
                                 color: hitRow.chosen ? win.accentText : win.dim
                                 font.family: win.bar.iconFont; font.pixelSize: 17
                             }
@@ -163,7 +163,7 @@ Column {
                                 color: Qt.rgba(pc.r, pc.g, pc.b, 0.16)
                                 Text {
                                     anchors.centerIn: parent
-                                    text: win.glyph(tile.modelData.icon)
+                                    text: Config.glyph(tile.modelData.icon)
                                     color: parent.pc
                                     font.family: win.bar.iconFont; font.pixelSize: 18
                                 }

@@ -89,7 +89,7 @@ Column {
                         Text {
                             id: dirIcon
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                            text: win.glyph(0xEAAD)
+                            text: Config.glyph(0xEAAD)
                             color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
                         }
                         Text {

@@ -620,8 +620,6 @@ PanelWindow {
     }
 
     // ---- Shared pieces -----------------------------------------------------
-    // A Tabler icon's character, for the panels' Icon (panels/Icon.qml)
-    function glyph(code) { return String.fromCodePoint(code); }
     // Run one of Slate's IPC calls (bin/slate ipc call …)
     function slate(args) { Config.slateCall(...args); }
     // Close the panel and open Settings on one of its pages

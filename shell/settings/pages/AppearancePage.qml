@@ -94,7 +94,7 @@ Column {
                             Row {
                                 anchors.centerIn: parent
                                 spacing: 6
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: win.glyph(parent.parent.modelData.icon); color: parent.parent.on ? win.accentText : win.dim; font.family: win.bar.iconFont; font.pixelSize: 14 }
+                                Text { anchors.verticalCenter: parent.verticalCenter; text: Config.glyph(parent.parent.modelData.icon); color: parent.parent.on ? win.accentText : win.dim; font.family: win.bar.iconFont; font.pixelSize: 14 }
                                 Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
                             }
                             ClickTap { onTapped: win.pickThemeMode(parent.modelData.mode) }

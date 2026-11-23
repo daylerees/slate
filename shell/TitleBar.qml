@@ -153,7 +153,6 @@ PanelWindow {
     readonly property color barSolid: Config.tint("#0f1216")
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property bool buttonsLeft: Config.s.titleButtons === "left"
-    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
 
     Rectangle {
         id: bar
@@ -276,7 +275,7 @@ PanelWindow {
                         // (it comes in with the colour behind it, at once, as hovers do everywhere)
                         opacity: btnArea.containsMouse ? 1 : 0
                         color: tb.textColor
-                        font.family: tabler.name; font.pixelSize: 12
+                        font.family: Config.iconFont; font.pixelSize: 12
                     }
                     ClickArea {
                         id: btnArea
@@ -316,7 +315,7 @@ PanelWindow {
             anchors.centerIn: parent
             text: String.fromCodePoint(0xF22F)          // arrows-move
             color: tb.textColor
-            font.family: tabler.name; font.pixelSize: 22
+            font.family: Config.iconFont; font.pixelSize: 22
         }
     }
 

@@ -47,8 +47,7 @@ PanelWindow {
     readonly property string clipDir: stateDir + "/clipboard"
     readonly property string clipScript: Quickshell.shellPath("scripts/clipstore.py")
 
-    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
-    readonly property string iconFont: tabler.name
+    readonly property string iconFont: Config.iconFont
 
     // ---- Open / close ------------------------------------------------------
     property string mode: "clipboard"      // "clipboard" or "emoji"

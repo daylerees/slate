@@ -8,7 +8,6 @@
 
 import QtQuick
 import QtQuick.Effects
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -68,7 +67,7 @@ PanelWindow {
     function withAlpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a); }
     readonly property string fontFamily: Config.s.fontFamily   // Settings → Appearance → Fonts
     readonly property real fontSize: 13              // Settings → Interface size scales it with everything else
-    readonly property string iconFont: tabler.name
+    readonly property string iconFont: Config.iconFont
     readonly property int holdMs: 4000
     readonly property int slideMs: 500
 
@@ -294,8 +293,6 @@ PanelWindow {
     readonly property bool dimmed: Quickshell.screens.length > 1 && !!screen
         && !(Hyprland.focusedMonitor && Hyprland.focusedMonitor.name === screen.name)
 
-    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
-    function glyph(code) { return String.fromCodePoint(code); }
 
     // ---- Window ------------------------------------------------------------
     // Which screen edge (Settings → Menu Bar → Position). Laid out for the top; at the bottom
@@ -1090,10 +1087,10 @@ PanelWindow {
                     radius: Config.corner(bar.capsuleRadius)
                     readonly property bool picked: Config.barSelected === sp.index
                     color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
-                    Dashes { picked: parent.picked }
+                    PickDashes { picked: parent.picked }
                     Text {
                         anchors.centerIn: parent
-                        text: bar.glyph(bar.vert ? 0xEB5B : 0xEB59)
+                        text: Config.glyph(bar.vert ? 0xEB5B : 0xEB59)
                         color: bar.dimTextColor
                         font.family: bar.iconFont; font.pixelSize: 14
                     }
@@ -1125,11 +1122,11 @@ PanelWindow {
                     radius: Config.corner(bar.capsuleRadius)
                     readonly property bool picked: Config.barSelected === fx.index
                     color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
-                    Dashes { picked: parent.picked }
+                    PickDashes { picked: parent.picked }
                     Text {
                         visible: fx.len >= 18
                         anchors.centerIn: parent
-                        text: bar.glyph(bar.vert ? 0xEF55 : 0xEF54)
+                        text: Config.glyph(bar.vert ? 0xEF55 : 0xEF54)
                         color: bar.dimTextColor
                         font.family: bar.iconFont; font.pixelSize: 14
                     }
@@ -1280,8 +1277,7 @@ PanelWindow {
                         visible: !!appTile.space && !tilePlate.visible
                         color: appTile.space ? appTile.space.colour : "transparent"
                     }
-                    property int version: 0
-                    property string tried: ""      // drawn once per icon file
+                    readonly property int version: tileGen.version
                     // Drawn without an icon: appicon.py leaves "<tile>.placeholder" beside a tile
                     // it found no icon for, and takes it away once it finds one. Looked at again
                     // whenever the tile's drawn (version) or the icons change (tileVersion)
@@ -1305,7 +1301,7 @@ PanelWindow {
                         smooth: true
                         mipmap: true
                         layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
-                        onStatusChanged: if (status === Image.Error && !tileGen.running && appTile.tried !== appTile.path) { appTile.tried = appTile.path; tileGen.running = true; }
+                        onStatusChanged: if (status === Image.Error) tileGen.missing()
                         // The tile behind, in the theme's colour (or the space's)
                         IconPlate {
                             id: tilePlate
@@ -1317,13 +1313,7 @@ PanelWindow {
                         }
                         IconGloss {}            // glass: a sheen on the tile, as on the dock's icons
                     }
-                    Process {
-                        id: tileGen
-                        command: Config.tileCommand(appTile.key, appTile.path)
-                        onExited: appTile.version++
-                        onRunningChanged: Config.tileDrawing(running)
-                        Component.onDestruction: if (running) Config.tileDrawing(false)
-                    }
+                    TileDrawer { id: tileGen; app: appTile.key; path: appTile.path }
                 }
             }
             Segment {
@@ -1492,22 +1482,16 @@ PanelWindow {
                 Text {
                     anchors.centerIn: parent
                     visible: !Config.assistantWorking
-                    text: bar.glyph(0xF014)
+                    text: Config.glyph(0xF014)
                     color: Config.colourful ? Config.pageColour("assistant") : bar.textColor
                     font.family: bar.iconFont
                     font.pixelSize: 17
                 }
-                Text {
+                Spinner {
                     anchors.centerIn: parent
                     visible: Config.assistantWorking
-                    text: bar.glyph(0xF226)
-                    color: Config.colourful ? Config.pageColour("assistant") : bar.textColor
-                    font.family: bar.iconFont
-                    font.pixelSize: 17
-                    RotationAnimation on rotation {
-                        running: Config.assistantWorking && Config.animate && !Config.gameMode
-                        loops: Animation.Infinite; from: 0; to: 360; duration: 900
-                    }
+                    colour: Config.colourful ? Config.pageColour("assistant") : bar.textColor
+                    size: 17
                 }
             }
 
@@ -1680,7 +1664,7 @@ PanelWindow {
                             anchors.centerIn: parent
                             // Points the way the icons open (away from the rest of the bar), turning
                             // round to point back as it opens
-                            text: bar.glyph(bar.vert ? 0xEA62 : 0xEA60)
+                            text: Config.glyph(bar.vert ? 0xEA62 : 0xEA60)
                             rotation: 180 * trayCapsule.openness
                             color: bar.textColor
                             font.family: bar.iconFont; font.pixelSize: 16
@@ -2129,7 +2113,7 @@ PanelWindow {
             spacing: seg.drawnLabel !== "" && !bar.vert && !seg.slimText ? 6 : 0
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: bar.glyph(seg.iconCode)
+                text: Config.glyph(seg.iconCode)
                 color: seg.pastel !== "" && Qt.colorEqual(seg.tint, bar.textColor) ? Config.statusColour(seg.pastel, seg.tint) : seg.tint
                 font.family: bar.iconFont
                 font.pixelSize: seg.iconSize
@@ -2207,7 +2191,7 @@ PanelWindow {
             anchors.fill: parent
             radius: parent.radius
             color: "transparent"
-            Dashes { picked: box.picked }
+            PickDashes { picked: box.picked }
         }
         // (picked as a whole, by its gripper: one of its things picked lights that instead)
         readonly property bool picked: Config.barSelected === box.index && Config.barSelectedItem === ""
@@ -2216,7 +2200,7 @@ PanelWindow {
             opacity: bar.arrangeLook
             x: bar.vert ? (parent.width - width) / 2 : (box.grip - width) / 2 + 1
             y: bar.vert ? (box.grip - height) / 2 + 1 : (parent.height - height) / 2
-            text: bar.glyph(bar.vert ? 0xEC00 : 0xEC01)
+            text: Config.glyph(bar.vert ? 0xEC00 : 0xEC01)
             color: box.picked ? bar.accent : bar.dimTextColor
             font.family: bar.iconFont; font.pixelSize: 13
         }
@@ -2354,25 +2338,12 @@ PanelWindow {
     // A dashed outline round its parent (a Rectangle: it takes its rounding), for the things
     // marked out while the bar's being arranged: containers, flexible spaces, the active
     // window, the place something would land. Heavier, in the full accent, round the one picked
-    component Dashes: Shape {
-        id: dashes
+    // The dashes round something on the bar while it's arranged: bolder and solid accent on the
+    // one picked up
+    component PickDashes: Dashes {
         property bool picked: false
-        property color colour: picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.55)
-        readonly property real line: picked ? 2 : 1
-        anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
-        ShapePath {
-            strokeColor: dashes.colour
-            strokeWidth: dashes.line
-            strokeStyle: ShapePath.DashLine
-            dashPattern: [3, 2.5]
-            fillColor: "transparent"
-            PathRectangle {
-                x: dashes.line / 2; y: dashes.line / 2
-                width: Math.max(0, dashes.width - dashes.line); height: Math.max(0, dashes.height - dashes.line)
-                radius: Config.corner(Math.max(0, (dashes.parent && dashes.parent.radius !== undefined ? dashes.parent.radius : 0) - dashes.line / 2))
-            }
-        }
+        colour: picked ? bar.accent : Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.55)
+        line: picked ? 2 : 1
     }
 
     // The line between two things in a container: shown when the thing after it shows and

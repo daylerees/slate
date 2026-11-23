@@ -1697,6 +1697,12 @@ Singleton {
     // one playing, else one with something loaded, else the first there is
     readonly property var player: Mpris.players.values.find(p => p.isPlaying)
         ?? Mpris.players.values.find(p => (p.trackTitle || "") !== "") ?? Mpris.players.values[0] ?? null
+    // Slate's icons: the Tabler font bundled in fonts/ (the login screen has its own copy beside
+    // its code), loaded once here for everything. glyph(code): an icon's character, for a Text in
+    // that font
+    FontLoader { id: iconFontLoader; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
+    readonly property string iconFont: iconFontLoader.name || "slate-tabler-icons"
+    function glyph(code) { return String.fromCodePoint(code); }
     // Names in a sentence: "A", "A and B", "A, B and C"
     function listText(names) { return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1]; }
     // A wallpaper's name, as Settings and the switcher show it: one of Slate's own by its name

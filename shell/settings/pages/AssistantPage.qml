@@ -232,13 +232,10 @@ Column {
             Row {
                 spacing: 8
                 // (while it's being set up: turning, as Bluetooth's search does)
-                Text {
+                Spinner {
                     visible: agentRow.step !== ""
                     anchors.verticalCenter: parent.verticalCenter
-                    text: win.glyph(0xF226)
-                    color: win.accent
-                    font.family: win.bar.iconFont; font.pixelSize: 16
-                    RotationAnimation on rotation { running: parent.visible; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                    colour: win.accent
                 }
                 Button {
                     id: setUpButton

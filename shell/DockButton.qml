@@ -83,7 +83,7 @@ Item {
             anchors.centerIn: parent
             text: btn.glyph !== 0 ? String.fromCodePoint(btn.glyph) : ""
             color: btn.lit ? Config.accentFor(btn.dock.hoveredIndex === btn.at) : btn.dock.textColor
-            font.family: "slate-tabler-icons"
+            font.family: Config.iconFont
             font.pixelSize: Math.round(btn.dock.symbolRef * (btn.progress >= 0 ? 0.36 : 0.5))   // (smaller in a ring)
             scale: parent.width / btn.dock.symbolRef
             anchors.alignWhenCentered: false

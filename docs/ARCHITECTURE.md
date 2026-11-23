@@ -95,6 +95,9 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ SoftwareWindow.qml   Software (floating window "Software", app id slate-settings): install, remove and update Flathub apps, update the system (scripts/software.py)
 ├─ SoftwareJobs.qml     Slate Software's installs, removals and updates, one at a time (outlives its window)
 ├─ SoftwareUpdates.qml  the once-a-day look for app and system updates (software.py daily), and its notification
+├─ TileDrawer.qml     draws an app's icon tile once when it's missing (AppTile, the menu bar, the dock)
+├─ Dashes.qml         a dashed outline round its parent (the bar being arranged, the dock's drop gap)
+├─ Spinner.qml        Slate's busy spinner (its loading icon turning), for everything that waits
 ├─ PrivateStore.qml   saves something personal (notifications' history, Nova's conversation) where only you can read it
 ├─ Packages.qml       an optional library's package by its name on this distro (scripts/packages.py), for messages saying what to install
 │  ├─ AvatarPicker.qml    choosing your account picture: a window of its own (scripts/set-avatar.sh)

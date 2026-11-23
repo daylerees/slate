@@ -100,7 +100,6 @@ FloatingWindow {
     readonly property color ring: Config.tint("#3a424e")           // the outline round a swatch or picture
     readonly property color faint: Qt.rgba(text.r, text.g, text.b, 0.06)   // a whisper of the text colour, for flat fills
     readonly property string font: bar.fontFamily
-    function glyph(code) { return String.fromCodePoint(code); }
     // Dropdown choices every half hour, from one hour to another (halfHours(16, 23.5): 16:00,
     // 16:30 … 23:30), for night light's schedule
     function halfHours(from, to) {
@@ -675,7 +674,7 @@ FloatingWindow {
                             Text {
                                 id: navIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                                text: win.glyph(parent.modelData.icon)
+                                text: Config.glyph(parent.modelData.icon)
                                 // Colourful: each page its own colour; monotone: the accent when current
                                 // (on the page you're on, dark like its name: it sits on the active colour)
                                 color: parent.current ? win.accentText : Config.colourful ? Config.pageColour(parent.modelData.id) : win.dim
@@ -767,7 +766,7 @@ FloatingWindow {
                     Text {
                         id: pageFindIcon
                         anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                        text: win.glyph(0xEB1C)
+                        text: Config.glyph(0xEB1C)
                         color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
                     }
                     TextInput {
@@ -798,7 +797,7 @@ FloatingWindow {
                         id: pageFindClear
                         visible: pageFind.text !== ""
                         anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                        text: win.glyph(0xEB55)
+                        text: Config.glyph(0xEB55)
                         color: pageFindClearHover.hovered ? win.text : win.dim
                         // (with the fill behind it, not ahead of it)
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -883,7 +882,7 @@ FloatingWindow {
                             Text {
                                 id: pageHitIcon
                                 anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                                text: win.glyph(SettingsIndex.pageIcons[pageHit.modelData.page] || 0xEB20)
+                                text: Config.glyph(SettingsIndex.pageIcons[pageHit.modelData.page] || 0xEB20)
                                 color: pageHit.chosen ? win.accentText : win.dim
                                 font.family: win.bar.iconFont; font.pixelSize: 16
                             }
@@ -1088,7 +1087,7 @@ FloatingWindow {
                 Text {
                     id: dropFindIcon
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    text: win.glyph(0xEB1C)
+                    text: Config.glyph(0xEB1C)
                     color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 15
                 }
                 TextInput {
@@ -1158,7 +1157,7 @@ FloatingWindow {
                         id: rowIcon
                         visible: !rowFolder.visible && !rowApp.visible && !!parent.modelData.icon
                         anchors { left: parent.left; leftMargin: 11; verticalCenter: parent.verticalCenter }
-                        text: visible ? win.glyph(parent.modelData.icon) : ""
+                        text: visible ? Config.glyph(parent.modelData.icon) : ""
                         color: parent.picked ? win.accentText : parent.current ? win.accent : win.dim
                         font.family: win.bar.iconFont; font.pixelSize: 17
                     }
@@ -1176,7 +1175,7 @@ FloatingWindow {
                         id: tick
                         anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                         visible: parent.current
-                        text: win.glyph(0xEA5E)
+                        text: Config.glyph(0xEA5E)
                         color: win.accent
                         font.family: win.bar.iconFont; font.pixelSize: 16
                     }

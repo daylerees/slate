@@ -139,7 +139,7 @@ Column {
                     color: printerRow.printer.default ? win.accent : win.outline
                     Text {
                         anchors.centerIn: parent
-                        text: win.glyph(printersPane.printerIcon(printerRow.printer))
+                        text: Config.glyph(printersPane.printerIcon(printerRow.printer))
                         color: printerRow.printer.default ? win.accentText : win.text
                         font.family: win.bar.iconFont; font.pixelSize: 17
                     }
@@ -199,13 +199,10 @@ Column {
                 : "Printers on your network or plugged in by USB that print with no driver"
             Row {
                 spacing: 10
-                Text {
+                Spinner {
                     visible: findProc.running
                     anchors.verticalCenter: parent.verticalCenter
-                    text: win.glyph(0xF226)
-                    color: win.accent
-                    font.family: win.bar.iconFont; font.pixelSize: 16
-                    RotationAnimation on rotation { running: parent.visible; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                    colour: win.accent
                 }
                 Button {
                     icon: 0xEB1C
@@ -227,7 +224,7 @@ Column {
                 Text {
                     id: foundIcon
                     anchors { left: parent.left; leftMargin: 22; verticalCenter: parent.verticalCenter }
-                    text: win.glyph(foundRow.modelData.via === "USB" ? 0xF00C : 0xEB0E)
+                    text: Config.glyph(foundRow.modelData.via === "USB" ? 0xF00C : 0xEB0E)
                     color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 17
                 }
                 Column {
@@ -282,7 +279,7 @@ Column {
                 Text {
                     id: scannerIcon
                     anchors { left: parent.left; leftMargin: 22; verticalCenter: parent.verticalCenter }
-                    text: win.glyph(0xEBC8)
+                    text: Config.glyph(0xEBC8)
                     color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 17
                 }
                 Text {

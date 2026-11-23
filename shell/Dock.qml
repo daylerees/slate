@@ -1058,7 +1058,7 @@ PanelWindow {
                     // (it stays in the dock, with the running apps, while it's open: just unpinned)
                     text: String.fromCodePoint(win.dragRunning ? 0xED5F : 0xEB41)     // pinned-off / trash
                     color: removeTip.warn
-                    font.family: "slate-tabler-icons"
+                    font.family: Config.iconFont
                     font.pixelSize: 15
                 }
                 Text {
@@ -1390,7 +1390,7 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     text: String.fromCodePoint(dl.kind.glyph || 0xEB0A)
                                     color: win.textColor
-                                    font.family: "slate-tabler-icons"; font.pixelSize: 24
+                                    font.family: Config.iconFont; font.pixelSize: 24
                                 }
                             }
                             Image {
@@ -1874,30 +1874,14 @@ PanelWindow {
                 readonly property color edgeColor: Config.glass ? Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.3) : Config.tint("#3d4553")
                 border.width: Config.glass ? 1.5 : 0
                 border.color: edgeColor
-                Shape {
-                    visible: !Config.glass
-                    anchors.fill: parent
-                    preferredRendererType: Shape.CurveRenderer
-                    ShapePath {
-                        strokeColor: dragGap.edgeColor
-                        strokeWidth: 1.5
-                        strokeStyle: ShapePath.DashLine
-                        dashPattern: [3, 2.5]
-                        fillColor: "transparent"
-                        PathRectangle {
-                            x: 0.75; y: 0.75
-                            width: dragGap.width - 1.5; height: dragGap.height - 1.5
-                            radius: Config.corner(Math.max(0, dragGap.radius - 0.75))
-                        }
-                    }
-                }
+                Dashes { visible: !Config.glass; colour: dragGap.edgeColor; line: 1.5 }
                 // A faint "drop here", in the edge's colour
                 Text {
                     id: dropGlyph
                     anchors.centerIn: parent
                     text: String.fromCodePoint(0xEB88)      // drag-drop-2
                     color: dragGap.edgeColor
-                    font.family: "slate-tabler-icons"
+                    font.family: Config.iconFont
                     font.pixelSize: Math.round(dragGap.width * 0.45)
                     // Upright for the dock's edge, as its icons are
                     transform: Matrix4x4 { matrix: win.upright(dropGlyph.width, dropGlyph.height) }
@@ -2009,7 +1993,7 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     text: String.fromCodePoint(0xEAFC)      // music
                                     color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
-                                    font.family: "slate-tabler-icons"
+                                    font.family: Config.iconFont
                                     font.pixelSize: Math.round(win.symbolRef * 0.5)
                                     scale: parent.height / win.symbolRef
                                     anchors.alignWhenCentered: false
@@ -2073,7 +2057,7 @@ PanelWindow {
                                         color: win.textColor
                                         opacity: !parent.modelData.on ? 0.3 : mediaCell.under === parent.modelData.id ? 1 : 0.75
                                         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
-                                        font.family: "slate-tabler-icons"
+                                        font.family: Config.iconFont
                                         font.pixelSize: Math.round(win.symbolRef * parent.modelData.size)
                                         scale: mediaWideTile.height / win.symbolRef
                                         anchors.alignWhenCentered: false
@@ -2126,7 +2110,7 @@ PanelWindow {
                             anchors.centerIn: parent
                             text: String.fromCodePoint(0xEAFC)          // music
                             color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.6)
-                            font.family: "slate-tabler-icons"
+                            font.family: Config.iconFont
                             font.pixelSize: Math.round(win.symbolRef * 0.5)
                             scale: parent.width / win.symbolRef
                             anchors.alignWhenCentered: false
@@ -2185,7 +2169,7 @@ PanelWindow {
                                     text: String.fromCodePoint(modelData.code)
                                     color: "white"
                                     opacity: modelData.on ? 1 : 0.35
-                                    font.family: "slate-tabler-icons"
+                                    font.family: Config.iconFont
                                     font.pixelSize: Math.round(win.symbolRef * modelData.size)
                                 }
                             }
@@ -2221,8 +2205,7 @@ PanelWindow {
                         opacity: win.fadeAt(slot.at)
                         readonly property var badge: isMore ? win.moreBadge : win.badgeFor(isApp ? app : null)
                         readonly property string tilePath: isApp ? Config.tilePath(app.key) : ""
-                        property int version: 0
-                        property string tried: ""       // the icon file last drawn for (once per file, so a broken icon isn't retried forever)
+                        readonly property int version: gen.version
                         // Bounces while the app is starting (clicked in the dock): see win.bounceOf
                         readonly property real bounce: win.bounceOf(cell.app.key)
                         readonly property int windowCount: cell.app.windows.length
@@ -2324,7 +2307,7 @@ PanelWindow {
                             smooth: true
                             mipmap: true
                             layer.enabled: Config.iconTint > 0; layer.effect: IconTint {}
-                            onStatusChanged: if (cell.isApp && status === Image.Error && !gen.running && cell.tried !== cell.tilePath) { cell.tried = cell.tilePath; gen.running = true; }
+                            onStatusChanged: if (cell.isApp && status === Image.Error) gen.missing()
                             // Glass: a sheen, rounded like the icon tiles (not on icons shown as
                             // they come, which have no tile to follow)
                             IconGloss { opacity: Config.dockTileOpacity }
@@ -2351,13 +2334,7 @@ PanelWindow {
                         }
 
                         // Draw the tile the first time this app shows up
-                        Process {
-                            id: gen
-                            command: Config.tileCommand(cell.app.entry ? cell.app.entry.id : cell.app.key, cell.tilePath)
-                            onExited: cell.version++
-                            onRunningChanged: Config.tileDrawing(running)
-                            Component.onDestruction: if (running) Config.tileDrawing(false)
-                        }
+                        TileDrawer { id: gen; app: cell.isApp ? (cell.app.entry ? cell.app.entry.id : cell.app.key) : ""; path: cell.tilePath }
 
                         // Running indicator: a short rounded bar (accent for the focused app)
                         Rectangle {

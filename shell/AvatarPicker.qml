@@ -32,7 +32,6 @@ FloatingWindow {
     readonly property color panel: Config.tint("#151920")
     readonly property string font: bar.fontFamily
     readonly property string iconFont: bar.iconFont
-    function glyph(c) { return String.fromCodePoint(c); }
     readonly property string home: Quickshell.env("HOME")
     function nicePath(p) { return p === home ? "Home" : p.startsWith(home + "/") ? "~" + p.slice(home.length) : p; }
 
@@ -148,7 +147,7 @@ FloatingWindow {
                         spacing: 10
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: pk.glyph(({ Pictures: 0xEB0A, Camera: 0xEA54, Screenshots: 0xF201, Wallpapers: 0xEB0A, Downloads: 0xEA96,
+                            text: Config.glyph(({ Pictures: 0xEB0A, Camera: 0xEA54, Screenshots: 0xF201, Wallpapers: 0xEB0A, Downloads: 0xEA96,
                                               Desktop: 0xEA89, Documents: 0xEAA2, Home: 0xEAC1 })[parent.parent.modelData.label] || 0xEAAD)
                             color: parent.parent.on ? Config.tint("#12151a") : pk.dim
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
@@ -187,7 +186,7 @@ FloatingWindow {
                 width: 34; height: 34; radius: Config.corner(17)
                 opacity: pk.folder === "/" ? 0.35 : 1
                 color: upHover.hovered ? Config.hover : "transparent"
-                Text { anchors.centerIn: parent; text: pk.glyph(0xEA19); color: upHover.hovered ? pk.text : pk.dim; font.family: pk.iconFont; font.pixelSize: 18 }
+                Text { anchors.centerIn: parent; text: Config.glyph(0xEA19); color: upHover.hovered ? pk.text : pk.dim; font.family: pk.iconFont; font.pixelSize: 18 }
                 HoverHandler { id: upHover }
                 ClickTap { onTapped: pk.up() }
             }
@@ -241,7 +240,7 @@ FloatingWindow {
                     Text {
                         visible: cell.fileIsDir
                         anchors.centerIn: parent
-                        text: pk.glyph(0xEAAD)
+                        text: Config.glyph(0xEAAD)
                         color: cellHover.hovered ? pk.text : pk.dim
                         font.family: pk.iconFont; font.pixelSize: Math.round(parent.width * 0.5)
                     }

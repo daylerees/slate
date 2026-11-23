@@ -22,7 +22,7 @@ SettingRow {
             Text {
                 anchors.centerIn: parent
                 anchors.horizontalCenterOffset: 1      // the triangle looks centred a touch right
-                text: win.glyph(0xED46)                // play
+                text: Config.glyph(0xED46)                // play
                 color: soundSetting.audible ? win.text : win.dim
                 font.family: win.bar.iconFont; font.pixelSize: 14
             }

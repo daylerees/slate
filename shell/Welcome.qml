@@ -127,7 +127,6 @@ PanelWindow {
     readonly property color accentText: Config.tint("#12151a")
     readonly property string font: bar.fontFamily
     readonly property string iconFont: bar.iconFont
-    function glyph(c) { return String.fromCodePoint(c); }
 
     // ---- Asking before light mode (still being polished), as Settings does -----
     // In Slate's own confirmation window (passed in from shell.qml), like every other question
@@ -352,7 +351,7 @@ PanelWindow {
                                     id: themeRow
                                     anchors.centerIn: parent
                                     spacing: 8
-                                    Text { anchors.verticalCenter: parent.verticalCenter; text: w.glyph(themeOpt.modelData.icon); color: themeOpt.on ? w.accentText : w.dim; font.family: w.iconFont; font.pixelSize: 16 }
+                                    Text { anchors.verticalCenter: parent.verticalCenter; text: Config.glyph(themeOpt.modelData.icon); color: themeOpt.on ? w.accentText : w.dim; font.family: w.iconFont; font.pixelSize: 16 }
                                     Text { anchors.verticalCenter: parent.verticalCenter; text: themeOpt.modelData.label; color: themeOpt.on ? w.accentText : w.text; font.family: w.font; font.pixelSize: Config.text(13); font.weight: Font.Medium }
                                 }
                                 HoverHandler { id: themeHover }
@@ -744,7 +743,7 @@ PanelWindow {
                                 id: keyTick
                                 anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
                                 visible: keyOpt.on
-                                text: w.glyph(0xEA5E)
+                                text: Config.glyph(0xEA5E)
                                 color: w.accent; font.family: w.iconFont; font.pixelSize: 20
                             }
                             HoverHandler { id: keyHover }
@@ -772,7 +771,7 @@ PanelWindow {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: 76; height: 76; radius: Config.corner(20)
                         color: Qt.rgba(novaPage.novaColour.r, novaPage.novaColour.g, novaPage.novaColour.b, 0.16)
-                        Text { anchors.centerIn: parent; text: w.glyph(0xF014); color: novaPage.novaColour; font.family: w.iconFont; font.pixelSize: 40 }
+                        Text { anchors.centerIn: parent; text: Config.glyph(0xF014); color: novaPage.novaColour; font.family: w.iconFont; font.pixelSize: 40 }
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -869,7 +868,7 @@ PanelWindow {
                                     anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                                     width: 38; height: 38; radius: Config.corner(10)
                                     color: Qt.rgba(w.accent.r, w.accent.g, w.accent.b, 0.16)
-                                    Text { anchors.centerIn: parent; text: w.glyph(tip.modelData.icon); color: w.accent; font.family: w.iconFont; font.pixelSize: 19 }
+                                    Text { anchors.centerIn: parent; text: Config.glyph(tip.modelData.icon); color: w.accent; font.family: w.iconFont; font.pixelSize: 19 }
                                 }
                                 Column {
                                     anchors { left: tipIcon.right; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
@@ -945,7 +944,7 @@ PanelWindow {
                     spacing: 0
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: w.glyph(0xEAE2)
+                        text: Config.glyph(0xEAE2)
                         color: w.accent; font.family: w.iconFont; font.pixelSize: 40
                     }
                     Item { width: 1; height: 14 }

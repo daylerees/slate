@@ -431,15 +431,9 @@ Scope {
                                     opacity: card.chosen && root.spinning ? 1 : 0
                                     visible: opacity > 0
                                     Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
-                                    Text {
+                                    Spinner {
                                         anchors.centerIn: parent
-                                        text: String.fromCodePoint(0xF226)
-                                        color: Config.accent
-                                        font.family: root.bar.iconFont; font.pixelSize: 18
-                                        RotationAnimation on rotation {
-                                            running: parent.parent.visible && Config.animate
-                                            loops: Animation.Infinite; from: 0; to: 360; duration: 900
-                                        }
+                                        size: 18
                                     }
                                 }
                             }

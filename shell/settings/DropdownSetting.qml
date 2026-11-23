@@ -75,7 +75,7 @@ Item {
             id: ddIcon
             visible: !ddFolder.visible && !ddApp.visible && !!dropdown.current && !!dropdown.current.icon
             anchors { left: parent.left; leftMargin: 11; verticalCenter: parent.verticalCenter }
-            text: visible ? win.glyph(dropdown.current.icon) : ""
+            text: visible ? Config.glyph(dropdown.current.icon) : ""
             color: win.text; font.family: win.bar.iconFont; font.pixelSize: 16
         }
         Text {
@@ -90,7 +90,7 @@ Item {
         }
         Text {
             anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-            text: win.glyph(0xEA5F)                      // chevron down
+            text: Config.glyph(0xEA5F)                      // chevron down
             rotation: ddButton.open ? 180 : 0
             Behavior on rotation { NumberAnimation { duration: Config.ms(120) } }
             color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16

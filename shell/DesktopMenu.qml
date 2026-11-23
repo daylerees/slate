@@ -181,7 +181,6 @@ PanelWindow {
     readonly property color sepColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.1)
     readonly property color textColor: Config.tint("#eef1f5")
     readonly property color dimColor: Config.tint("#8b94a3")
-    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
 
     // A menu's card and its rows: the menu, and a submenu beside it
     component MenuCard: Rectangle {
@@ -259,7 +258,7 @@ PanelWindow {
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                             text: row.modelData.icon ? String.fromCodePoint(row.modelData.icon) : ""
                             color: dm.dimColor
-                            font.family: tabler.name; font.pixelSize: 16
+                            font.family: Config.iconFont; font.pixelSize: 16
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: card.icons ? 36 : 20; right: parent.right; rightMargin: row.opens ? 30 : 10; verticalCenter: parent.verticalCenter }
@@ -275,7 +274,7 @@ PanelWindow {
                             anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
                             text: String.fromCodePoint(0xEA61)          // chevron right
                             color: row.open && dm.subWanted === row.index ? dm.textColor : dm.dimColor
-                            font.family: tabler.name; font.pixelSize: 15
+                            font.family: Config.iconFont; font.pixelSize: 15
                         }
                         HoverHandler {
                             id: itemHover

@@ -101,7 +101,7 @@ Column {
                         color: wireRow.modelData.connected ? win.accent : win.outline
                         Text {
                             anchors.centerIn: parent
-                            text: win.glyph(wireRow.modelData.connected ? 0xF09F : 0xF0A0)
+                            text: Config.glyph(wireRow.modelData.connected ? 0xF09F : 0xF0A0)
                             color: wireRow.modelData.connected ? win.accentText : win.text
                             font.family: win.bar.iconFont; font.pixelSize: 17
                         }
@@ -166,7 +166,7 @@ Column {
                         Text {
                             anchors.centerIn: parent
                             readonly property real s: netRow.n.signalStrength
-                            text: win.glyph(s > 0.66 ? 0xEB52 : s > 0.33 ? 0xEBA5 : 0xEBA4)
+                            text: Config.glyph(s > 0.66 ? 0xEB52 : s > 0.33 ? 0xEBA5 : 0xEBA4)
                             color: netRow.n.connected ? win.accentText : win.text
                             font.family: win.bar.iconFont; font.pixelSize: 17
                         }
@@ -185,7 +185,7 @@ Column {
                                 textFormat: Text.PlainText
                                 text: netRow.n.name; color: win.text; font.family: win.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                             }
-                            Text { id: netLock; visible: netRow.secure; anchors.verticalCenter: parent.verticalCenter; text: win.glyph(0xEAE2); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 12 }
+                            Text { id: netLock; visible: netRow.secure; anchors.verticalCenter: parent.verticalCenter; text: Config.glyph(0xEAE2); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 12 }
                         }
                         Text {
                             text: (netRow.n.connected ? "Connected" : netRow.n.stateChanging ? "Connecting…" : netRow.n.known ? "Saved" : netRow.secure ? "Secured" : "Open")

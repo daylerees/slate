@@ -89,7 +89,7 @@ Item {
                 Text {
                     visible: needsLine.linked
                     anchors.verticalCenter: parent.verticalCenter
-                    text: win.glyph(0xEA1F)          // an arrow: it goes there
+                    text: Config.glyph(0xEA1F)          // an arrow: it goes there
                     color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 12
                 }
             }

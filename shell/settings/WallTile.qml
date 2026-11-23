@@ -64,7 +64,7 @@ Item {
             anchors { right: parent.right; top: parent.top; margins: 8 }
             width: 24; height: 24; radius: Config.corner(12)
             color: win.accent
-            Text { anchors.centerIn: parent; text: win.glyph(0xEA5E); color: win.accentText; font.family: win.bar.iconFont; font.pixelSize: 15 }
+            Text { anchors.centerIn: parent; text: Config.glyph(0xEA5E); color: win.accentText; font.family: win.bar.iconFont; font.pixelSize: 15 }
         }
     }
     Text {

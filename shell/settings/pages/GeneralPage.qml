@@ -33,7 +33,7 @@ Column {
                 }
                 Text {
                     anchors.centerIn: parent
-                    text: win.glyph(0xEB04)
+                    text: Config.glyph(0xEB04)
                     color: "white"
                     font.family: win.bar.iconFont; font.pixelSize: 20
                     opacity: acctHover.hovered && !Config.avatarBusy ? 1 : 0
@@ -164,7 +164,7 @@ Column {
                         Text {
                             visible: parent.showsPlace
                             anchors.verticalCenter: parent.verticalCenter
-                            text: win.glyph(0xEAE8)                  // map pin
+                            text: Config.glyph(0xEAE8)                  // map pin
                             color: win.accent; font.family: win.bar.iconFont; font.pixelSize: 14
                         }
                         Text {

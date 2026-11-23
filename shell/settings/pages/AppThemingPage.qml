@@ -174,7 +174,7 @@ Column {
                                 Text {
                                     visible: parent.parent.on
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: win.glyph(0xEA5E)          // tick
+                                    text: Config.glyph(0xEA5E)          // tick
                                     color: parent.parent.tone; font.family: win.bar.iconFont; font.pixelSize: 13
                                 }
                                 Text {

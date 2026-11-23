@@ -26,7 +26,7 @@ Rectangle {
         Text {
             visible: btn.icon !== 0
             anchors.verticalCenter: parent.verticalCenter
-            text: btn.icon ? win.glyph(btn.icon) : ""
+            text: btn.icon ? Config.glyph(btn.icon) : ""
             color: btn.fg
             font.family: win.bar.iconFont; font.pixelSize: 15
         }

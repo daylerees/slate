@@ -17,7 +17,7 @@ Rectangle {
     color: iconButtonHover.hovered ? Config.hover : "transparent"
     Text {
         anchors.centerIn: parent
-        text: win.glyph(iconButton.icon)
+        text: Config.glyph(iconButton.icon)
         color: iconButtonHover.hovered ? win.text : win.dim
         // (with the fill behind it, not ahead of it)
         Behavior on color { ColorAnimation { duration: Config.ms(100) } }

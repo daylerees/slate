@@ -331,7 +331,6 @@ PanelWindow {
     // shows as the first result; Enter (or a click) copies it.
     // Understands + - * / % ^ ( ), × ÷, decimals, sqrt sin cos tan asin acos atan
     // log (base 10) ln abs round floor ceil, and pi / e. Trig works in degrees.
-    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
     function calculate(text) {
         const src = text.replace(/×/g, "*").replace(/÷/g, "/").replace(/,/g, "").replace(/\*\*/g, "^").trim();
         if (!/[0-9]/.test(src) || !/[-+*\/%^()]/.test(src)) return null;
@@ -1231,7 +1230,7 @@ PanelWindow {
                         text: String.fromCodePoint(0xEB80)
                         color: row.onAccent ? root.accent : root.accentText
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
-                        font.family: tabler.name
+                        font.family: Config.iconFont
                         font.pixelSize: 20
                     }
                 }
@@ -1265,7 +1264,7 @@ PanelWindow {
                         color: row.modelData.danger ? Config.tint("#f28b8b")
                             : row.setting ? Config.pageColour(row.modelData.page)
                             : row.kind === "toggle" && !row.modelData.toggleOn ? root.dimTextColor : root.accent
-                        font.family: tabler.name
+                        font.family: Config.iconFont
                         font.pixelSize: 19
                     }
                 }

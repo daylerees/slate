@@ -54,7 +54,6 @@ PanelWindow {
     readonly property color danger: bar.errorColor
     readonly property color card: bar.capsuleColor
     readonly property int pad: 16
-    function glyph(code) { return String.fromCodePoint(code); }
 
     // ---- Where: just off the bar, on its screen --------------------------------------
     // The window covers the screen (it takes the pointer only over the panel: the mask), so the
@@ -1176,7 +1175,7 @@ PanelWindow {
                         Text {
                             visible: parent.modelData.item !== "workspaces"
                             anchors.verticalCenter: parent.verticalCenter
-                            text: parent.modelData.code ? root.glyph(parent.modelData.code) : ""
+                            text: parent.modelData.code ? Config.glyph(parent.modelData.code) : ""
                             color: root.iconColour(parent.modelData.item)
                             font.family: root.bar.iconFont; font.pixelSize: 16
                         }

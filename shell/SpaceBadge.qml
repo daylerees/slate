@@ -19,8 +19,8 @@ Rectangle {
         anchors.centerIn: parent
         text: b.space ? String.fromCodePoint(Spaces.iconOf(b.space)) : ""
         color: "#1b1f26"
-        // Tabler icons (fonts/tabler.ttf), loaded by the bar
-        font.family: "slate-tabler-icons"
+        // Tabler icons (Config.iconFont)
+        font.family: Config.iconFont
         font.pixelSize: Math.round(b.size * 0.58)
     }
 }

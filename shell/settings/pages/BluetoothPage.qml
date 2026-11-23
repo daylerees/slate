@@ -36,13 +36,10 @@ Column {
             detail: bluetoothPane.adapter && bluetoothPane.adapter.discovering ? "Searching… put your device in pairing mode" : "Find nearby devices to pair"
             Row {
                 spacing: 10
-                Text {
+                Spinner {
                     visible: bluetoothPane.adapter && bluetoothPane.adapter.discovering
                     anchors.verticalCenter: parent.verticalCenter
-                    text: win.glyph(0xF226)
-                    color: win.accent
-                    font.family: win.bar.iconFont; font.pixelSize: 16
-                    RotationAnimation on rotation { running: parent.visible; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                    colour: win.accent
                 }
                 Button {
                     icon: 0xEA37
@@ -79,7 +76,7 @@ Column {
                     color: d.connected ? win.accent : win.outline
                     Text {
                         anchors.centerIn: parent
-                        text: win.glyph(bluetoothPane.deviceIcon(d))
+                        text: Config.glyph(bluetoothPane.deviceIcon(d))
                         color: d.connected ? win.accentText : win.text
                         font.family: win.bar.iconFont; font.pixelSize: 17
                     }

@@ -36,7 +36,6 @@ PanelWindow {
     readonly property string fontFamily: Config.s.fontFamily
     readonly property string codeFont: String(Config.s.codeFontFamily || "monospace").replace(/[^\w .-]/g, "")
     readonly property int fadeMs: 160
-    FontLoader { id: tabler; source: "file://" + Quickshell.shellPath("fonts/tabler.ttf") }
 
     // ---- What it's showing -------------------------------------------------
     property var files: []                 // paths, in the order of the list it came from
@@ -394,17 +393,14 @@ PanelWindow {
             PictureLayer { id: layerA; current: root.curA; url: root.urlA }
             PictureLayer { id: layerB; current: !root.curA; url: root.urlB }
             // Loading (a screenshot from the web, a large picture): Slate's spinner
-            Text {
+            Spinner {
                 id: lookSpinner
                 anchors.centerIn: parent
                 readonly property bool wanted: root.view === "image" && picture.status === Image.Loading && !slowPicture.running
                 opacity: wanted ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
-                text: String.fromCodePoint(0xF226)
-                color: Config.accent
-                font.family: tabler.name; font.pixelSize: 26
-                RotationAnimation on rotation { running: lookSpinner.visible && Config.animate; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                size: 26
             }
 
             // Text: read-only, selectable, the first 200 KB
@@ -513,7 +509,7 @@ PanelWindow {
                     item.dimColor = Qt.binding(() => root.dimTextColor);
                     item.tileColor = Qt.binding(() => root.tileColor);
                     item.fontFamily = Qt.binding(() => root.fontFamily);
-                    item.iconFamily = tabler.name;
+                    item.iconFamily = Config.iconFont;
                     item.audio = Qt.binding(() => root.kind === "audio");
                     item.autoplay = !Config.testMode;          // (the tests' Slate stays quiet)
                     item.source = Qt.binding(() => root.mediaKind ? root.fileUrl(root.path) : "");
@@ -536,7 +532,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     text: String.fromCodePoint(root.glyph())
                     color: Config.accent
-                    font.family: tabler.name; font.pixelSize: 40
+                    font.family: Config.iconFont; font.pixelSize: 40
                 }
             }
             Item { width: 1; height: 16 }
@@ -630,7 +626,7 @@ PanelWindow {
             text: String.fromCodePoint(hb.code)
             color: hbHover.hovered ? root.textColor : root.dimTextColor
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-            font.family: tabler.name; font.pixelSize: 18
+            font.family: Config.iconFont; font.pixelSize: 18
         }
         HoverHandler { id: hbHover }
         ClickTap { onTapped: hb.clicked() }

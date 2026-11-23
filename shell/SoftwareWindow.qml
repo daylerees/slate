@@ -46,7 +46,6 @@ FloatingWindow {
     readonly property color faint: Qt.rgba(text.r, text.g, text.b, 0.06)
     readonly property color danger: bar.errorColor
     readonly property string font: bar.fontFamily
-    function glyph(code) { return String.fromCodePoint(code); }
 
     // ---- Where you are ---------------------------------------------------------------------
     // "discover", "installed", "updates", or a category's name; `app` is the app page over it
@@ -338,7 +337,7 @@ FloatingWindow {
                         Text {
                             id: navIcon
                             anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                            text: sw.glyph(parent.modelData.icon)
+                            text: Config.glyph(parent.modelData.icon)
                             // As Settings' sidebar: Colorful, each section its own colour; else dim
                             // (dark like its name on the section you're in)
                             color: parent.current ? sw.accentText : Config.colourful ? Config.pageColour("software-" + parent.modelData.id) : sw.dim
@@ -597,15 +596,14 @@ FloatingWindow {
                                     opacity: upToDate.looking ? 0 : 1
                                     Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
                                 }
-                                Text {
+                                Spinner {
                                     id: lookingSpinner
                                     anchors.centerIn: parent
                                     opacity: upToDate.looking ? 1 : 0
                                     visible: opacity > 0
                                     Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
-                                    text: sw.glyph(0xF226); color: sw.accent
-                                    font.family: sw.bar.iconFont; font.pixelSize: 30
-                                    RotationAnimation on rotation { running: lookingSpinner.visible && Config.animate; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                                    colour: sw.accent
+                                    size: 30
                                 }
                             }
                             Item { width: 1; height: 4 }
@@ -834,15 +832,14 @@ FloatingWindow {
             opacity: aiTile.status === Image.Ready || ai.gaveUp ? 0 : 1
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Config.ms(200) } }
-            Text {
+            Spinner {
                 id: aiSpinner
                 anchors.centerIn: parent
                 opacity: aiPlace.opacity === 1 && !slowIcon.running ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
-                text: sw.glyph(0xF226); color: sw.accent
-                font.family: sw.bar.iconFont; font.pixelSize: Math.round(ai.size * 0.38)
-                RotationAnimation on rotation { running: aiSpinner.visible && Config.animate; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                colour: sw.accent
+                size: Math.round(ai.size * 0.38)
             }
         }
         Image {
@@ -881,7 +878,7 @@ FloatingWindow {
             visible: ai.gaveUp && !aiImg.visible
             anchors.fill: parent; radius: Config.corner(ai.size * 0.22)
             color: sw.faint
-            Text { anchors.centerIn: parent; text: sw.glyph(0xEB75); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: ai.size * 0.5 }
+            Text { anchors.centerIn: parent; text: Config.glyph(0xEB75); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: ai.size * 0.5 }
         }
     }
 
@@ -897,7 +894,7 @@ FloatingWindow {
         Text {
             id: fieldIcon
             anchors { left: parent.left; leftMargin: field.big ? 16 : 12; verticalCenter: parent.verticalCenter }
-            text: sw.glyph(0xEB1C); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: field.big ? 19 : 16
+            text: Config.glyph(0xEB1C); color: sw.dim; font.family: sw.bar.iconFont; font.pixelSize: field.big ? 19 : 16
         }
         TextInput {
             id: fieldInput
@@ -1009,7 +1006,7 @@ FloatingWindow {
         color: Qt.rgba(pc.r, pc.g, pc.b, 0.16)
         Text {
             anchors.centerIn: parent
-            text: sw.glyph(parent.code)
+            text: Config.glyph(parent.code)
             color: parent.pc
             font.family: sw.bar.iconFont; font.pixelSize: Math.round(parent.size * 0.53)
         }
@@ -1149,16 +1146,14 @@ FloatingWindow {
                                     Component.onCompleted: if (status === Image.Loading) slowShot.restart()
                                     Timer { id: slowShot; interval: 350 }
                                 }
-                                Text {
+                                Spinner {
                                     id: shotSpinner
                                     anchors.centerIn: parent
                                     opacity: shotImg.status === Image.Loading && !slowShot.running ? 1 : 0
                                     visible: opacity > 0
                                     Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
-                                    text: sw.glyph(0xF226)
-                                    color: sw.accent
-                                    font.family: sw.bar.iconFont; font.pixelSize: 22
-                                    RotationAnimation on rotation { running: shotSpinner.visible && Config.animate; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+                                    colour: sw.accent
+                                    size: 22
                                 }
                                 ClickTap { onTapped: sw.showShots(shot.index) }
                             }
