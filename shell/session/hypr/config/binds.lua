@@ -296,7 +296,9 @@ local shared = {
     wallpaperSwitcher = hl.dsp.exec_cmd(slate("wallpaper switcher")),
 
     -- Windows (maximiseSmart is under WINDOWS, below)
-    forceQuit  = hl.dsp.exec_cmd("hyprctl kill"),
+    -- (a chooser, then scripts/force-quit.sh: never Slate's own windows, which hyprctl kill took the
+    -- whole desktop with)
+    forceQuit  = hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/force-quit.sh --pick"),
     maximise   = function() maximiseSmart() end,
     fullScreen = hl.dsp.window.fullscreen(),
     nextWindow = hl.dsp.window.cycle_next(),
