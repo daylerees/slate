@@ -23,7 +23,7 @@ Column {
         id: timeCol
         width: parent.width
         spacing: 2
-        Label { text: Qt.formatTime(cal.today, pop.timeFormat); font.pixelSize: Config.text(22) }
+        Label { text: Config.timeText(cal.today); font.pixelSize: Config.text(22) }
         Label { width: parent.width; elide: Text.ElideRight; text: Config.dateText(cal.today, "long"); color: pop.dim; font.pixelSize: Config.text(12) }
     }
     Divider {}

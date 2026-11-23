@@ -135,7 +135,7 @@ Column {
             detail: "Shows it now; any key, click or pointer move puts it away (it doesn't lock)"
             // Settings stays open beneath it (the screensaver covers every window), so it's
             // still here when the preview ends
-            Button { label: "Preview"; onClicked: Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "screensaver", "start"]) }
+            Button { label: "Preview"; onClicked: Config.slateCall("screensaver", "start") }
         }
     }
 }

@@ -42,8 +42,7 @@ Scope {
     // terminal / file manager the shortcuts open, as set in Hyprland's config or Settings)
     function slateCall(args) { Config.slateCall(...args); }
     function openApp(variable) {
-        Quickshell.execDetached(["hyprctl", "dispatch",
-            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. ${variable}) end`]);
+        Config.launchLua(variable);
     }
 
     // The wallpapers that come with Slate

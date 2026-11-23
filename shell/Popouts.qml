@@ -334,7 +334,6 @@ PanelWindow {
     readonly property color warn: Config.tint("#f2cf8b")       // getting full or busy: before the red
     // The panels' clocks, in the clock style set for the bar (Settings → Menu Bar → Clock),
     // without seconds: they're big and don't tick every second
-    readonly property string timeFormat: Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP"
     readonly property real radius: Config.corner(14)
     readonly property real pad: 14
 
@@ -630,7 +629,7 @@ PanelWindow {
     // A Tabler icon's character, for the panels' Icon (panels/Icon.qml)
     function glyph(code) { return String.fromCodePoint(code); }
     // Run one of Slate's IPC calls (bin/slate ipc call …)
-    function slate(args) { Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args)); }
+    function slate(args) { Config.slateCall(...args); }
     // Close the panel and open Settings on one of its pages
     function openSettingsPage(page) { close(); slate(["settings", "page", page]); }
 

@@ -467,8 +467,7 @@ PanelWindow {
         // it's in single quotes, a quote of its own written as '\'') and Lua before that
         // (Config.luaString). Dropping its quotes instead opened another folder
         const folder = "'" + downloadsDir.replace(/'/g, "'\\''") + "'";
-        Quickshell.execDetached(["hyprctl", "dispatch",
-            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. FILE_MANAGER .. ${Config.luaString(" " + folder)}) end`]);
+        Config.launchLua("FILE_MANAGER .. " + Config.luaString(" " + folder));
     }
 
     // ---- Media (Settings → Dock → Media controls) ----------------------------------
@@ -538,7 +537,7 @@ PanelWindow {
     readonly property bool focusShown: Config.s.dockShowFocus && Timers.focusOn
     readonly property int drinkIndex: indexOfKind("drink")
     readonly property int focusIndex: indexOfKind("focus")
-    readonly property string trashDir: (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/Trash/files"
+    readonly property string trashDir: Config.dataHome + "/Trash/files"
     // What's in it, watched (the folder made first if nothing's been thrown away yet, so
     // there's something to watch)
     property bool trashReady: false
@@ -581,8 +580,7 @@ PanelWindow {
     function testHoverFile(i) { appMenu.hotFile = i; }
     // Opened in the file manager the shortcuts use (FILE_MANAGER, Hyprland's variable)
     function openTrash() {
-        Quickshell.execDetached(["hyprctl", "dispatch",
-            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. FILE_MANAGER .. " trash:///") end`]);
+        Config.launchLua('FILE_MANAGER .. " trash:///"');
     }
     function emptyTrash() { Quickshell.execDetached(["gio", "trash", "--empty"]); }
     // Slots along the dock: each an icon wide, except what's playing (mediaWide). Where one

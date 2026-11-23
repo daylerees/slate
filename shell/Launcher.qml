@@ -561,7 +561,7 @@ PanelWindow {
     property bool recentStale: false
     FileView {
         id: recentView
-        path: Config.s.launcherFiles ? (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/recently-used.xbel" : ""
+        path: Config.s.launcherFiles ? Config.dataHome + "/recently-used.xbel" : ""
         printErrors: false
         watchChanges: true
         onFileChanged: { if (root.shown) reload(); else root.recentStale = true; }

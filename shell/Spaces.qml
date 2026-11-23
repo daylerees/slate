@@ -13,7 +13,7 @@ import Quickshell.Io
 Singleton {
     id: root
     readonly property string script: Quickshell.shellPath("scripts/spaces.py")
-    readonly property string file: (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/slate/spaces.json"
+    readonly property string file: Config.dataHome + "/slate/spaces.json"
 
     property var list: []                 // saved spaces, from spaces.json
     property var live: []                 // the workspaces now (snapshot), for New Space

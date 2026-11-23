@@ -171,7 +171,7 @@ Column {
                     y: pop.weather ? 12 : (parent.height - height) / 2
                     spacing: 1
                     Label {
-                        text: Qt.formatTime(Config.clockDate(ccClock.date), pop.timeFormat)
+                        text: Config.timeText(Config.clockDate(ccClock.date))
                         font.pixelSize: Config.text(34); font.weight: Font.DemiBold
                     }
                     Label { width: parent.width; text: Config.dateText(Config.clockDate(ccClock.date), "longDay"); color: pop.dim; font.pixelSize: Config.text(12) }

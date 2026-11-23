@@ -24,8 +24,8 @@ Column {
             detail: "Super+L, the power menu, or a hot corner"
             Row {
                 spacing: 8
-                Button { label: "Preview"; onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "lock", "preview", "lock"]); } }
-                Button { icon: 0xEAE2; label: "Lock now"; primary: true; onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "lock", "lock"]); } }
+                Button { label: "Preview"; onClicked: { win.visible = false; Config.slateCall("lock", "preview", "lock"); } }
+                Button { icon: 0xEAE2; label: "Lock now"; primary: true; onClicked: { win.visible = false; Config.slateCall("lock", "lock"); } }
             }
         }
         Separator {}
@@ -117,7 +117,7 @@ Column {
             }
             Row {
                 spacing: 8
-                Button { label: "Preview"; onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "lock", "preview", "login"]); } }
+                Button { label: "Preview"; onClicked: { win.visible = false; Config.slateCall("lock", "preview", "login"); } }
                 Button {
                     visible: greeterRow.state !== "" && !greeterRow.used
                     enabled: greeterRow.info.greetd === "yes" && !greeterRun.running

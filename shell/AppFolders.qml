@@ -20,7 +20,7 @@ Scope {
     property var missing: []
     property bool asked: false
     readonly property var folders: {
-        const home = Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share");
+        const home = Config.dataHome;
         const dirs = (Quickshell.env("XDG_DATA_DIRS") || "/usr/local/share:/usr/share").split(":").filter(d => d !== "");
         return [home].concat(dirs).map(d => d.replace(/\/$/, "") + "/applications");
     }

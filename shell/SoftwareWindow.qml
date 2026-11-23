@@ -626,7 +626,7 @@ FloatingWindow {
                             Text {
                                 width: parent.width; horizontalAlignment: Text.AlignHCenter
                                 visible: !upToDate.looking && !!sw.checkedAt
-                                text: sw.checkedAt ? "Checked at " + Qt.formatTime(sw.checkedAt, Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP") : ""
+                                text: sw.checkedAt ? "Checked at " + Config.timeText(sw.checkedAt) : ""
                                 color: sw.dim; font.family: sw.font; font.pixelSize: Config.text(12)
                             }
                             Item { width: 1; height: 6 }

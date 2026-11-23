@@ -972,7 +972,7 @@ class LuaText(Case):
         self.assertEqual(len(re.findall(r"output = \$\{Config\.luaString\(out\)\}", displays)), 2)
         self.assertNotRegex(displays, r"output = [^$]")
         downloads = re.search(r"function openDownloads\(\) \{(.*?)\n    \}", slate.read("shell", "Dock.qml"), re.S).group(1)
-        self.assertIn("FILE_MANAGER .. ${Config.luaString(", downloads)
+        self.assertIn('Config.launchLua("FILE_MANAGER .. " + Config.luaString(', downloads)
         self.assertNotRegex(downloads, r"""\.replace\(/'/g, ""\)""", "the folder's quotes dropped rather than escaped")
         launcher = slate.read("shell", "Launcher.qml")
         self.assertIn("Config.luaString(q(inTerminal))", launcher)
@@ -1294,9 +1294,11 @@ class OutsideTextIsPlain(Case):
         """Nova's answer, sent as a notification when its window is away: the agent's words
         escaped, and after "--" so a line starting with a dash isn't read as an option."""
         src = slate.read("shell", "Assistant.qml")
-        sent = re.search(r"doneNote\.command = \[(.*?)\];", src, re.S)
+        sent = re.search(r"doneNote\.command = (Config\.notify\(.*?\));", src, re.S)
         self.assertTrue(sent, "the notification has moved")
-        self.assertRegex(sent.group(1), r'"--", "Nova", esc\(line\)$')
+        self.assertRegex(sent.group(1), r'^Config\.notify\("Nova", esc\(line\),')
+        # (Config.notify puts "--" before the title and text)
+        self.assertIn('return c.concat(["--", title, body]);', slate.read("shell", "Config.qml"))
 
 
 class NothingOfYoursRunsAsRoot(Case):

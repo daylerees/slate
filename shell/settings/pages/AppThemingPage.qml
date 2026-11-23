@@ -87,12 +87,12 @@ Column {
                 if (!a) return;
                 // 126/127: the password prompt was closed or failed, so it didn't start
                 if (code === 126 || code === 127) return;
-                const icon = Quickshell.shellPath("assets/icon/icon-64.png");
                 const err = (installErr.text || "").trim().split("\n").filter(l => l.trim() !== "").pop() || "";
-                Quickshell.execDetached(["notify-send", "--app-name=Slate", "--icon=" + icon, "--hint=string:x-slate-page:apptheming",
-                    "--",       // (the package manager's last line is the text, even if it starts with a dash)
-                    code === 0 ? a.label + " is installed" : "Slate couldn't install " + a.label,
-                    code === 0 ? "Switch on its theme in Settings → App Theming." : (err || "The package manager stopped with an error.")]);
+                // (Config.notify puts "--" first: the package manager's last line is the text, even
+                // if it starts with a dash)
+                Quickshell.execDetached(Config.notify(code === 0 ? a.label + " is installed" : "Slate couldn't install " + a.label,
+                    code === 0 ? "Switch on its theme in Settings → App Theming." : (err || "The package manager stopped with an error."),
+                    { page: "apptheming" }));
             }
         }
         function isOn(id) { return (Config.s.themedApps || []).indexOf(id) >= 0; }

@@ -43,7 +43,7 @@ Column {
     readonly property var outcomes: ({ done: "Done", declined: "You said no", "no answer": "No answer", refused: "Slate said no", failed: "Didn't work" })
     function when(iso) {
         const d = new Date(iso);
-        return isNaN(d) ? "" : Config.dateText(d, "day") + ", " + Qt.formatTime(d, Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm ap");
+        return isNaN(d) ? "" : Config.dateText(d, "day") + ", " + Config.timeText(d);
     }
     // The agents there are (scripts/assistant.py detect), and the one a prompt would go to
     property var agents: []

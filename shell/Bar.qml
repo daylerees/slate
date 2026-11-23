@@ -468,7 +468,7 @@ PanelWindow {
     DesktopMenu {
         id: slateMenu
         screen: bar.screen
-        readonly property var call: args => () => Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args))
+        readonly property var call: args => () => Config.slateCall(...args)
         items: [
             { label: "Settings", icon: 0xEB20, run: call(["settings", "open"]) },
             { label: "Appearance", icon: 0xEB01, run: call(["settings", "page", "appearance"]) },
@@ -1419,7 +1419,7 @@ PanelWindow {
                 id: appsBtn
                 wanted: Config.s.barShowApps
                 length: bar.capsuleHeight + 8
-                onClicked: { if (!Config.barClosed("launcher")) Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "launcher", "toggle"]); }
+                onClicked: { if (!Config.barClosed("launcher")) Config.slateCall("launcher", "toggle"); }
                 // (in a 16 px slot, as every icon on the bar, but drawn about 13 px, the bars a
                 // little thinner: optically matched to the line icons round it)
                 Column {
@@ -1481,7 +1481,7 @@ PanelWindow {
                 id: novaBtn
                 wanted: Config.s.barShowAssistant && Config.assistantOn
                 length: bar.capsuleHeight + 8
-                onClicked: { if (!Config.barClosed("assistant")) Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "assistant", "toggle"]); }
+                onClicked: { if (!Config.barClosed("assistant")) Config.slateCall("assistant", "toggle"); }
                 // One pastel in the Colourful look, as Apps and Spaces have (the Assistant page's
                 // colour); the text colour otherwise.
                 // While Nova is thinking, Slate's loading spinner takes its place, turning (the
@@ -1889,9 +1889,7 @@ PanelWindow {
                     readonly property bool date: Config.s.barClockDate && bar.slimClock < 1
                     readonly property bool seconds: Config.s.barClockSeconds && bar.slimClock < 2
                     readonly property string now: (date ? Config.dateText(Config.clockDate(sysClock.date), "short") + "  " : "")
-                        + Qt.formatTime(Config.clockDate(sysClock.date), Config.s.barClockFormat === "24h"
-                            ? (seconds ? "HH:mm:ss" : "HH:mm")
-                            : (seconds ? "h:mm:ss AP" : "h:mm AP"))
+                        + Config.timeText(Config.clockDate(sysClock.date), { seconds: seconds })
                     // (it just changes: no fade from one minute to the next)
                     text: now
                     color: bar.textColor

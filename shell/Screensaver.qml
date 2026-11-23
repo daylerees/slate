@@ -143,7 +143,7 @@ Scope {
         Connections { target: Config; function onWoke() { clock.enabled = false; clock.enabled = true; } }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Qt.formatTime(Config.clockDate(clock.date), Config.s.barClockFormat === "24h" ? "HH:mm" : "h:mm")
+            text: Config.timeText(Config.clockDate(clock.date), { bare: true })
             color: "white"
             font.family: Config.s.fontFamily; font.pixelSize: Config.text(112); font.weight: Font.Light
         }

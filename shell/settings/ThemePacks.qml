@@ -31,16 +31,14 @@ Group {
             packs.busy = "";
             packs.look();
             if (!p) return;
-            const icon = "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png");
             if (code === 0) {
                 packs.installed();
-                Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--", p.name + " is ready",
-                    "Choose it in " + packs.chooseIn + " whenever you like."]);
+                Quickshell.execDetached(Config.notify(p.name + " is ready", "Choose it in " + packs.chooseIn + " whenever you like."));
             } else {
                 const why = packErr.text.replace(/^theme-packs: /, "").trim();
-                Quickshell.execDetached(["notify-send", "--app-name=Slate", icon, "--", "Slate couldn't add " + p.name,
-                    (why !== "" && why.indexOf("fingerprint") >= 0 ? why.charAt(0).toUpperCase() + why.slice(1) + "."
-                        : "Check you're connected to the internet, then try again.")]);
+                Quickshell.execDetached(Config.notify("Slate couldn't add " + p.name,
+                    why !== "" && why.indexOf("fingerprint") >= 0 ? why.charAt(0).toUpperCase() + why.slice(1) + "."
+                        : "Check you're connected to the internet, then try again."));
             }
         }
     }

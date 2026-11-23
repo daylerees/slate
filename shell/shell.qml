@@ -58,26 +58,36 @@ ShellRoot {
         model: Config.anyFloating && Config.slateTitleBars ? Quickshell.screens : []
         TitleBar { required property var modelData; screen: modelData; windows: titleBarWindows }
     }
-    // Only one of the launcher, window switcher and workspace overview shows at a
-    // time: opening one closes the others
+    // Only one of the overlays shows at a time (the launcher, the window switcher, the workspace
+    // overview, the wallpaper switcher, the bar's panels, the clipboard and emoji picker; Nova
+    // too, as it takes the keyboard): opening one closes the others, and any menu
+    function closeOverlaysBut(keep) {
+        Config.closeMenus();
+        if (keep !== appLauncher) appLauncher.closeLauncher();
+        if (keep !== winSwitcher) winSwitcher.cancel();
+        if (keep !== wallpaperLayer.switcher) wallpaperLayer.switcher.cancel();
+        if (keep !== wsOverview) wsOverview.close();
+        if (keep !== popouts) popouts.close();
+        if (keep !== picker) picker.close();
+    }
     Launcher {
         id: appLauncher
         notifs: root.dockNotifs              // (not `notifs: notifs`: that reads the launcher's own property)
         quickLook: root.lookAt
         lookShown: root.quickLookShown
-        onShownChanged: if (shown) { Config.closeMenus(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
+        onShownChanged: if (shown) root.closeOverlaysBut(appLauncher)
     }
     // Nova, the assistant's window (Super+K): a real window, as Settings is, so the launcher and
     // the other overlays leave it open; opening it closes them, so it has the keyboard
     Assistant {
         id: nova
         voice: novaVoice
-        onOpened: { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
+        onOpened: root.closeOverlaysBut(nova)
     }
     // Clipboard history (Super+V) and emoji picker (Super+.)
     Picker {
         id: picker
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); }
+        onShownChanged: if (shown) root.closeOverlaysBut(picker)
     }
     // Records clipboard history for the picker (scripts/clipstore.py); exits with Slate
     Process {
@@ -699,7 +709,7 @@ ShellRoot {
     Connections {
         target: wallpaperLayer.switcher
         function onShownChanged() {
-            if (wallpaperLayer.switcher.shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
+            if (wallpaperLayer.switcher.shown) root.closeOverlaysBut(wallpaperLayer.switcher);
         }
     }
     NightLight { id: nightLight }
@@ -852,8 +862,7 @@ ShellRoot {
     }
     // Where Settings keeps its page while it's open (see SettingsWindow.qml), named for this
     // Hyprland session: logging in again never opens it
-    readonly property string settingsPlaceFile: Config.runtimeDir + "/slate/settings-open-"
-        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
+    readonly property string settingsPlaceFile: Config.runtimeDir + "/slate/settings-open-" + Config.sessionTag + ".json"
     // Open when Slate reloaded or restarted: build Settings now, and it reopens as it was
     FileView {
         path: root.settingsPlaceFile
@@ -949,12 +958,12 @@ ShellRoot {
     Switcher {
         id: winSwitcher
         bar: topBar
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); wallpaperLayer.switcher.cancel(); wsOverview.close(); popouts.close(); picker.close(); }
+        onShownChanged: if (shown) root.closeOverlaysBut(winSwitcher)
     }
     WorkspaceOverview {
         id: wsOverview
         bar: topBar
-        onShownChanged: if (shown) { Config.closeMenus(); appLauncher.closeLauncher(); winSwitcher.cancel(); wallpaperLayer.switcher.cancel(); popouts.close(); picker.close(); }
+        onShownChanged: if (shown) root.closeOverlaysBut(wsOverview)
     }
     // Your own tweaks: the hypr/*.lua files and user/shell.qml (made with instructions in them
     // if missing; saving one reloads Hyprland's config or Slate)

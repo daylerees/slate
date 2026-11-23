@@ -123,3 +123,39 @@ class Migrations(Case):
                             late.append(f"{os.path.relpath(path, SHELL)}:{n} (until {until})")
         self.assertGreater(found, 0)
         self.assertEqual(late, [], "these migrations are past their date: take them out")
+
+
+class Times(Case):
+    def test_every_time_of_day_goes_through_config(self):
+        """A time of day is shown in your clock's format (Settings → Menu Bar → Clock) through
+        Config.timeFormat / timeText: six places wrote it out themselves, with three AM/PM
+        styles and one ignoring the 24-hour clock."""
+        found = []
+        for root, _, files in os.walk(SHELL):
+            if "/data/" in root + "/":
+                continue
+            for f in files:
+                if f.endswith(".qml") and f != "Config.qml":
+                    for n, line in enumerate(open(os.path.join(root, f), encoding="utf-8"), 1):
+                        if re.search(r"formatTime\(|barClockFormat === \"24h\" \? \"[Hh]", line.split("//")[0]):
+                            found.append(f"{f}:{n}")
+        self.assertEqual(found, [])
+
+
+class SessionTag(Case):
+    def test_one_name_for_this_session(self):
+        """Files that last only for this Hyprland session are named with Config.sessionTag
+        (QML) or the same expression in scripts/spaces.py, which reads Config's workspace mode
+        and name files: five copies had two different fallbacks."""
+        for root, _, files in os.walk(SHELL):
+            for f in files:
+                if f.endswith(".qml") and f != "Config.qml":
+                    # (Hyprland's own socket, which is named after it too, isn't one of Slate's files)
+                    src = "\n".join(l for l in open(os.path.join(root, f), encoding="utf-8") if ".socket" not in l)
+                    self.assertNotRegex(src, r'HYPRLAND_INSTANCE_SIGNATURE"\) \|\| "', f"{f} names this session itself: use Config.sessionTag")
+        cfg = slate.read("shell", "Config.qml")
+        self.assertIn('readonly property string sessionTag: Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none"', cfg)
+        py = slate.read("shell", "scripts", "spaces.py")
+        for name in ("workspace-modes", "workspace-names"):
+            self.assertIn(f'"{name}-%s.json" % (os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") or "none")', py)
+            self.assertIn(f'"/slate/{name}-" + root.sessionTag + ".json"', cfg)

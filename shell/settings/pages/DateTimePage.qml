@@ -58,7 +58,7 @@ Column {
     Group {
         SettingRow {
             label: Config.dateText(dateTimePane.now, "long")
-            detail: Qt.formatTime(dateTimePane.now, "HH:mm:ss")
+            detail: Config.timeText(dateTimePane.now, { seconds: true })
         }
         Separator {}
         // Every zone in one dropdown, opening at the current one, with a search box to filter it

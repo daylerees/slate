@@ -356,8 +356,7 @@ Scope {
         if (!shown && !Config.testMode) {
             const line = error ? error.message.split("\n")[0].slice(0, 160) : firstLine(cur);
             if (line !== "") {
-                doneNote.command = ["notify-send", "-a", "Slate", "-i", Quickshell.shellPath("assets/icon/icon-64.png"),
-                                    "-h", "string:x-slate-page:assistant", "-A", "default=Open", "--", "Nova", esc(line)];
+                doneNote.command = Config.notify("Nova", esc(line), { page: "assistant", actions: ["default=Open"], wait: true });
                 doneNote.running = true;
             }
         }

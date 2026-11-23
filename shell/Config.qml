@@ -240,7 +240,14 @@ Singleton {
     }
     // A time of day in your clock's format (Settings → Menu Bar → Clock: 12- or 24-hour), as the
     // menu bar's clock shows it: "9:30 PM" or "21:30"
-    function timeText(date) { return Qt.formatTime(date, s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP"); }
+    // Its format, for Qt.formatTime: `opts.seconds` with seconds, `opts.bare` without AM/PM (the
+    // screensaver's big clock). Every clock and time in Slate goes through these
+    function timeFormat(opts) {
+        const o = opts || {};
+        return s.barClockFormat === "24h" ? (o.seconds ? "HH:mm:ss" : "HH:mm")
+            : (o.seconds ? "h:mm:ss" : "h:mm") + (o.bare ? "" : " AP");
+    }
+    function timeText(date, opts) { return Qt.formatTime(date, timeFormat(opts)); }
     function clockText(minutes) {
         const m = Math.round(minutes);
         return String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
@@ -918,9 +925,13 @@ Singleton {
     }
     // Runs a command line in the default terminal, as an app of its own (through uwsm, where the
     // session uses it): Nova's and Settings' Sign in
-    function runInTerminal(cmd) {
-        const lua = `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. ${inTerminalLua(luaString(cmd))}) end`;
-        Quickshell.execDetached(["hyprctl", "dispatch", lua]);
+    function runInTerminal(cmd) { launchLua(inTerminalLua(luaString(cmd))); }
+    // Starts the command line `cmdLua` (a Lua string expression: it can use the session's
+    // TERMINAL, FILE_MANAGER… from variables.lua) as an app of its own, through uwsm where the
+    // session uses it, so it isn't ended with Slate
+    function launchLua(cmdLua) {
+        Quickshell.execDetached(["hyprctl", "dispatch",
+            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. ${cmdLua}) end`]);
     }
 
     // ---- App icon tint: 0 (off) to 1 (fully in the accent colour); see IconTint.qml
@@ -1097,8 +1108,11 @@ Singleton {
     signal woke()
     property int wakes: 0                       // (the tests: how many times)
     onWoke: wakes++
-    readonly property string loginMarker: root.runtimeDir + "/slate-started-"
-        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "session")
+    // This Hyprland session's own name (HYPRLAND_INSTANCE_SIGNATURE), for files that last only
+    // for it: "none" outside Hyprland. scripts/spaces.py names its files the same way
+    // (tests/static/test_shared.py's SessionTag checks)
+    readonly property string sessionTag: Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none"
+    readonly property string loginMarker: root.runtimeDir + "/slate-started-" + root.sessionTag
     Process {
         running: true
         command: ["sh", "-c", "[ -e \"$0\" ] && exit 1; touch \"$0\"", root.loginMarker]
@@ -1144,10 +1158,9 @@ Singleton {
     readonly property string reopenTitle: "Pick up where you left off?"
     Process {
         id: reopenAsk
-        command: ["notify-send", "--app-name=Slate", "--icon=" + Quickshell.shellPath("assets/icon/icon-64.png"),
-            "--urgency=critical", "--hint=string:x-slate-page:startup", "--action=reopen=Reopen", "--action=later=Not now", "--wait",
-            "--", root.reopenTitle,
-            "Slate can open the apps you had last time, on the same workspaces and just where you left them. Nothing opens unless you say so."]
+        command: root.notify(root.reopenTitle,
+            "Slate can open the apps you had last time, on the same workspaces and just where you left them. Nothing opens unless you say so.",
+            { urgent: true, page: "startup", actions: ["reopen=Reopen", "later=Not now"], wait: true })
         stdout: StdioCollector {
             onStreamFinished: {
                 const said = text.trim();
@@ -2325,12 +2338,20 @@ Singleton {
     // workspaces, which workspaces a mode change reaches); Settings is still yours to switch to.
     // (The same titles are slateIsPinned's in windowrules.lua)
     readonly property var pinnedTitles: [novaTitle, "Settings", "Choose a picture"]
-    function isPinnedSlate(t) {
-        if (!t || pinnedTitles.indexOf(t.title) < 0) return false;
+    // A window's class, whichever kind of window it is: a toplevel (appId), one of Hyprland's
+    // listed windows (class), a Hyprland window object (its Wayland toplevel's appId, or its
+    // details as Hyprland last sent them). "" while those haven't come yet
+    function classOf(t) {
+        if (!t) return "";
         const o = t.lastIpcObject;
         const cls = t.appId !== undefined ? t.appId : t.class !== undefined ? t.class
             : t.wayland ? t.wayland.appId : o && o.class !== undefined ? o.class : "";
-        return cls === "slate-settings" || cls === "" || cls === undefined || cls === null;
+        return cls || "";
+    }
+    function isPinnedSlate(t) {
+        if (!t || pinnedTitles.indexOf(t.title) < 0) return false;
+        const cls = classOf(t);
+        return cls === "slate-settings" || cls === "";
     }
     // Which app a window is, by its app ID, with Slate's own sorted out: Slate's windows all share
     // Slate's app ID (slate-settings), and Slate Software is an app of its own (its own place in the
@@ -2367,19 +2388,12 @@ Singleton {
     // The drop-down terminal (Super+`, binds.lua): Slate's own, on a hidden workspace of its own,
     // so it isn't a running app in the dock or a window to find in the launcher
     readonly property string dropdownClass: "org.slate.dropdown"
-    function isDropdown(t) {
-        if (!t) return false;
-        const o = t.lastIpcObject;
-        const cls = t.appId !== undefined ? t.appId : t.wayland ? t.wayland.appId : o && o.class !== undefined ? o.class : "";
-        return cls === dropdownClass;
-    }
+    function isDropdown(t) { return !!t && classOf(t) === dropdownClass; }
     function isNova(t) {
         if (!t || t.title !== novaTitle) return false;
-        const o = t.lastIpcObject;
-        const cls = t.appId !== undefined ? t.appId : t.class !== undefined ? t.class
-            : t.wayland ? t.wayland.appId : o && o.class !== undefined ? o.class : "";
         // (a Hyprland window whose details haven't come yet: by its title alone)
-        return cls === "slate-settings" || cls === "" || cls === undefined || cls === null;
+        const cls = classOf(t);
+        return cls === "slate-settings" || cls === "";
     }
 
     // Hyprland's corner rounding for windows (decoration:rounding), in Hyprland's pixels, for
@@ -2537,8 +2551,7 @@ Singleton {
     // Workspace id → mode, for the ones set; the rest follow the default. Kept for this Hyprland
     // session in the runtime folder (so it survives Slate reloading and restarting, and Spaces
     // can read it: scripts/spaces.py), not in Settings: workspaces come and go
-    readonly property string workspaceModesPath: root.runtimeDir + "/slate/workspace-modes-"
-        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
+    readonly property string workspaceModesPath: root.runtimeDir + "/slate/workspace-modes-" + root.sessionTag + ".json"
     FileView { id: workspaceModesFile; path: root.workspaceModesPath; blockLoading: true; printErrors: false }
     property var workspaceModes: {
         try { const m = JSON.parse(workspaceModesFile.text() || "{}"); return m && typeof m === "object" ? m : {}; }
@@ -2594,8 +2607,7 @@ Singleton {
     // Slate keeps it itself rather than renaming Hyprland's workspace: Hyprland's own name is
     // what its config and other tools match on.
     readonly property int workspaceNameLimit: 20
-    readonly property string workspaceNamesPath: root.runtimeDir + "/slate/workspace-names-"
-        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none") + ".json"
+    readonly property string workspaceNamesPath: root.runtimeDir + "/slate/workspace-names-" + root.sessionTag + ".json"
     FileView { id: workspaceNamesFile; path: root.workspaceNamesPath; blockLoading: true; printErrors: false }
     property var workspaceNames: {
         try { const m = JSON.parse(workspaceNamesFile.text() || "{}"); return m && typeof m === "object" ? m : {}; }
@@ -2694,7 +2706,7 @@ Singleton {
             return;
         }
         picker.forWallpaper = wallpaper;
-        picker.command = [Qt.resolvedUrl("scripts/wallpaper-accent.py").toString().replace("file://", ""), wallpaper];
+        picker.command = [Quickshell.shellPath("scripts/wallpaper-accent.py"), wallpaper];
         // (started afresh: one still working out an earlier wallpaper's colours would carry on
         // with that one, and this one's would never be worked out)
         picker.running = false;
@@ -2886,8 +2898,7 @@ Singleton {
     // shows first). welcomeCheck then writes the marker; a moment's wait lets the sound system come
     // up, then the sound plays and the cover fades. The login screen loads this file too but has no
     // sounds/ (greeter/files), so the check fails there: it stays silent and doesn't fade.
-    readonly property string welcomeMarker: root.runtimeDir + "/slate/welcomed-"
-        + (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "none")
+    readonly property string welcomeMarker: root.runtimeDir + "/slate/welcomed-" + root.sessionTag
     FileView { id: welcomeMarkerFile; path: root.welcomeMarker; blockLoading: true; printErrors: false }
     // covered until welcomeFading, then fading out
     property bool welcoming: { if (testMode) return false; welcomeMarkerFile.text(); return !welcomeMarkerFile.loaded; }

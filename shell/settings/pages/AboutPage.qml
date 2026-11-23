@@ -174,7 +174,7 @@ Column {
             detail: "The friendly introduction from Slate's first start, with its recommended choices"
             Button {
                 label: "Show the welcome"
-                onClicked: { win.visible = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call", "welcome", "open"]); }
+                onClicked: { win.visible = false; Config.slateCall("welcome", "open"); }
             }
         }
         Separator {}
