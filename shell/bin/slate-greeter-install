@@ -78,7 +78,8 @@ done
 
 # 1. Code: a fresh root-owned copy, swapped in whole. Files are read with your own
 #    permissions (never root's), so a symlink in your folder can't pull in a private file.
-readas() { runuser -u "$OWNER" -- cat -- "$1"; }
+# (with a time limit: a named pipe left in your folder would otherwise hold root's install up)
+readas() { timeout 10 runuser -u "$OWNER" -- cat -- "$1"; }
 put() {    # put <source> <dest> <mode>
     readas "$1" > "$2" || { echo "Can't read $1; is your copy of Slate complete?" >&2; exit 1; }
     chmod "$3" "$2"
@@ -112,8 +113,9 @@ while read -r name src; do
     mode=644; runuser -u "$OWNER" -- test -x "$SRC/$src" && mode=755
     put "$SRC/$src" "$stage/$name" "$mode"
 done <<< "$files"
-# Keyboard layout: recorded by slate-greeter-sync (from your running Hyprland)
-layout=$(grep -oP '"kb_layout":\s*"\K[A-Za-z0-9_,-]+' "$DATA/user.json" 2>/dev/null | head -1 || true)
+# Keyboard layout: recorded by slate-greeter-sync (from your running Hyprland). Read as you:
+# the folder it's in is yours, so the file could be a link to one only root may read
+layout=$(readas "$DATA/user.json" 2>/dev/null | grep -oP '"kb_layout":\s*"\K[A-Za-z0-9_,-]+' | head -1 || true)
 readas "$SRC/greeter/hyprland.lua" | sed "s/__KB_LAYOUT__/${layout:-us}/" > "$stage/hyprland.lua"; chmod 644 "$stage/hyprland.lua"
 # Which version this is: the greeter records it after a login, marking it as one that works
 (cd "$stage" && find . -type f ! -name version -print0 | sort -z | xargs -0 md5sum | md5sum | cut -c1-32) > "$stage/version"
@@ -143,9 +145,28 @@ mv "$stage" "$CODE"; trap - EXIT
 
 # Each person's own look (people/<them>/, kept by their own Slate without a password): a folder
 # anyone can add their own folder to and nobody can touch anyone else's in (sticky, as /tmp).
-# The login screen only takes a folder owned by the person it's named after
+# The login screen only takes a folder owned by the person it's named after.
+# It sits in $DATA, which is yours, so anything running as you could put a link where it goes,
+# and root changing it by name (install -d, chmod) would follow the link and make whatever it
+# points at writable by everyone. So it's made without following a link (mkdir fails on one)
+# and opened the same way, and its owner and mode are changed through what's open: a link,
+# there before or swapped in at any moment, stops the install instead
+people_folder() {
+    python3 -I - "$DATA/people" <<'PY' || { echo "Not installed: $DATA/people isn't a plain folder (a link?), so it was left alone." >&2; exit 1; }
+import os, sys
+path = sys.argv[1]
+try:
+    os.mkdir(path, 0o700)
+except FileExistsError:
+    pass
+fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+if os.geteuid() == 0:            # (always, but under the tests, which can't hand it to root)
+    os.fchown(fd, 0, 0)
+os.fchmod(fd, 0o1777)
+PY
+}
 if [ -d "$DATA" ]; then
-    install -d -m 1777 -o root -g root "$DATA/people"
+    people_folder
 fi
 
 if [ "$MODE" = code ]; then
@@ -155,7 +176,7 @@ fi
 
 # 2. Appearance folder (yours, so Slate can sync it) and the greeter's writable cache
 install -d -m 755 -o "$OWNER" -g "$(id -gn "$OWNER")" "$DATA"
-install -d -m 1777 -o root -g root "$DATA/people"
+people_folder
 install -d -m 755 -o "$GREETER_USER" -g "$GREETER_GROUP" "$CACHE" "$CACHE/cache" "$CACHE/state" "$CACHE/fontconfig"
 sudo -u "$OWNER" -H "$SRC/bin/slate-greeter-sync"
 

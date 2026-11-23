@@ -673,8 +673,83 @@ class PeopleLooks(Case):
     folder and nobody can touch anyone else's. On a full install and on a code-only update (how
     an existing login screen gets it)."""
     def test_made_on_both_routes(self):
+        """(made by people_folder, without following a link: GreeterPeople runs it for real)"""
         src = slate.read("shell", "bin", "slate-greeter-install")
-        line = 'install -d -m 1777 -o root -g root "$DATA/people"'
-        self.assertEqual(src.count(line), 2, "people/ isn't made, or not as root's sticky folder")
+        body = src[src.index("people_folder() {"):src.index("\nPY\n}") + 5]
+        self.assertIn("os.fchmod(fd, 0o1777)", body, "people/ isn't made as a sticky folder open to all")
+        self.assertIn("os.fchown(fd, 0, 0)", body, "people/ isn't made root's")
+        calls = [i for i in range(len(src)) if src.startswith("people_folder\n", i) and src[i - 1] in " \n"]
+        self.assertEqual(len(calls), 2, "people/ isn't made on both routes")
         code_only = src.index('if [ "$MODE" = code ]; then')
-        self.assertLess(src.index(line), code_only, "a code-only update stops before making people/")
+        self.assertLess(calls[0], code_only, "a code-only update stops before making people/")
+
+
+class GreeterPeople(RootCase):
+    """The login screen's people/ folder sits in /var/lib/slate-greeter, which is the person's own,
+    so anything running as them could put a link where it goes. Root made it world-writable by
+    name (install -d -m 1777), following such a link: a system folder made writable by anyone at
+    the next "update the login screen" password prompt. Now it's made and changed without
+    following a link, and a link stops the install. Run with --code-only on scratch copies of the
+    system's folders (paths swapped in a copy of the script)."""
+
+    def setUp(self):
+        super().setUp()
+        self.sys = os.path.join(self.h.dir, "system")
+        self.data = os.path.join(self.sys, "var-lib-slate-greeter")
+        os.makedirs(self.data)
+        os.makedirs(os.path.join(self.sys, "share"))
+        src = slate.read("shell", "bin", "slate-greeter-install")
+        src = (src.replace("/var/lib/slate-greeter", self.data)
+                  .replace("/var/cache/slate-greeter", os.path.join(self.sys, "cache"))
+                  .replace("/usr/local/share/slate-greeter", os.path.join(self.sys, "share", "slate-greeter"))
+                  .replace("/usr/local/share/.slate-greeter", os.path.join(self.sys, "share", ".slate-greeter")))
+        self.script = os.path.join(self.h.dir, "slate-greeter-install")
+        with open(self.script, "w") as f:
+            f.write(src)
+        os.chmod(self.script, 0o755)
+        self.stub("chown", "exit 0")              # (root's, which the test can't hand out)
+        # The real install, without the owner and group only root could give
+        real = shutil.which("install")
+        self.stub("install", 'set -- "$@" --end; while [ "$1" != --end ]; do\n'
+                             '  case "$1" in -o|-g) shift ;; *) set -- "$@" "$1" ;; esac; shift\n'
+                             f'done; shift; exec {real} "$@"')
+        # A folder only its owner may use, which a link at people/ would point at
+        self.victim = os.path.join(self.h.dir, "private")
+        os.makedirs(self.victim)
+        os.chmod(self.victim, 0o700)
+
+    def install(self):
+        return run([self.script, "--code-only", "--no-check"], env=self.s.env, timeout=30)
+
+    def test_a_link_in_its_place_is_refused(self):
+        os.symlink(self.victim, os.path.join(self.data, "people"))
+        code, out = self.install()
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("isn't a plain folder", out)
+        self.assertEqual(stat.S_IMODE(os.stat(self.victim).st_mode), 0o700, "the folder the link pointed at was changed")
+
+    def test_a_dangling_link_is_refused_too(self):
+        os.symlink(os.path.join(self.h.dir, "nowhere"), os.path.join(self.data, "people"))
+        code, out = self.install()
+        self.assertNotEqual(code, 0, out)
+        self.assertFalse(os.path.exists(os.path.join(self.h.dir, "nowhere")), "root made the folder the link pointed at")
+
+    def test_made_or_set_right(self):
+        for already in (False, True):
+            with self.subTest(already=already):
+                people = os.path.join(self.data, "people")
+                if already:
+                    os.chmod(people, 0o755)
+                code, out = self.install()
+                self.assertEqual(code, 0, out)
+                self.assertTrue(os.path.isdir(people) and not os.path.islink(people))
+                self.assertEqual(stat.S_IMODE(os.stat(people).st_mode), 0o1777)
+
+    def test_your_layout_is_read_as_you(self):
+        """user.json is read through runuser (as the person), not by root directly."""
+        with open(os.path.join(self.data, "user.json"), "w") as f:
+            f.write('{"kb_layout": "gb"}')
+        code, out = self.install()
+        self.assertEqual(code, 0, out)
+        with open(os.path.join(self.sys, "share", "slate-greeter", "hyprland.lua")) as f:
+            self.assertIn("gb", f.read())
