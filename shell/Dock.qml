@@ -137,10 +137,7 @@ PanelWindow {
     readonly property real spacing: 8
     readonly property real padding: 8        // inside the dock background
     // How rounded the icons' corners are (Settings → Icons → App icons), for the dock's own corners
-    readonly property real iconCorner: {
-        const shape = Config.s.iconShape;
-        return shape === "circle" ? base / 2 : shape === "square" ? 0 : shape === "squircle" ? base * 0.3 : base * 0.225;
-    }
+    readonly property real iconCorner: Config.iconCornerFor(base)
     readonly property int hideDelay: 700     // ms after the pointer leaves
     readonly property color bgColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
     // What's drawn on the dock's own buttons (the Apps bars, the Downloads and bin symbols, the
@@ -473,8 +470,8 @@ PanelWindow {
     // ---- Media (Settings → Dock → Media controls) ----------------------------------
     // What's playing, right after the launcher button, while a media app has a track: its
     // album art, with Previous / Play-Pause / Next across it under the pointer
-    readonly property var player: Mpris.players.values.find(p => p.isPlaying)
-        ?? Mpris.players.values.find(p => (p.trackTitle || "") !== "") ?? null
+    // (only one with something loaded: an idle player isn't shown)
+    readonly property var player: Config.player && (Config.player.isPlaying || (Config.player.trackTitle || "") !== "") ? Config.player : null
     readonly property bool mediaShown: Config.s.dockShowMedia && !!player && (player.trackTitle || "") !== ""
     readonly property int mediaIndex: indexOfKind("media")
     // How many icons wide it is: along a bottom or top dock, a rectangle with the album art
@@ -664,6 +661,8 @@ PanelWindow {
         const t = Math.abs(tiltOffset(i));
         return t >= 1 ? 0 : base * 0.16 * (Math.cos(Math.PI * t) + 1) / 2 * hover;
     }
+    // The middle of slot i along the dock, where its menus point from
+    function cellCentre(i) { return row.x + cellX(i) + base * scaleAt(i) / 2; }
     function cellX(i) {
         let x = 0;
         for (let j = 0; j < i; j++) x += base * slotWidth(j) * scaleAt(j) + spacing;
@@ -1707,7 +1706,7 @@ PanelWindow {
         if (i < 0 || (slotAt(i) && slotAt(i).kind === "divider")) { if (right) dockMenu.openHere(); return; }
         if (i === launcherIndex) {
             // The launcher button: opens the launcher; right-click for shortcuts to Settings pages
-            if (right) appMenu.openFor({ settingsMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
+            if (right) appMenu.openFor({ settingsMenu: true, key: "", windows: [] }, cellCentre(i));
             else appLauncher.shown ? appLauncher.closeLauncher() : appLauncher.openLauncher();
             return;
         }
@@ -1721,7 +1720,7 @@ PanelWindow {
             // The timers: a click is their one thing (a drink had; focus started or paused),
             // right-click for the rest
             const drink = i === drinkIndex;
-            if (right) { timerMenu.drink = drink; timerMenu.openFrom(menuPoint(row.x + cellX(i) + base * scaleAt(i) / 2).x, menuPoint(row.x + cellX(i) + base * scaleAt(i) / 2).y, win.edge, 0); }
+            if (right) { timerMenu.drink = drink; timerMenu.openFrom(menuPoint(cellCentre(i)).x, menuPoint(cellCentre(i)).y, win.edge, 0); }
             else if (drink) Timers.drank();
             else Timers.toggleFocus();
             return;
@@ -1729,25 +1728,25 @@ PanelWindow {
         if (downloadsShown && i === downloadsIndex) {
             // Downloads: the grid of the newest; right-click just to open the folder
             appMenu.openFor(right ? { downloadsMenu: true, key: "", windows: [] } : { downloadsGrid: true, key: "", windows: [] },
-                row.x + cellX(i) + base * scaleAt(i) / 2);
+                cellCentre(i));
             return;
         }
         if (trashShown && i === trashIndex) {
             // The waste basket: opens it; right-click to empty it
-            if (right) appMenu.openFor({ trashMenu: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
+            if (right) appMenu.openFor({ trashMenu: true, key: "", windows: [] }, cellCentre(i));
             else openTrash();
             return;
         }
         if (moreIndex >= 0 && i === moreIndex) {
             // More: the grid of the apps that don't fit, either button
-            appMenu.openFor({ moreGrid: true, key: "", windows: [] }, row.x + cellX(i) + base * scaleAt(i) / 2);
+            appMenu.openFor({ moreGrid: true, key: "", windows: [] }, cellCentre(i));
             return;
         }
         const sl = slotAt(i);
         if (!sl || sl.kind !== "app") return;          // (a divider does nothing)
         const item = sl.item;
         if (right) {   // menu by the icon's centre along the dock
-            appMenu.openFor(item, row.x + cellX(i) + base * scaleAt(i) / 2);
+            appMenu.openFor(item, cellCentre(i));
             return;
         }
         openApp(item);

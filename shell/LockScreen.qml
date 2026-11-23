@@ -24,12 +24,7 @@ Scope {
 
     readonly property string user: Quickshell.env("USER")
     readonly property string avatar: Config.avatarPath + "?v=" + Config.avatarVersion   // version: reload after a change
-    property string displayName: user
-    Process {
-        running: true
-        command: ["getent", "passwd", root.user]
-        stdout: StdioCollector { onStreamFinished: { const n = (text.split(":")[4] || "").split(",")[0]; if (n) root.displayName = n; } }
-    }
+    readonly property string displayName: Config.fullName
 
     // Sessions for the login preview (the real login screen reads these itself)
     property var sessions: []

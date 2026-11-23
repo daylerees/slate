@@ -602,13 +602,7 @@ PanelWindow {
     function weatherInfo(code) { return weatherSrc.info(code); }
 
     FileView { id: uptimeFile; path: "/proc/uptime" }
-    // Your name from the account (as on the lock screen), else the user name
-    property string fullName: Quickshell.env("USER")
-    Process {
-        running: true
-        command: ["getent", "passwd", Quickshell.env("USER")]
-        stdout: StdioCollector { onStreamFinished: { const n = (text.split(":")[4] || "").split(",")[0]; if (n) pop.fullName = n; } }
-    }
+    readonly property string fullName: Config.fullName
     FileView { id: hostFileView; path: "/etc/hostname" }
     property alias hostFile: hostFileView     // (the control center's "you@this-computer")
     property string hyprVersion: ""

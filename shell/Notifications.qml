@@ -297,18 +297,13 @@ Scope {
             } catch (e) {}
         }
     }
-    Timer { id: saveTimer; interval: 500; onTriggered: stateDir.running = true }
-    // What notifications say can be private (a one-time code), so only you can read the
-    // history: Slate's state folder is made yours alone before each save, and the file after it
-    Process {
-        id: stateDir
-        command: ["sh", "-c", 'mkdir -p "${0%/*}" && chmod 700 "${0%/*}"', notifs.stateFile]
-        onExited: {
-            store.setText(JSON.stringify({ dnd: notifs.dnd, unread: notifs.unread, readUpTo: notifs.readUpTo,
-                nextKey: notifs.nextKey, appSeen: notifs.appSeen, appSeenBase: notifs.appSeenBase, history: notifs.history }, null, 1));
-            Quickshell.execDetached(["chmod", "600", notifs.stateFile]);
-        }
+    Timer {
+        id: saveTimer; interval: 500
+        onTriggered: privately.save(JSON.stringify({ dnd: notifs.dnd, unread: notifs.unread, readUpTo: notifs.readUpTo,
+            nextKey: notifs.nextKey, appSeen: notifs.appSeen, appSeenBase: notifs.appSeenBase, history: notifs.history }, null, 1))
     }
+    // What notifications say can be private (a one-time code), so only you can read the history
+    PrivateStore { id: privately; file: store }
     function save() { saveTimer.restart(); }
     //   slate ipc call notifications dnd true      Do Not Disturb on (false: off)
     IpcHandler {

@@ -19,7 +19,6 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
-import Quickshell.Services.Mpris
 
 PanelWindow {
     id: osd
@@ -171,7 +170,7 @@ PanelWindow {
     }
 
     // ---- Media keys -----------------------------------------------------------
-    readonly property var player: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values[0] ?? null
+    readonly property var player: Config.player
     IpcHandler {
         target: "media"
         function toggle(): void { const p = osd.player; if (p && p.canTogglePlaying) p.togglePlaying(); }

@@ -17,7 +17,7 @@ Column {
     id: controlView
     width: 470
     spacing: 12
-    readonly property var player: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values[0] ?? null
+    readonly property var player: Config.player
     readonly property bool testAvatarFallback: avatar.showingFallback   // (the test state's avatarFallback)
 
     // Profile

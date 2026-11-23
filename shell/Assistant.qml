@@ -163,19 +163,10 @@ Scope {
     Timer {
         id: chatSave
         interval: 600
-        onTriggered: if (root.keepChat && root.restored) chatDir.running = true
+        onTriggered: if (root.keepChat && root.restored) chatPrivately.save(JSON.stringify({ session: root.session, turns: root.turns }))
     }
-    // (its folder is made yours alone first, each time, so the file is never where another
-    // account could read it, not even for the moment before its own chmod)
-    Process {
-        id: chatDir
-        command: ["sh", "-c", 'mkdir -p "${0%/*}" && chmod 700 "${0%/*}"', root.chatFile]
-        onExited: {
-            if (!root.keepChat || !root.restored) return;
-            chatStore.setText(JSON.stringify({ session: root.session, turns: root.turns }));
-            Quickshell.execDetached(["chmod", "600", root.chatFile]);
-        }
-    }
+    // (only you can read it: PrivateStore)
+    PrivateStore { id: chatPrivately; file: chatStore }
     onTurnsChanged: chatSave.restart()
     onSessionChanged: chatSave.restart()
     // (at: when you asked; doneAt: when the answer was finished. Shown as "2 min ago")

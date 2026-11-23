@@ -10,12 +10,8 @@ Column {
     spacing: 4
     PageTitle { text: "General" }
     // ---- Account: your picture (AccountsService) and name
-    property string fullName: Quickshell.env("USER")
-    Process {
-        running: true
-        command: ["getent", "passwd", Quickshell.env("USER")]
-        stdout: StdioCollector { onStreamFinished: { const n = (text.split(":")[4] || "").split(",")[0]; if (n) generalCol.fullName = n; } }
-    }
+    readonly property string fullName: Config.fullName
+    Component.onCompleted: Config.lookUpFullName()
     GroupLabel { text: "Account" }
     Group {
         Item {

@@ -984,40 +984,43 @@ class LuaText(Case):
 
 class PrivateFiles(Case):
     """What Slate keeps that's private (the conversation with Nova, the notification history)
-    is written from QML, where a file can't be made with a mode: so its folder is closed
-    first, by a command run here as Slate runs it, and the file after."""
+    is written from QML, where a file can't be made with a mode: so it's written through
+    PrivateStore, which closes its folder first, by a command run here as Slate runs it, and
+    makes the file 600 after every write."""
     FILES = {"Assistant.qml": "root.chatFile", "Notifications.qml": "notifs.stateFile"}
 
-    def test_folder_is_closed_before_the_file_is_written(self):
-        import stat
-        import tempfile
+    def test_written_only_through_private_store(self):
         for name, prop in self.FILES.items():
             with self.subTest(name):
                 src = slate.read("shell", name)
-                m = re.search(r"""command: \["sh", "-c", '([^']+)', %s\]\s*onExited: \{(.*?)\n    \}""" % re.escape(prop), src, re.S)
-                self.assertTrue(m, "no command closing the folder of " + prop)
-                script, after = m.groups()
-                # Every write is after that command has finished, and is followed by the file's chmod.
-                # (Its writes: those of the one FileView reading it. Another FileView in the same
-                # file, for something that isn't private, like Nova's size, is its own business)
                 views = re.findall(r"FileView \{\s*id: (\w+)\s*path: ([^\n]*)", src)
                 private = [v for v, path in views if prop in path]
                 self.assertEqual(len(private), 1, f"{len(private)} FileViews read {prop}")
                 self.assertTrue(all(prop.split(".")[-1] not in path for v, path in views if v not in private),
                                 "another FileView reads the private file")
-                self.assertEqual(src.count(private[0] + ".setText("), 1, "a write that doesn't wait for the folder")
-                self.assertRegex(after, r"""(?s)\.setText\(.*?\);\s*Quickshell\.execDetached\(\["chmod", "600", %s\]\)""" % re.escape(prop))
-                # The command: the folder made, or one that was open to others closed
-                old = os.umask(0o022)
-                self.addCleanup(os.umask, old)
-                with tempfile.TemporaryDirectory() as top:
-                    for folder in ("new", "old"):
-                        d = os.path.join(top, folder, "slate")
-                        if folder == "old":
-                            os.makedirs(d)
-                            self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o755)
-                        subprocess.run(["sh", "-c", script, os.path.join(d, "file.json")], check=True)
-                        self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o700, folder)
+                self.assertRegex(src, r"PrivateStore \{ id: \w+; file: %s \}" % private[0], "not written through PrivateStore")
+                self.assertNotIn(private[0] + ".setText(", src, "a write that doesn't go through PrivateStore")
+
+    def test_private_store_closes_the_folder_first(self):
+        import stat
+        import tempfile
+        src = slate.read("shell", "PrivateStore.qml")
+        m = re.search(r"""command: \["sh", "-c", '([^']+)', keeper\.file\.path\]\s*onExited: code => \{ if \(code === 0\) \{ keeper\.folderReady = true; keeper\.write\(\); \} \}""", src)
+        self.assertTrue(m, "no command closing the folder before the first write")
+        # Every write: the text, then the file's chmod; the first only once the folder's closed
+        self.assertRegex(src, r"""(?s)function write\(\) \{\s*file\.setText\(pending\);\s*Quickshell\.execDetached\(\["chmod", "600", "--", file\.path\]\);""")
+        self.assertRegex(src, r"if \(folderReady\) write\(\);\s*else \{ folder\.running = false; folder\.running = true; \}")
+        # The command: the folder made, or one that was open to others closed
+        old = os.umask(0o022)
+        self.addCleanup(os.umask, old)
+        with tempfile.TemporaryDirectory() as top:
+            for folder in ("new", "old"):
+                d = os.path.join(top, folder, "slate")
+                if folder == "old":
+                    os.makedirs(d)
+                    self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o755)
+                subprocess.run(["sh", "-c", m.group(1), os.path.join(d, "file.json")], check=True)
+                self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o700, folder)
 
 
 class NovaAnswers(Case):

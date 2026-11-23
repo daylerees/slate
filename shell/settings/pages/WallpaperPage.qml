@@ -274,9 +274,7 @@ Column {
             model: Config.s.wallpaperShowSlate ? slateFiles : null
             delegate: WallTile {
                 tileW: slateGrid.tileW
-                // "slate-ember.png" → "Ember"; "slate-ember-plain.png" (without Slate's
-                // mark) → "Ember (plain)"
-                title: fileName.replace(/^slate-/, "").replace(/\.[^.]*$/, "").replace(/-plain$/, " (plain)").replace(/^./, c => c.toUpperCase())
+                title: Config.wallpaperName(filePath)     // ("slate-ember.png" → "Ember")
                 onPicked: wallpaperPane.setWallpaper(filePath)
             }
         }

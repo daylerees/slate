@@ -1682,6 +1682,32 @@ Singleton {
     }
     // How rounded an app icon's corners are at a given size (Settings → Icons → App icons),
     // for things drawn to match it, like a sheen on the tile
+    // Your name from your account (getent: its full-name field), else your user name: for the
+    // lock screen, the control center and Settings → General. Looked up at start, and again
+    // when General opens (Settings → Users can change it)
+    property string fullName: Quickshell.env("USER") || ""
+    function lookUpFullName() { if (!isLoginScreen) { nameLookup.running = false; nameLookup.running = true; } }
+    Process {
+        id: nameLookup
+        running: !root.isLoginScreen
+        command: ["getent", "passwd", Quickshell.env("USER") || ""]
+        stdout: StdioCollector { onStreamFinished: { const n = (text.split(":")[4] || "").split(",")[0]; root.fullName = n || Quickshell.env("USER") || ""; } }
+    }
+    // The player to show (the dock's now playing, the control center, the media keys' OSD): the
+    // one playing, else one with something loaded, else the first there is
+    readonly property var player: Mpris.players.values.find(p => p.isPlaying)
+        ?? Mpris.players.values.find(p => (p.trackTitle || "") !== "") ?? Mpris.players.values[0] ?? null
+    // Names in a sentence: "A", "A and B", "A, B and C"
+    function listText(names) { return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1]; }
+    // A wallpaper's name, as Settings and the switcher show it: one of Slate's own by its name
+    // ("slate-ember.png" → "Ember", "slate-ember-plain.png", without Slate's mark → "Ember
+    // (plain)"), anyone else's by its file name without the ending
+    function wallpaperName(path) {
+        const file = String(path).replace(/^.*\//, "");
+        if (String(path).indexOf(Quickshell.shellPath("wallpapers") + "/") === 0)
+            return file.replace(/^slate-/, "").replace(/\.[^.]*$/, "").replace(/-plain$/, " (plain)").replace(/^./, c => c.toUpperCase());
+        return file.replace(/\.[^.]*$/, "");
+    }
     function iconCornerFor(size) {
         const shape = s.iconShape;
         return shape === "circle" ? size / 2 : shape === "square" ? 0 : shape === "squircle" ? size * 0.3 : size * 0.225;
@@ -2179,12 +2205,19 @@ Singleton {
     // number to start at: 1)
     readonly property real barItemOpacity: !glass || s.barItemOpacity < 0 ? 1 : Math.min(1, s.barItemOpacity)
     readonly property real barItemHoverOpacity: !glass || s.barItemHoverOpacity < 0 ? 1 : Math.min(1, s.barItemHoverOpacity)
+    // For a glass surface of opacity o, the two numbers every one of them needs (the bar, its
+    // panels, notifications, the launcher): where Hyprland starts blurring behind it (a clear
+    // surface, under a quarter, next to none; from there in a few wide steps, as each step remakes
+    // Hyprland's rule and blinks the blur), and how much of Slate's shadow it keeps under it
+    // without that being blurred too (all of it without glass or blur)
+    function ownGlassCut(o) { return o < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(o * 0.85 * 10) / 10); }
+    function ownShadowShare(o, blur) { return !glass || !blur ? 1 : Math.min(1, Math.max(0, o - 0.25) / Math.max(0.01, shadowStrength)); }
     // Where Hyprland starts blurring behind the bar. Its window also holds its shadow, which
     // has to stay fainter than this or it's blurred too: so a clear bar (under a quarter) has
     // next to no threshold and no shadow, and from there both rise with it, the threshold in
     // a few wide steps (each remakes Hyprland's rule, which blinks the blur: least seen on a
     // bar that's mostly colour, and never at the clear end)
-    readonly property real barGlassCut: barGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(barGlassOpacity * 0.85 * 10) / 10)
+    readonly property real barGlassCut: ownGlassCut(barGlassOpacity)
     // The bar's panels (Popouts.qml): the bar's own colour, at an opacity of their own (Settings
     // → Menu Bar → Glass → Panel opacity), with a blur rule and a shadow kept under it, as the
     // bar's are
@@ -2194,13 +2227,11 @@ Singleton {
         const o = Math.max(0, Math.min(1, s.barPanelOpacity));
         return s.barPanelBlur ? Math.max(0.01, o) : 0.8 + 0.2 * o;
     }
-    readonly property real panelGlassCut: panelGlassOpacity < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(panelGlassOpacity * 0.85 * 10) / 10)
+    readonly property real panelGlassCut: ownGlassCut(panelGlassOpacity)
     // The launcher and Nova's window: a background opacity of their own with glass, and a blur
     // rule (the launcher's with a shadow kept under it, as the panels' are; Nova's shadow is
     // Hyprland's, as every window's). An opacity not set (below 0) is Appearance's
     function ownGlassOpacity(v, blur) { return v < 0 ? glassOpacity : Math.max(blur ? 0.01 : 0, Math.min(1, v)); }
-    function ownGlassCut(o) { return o < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(o * 0.85 * 10) / 10); }
-    function ownShadowShare(o, blur) { return !glass || !blur ? 1 : Math.min(1, Math.max(0, o - 0.25) / Math.max(0.01, shadowStrength)); }
     readonly property real launcherGlassOpacity: ownGlassOpacity(s.launcherOpacity, s.launcherBlur)
     readonly property real launcherGlassCut: ownGlassCut(launcherGlassOpacity)
     readonly property real launcherShadowShare: ownShadowShare(launcherGlassOpacity, s.launcherBlur)
@@ -2215,11 +2246,9 @@ Singleton {
     function toastSurface(c, hovered) { return glass ? Qt.rgba(c.r, c.g, c.b, hovered ? toastGlassHoverOpacity : toastGlassOpacity) : c; }
     // (blur from under whichever of the two is clearer, so it's there for both)
     readonly property real toastGlassLow: Math.min(toastGlassOpacity, toastGlassHoverOpacity)
-    readonly property real toastGlassCut: toastGlassLow < 0.25 ? 0.005 : Math.min(glassCut, Math.floor(toastGlassLow * 0.85 * 10) / 10)
-    readonly property real toastShadowShare: !glass || !s.notificationBlur ? 1
-        : Math.min(1, Math.max(0, toastGlassLow - 0.25) / Math.max(0.01, shadowStrength))
-    readonly property real panelShadowShare: !glass || !s.barPanelBlur ? 1
-        : Math.min(1, Math.max(0, panelGlassOpacity - 0.25) / Math.max(0.01, shadowStrength))
+    readonly property real toastGlassCut: ownGlassCut(toastGlassLow)
+    readonly property real toastShadowShare: ownShadowShare(toastGlassLow, s.notificationBlur)
+    readonly property real panelShadowShare: ownShadowShare(panelGlassOpacity, s.barPanelBlur)
     // ...and the bar's shadow: as dark as every other (Settings → Appearance → Shadows), but
     // always just under where Hyprland starts blurring behind the bar (barGlassCut, which can be
     // lower than the bar's own opacity suggests): over it, Hyprland blurred behind the darkest

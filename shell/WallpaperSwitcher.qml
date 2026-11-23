@@ -203,12 +203,7 @@ Scope {
     }
 
     // A wallpaper's name: Slate's own as Settings names them ("Ember", "Ember (plain)"), yours by file
-    function nameOf(path) {
-        const file = path.replace(/^.*\//, "");
-        if (path.indexOf(Quickshell.shellPath("wallpapers") + "/") === 0)
-            return file.replace(/^slate-/, "").replace(/\.[^.]*$/, "").replace(/-plain$/, " (plain)").replace(/^./, c => c.toUpperCase());
-        return file.replace(/\.[^.]*$/, "");
-    }
+    function nameOf(path) { return Config.wallpaperName(path); }
 
     // ---- On every screen: the wallpaper over the windows; the row on the focused one ----
     // Two layers per screen: the wallpaper on the top layer, over the windows (the bar and dock

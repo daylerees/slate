@@ -232,7 +232,7 @@ PanelWindow {
         if (seg.isToggle) {
             const names = seg.shell ? seg.shell.cells.filter(c => c.wanted && !c.overflowed && !c.carried)
                 .map(c => { const it = Config.barItem(c.name); return it ? it.label : ""; }).filter(n => n !== "") : [];
-            return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+            return Config.listText(names);
         }
         if (seg.tipText !== "") return seg.tipText;
         const n = seg.name;

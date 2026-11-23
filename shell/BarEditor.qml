@@ -110,7 +110,7 @@ PanelWindow {
     readonly property var fixedSizes: ({ "px": [8, 16, 32, 48, 64, 128], "%": [1, 2, 5, 10, 15, 25] })
     readonly property real screenLength: Config.barEdge === "left" || Config.barEdge === "right"
         ? (screen ? screen.height : 0) : (screen ? screen.width : 0)
-    function listOf(names) { return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1]; }
+    function listOf(names) { return Config.listText(names); }
 
     // ---- The pool, and carrying a chip to the bar ------------------------------------
     readonly property var pool: Config.barItems.filter(i => i.key !== "" && !Config.s[i.key])
