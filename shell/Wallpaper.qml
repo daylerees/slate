@@ -1,6 +1,6 @@
 // The desktop wallpaper: one background layer per screen, filling it (cropped to fit).
 // Changing it cross-fades from the old image to the new one (WallpaperFill.qml).
-// Set it from Settings → Appearance, or:  slate ipc call wallpaper set <path>
+// Set it from Settings → Wallpaper, or:  slate ipc call wallpaper set <path>
 // It can also change by itself (Settings → Wallpaper → Change wallpaper): at each login
 // or every so often, to another image from the wallpaper folder. The accent and tint follow
 // the new image when they're set to come from the wallpaper.

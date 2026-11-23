@@ -311,7 +311,7 @@ ShellRoot {
         }
         function onReadyToLaunch() {
             const s = root.sessions[root.sessionIndex];
-            if (!s) { root.fail("Slate couldn't find a session to start"); return; }
+            if (!s) { root.fail("Slate couldn't find a session to start. Press Ctrl+Alt+F3 to log in on a text screen instead"); return; }
             root.auto = false; root.wantsPassword = false; root.hint = "";
             lastSession.setText(s.id + "\n");
             lastUser.setText(root.user + "\n");

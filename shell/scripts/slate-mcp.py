@@ -1591,7 +1591,7 @@ def wallpaper_set(name):
     if not path:
         raise Sorry("That isn't one of the pictures in wallpapers_list. Only those can be the wallpaper.")
     changing("Change the wallpaper?", "%s is asking to change your wallpaper. You can change it back at any time in "
-             "Settings → Appearance." % asker())
+             "Settings → Wallpaper." % asker())
     CALL["before"] = os.path.basename(ipc("config", "get", "wallpaper"))
     ipc("wallpaper", "set", path)
     return {"wallpaper": clean(name, 120)}
@@ -1600,7 +1600,7 @@ def wallpaper_set(name):
 @tool("wallpaper_next", "Another wallpaper", "Change to another wallpaper, picked at random as Slate does.", tier="change")
 def wallpaper_next():
     changing("Change the wallpaper?", "%s is asking to change your wallpaper. You can change it back at any time in "
-             "Settings → Appearance." % asker())
+             "Settings → Wallpaper." % asker())
     ipc("wallpaper", "next")
     return {"done": True}
 

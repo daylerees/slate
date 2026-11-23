@@ -287,7 +287,7 @@ local shared = {
     clipboard     = hl.dsp.exec_cmd(slate("picker toggle clipboard")),
 
     -- Utilities: the colour picker (copies the colour), screenshots, and the wallpaper (Slate
-    -- Settings → Appearance, at the wallpapers) and its switcher
+    -- Settings → Wallpaper) and its switcher
     colourPicker      = hl.dsp.exec_cmd(needing("hyprpicker", "The color picker", "hyprpicker -a -n")),
     screenshotArea    = hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh region"),
     screenshotScreen  = hl.dsp.exec_cmd(SLATE_DIR .. "/scripts/screenshot.sh screen"),
@@ -681,7 +681,7 @@ if SLATE_KEYS then
     hl.bind(mainMod .. " + Print", shared.screenshotScreen)
     hl.bind(mainMod .. " + SHIFT + Print", shared.recordToggle)
 
-    -- Wallpaper (opens Slate Settings → Appearance, at the wallpapers), and the wallpaper switcher
+    -- Wallpaper (opens Slate Settings → Wallpaper), and the wallpaper switcher
     hl.bind(mainMod .. " + SHIFT + W", shared.wallpaper)
     hl.bind(mainMod .. " + ALT + W",   shared.wallpaperSwitcher)
 

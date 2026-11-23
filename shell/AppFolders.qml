@@ -47,7 +47,7 @@ Scope {
         confirm.confirmWith({
             title: "Restart Slate to show your new apps?",
             body: "Your new apps are in a place Slate started looking at only now, so they'll show in the launcher once Slate restarts. Your apps and windows stay open.",
-            button: "Restart", cancelLabel: "Later", code: 0xEB13, danger: false
+            button: "Restart", cancelLabel: "Not now", code: 0xEB13, danger: false
         }, () => Config.restartSlate());
     }
 }

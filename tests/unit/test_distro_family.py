@@ -177,7 +177,7 @@ class SlateSystem(Case):
             with self.subTest(name):
                 fam = SAMPLES[name][1]
                 body = self.not_installed(name)
-                start = "To finish by hand, run: " + self.BY_HAND[fam]
+                start = "Nothing was changed, and Slate will ask again next time. To finish by hand, run: " + self.BY_HAND[fam]
                 self.assertTrue(body.startswith(start), f"{name}: {body!r}")
                 # (and the packages after it: the first required one in its list)
                 first = next(l.split("#")[0].strip() for l in slate.read("packaging", fam + ".txt").splitlines()
@@ -187,6 +187,8 @@ class SlateSystem(Case):
     def test_never_run_followed_by_nothing(self):
         """Whatever the family, the sentence has a command after it or isn't there."""
         src = slate.read("shell", "bin", "slate-system")
-        self.assertNotIn('"To finish by hand, run: $cmd"\n', src.replace('hint="To finish by hand, run: $cmd"\n', ""),
+        self.assertNotIn('"To finish by hand, run: $cmd"\n', src.replace('hint=" To finish by hand, run: $cmd"\n', ""),
                          "said even when there's no command to give")
-        self.assertIn('[ -n "$cmd" ] && hint="To finish by hand, run: $cmd"', src)
+        self.assertIn('[ -n "$cmd" ] && hint=" To finish by hand, run: $cmd"', src)
+        # (and with none, the notification still says something: it was never left empty)
+        self.assertIn('"Nothing was changed, and Slate will ask again next time.$hint"', src)

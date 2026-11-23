@@ -6,7 +6,7 @@ import Quickshell.Io
 
 JsonAdapter {
 
-    // Colour, theme and wallpaper (Settings → Appearance)
+    // Colour and theme (Settings → Appearance), and the wallpaper (Settings → Wallpaper)
     property string accent: "#8fb3e8"
     property bool accentFromWallpaper: true    // the accent picked from the wallpaper (on to start with)
     property real accentBoldness: 0.8         // Settings → Appearance → Accent boldness: the wallpaper accent in dark mode, 0 (as picked) to 1 (bold)
@@ -16,7 +16,7 @@ JsonAdapter {
     property real toneBoldness: 0.8          // Settings → Appearance → Tint boldness: how much colour backgrounds take (0.5 = 1×, 1 = 2×)
     property string wallpaper: ""            // image shown on the desktop, lock screen and login screen
     property string wallpaperFolder: ""      // empty = ~/Pictures
-    property bool wallpaperHideSmall: true   // Settings → Appearance: leave out images too small to be wallpapers
+    property bool wallpaperHideSmall: true   // Settings → Wallpaper: leave out images too small to be wallpapers
     property bool wallpaperShowSlate: true   // …and show the wallpapers that come with Slate (shell/wallpapers) beside your folder's
     property string wallpaperMinSize: "1280x720"   // the smallest size shown (width x height)
     property string wallpaperChange: "off"   // Settings → Wallpaper → Change wallpaper: off, login, or every N minutes ("15", "60"…)

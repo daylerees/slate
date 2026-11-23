@@ -360,7 +360,7 @@ def install():
             with open(LOG) as log:
                 if "changes the login session" in log.read():
                     st["note"] = ("One more step: this version changes the login session. In a terminal, run: "
-                                  "/usr/local/share/slate/bin/slate-system --fix")
+                                  + os.path.join(HERE, "bin", "slate-system") + " --fix")
         elif rc == 3:
             with open(LOG) as log:
                 said = log.read()

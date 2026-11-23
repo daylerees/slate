@@ -134,7 +134,7 @@ Item {
     Process {
         id: offerNote
         command: Config.notify("Hyprland was updated", "Shall Slate rebuild Hyprbars now, so it's ready after your next restart?",
-            { page: "windows", actions: ["rebuild=Rebuild", "later=Later"] })
+            { page: "windows", actions: ["rebuild=Rebuild", "later=Not now"] })
         stdout: StdioCollector { onStreamFinished: if (text.trim() === "rebuild") watch.startBuild() }
     }
     Process {

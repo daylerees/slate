@@ -140,8 +140,10 @@ Scope {
                 if (errs.length === 0)
                     Quickshell.execDetached(Config.notify("Hyprland settings reloaded", "Hyprland has read its config again, and all is well.", { page: "windows" }));
                 else
-                    Quickshell.execDetached(Config.notify("Hyprland settings have errors",
-                        errs.join("\n").split("\n").slice(0, 6).join("\n"), { page: "windows" }));
+                    // (what went wrong, where, and that the rest is fine; Debug has the logs)
+                    Quickshell.execDetached(Config.notify("Some of your Hyprland settings didn't load",
+                        "Everything else loaded as usual. Each line below says which file and line to look at, "
+                        + "and saving the file tries again:\n" + errs.join("\n").split("\n").slice(0, 6).join("\n"), { page: "debug" }));
             }
         }
     }

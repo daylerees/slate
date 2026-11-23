@@ -155,10 +155,10 @@ class YourHyprlandFiles(LiveCase):
         history = lambda: self.s.state()["notifications"]["history"]
         before = history()
         save(good + "\nthis is not lua (\n")
-        self.wait(lambda st: st["notifications"]["latest"] == "Hyprland settings have errors", "the notice of the mistake")
+        self.wait(lambda st: st["notifications"]["latest"] == "Some of your Hyprland settings didn't load", "the notice of the mistake")
         # (and nothing more a moment later: the second notification came about half a second on)
         self.assertEqual(self.steady(history, floor=1.5), before + 1, "more than one notification for one mistake")
-        self.assertEqual(self.s.state()["notifications"]["latest"], "Hyprland settings have errors")
+        self.assertEqual(self.s.state()["notifications"]["latest"], "Some of your Hyprland settings didn't load")
         save(good)
         self.wait(lambda st: st["notifications"]["latest"] == "Hyprland settings reloaded", "the notice that it's well again")
         self.assertEqual(self.steady(history, floor=1.5), before + 2)

@@ -32,7 +32,7 @@ Column {
             visible: powerPane.hasLid
             label: "Closing the lid"
             settingKey: "lidAction"
-            detail: Config.s.lidAction === "" ? "Left to the system (usually suspends)"
+            detail: Config.s.lidAction === "" ? "As your computer does it (usually it sleeps)"
                 : "With another screen connected, only the laptop's own screen turns off"
             // (holding the system's own handling back needs systemd or elogind: Config.system)
             needsMet: Config.canInhibit
@@ -49,7 +49,7 @@ Column {
             settingKey: "powerKeyAction"
             needsMet: Config.canInhibit
             needs: "Needs systemd or elogind, and neither is running"
-            detail: Config.s.powerKeyAction === "" ? "Left to the system (usually shuts down)" : ""
+            detail: Config.s.powerKeyAction === "" ? "As your computer does it (usually it shuts down)" : ""
             options: [{ value: "", label: "System default" }, { value: "menu", label: "Show the power menu" }, { value: "suspend", label: "Suspend" },
                       { value: "poweroff", label: "Shut down (asks first)" }, { value: "lock", label: "Lock the screen" }, { value: "nothing", label: "Do nothing" }]
                 .filter(o => (o.value !== "suspend" || Config.canSuspend) && (o.value !== "poweroff" || Config.canPowerOff))

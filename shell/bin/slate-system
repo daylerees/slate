@@ -213,7 +213,7 @@ if [ "$choice" != install ]; then
     exit 0
 fi
 rm -f "$snooze"
-id=$(notify-send -a Slate -i "$ICON" -p -h string:x-slate-page:updates "Installing…" "Slate is bringing your system up to date." || true)
+id=$(notify-send -a Slate -i "$ICON" -p -h string:x-slate-page:updates "Installing…" "Slate is installing what it needs." || true)
 replace=(); [ -n "$id" ] && replace=(-r "$id")
 if fix 0 >/dev/null 2>&1; then
     if [ -n "$pkgs" ]; then done_body="Restart Slate to use them (run: slate restart)."
@@ -233,8 +233,8 @@ else
     printf '%s\n' "$todo" | grep -qx helpers && cmd="${cmd:+$cmd; }sudo $SRC/bin/slate-helpers-install $SRC"
     printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $HELPERS/slate-session-install $SRC"
     # (no command Slate knows for this system: leave the line out rather than end on "run:")
-    hint=""; [ -n "$cmd" ] && hint="To finish by hand, run: $cmd"
+    hint=""; [ -n "$cmd" ] && hint=" To finish by hand, run: $cmd"
     notify-send -a Slate -i "$ICON" "${replace[@]}" -u critical -h string:x-slate-page:updates "Not installed" \
-        "$hint"
+        "Nothing was changed, and Slate will ask again next time.$hint"
 fi
 exit 0

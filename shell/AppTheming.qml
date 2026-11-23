@@ -1,5 +1,5 @@
 // Other apps follow Slate's theme: GTK apps picking up new colours, the folder colour, the icon
-// theme and Settings → Appearance → App Theming, with the notices about themes an app update undid.
+// theme and Settings → App Theming, with the notices about themes an app update undid.
 
 import QtQuick
 import Quickshell
@@ -45,7 +45,7 @@ Scope {
         onExited: folderTimer.restart()
     }
 
-    // Apps switched on in Settings → Appearance → App Theming follow Slate's theme:
+    // Apps switched on in Settings → App Theming follow Slate's theme:
     // scripts/apply-theme.py writes their themes from these colours, a moment after a change
     readonly property string themeJson: JSON.stringify({
         accent: Config.accent.toString(), accentText: Config.tint("#12151a").toString(),
