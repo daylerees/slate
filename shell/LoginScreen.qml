@@ -107,6 +107,10 @@ Item {
     // Not read in tests: the container sees the host's LEDs, so the screenshots would
     // change with the Caps Lock key of whoever runs them.
     property bool capsLock: false
+    // (false: whoever holds this screen reads the light, once for every screen, and sets capsLock:
+    // the lock screen, with a screen of this for each monitor; asked through capsCheckWanted)
+    property bool readsCaps: true
+    signal capsCheckWanted()
     Process {
         id: capsRead
         command: ["sh", "-c", "cat /sys/class/leds/*::capslock/brightness 2>/dev/null"]
@@ -115,9 +119,12 @@ Item {
     // Read once as the screen shows, again just after any key goes down or up in the password
     // field (that's when the light changes), and slowly in between, for a Caps Lock pressed
     // where the field can't see it. (It used to start a shell four times a second while locked)
-    function readCaps() { if (!Config.testMode && !capsRead.running) capsRead.running = true; }
+    function readCaps() {
+        if (!readsCaps) { capsCheckWanted(); return; }
+        if (!Config.testMode && !capsRead.running) capsRead.running = true;
+    }
     Timer { id: capsSoon; interval: 60; onTriggered: ls.readCaps() }       // (the light follows the key a moment later)
-    Timer { interval: 4000; running: ls.visible && !Config.testMode; repeat: true; triggeredOnStart: true; onTriggered: ls.readCaps() }
+    Timer { interval: 4000; running: ls.visible && ls.readsCaps && !Config.testMode; repeat: true; triggeredOnStart: true; onTriggered: ls.readCaps() }
 
     // ---- Background: plain slate, then the wallpaper once it's there -----------
     Rectangle {

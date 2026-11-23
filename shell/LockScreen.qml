@@ -26,10 +26,25 @@ Scope {
     readonly property string avatar: Config.avatarPath + "?v=" + Config.avatarVersion   // version: reload after a change
     readonly property string displayName: Config.fullName
 
-    // Sessions for the login preview (the real login screen reads these itself)
+    // Caps Lock, for the lock screen on every monitor: one reader for them all (each screen ran
+    // its own every 4 seconds while locked). Read as it locks, just after a key in the password
+    // field, and slowly in between. Not in tests (the container sees the host's light)
+    property bool capsLock: false
+    property int capsReads: 0                    // (the tests: how many times it has looked)
+    Process {
+        id: capsRead
+        command: ["sh", "-c", "cat /sys/class/leds/*::capslock/brightness 2>/dev/null"]
+        stdout: StdioCollector { onStreamFinished: root.capsLock = text.split("\n").some(l => parseInt(l) > 0) }
+    }
+    function readCaps() { if (!capsRead.running) { capsReads++; if (!Config.testMode) capsRead.running = true; } }
+    Timer { interval: 4000; running: root.locked; repeat: true; triggeredOnStart: true; onTriggered: root.readCaps() }
+
+    // Sessions for the login preview (the real login screen reads these itself): read the first
+    // time the preview of the login screen is asked for, not at every start
     property var sessions: []
     Process {
-        running: true
+        id: sessionsRead
+        running: false
         // (the session files in every standard data folder: XDG_DATA_DIRS, as NixOS keeps them
         // outside /usr/share; the first of each name wins)
         command: ["sh", "-c", "IFS=:; seen=; for d in ${XDG_DATA_DIRS:-/usr/local/share:/usr/share}; do for f in \"$d\"/wayland-sessions/*.desktop; do [ -f \"$f\" ] || continue; n=$(basename \"$f\" .desktop); case \" $seen \" in *\" $n \"*) continue ;; esac; seen=\"$seen $n\"; printf '%s\\t%s\\n' \"$(grep -m1 '^Name=' \"$f\" | cut -d= -f2-)\" \"$(grep -m1 '^Exec=' \"$f\" | cut -d= -f2-)\"; done; done"]
@@ -342,6 +357,10 @@ Scope {
                 anchors.fill: parent
                 opacity: root.lockFade
                 mode: "lock"
+                // (Caps Lock read once for every monitor's screen: root.capsLock)
+                readsCaps: false
+                capsLock: root.capsLock
+                onCapsCheckWanted: root.readCaps()
                 wallpaper: Config.wallpaper
                 avatar: root.avatar
                 displayName: root.displayName
@@ -607,6 +626,7 @@ Scope {
         function preview(mode: string): void {
             if (root.locked) return;      // nothing to try out while it's really locked
             root.previewMode = mode === "login" ? "login" : "lock";
+            if (root.previewMode === "login" && root.sessions.length === 0 && !sessionsRead.running) sessionsRead.running = true;
             root.previewing = true;
             root.startFresh();
         }

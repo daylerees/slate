@@ -840,6 +840,9 @@ PanelWindow {
     }
     Connections {
         target: Hyprland
+        // (only while an app started for the secret workspace is awaited: it handled every
+        // Hyprland event all session)
+        enabled: root.specialTarget !== ""
         function onRawEvent(event) {
             // The app we started for the secret workspace has its window: focus it, which
             // shows that workspace again (launching moves focus back to the workspace behind

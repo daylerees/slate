@@ -36,10 +36,16 @@ Scope {
         stdout: StdioCollector { onStreamFinished: if (check.then) check.then(text.split("\n").filter(l => l !== "")) }
     }
     Component.onCompleted: if (!Config.testMode && !Config.isLoginScreen) look(folders, gone => root.missing = gone)
+    // Looked for again, less and less often (20 s, doubling to every 10 minutes): one that never
+    // comes (often /usr/local/share/applications) was a new process every 20 seconds, all session
+    property int lookEvery: 20000
     Timer {
-        interval: 20000; repeat: true
+        interval: root.lookEvery; repeat: true
         running: root.missing.length > 0 && !root.asked && !Config.testMode
-        onTriggered: root.look(root.missing, gone => { if (gone.length < root.missing.length) root.appeared(); })
+        onTriggered: {
+            root.lookEvery = Math.min(root.lookEvery * 2, 600000);
+            root.look(root.missing, gone => { if (gone.length < root.missing.length) root.appeared(); });
+        }
     }
     function appeared() {
         if (asked || !confirm) return;

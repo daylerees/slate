@@ -67,3 +67,43 @@ class BackgroundWork(LiveCase):
         self.ipc("wallpaperSwitcher", "cancel")
         self.wait(lambda st: not st["hypr"]["busy"] and st["hypr"]["pushes"] > pushes,
                   "the held push after the switcher closed", timeout=15)
+
+
+class Idle(LiveCase):
+    """Work that runs without a reason, found in a review: the space badges' positions polled
+    twice a second with only the bar's tint on (which never needs them), and a script started on
+    every window close to refresh GTK apps, with none waiting."""
+
+    def idle(self):
+        return self.s.state()["idle"]
+
+    def test_space_tint_alone_doesnt_poll_window_positions(self):
+        for k in ("spaceBorders", "spaceBadges", "spaceBarTint"):
+            self.keep_setting(k)
+        self.config("spaceBorders", "false")
+        self.config("spaceBadges", "false")
+        self.config("spaceBarTint", "true")
+        self.s.settle(0.6)
+        before = self.idle()["spacePolls"]
+        self.s.settle(2.2)
+        self.assertEqual(self.idle()["spacePolls"], before, "window positions polled for the bar's tint alone")
+
+    def test_a_window_closing_starts_nothing_with_no_gtk_app_waiting(self):
+        flag = os.path.join(self.s.h.cache, "slate", "gtk4-refresh")
+        if os.path.exists(flag):
+            os.remove(flag)
+        before = self.idle()["gtkRefreshes"]
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        self.wait(lambda st: True, "")
+        self.s.settle(1.2)
+        self.s.hyprctl("dispatch", "function() local w = hl.get_active_window(); if w then hl.dispatch(hl.dsp.window.close({ window = 'address:' .. w.address })) end end")
+        self.s.settle(2.0)
+        self.assertEqual(self.idle()["gtkRefreshes"], before, "a window closing started the GTK refresh with nothing waiting")
+        # ...and with one waiting, it does
+        os.makedirs(os.path.dirname(flag), exist_ok=True)
+        open(flag, "w").close()
+        self.addCleanup(lambda: os.path.exists(flag) and os.remove(flag))
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        self.s.settle(1.2)
+        self.s.hyprctl("dispatch", "function() local w = hl.get_active_window(); if w then hl.dispatch(hl.dsp.window.close({ window = 'address:' .. w.address })) end end")
+        self.wait(lambda st: st["idle"]["gtkRefreshes"] > before, "the GTK refresh with an app waiting", timeout=6)

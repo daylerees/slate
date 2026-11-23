@@ -10,12 +10,28 @@ Scope {
     id: root
     property var hold: null                  // UpdateHold.qml
 
+    // GTK apps waiting to pick up new colours (scripts/refresh-gtk-apps.sh's flag file, there while
+    // any are): a window closing starts the script only then, looked for without a process (the
+    // script used to start on every close)
+    FileView {
+        id: gtkFlag
+        path: Config.cacheHome + "/slate/gtk4-refresh"
+        printErrors: false
+        property bool closed: false              // (a window closed: look whether the flag's there)
+        onLoaded: if (closed) { closed = false; gtkRefresh.restart(); }
+        onLoadFailed: closed = false
+    }
+    property int gtkRefreshes: 0                 // (the tests: how many times the script was started)
     Connections {
         target: Hyprland
         // A window closed: GTK apps waiting to pick up new colours may now restart
-        function onRawEvent(event) { if (event.name === "closewindow") gtkRefresh.restart(); }
+        function onRawEvent(event) {
+            if (event.name !== "closewindow") return;
+            gtkFlag.closed = true;
+            gtkFlag.reload();
+        }
     }
-    Timer { id: gtkRefresh; interval: 1500; onTriggered: Quickshell.execDetached([Quickshell.shellPath("scripts/refresh-gtk-apps.sh")]) }
+    Timer { id: gtkRefresh; interval: 1500; onTriggered: { root.gtkRefreshes++; Quickshell.execDetached([Quickshell.shellPath("scripts/refresh-gtk-apps.sh")]); } }
 
     // File managers' folder colour (Settings → Appearance): Papirus's folder icons in a chosen
     // colour, or the one nearest the wallpaper's (scripts/folder-colour.py)

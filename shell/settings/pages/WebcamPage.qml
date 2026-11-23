@@ -93,11 +93,12 @@ Column {
     // Who's using a camera, looked at again now and then while the page shows
     Process {
         id: usersProc
-        running: true
+        running: win.visible && !!camPane.cam && !camPane.privateOn
         command: [camPane.script, "users"]
         stdout: StdioCollector { onStreamFinished: { try { camPane.usedBy = JSON.parse(text); } catch (e) {} } }
     }
-    Timer { interval: 3000; repeat: true; running: win.visible; onTriggered: { usersProc.running = false; usersProc.running = true; } }
+    // (only with a camera to ask about, and not in Private Mode, where the page shows only its note)
+    Timer { interval: 3000; repeat: true; running: win.visible && !!camPane.cam && !camPane.privateOn; onTriggered: { usersProc.running = false; usersProc.running = true; } }
     // Restore defaults (the page title's): the camera's own defaults
     readonly property bool changed: !!cam && cam.controls.some(c => c.default !== undefined && c.value !== c.default)
     function reset() { if (cam) { resetProc.command = [script, "reset", cam.device]; resetProc.running = true; } }

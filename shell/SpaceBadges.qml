@@ -57,7 +57,7 @@ Scope {
     property var mons: ({})
     Process {
         id: monProc
-        running: true
+        running: root.wanted          // (the monitors, for where windows are: only with a space feature on)
         command: ["hyprctl", "-j", "monitors"]
         stdout: StdioCollector {
             onStreamFinished: {
@@ -80,7 +80,11 @@ Scope {
     Timer { id: monLater; interval: 60; onTriggered: { monProc.running = false; monProc.running = true; } }
     // Hyprland answers the refresh a moment later
     Timer { id: readTimer; interval: 90; onTriggered: root.read() }
-    Timer { interval: 500; repeat: true; running: root.tracking; onTriggered: root.refresh() }
+    // (looked at again every half second only for what follows a window as it moves, the borders
+    // and badges on it; the bar's tint and the switchers' badges need only which window is whose,
+    // which the window events below keep up to date)
+    property int polls: 0                        // (the tests: how many times it has looked by the clock)
+    Timer { interval: 500; repeat: true; running: root.tracking && (root.borders || root.badges); onTriggered: { root.polls++; root.refresh(); } }
     Timer { id: soon; interval: 60; onTriggered: root.refresh() }
     onTrackingChanged: refresh()
     onOwnersChanged: refresh()

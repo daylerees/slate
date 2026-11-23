@@ -670,7 +670,8 @@ ShellRoot {
                 displayBrightness: DisplayBrightness.testState(),
                 // Background work that should be idle when nothing needs it: Night light's schedule
                 // timer, Private Mode's portal watch, and the theme check for updated apps
-                idle: { nightTimer: nightLight.timerRunning, captureWatch: privateMode.watching, themeStaleWatch: appTheming.staleWatching },
+                idle: { nightTimer: nightLight.timerRunning, captureWatch: privateMode.watching, themeStaleWatch: appTheming.staleWatching,
+                        spacePolls: spaceBadges.polls, gtkRefreshes: appTheming.gtkRefreshes },
                 assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, keysSeen: nova.keysSeen, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,
                              // (the answer's blocks, the markup each of its words items is given, and what was just copied)
@@ -1001,7 +1002,7 @@ ShellRoot {
     readonly property int softwareWaiting: SoftwareUpdates.waiting
     readonly property real startedAt: Date.now()      // (the tests: when this Slate started)
     // A space's colour and icon on the windows it opened (Settings → Menu Bar → Mark windows from a space)
-    SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown || wallpaperLayer.switcher.shown }
+    SpaceBadges { id: spaceBadges; bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown || wallpaperLayer.switcher.shown }
 
     // The dock (Dock.qml). It reaches only these parts of Slate
     // (handed over through the root: inside `Dock { }`, `popouts: popouts` would read the

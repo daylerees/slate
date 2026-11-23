@@ -2338,12 +2338,13 @@ Singleton {
         const sat = Math.min(1, a.hslSaturation * 1.5);
         return Qt.hsla(a.hslHue >= 0 ? a.hslHue : 0, sat, s.lightMode ? 0.8 : 0.72, s.lightMode ? 0.7 : 0.38);
     }
-    // Hyprland's blur (behind see-through windows), for drawing it in previews too. Read at
-    // start, when Hyprland reloads its config, and after Slate changes it (glass)
+    // Hyprland's blur (behind see-through windows), for drawing it in previews too. Read when
+    // Hyprland reloads its config and after Slate changes it (glass), which Slate's first push of
+    // its settings always does (blurReadFor starts empty): a read as Slate started was thrown away
     property var hyprBlur: ({ enabled: false, size: 8, passes: 1, contrast: 1, vibrancy: 0 })
     Process {
         id: blurProc
-        running: true
+        running: false
         command: ["sh", "-c", "printf '['; for o in enabled size passes contrast vibrancy; do hyprctl -j getoption decoration:blur:$o; [ $o = vibrancy ] || printf ','; done; printf ']'"]
         stdout: StdioCollector {
             onStreamFinished: {
