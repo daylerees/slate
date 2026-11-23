@@ -75,6 +75,16 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + Q"]                  = "Windows: Close the window",
     ["SUPER + Escape"]             = "Windows: Force-quit an app (click its window)",
     ["SUPER + Tab"]                = "Windows: Switch windows (hold Super)",
+    ["SUPER + SHIFT + Tab"]        = "Windows: Switch windows, going backwards (hold Super)",
+    ["SUPER + SHIFT + mouse_up"]   = "Monitors: Move the window to the previous monitor (scroll)",
+    ["SUPER + SHIFT + mouse_down"] = "Monitors: Move the window to the next monitor (scroll)",
+    ["SUPER + CONTROL + SHIFT + mouse_up"]   = "Workspaces: Move the window to this monitor's previous workspace (scroll)",
+    ["SUPER + CONTROL + SHIFT + mouse_down"] = "Workspaces: Move the window to this monitor's next workspace (scroll)",
+    ["SUPER + mouse_up"]           = "Workspaces: This monitor's previous workspace (scroll)",
+    ["SUPER + mouse_down"]         = "Workspaces: This monitor's next workspace (scroll)",
+    ["SUPER + CONTROL + mouse_up"]   = "Workspaces: This monitor's previous workspace (scroll)",
+    ["SUPER + CONTROL + mouse_down"] = "Workspaces: This monitor's next workspace (scroll)",
+    ["XF86Calculator"]             = "Apps: The calculator (the calculator key)",
     ["ALT + Tab"]                  = "Windows: Next window",
     ["SUPER + ALT + Space"]        = "Windows: Float or tile the window",
     ["SUPER + D"]                  = "Windows: Maximize",
@@ -121,6 +131,7 @@ local HYPRLAND_DESCRIPTIONS = {
     ["SUPER + mouse_up"]           = "Workspaces: Previous workspace",
     ["SUPER + mouse:272"]          = "Windows: Move a window (drag)",
     ["SUPER + mouse:273"]          = "Windows: Resize a window (right-drag)",
+    ["XF86Calculator"]             = "Apps: The calculator (the calculator key)",
 }
 -- Slate's shortcuts that move to other keys in "Hyprland + Slate Extras" (theirs are taken)
 local EXTRA_DESCRIPTIONS = {
@@ -370,7 +381,8 @@ hl.on("window.close", function(win)
     end
 end)
 
--- The window mode (Settings → Windows): tiling, master, scrolling, monocle or floating. Slate
+-- The window mode (Settings → Windows): tiling, master (Side Stack), scrolling, monocle
+-- (Stacking), solo or floating. Slate
 -- sets it with Hyprland's layout (shell.qml), so a shortcut can do the matching job in each
 -- layout: Super+J splits the other way in tiling, and does the nearest thing in the others
 WINDOW_MODE = WINDOW_MODE or "tiling"
@@ -448,6 +460,16 @@ if SLATE_KEYS or EXTRAS then
     end, { release = true, non_consuming = true, ignore_mods = true })
 end
 
+-- The window to, or you to, the first, second or third monitor (MONITOR_NTH, variables.lua)
+function toMonitor(n)
+    local m = MONITOR_NTH(n)
+    if m then hl.dispatch(hl.dsp.window.move({ monitor = m })) end
+end
+function focusMonitor(n)
+    local m = MONITOR_NTH(n)
+    if m then hl.dispatch(hl.dsp.focus({ monitor = m })) end
+end
+
 -- (Slate's set)
 if SLATE_KEYS then
     -- Move the window: around its workspace, to another monitor, to another of this
@@ -456,9 +478,9 @@ if SLATE_KEYS then
     hl.bind(mainMod .. " + SHIFT + Right",                shared.moveRight)
     hl.bind(mainMod .. " + SHIFT + Left",                 shared.moveLeft)
     hl.bind(mainMod .. " + SHIFT + Down",                 shared.moveDown)
-    hl.bind(mainMod .. " + SHIFT + " .. digitCode(1),     hl.dsp.window.move({ monitor = MONITOR1 }))
-    hl.bind(mainMod .. " + SHIFT + " .. digitCode(2),     hl.dsp.window.move({ monitor = MONITOR2 }))
-    hl.bind(mainMod .. " + SHIFT + " .. digitCode(3),     hl.dsp.window.move({ monitor = MONITOR3 }))
+    hl.bind(mainMod .. " + SHIFT + " .. digitCode(1),     function() toMonitor(1) end)
+    hl.bind(mainMod .. " + SHIFT + " .. digitCode(2),     function() toMonitor(2) end)
+    hl.bind(mainMod .. " + SHIFT + " .. digitCode(3),     function() toMonitor(3) end)
     hl.bind(mainMod .. " + SHIFT + mouse_up",             hl.dsp.window.move({ monitor   = "-1" }))
     hl.bind(mainMod .. " + SHIFT + mouse_down",           hl.dsp.window.move({ monitor   = "+1" }))
     hl.bind(mainMod .. " + CONTROL + Right",              shared.toNextWorkspace)
@@ -748,10 +770,10 @@ end
 
 -- (Slate's set)
 if SLATE_KEYS then
-    -- Focus a monitor
-    hl.bind(mainMod .. " + " .. digitCode(1), hl.dsp.focus({ monitor = MONITOR1 }))
-    hl.bind(mainMod .. " + " .. digitCode(2), hl.dsp.focus({ monitor = MONITOR2 }))
-    hl.bind(mainMod .. " + " .. digitCode(3), hl.dsp.focus({ monitor = MONITOR3 }))
+    -- Focus a monitor (the one you've named, or the first, second, third in use: MONITOR_NTH)
+    hl.bind(mainMod .. " + " .. digitCode(1), function() focusMonitor(1) end)
+    hl.bind(mainMod .. " + " .. digitCode(2), function() focusMonitor(2) end)
+    hl.bind(mainMod .. " + " .. digitCode(3), function() focusMonitor(3) end)
 
     -- Go to a workspace by number
     -- Absolute: workspace 1, 2, 3…

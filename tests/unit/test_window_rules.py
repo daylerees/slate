@@ -38,6 +38,17 @@ CALCULATORS = {
 LIBREOFFICE = [("libreoffice-calc", "Untitled 1 — LibreOffice Calc"), ("libreoffice-calc", "budget.ods — LibreOffice Calc"),
                ("soffice", "LibreOffice Calc"), ("libreoffice-startcenter", "LibreOffice Start Center"),
                ("firefox", "LibreOffice Calc: the spreadsheet — Mozilla Firefox")]
+# Each browser offered as BROWSER (variables.lua), by its command: its windows' classes
+BROWSERS = {
+    "firefox": ["firefox", "org.mozilla.firefox"],
+    "chromium": ["chromium", "org.chromium.Chromium"],
+    "google-chrome-stable": ["google-chrome"],
+    "brave": ["brave-browser"],
+    "librewolf": ["librewolf"],
+    "epiphany": ["org.gnome.Epiphany"],
+}
+OTHER_BROWSERS = ["zen", "vivaldi-stable", "microsoft-edge"]
+NOT_BROWSERS = ["kitty", "firefoxpwa-helper", "org.gnome.Nautilus", "chromium-ish"]
 NOT_TERMINALS = ["firefox", "footage", "org.gnome.TextEditor", "kitty-open", "org.kde.dolphin", "libreoffice-calc"]
 
 # A stand-in `hl`: every window and layer rule it's handed is printed as a line of JSON, and
@@ -89,6 +100,19 @@ def offered(name):
     m = re.search(r"local " + name + r"S\s*=\s*\{(.*?)\}", src, re.S)
     assert m, f"variables.lua no longer offers a list for {name}"
     return [c.split()[0] for c in re.findall(r'"([^"]+)"', m.group(1))]
+
+
+def lua(v):
+    """A Python value as Lua."""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return str(v)
+    if isinstance(v, str):
+        return json.dumps(v)
+    if isinstance(v, list):
+        return "{" + ", ".join(lua(x) for x in v) + "}"
+    return "{" + ", ".join(f"[{json.dumps(k)}] = {lua(x)}" for k, x in v.items()) + "}"
 
 
 def fits(pattern, text):
@@ -188,6 +212,58 @@ class WindowRules(Case):
                 with self.subTest(cls):
                     self.assertTrue([r for r in rules if catches(r, cls, "~") and r.get("opacity") == "1.0 override"],
                                     f"{cls} gets Slate's window opacity on top of its own")
+
+    # ---- dialogs -----------------------------------------------------------------------
+
+    def test_what_counts_as_a_dialog(self):
+        """slateIsDialog (windows that stay floating when their workspace tiles again). A
+        browser's or a file manager's second window counted, being the same app's and a little
+        smaller, and so did any title starting "open", "save"… (a bug)."""
+        def win(addr, pid, w, h, title="~", cls="app", floating=True):
+            return {"address": addr, "pid": pid, "size": {"x": w, "y": h}, "title": title, "class": cls,
+                    "floating": floating, "mapped": True}
+        main = win("0x1", 10, 1400, 900, "Slate - Mozilla Firefox", "firefox")
+        cases = {
+            "a browser's second window": (win("0x2", 10, 1200, 800, "News - Mozilla Firefox", "firefox"), False),
+            "an app's small settings window": (win("0x3", 10, 500, 400, "Settings", "firefox"), True),
+            "Open File": (win("0x4", 20, 900, 600, "Open File", "org.gnome.TextEditor"), True),
+            "Save As": (win("0x5", 20, 900, 600, "Save As", "gimp"), True),
+            "OpenSCAD": (win("0x6", 30, 900, 600, "OpenSCAD", "openscad"), False),
+            "a page called Opening hours": (win("0x7", 40, 900, 600, "Opening hours - Mozilla Firefox", "librewolf"), False),
+            "the desktop's file picker": (win("0x8", 50, 900, 600, "Pick", "xdg-desktop-portal-gtk"), True),
+            "tiled": (win("0x9", 20, 300, 200, "Open File", "app", floating=False), False),
+        }
+        names = list(cases)
+        all_ = [main] + [cases[n][0] for n in names]
+        chunk = ("local all = " + lua(all_) + "\n"
+                 "for i = 2, #all do print('RULE {\"kind\":\"dialog\",\"i\":' .. (i - 2) .. ',\"is\":' .. tostring(slateIsDialog(all[i], all)) .. '}') end\n")
+        rules, _ = self.load("variables.lua", "windowrules.lua", chunk=chunk)
+        got = {names[r["i"]]: r["is"] for r in rules if r["kind"] == "dialog"}
+        self.assertEqual(got, {n: c[1] for n, c in cases.items()})
+
+    def test_dialog_titles_dont_catch_main_windows(self):
+        rules = self.window_rules()
+        for title in ("dialog.qml - Code", "Some dialogue - Mozilla Firefox"):
+            with self.subTest(title):
+                self.assertFalse([r for r in rules if catches(r, "code", title) and r.get("float")], title)
+        self.assertTrue([r for r in rules if catches(r, "app", "Dialog") and r.get("float")])
+
+    # ---- browsers ----------------------------------------------------------------------
+
+    def test_browsers_stay_opaque(self):
+        """Every browser offered as BROWSER, and a few more, is kept fully opaque: the rule covered
+        only Firefox and Zen (a bug)."""
+        rules = self.window_rules()
+        for cmd in offered("BROWSER"):
+            self.assertIn(cmd, BROWSERS, f"{cmd} is offered as a browser: say here what its windows' class is")
+        for cls in [c for cs in BROWSERS.values() for c in cs] + OTHER_BROWSERS:
+            with self.subTest(cls):
+                self.assertTrue([r for r in rules if catches(r, cls, "~") and r.get("opacity") == "1.0 override"],
+                                f"{cls} gets Slate's window opacity")
+        browsers = next(r for r in rules if "Epiphany" in r.get("match", {}).get("class", ""))
+        for cls in NOT_BROWSERS:
+            with self.subTest(cls):
+                self.assertFalse(catches(browsers, cls, "~"), f"{cls} counts as a browser")
 
     def test_swallowing_uses_the_list(self):
         misc = slate.read("shell", "session", "hypr", "config", "misc.lua")

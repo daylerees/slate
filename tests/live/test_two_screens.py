@@ -210,6 +210,16 @@ class TwoScreens(TwoScreensCase):
         self.wait(lambda st: st["notifications"]["unread"] == 1, "the notification")
         self.wait(lambda st: [b["bell"] for b in st["bars"]] == ["1", "1"], "a 1 beside every bell", timeout=4)
 
+    def test_super_and_a_number_focuses_that_monitor(self):
+        """Super+1, 2: the first and second monitors, with none named in variables.lua. They
+        pointed at MONITOR1… = "", which is no monitor (a bug), though Settings → Shortcuts
+        lists them. (What the keys run, called directly: they're bound by keycode, and wtype's
+        own keymap can't press those; test_binds_lua checks the keys run it.)"""
+        self.s.hyprctl("dispatch", "function() focusMonitor(2) end")
+        self.wait(lambda st: st["focusedScreen"] == SECOND, "Super+2 to focus the second monitor")
+        self.s.hyprctl("dispatch", "function() focusMonitor(1) end")
+        self.wait(lambda st: st["focusedScreen"] == OUTPUT, "Super+1 to focus the first monitor")
+
     def test_overlays_open_on_the_focused_screen(self):
         """The launcher and the overview open on the focused screen, the overview with every
         workspace (both screens')."""

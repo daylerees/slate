@@ -21,6 +21,8 @@ local gamingApps = "^(steam_app.*|gamescope)$"
 
 -- (loose on purpose: a tag is something an app sets about itself, and any that says "game" is one)
 hl.window_rule({ match = { xdg_tag = "^(.*game.*)$" }, fullscreen_state = 2, content = "game", sync_fullscreen = true })
+-- (Steam's Friends List: a small window of its own, floating beside the store rather than
+-- squeezing it)
 hl.window_rule({ match = { class = "^(steam)$", title = "^(Friends List)$" }, float = true })
 -- (Steam's own small window while a game starts: floating where you are)
 hl.window_rule({ match = { class = "^(steam)$", title = "^(Launching\\.{3})$" }, float = true, center = true })
@@ -69,14 +71,18 @@ hl.on("window.open", function(win)
     hl.dispatch(hl.dsp.window.move({ workspace = target, window = "address:" .. win.address, follow = true }))
 end)
 
--- Apps: launchers, Windows apps and chat on the main monitor; sizes for a few utilities
--- (any Windows program under Wine or Proton, whatever it's called: its class is its .exe)
-hl.window_rule({ match = { class = "^(.*\\.exe)$", float = true }, monitor = PRIMARY_MONITOR, center = true, fullscreen_state = 0 })
+-- Apps: launchers, Windows apps and chat on the main monitor (PRIMARY_MONITOR, when you've named
+-- one in variables.lua: otherwise they open where you are); sizes for a few utilities
+local primary = PRIMARY_MONITOR ~= "" and PRIMARY_MONITOR or nil
+-- (a Windows program's floating windows under Wine or Proton, whatever it's called (its class is
+-- its .exe): centred on the main monitor and never full screen, as launchers and installers
+-- that open full screen by mistake otherwise cover everything. Its tiled windows are left be)
+hl.window_rule({ match = { class = "^(.*\\.exe)$", float = true }, monitor = primary, center = true, fullscreen_state = 0 })
 -- (loose on purpose: game launchers name themselves in many ways, faugus-launcher,
 -- com.heroicgameslauncher.hgl, org.prismlauncher.PrismLauncher, minecraft-launcher, and there's
 -- no list of them to keep)
-hl.window_rule({ match = { class = "^(.*[Ll]auncher.*)$" }, float = true, monitor = PRIMARY_MONITOR })
-hl.window_rule({ match = { class = "^(vesktop|discord)$" }, monitor = PRIMARY_MONITOR })
+hl.window_rule({ match = { class = "^(.*[Ll]auncher.*)$" }, float = true, monitor = primary })
+if primary then hl.window_rule({ match = { class = "^(vesktop|discord)$" }, monitor = primary }) end
 -- Calculators open small and floating: the ones offered as CALCULATOR (variables.lua) and a few
 -- more, each by its windows' own class. By name, never "anything with calc in it": that caught
 -- LibreOffice Calc (libreoffice-calc), and spreadsheets opened floating at a sixth of the screen.
@@ -107,7 +113,7 @@ hl.window_rule({ match = { class = "^([Gg]odot.*)$" }, tile = true })
 -- Fully opaque: browsers, terminals (they handle their own transparency) and video players
 local terminals = "^(" .. TERMINAL_CLASSES .. ")$"     -- (variables.lua)
 
-hl.window_rule({ match = { class = "^(firefox|zen)$" }, opacity = "1.0 override" })
+hl.window_rule({ match = { class = "^(" .. BROWSER_CLASSES .. ")$" }, opacity = "1.0 override" })     -- (variables.lua)
 hl.window_rule({ match = { class = terminals }, opacity = "1.0 override" })
 -- (VLC and Plex under any of their names, vlc, org.videolan.VLC, Plex, tv.plex.PlexDesktop,
 -- com.plexamp.Plexamp: the name on its own or after a dot, so not every class with "plex" or
@@ -133,10 +139,10 @@ local modalMatches = {
     { class = "^([Xx]dg-desktop-portal-gtk)$" },
     { title = "^(File Upload|Choose wallpaper|Library)(.*)$" },
     -- (loose on purpose: kdialog, org.kde.kdialog, file-dialog and toolkits' own dialog
-    -- classes and titles, which have no list. A window that opens with "dialog" in its title
-    -- floats too, such as an editor opened on a file called dialog.qml)
+    -- classes, which have no list. By title, only one that is a dialog's ("Dialog", "Dialog -
+    -- …"): "dialog" anywhere in it floated main windows, an editor on a file called dialog.qml)
     { class = "^(.*dialog.*)$" },
-    { title = "^(.*dialog.*)$" },
+    { title = "^([Dd]ialog)( .*)?$" },
     { class = "^(hyprland-share-picker)$"},
 }
 for _, m in ipairs(modalMatches) do hl.window_rule({ match = m, float = true, center = true }) end
@@ -236,8 +242,9 @@ end
 hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true, pin = true })
 
 -- Window mode. Settings → Windows sets the default (WINDOW_MODE), and each workspace can have
--- its own (WORKSPACE_MODES[id], from the menu bar's workspace indicator): tiling, master,
--- scrolling, monocle or floating. Slate sets both, then calls applyWorkspaceModes().
+-- its own (WORKSPACE_MODES[id], from the menu bar's workspace indicator): tiling, master (Side
+-- Stack), scrolling, monocle (Stacking), solo or floating. Slate sets both, then calls
+-- applyWorkspaceModes().
 -- Floating: every new window opens floating and centred, like a traditional desktop (move with
 -- Super+drag or the title bar). Done with a float rule for each workspace (1–30, then one for
 -- the rest and one for the secret workspace), switched on where the mode is floating; windows
@@ -302,26 +309,34 @@ function applyWorkspaceModes()
 end
 
 -- A floating window that's a dialog (a file picker, a save box, an app's settings): it stays
--- floating with its app when its workspace goes back to tiling or to Solo. Hyprland doesn't say which windows are dialogs, so: a smaller
--- window of an app that has a bigger one open, the desktop's file picker (a portal of its own),
--- or a title like a dialog's
-local DIALOG_TITLE = { "^open", "^save", "^choose", "^select", "^print", "^export", "^import", "^rename",
-                       "^upload", "^attach", "^insert", "^properties", "^preferences" }
-local function isDialog(w, all)
+-- floating with its app when its workspace goes back to tiling or to Solo (or Columns, or
+-- Scrolling). Hyprland doesn't say which windows are dialogs, so: the desktop's file picker (a
+-- portal of its own), a short title that's a dialog's ("Open File", "Save As", "Print",
+-- "Preferences": the word on its own, not "OpenSCAD" or a page called "Opening hours"), or a
+-- window of an app that has one at least twice its size open (a browser's or a file manager's
+-- second window is about the size of its first, so isn't one)
+local DIALOG_TITLE = { "open", "save", "choose", "select", "print", "export", "import", "rename",
+                       "upload", "attach", "insert", "properties", "preferences" }
+local function areaOf(w)
+    return (w.size and w.size.x and w.size.x * w.size.y) or (w.size and w.size[1] and w.size[1] * w.size[2]) or 0
+end
+function slateIsDialog(w, all)
     if not w.floating then return false end
     local class = string.lower(w.class or "")
     if class:find("portal") or class:find("kdialog") or class:find("zenity") or class:find("filechooser") then return true end
     local title = string.lower(w.title or "")
-    for _, p in ipairs(DIALOG_TITLE) do if title:find(p) then return true end end
-    local area = (w.size and w.size.x and w.size.x * w.size.y) or (w.size and w.size[1] and w.size[1] * w.size[2]) or 0
-    for _, o in ipairs(all) do
-        if o.address ~= w.address and o.pid == w.pid and o.mapped then
-            local oa = (o.size and o.size.x and o.size.x * o.size.y) or (o.size and o.size[1] and o.size[1] * o.size[2]) or 0
-            if oa > area then return true end
+    if #title <= 40 then
+        for _, word in ipairs(DIALOG_TITLE) do
+            if title:find("^" .. word .. "%f[%A]") then return true end
         end
+    end
+    local area = areaOf(w)
+    for _, o in ipairs(all) do
+        if o.address ~= w.address and o.pid == w.pid and o.mapped and areaOf(o) >= 2 * area then return true end
     end
     return false
 end
+local isDialog = slateIsDialog
 
 -- Float (or re-tile) the windows already open on the workspaces where `which(id)` is true, to
 -- match their mode: after the mode's changed
@@ -349,6 +364,28 @@ local function convertWindows(which)
             hl.dispatch(hl.dsp.window.tag({ tag = "-slate-floated", window = target }))
         end
     end
+end
+
+-- The usable part of a window's screen, in Hyprland's layout units: x, y, width, height. The
+-- monitor less what's kept clear round its edges (the menu bar, the dock). Used wherever a
+-- floating window is kept on screen (slateFitFloating, slateKeepUnderBar, hyprbars.lua)
+function slateUsableArea(w)
+    local m = w.monitor
+    local r = m.reserved or {}
+    local scale = m.scale or 1
+    return m.x + (r.left or 0), m.y + (r.top or 0),
+           math.floor(m.width / scale) - (r.left or 0) - (r.right or 0),
+           math.floor(m.height / scale) - (r.top or 0) - (r.bottom or 0)
+end
+-- The height of the title bar above a floating window: Slate's own, or hyprbars' (Nova has none
+-- of Slate's)
+function slateTitleBarHeight(w)
+    if SLATE_TITLEBARS then return slateIsNova(w) and 0 or (SLATE_TITLEBAR_HEIGHT or 34) end
+    if HYPRBARS_LOADED then
+        local ok, h = pcall(hl.get_config, "plugin.hyprbars.bar_height")
+        if ok and type(h) == "number" then return h end
+    end
+    return 0
 end
 
 -- Solo: one window per workspace, filling it (a lone tile does: workspaces.lua). A window that
@@ -397,17 +434,10 @@ function slateFitFloating(address)
     if not (w and w.mapped and w.floating and m) or (w.fullscreen or 0) ~= 0 then return end
     local id = w.workspace and w.workspace.id
     if not id or modeOf(id) ~= "floating" then return end
-    local r = m.reserved or {}
-    local scale = m.scale or 1
-    -- (room for the title bar above it: Slate's own, or hyprbars'; Nova has none)
-    local barH = SLATE_TITLEBARS and not slateIsNova(w) and (SLATE_TITLEBAR_HEIGHT or 34) or 0
-    if not SLATE_TITLEBARS and HYPRBARS_LOADED then
-        local ok, h = pcall(hl.get_config, "plugin.hyprbars.bar_height")
-        if ok and type(h) == "number" then barH = h end
-    end
-    local ax, ay = m.x + (r.left or 0), m.y + (r.top or 0) + barH
-    local aw = math.floor(m.width / scale) - (r.left or 0) - (r.right or 0)
-    local ah = math.floor(m.height / scale) - (r.top or 0) - (r.bottom or 0) - barH
+    -- (room for the title bar above it)
+    local barH = slateTitleBarHeight(w)
+    local ax, ay, aw, ah = slateUsableArea(w)
+    ay, ah = ay + barH, ah - barH
     local x, y, sw, sh = w.at.x, w.at.y, w.size.x, w.size.y
     local nw, nh = math.min(sw, math.floor(aw * 0.9)), math.min(sh, math.floor(ah * 0.9))
     local nx, ny = x, y
@@ -430,17 +460,12 @@ function slateKeepUnderBar(address)
     local w = hl.get_window(target)
     local m = w and w.monitor
     if not (w and w.mapped and w.floating and m) or (w.fullscreen or 0) ~= 0 then return end
-    local r = m.reserved or {}
-    local scale = m.scale or 1
-    local barH = SLATE_TITLEBARS and not slateIsNova(w) and (SLATE_TITLEBAR_HEIGHT or 34) or 0
-    if not SLATE_TITLEBARS and HYPRBARS_LOADED then
-        local ok, h = pcall(hl.get_config, "plugin.hyprbars.bar_height")
-        if ok and type(h) == "number" then barH = h end
-    end
+    local barH = slateTitleBarHeight(w)
+    local ax, ay, aw, ah = slateUsableArea(w)
     -- (the top of the window itself, below its title bar; and the lowest it may go: its
     -- title bar still in view above the bottom of the usable part, or a strip of it to grab)
-    local top = m.y + (r.top or 0) + barH
-    local bottom = m.y + math.floor(m.height / scale) - (r.bottom or 0) - math.max(barH, 40)
+    local top = ay + barH
+    local bottom = ay + ah - math.max(barH, 40)
     local y = w.at.y
     local ny = math.max(top, math.min(y, bottom))
     if ny ~= y then hl.dispatch(hl.dsp.window.move({ x = w.at.x, y = ny, window = target })) end

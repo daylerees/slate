@@ -1,9 +1,9 @@
 -- Hyprbars: optional title bars for floating windows (Settings → Windows → Title bars), from a
--- Your own changes go in ~/.config/slate/hypr/hyprland.lua, which loads after this file.
 -- Hyprland plugin. Slate's own title bars are the default and need none of this. Slate builds
 -- hyprbars with `slate build-hyprbars` (into ~/.local/share/slate/plugins); a distro package
 -- of it works too. Shown only on floating workspaces with Hyprbars chosen (windowrules.lua);
 -- Slate keeps the bar colour, title colour, font and size in step with its theme.
+-- Your own changes go in ~/.config/slate/hypr/hyprland.lua, which loads after this file.
 
 local dataHome = os.getenv("XDG_DATA_HOME") or (os.getenv("HOME") .. "/.local/share")
 local plugins = dataHome .. "/slate/plugins/"
@@ -133,16 +133,11 @@ function slateToggleMaximize()
     w = hl.get_window(target)
     local m = w and w.monitor
     if not (w and w.floating and m) then return end
-    local r = m.reserved or {}
-    local scale = m.scale or 1
     local barH = 0
     local okBar, h = pcall(hl.get_config, "plugin.hyprbars.bar_height")
     if okBar and type(h) == "number" then barH = h end
     local margin = 24
-    local ax = m.x + (r.left or 0)
-    local ay = m.y + (r.top or 0)
-    local aw = math.floor(m.width / scale) - (r.left or 0) - (r.right or 0)
-    local ah = math.floor(m.height / scale) - (r.top or 0) - (r.bottom or 0)
+    local ax, ay, aw, ah = slateUsableArea(w)       -- (windowrules.lua)
     local x, y, sw, sh = w.at.x, w.at.y - barH, w.size.x, w.size.y + barH
     if x >= ax and y >= ay and x + sw <= ax + aw and y + sh <= ay + ah then return end
 

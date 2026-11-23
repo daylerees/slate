@@ -4,9 +4,12 @@
 -- monitors, binds, rules, autostart), so it wins over all of them. Saving this file reloads
 -- Hyprland's config; if something in it is wrong, Slate shows the error in a notification.
 --
+-- What Settings looks after wins over this file, as Slate sets it again after each reload: gaps,
+-- borders, rounded corners and dimming (Settings → Windows, Appearance), and your keyboard and
+-- pointer (Settings → Input). Change those there; everything else is yours to set here.
+--
 -- Hyprland's Lua config: https://wiki.hypr.land/Configuring/
 -- Examples (remove the "--" to use one):
--- hl.config({ input = { kb_layout = "gb", kb_options = "caps:escape" } })
--- hl.config({ general = { gaps_in = 4, gaps_out = 8 } })
--- hl.config({ decoration = { rounding = 14 } })
--- hl.device({ name = "logitech-g502", sensitivity = -0.3 })
+-- hl.config({ binds = { workspace_back_and_forth = true } })   -- a workspace's key again goes back
+-- hl.config({ cursor = { inactive_timeout = 5 } })             -- hide the pointer after 5 seconds still
+-- hl.device({ name = "logitech-g502", sensitivity = -0.3 })   -- one mouse slower than the rest

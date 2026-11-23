@@ -23,6 +23,22 @@ TERMINAL_CLASSES = table.concat({
     "org\\.slate\\.dropdown",             -- (the drop-down terminal, below: whichever terminal it is)
 }, "|")
 
+-- Browsers' window classes (a pattern), the one list of them: kept fully opaque, as a page is no
+-- place for the wallpaper to show through (windowrules.lua). Every browser offered as BROWSER
+-- below is here under its windows' real class, with a few more (tests/unit/test_window_rules.py
+-- checks)
+BROWSER_CLASSES = table.concat({
+    "firefox|org\\.mozilla\\.firefox|firefox-esr",
+    "zen|zen-alpha|zen-beta|app\\.zen_browser\\.zen",
+    "librewolf|LibreWolf|io\\.gitlab\\.librewolf-community",
+    "chromium|Chromium|chromium-browser|org\\.chromium\\.Chromium",
+    "google-chrome|com\\.google\\.Chrome",
+    "brave-browser|com\\.brave\\.Browser",
+    "vivaldi-stable|com\\.vivaldi\\.Vivaldi",
+    "microsoft-edge|com\\.microsoft\\.Edge",
+    "org\\.gnome\\.Epiphany",
+}, "|")
+
 -- Apps opened by the keyboard shortcuts in binds.lua: the first of each list that's installed
 -- (found on PATH here, without starting a shell), else the first. Settings → Default Apps
 -- picks yours on top of these.
@@ -103,7 +119,24 @@ end
 MONITOR1 = MONITOR1 or ""
 MONITOR2 = MONITOR2 or ""
 MONITOR3 = MONITOR3 or ""
-PRIMARY_MONITOR = PRIMARY_MONITOR or MONITOR1   -- where games and launchers open
+PRIMARY_MONITOR = PRIMARY_MONITOR or MONITOR1   -- where games and launchers open ("" = wherever you are)
+-- The monitor a shortcut means by its number (Super+1, 2, 3), worked out when it's pressed: the
+-- one named MONITOR1… if you've named it, otherwise the first, second, third of the monitors in
+-- use, left to right (not Hyprland's ids: they count monitors that are switched off too). nil
+-- when there isn't one
+function MONITOR_NTH(n)
+    local named = ({ MONITOR1, MONITOR2, MONITOR3 })[n]
+    if named and named ~= "" then return named end
+    local on = {}
+    for _, m in ipairs(hl.get_monitors() or {}) do
+        if m.name and m.enabled ~= false then table.insert(on, m) end
+    end
+    table.sort(on, function(a, b)
+        if (a.x or 0) ~= (b.x or 0) then return (a.x or 0) < (b.x or 0) end
+        return (a.y or 0) < (b.y or 0)
+    end)
+    return on[n] and on[n].name or nil
+end
 
 -- How many workspaces per monitor get number-key shortcuts (up to 10)
 NUM_WPM = NUM_WPM or 3

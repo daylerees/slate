@@ -113,6 +113,9 @@ hl = setmetatable({
     get_windows = function() return { window() } end,
     get_active_window = window,
     get_workspaces = workspaces,
+    -- (two monitors in use, listed right one first, and one switched off further left)
+    get_monitors = function() return { { name = "DP-2", x = 1920, y = 0 }, { name = "DP-1", x = 0, y = 0 },
+                                       { name = "OFF", x = -1000, y = 0, enabled = false } } end,
     get_active_workspace = function() return workspaces()[now.onNamed and 3 or now.onLast and 2 or 1] end,
     get_active_special_workspace = function() return now.special and { name = "special:special" } or nil end,
 }, { __index = function(_, name) return function(...) did("hl." .. name .. "(" .. shownArgs(...) .. ")") end end })
@@ -128,7 +131,9 @@ if os.getenv("STUB_APPS") then
 end
 -- (KNOWN_APPS and TERMINAL_RUN are variables.lua's: the values above are kept)
 dofile(os.getenv("STUB_VARIABLES"))
-MONITOR1, MONITOR2, MONITOR3, NUM_WPM = "DP-1", "DP-2", "DP-3", 3
+NUM_WPM = 3
+-- (monitors named in variables.lua, unless a test wants them left unnamed, as they are out of the box)
+if not os.getenv("STUB_UNNAMED_MONITORS") then MONITOR1, MONITOR2, MONITOR3 = "DP-1", "DP-2", "DP-3" end
 -- The functions the rest of Slate's config makes (found by the test: STUB_GLOBALS)
 for name in os.getenv("STUB_GLOBALS"):gmatch("%S+") do
     _G[name] = function(...) did(name .. "(" .. shownArgs(...) .. ")"); return 1 end
@@ -217,7 +222,7 @@ class BindsLua(Case):
         self.state = os.path.join(self.h.dir, "state")
         os.makedirs(os.path.join(self.state, "slate"))
 
-    def load(self, keyset, apps=None):
+    def load(self, keyset, apps=None, unnamed_monitors=False):
         """Load binds.lua with this key set and press everything in every scenario: the
         stand-in's lines, split at their tabs."""
         with open(os.path.join(self.state, "slate", "keyset.lua"), "w") as f:
@@ -227,6 +232,8 @@ class BindsLua(Case):
                    STUB_GLOBALS=" ".join(other_config_functions()),
                    STUB_SCENARIOS="\n".join(f"{name}\t{settings}" for name, settings in SCENARIOS))
         env.pop("UWSM_FINALIZE_VARNAMES", None)
+        if unnamed_monitors:
+            env["STUB_UNNAMED_MONITORS"] = "1"
         if apps:
             env["STUB_APPS"] = "\t".join(apps)
         code, out = run([self.lua, self.stub], env=env)
@@ -253,12 +260,12 @@ class BindsLua(Case):
                 failed.append(f"{keys_of.get(n, n)} ({scenario}): {what}")
         return bound, started, failed
 
-    def shortcuts(self, keyset):
+    def shortcuts(self, keyset, **load):
         """This key set's shortcuts (outside the submaps) by their keys: for each, a list, in
         the order they were made, of (description, what it does). What it does is its flags,
         what was bound, and everything pressing it did in each scenario."""
         made, did, by_keys = {}, {}, {}
-        for kind, *rest in self.load(keyset):
+        for kind, *rest in self.load(keyset, **load):
             if kind == "BIND":
                 made[rest[0]] = rest[1:]
             elif kind in ("CALL", "ERR") and rest[1] in made:
@@ -275,6 +282,37 @@ class BindsLua(Case):
                 bound, _, failed = self.press_all(keyset)
                 self.assertGreater(len(bound), 30, "the binds weren't made")
                 self.assertEqual(failed, [])
+
+    def test_super_and_a_number_reaches_the_monitors_in_use(self):
+        """Super+1/2 (and with Shift, the window) went to MONITOR1/2 = "", no monitor, out of the
+        box (a bug). Without names, they're the monitors in use, left to right."""
+        shortcuts = self.shortcuts("slate", unnamed_monitors=True)
+        for keys, want in (("SUPER + code:10", 'focus({monitor=DP-1})'), ("SUPER + code:11", 'focus({monitor=DP-2})'),
+                           ("SUPER + SHIFT + code:11", 'window.move({monitor=DP-2})')):
+            with self.subTest(keys=keys):
+                did = [w for kind, _, w in shortcuts[keys][0][1][2] if kind == "CALL"]
+                self.assertIn("dispatch " + want, did, did)
+        did = [w for kind, _, w in shortcuts["SUPER + code:12"][0][1][2] if kind == "CALL"]
+        self.assertFalse([w for w in did if "monitor=" in w], f"a third monitor that isn't there was gone to: {did}")
+        # (named in variables.lua, a monitor is that one, in use or not)
+        did = [w for kind, _, w in self.shortcuts("slate")["SUPER + code:12"][0][1][2] if kind == "CALL"]
+        self.assertIn("dispatch focus({monitor=DP-3})", did)
+
+    def test_shortcuts_people_press_are_described(self):
+        """Settings → Shortcuts lists a shortcut by its description: these had none, so they
+        were missing from it (a bug). (The hardware keys say what they are, and Super on its own,
+        the left button and K are parts of other shortcuts.)"""
+        want = {"slate": ["SUPER + SHIFT + Tab", "SUPER + SHIFT + mouse_up", "SUPER + SHIFT + mouse_down",
+                          "SUPER + CONTROL + SHIFT + mouse_up", "SUPER + CONTROL + SHIFT + mouse_down",
+                          "SUPER + mouse_up", "SUPER + mouse_down", "SUPER + CONTROL + mouse_up",
+                          "SUPER + CONTROL + mouse_down", "XF86Calculator"],
+                "hyprland-extras": ["SUPER + SHIFT + Tab", "XF86Calculator"],
+                "hyprland": ["XF86Calculator"]}
+        for keyset, keys in want.items():
+            shortcuts = self.shortcuts(keyset)
+            for k in keys:
+                with self.subTest(keyset=keyset, keys=k):
+                    self.assertTrue(shortcuts[k][0][0], f"{k} has no description in {keyset}'s set")
 
     def test_keypad_zoom_keys_are_described_as_zoom(self):
         """Super + keypad plus/minus (code:86 / code:82) once read "Focus monitor 73/77" and
