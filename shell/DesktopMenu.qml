@@ -217,11 +217,14 @@ PanelWindow {
             Column { id: aboveSlot; width: parent.width }
             Repeater {
                 id: rows
-                model: card.list
+                // (no rows while it's closed: a closed menu's list still follows what it's for, a
+                // window's title, Night Light…, and its rows were made again each time)
+                model: dm.visible ? card.list : []
                 delegate: Item {
                     id: row
                     required property var modelData
                     required property int index
+                    Component.onCompleted: if (Config.testMode) Config.testMenuRowsMade++
                     readonly property bool opens: !card.sub && !!modelData.submenu
                     readonly property bool open: opens && dm.subIndex === index
                     readonly property bool lit: (card.sub ? dm.subHot : dm.hot) === index

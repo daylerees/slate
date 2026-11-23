@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs
 
 Column {
@@ -6,13 +7,14 @@ Column {
     id: moreView
     width: 300
     spacing: 10
-    readonly property var rows: pop.moreBar ? (pop.moreBar.overflowed, pop.moreBar.moreRows()) : []
+    // (by key, so a row is kept as its value changes: Bar.moreKeys / moreRow)
+    readonly property var keys: pop.moreBar ? (pop.moreBar.overflowed, pop.moreBar.moreKeys()) : []
     PanelTitle { text: "More"; height: textHeight }
     Label {
         width: parent.width
         wrapMode: Text.WordWrap
         color: pop.dim; font.weight: Font.Normal
-        text: moreView.rows.length > 0 ? "There isn't room for these on the bar just now. They'll be back when there is"
+        text: moreView.keys.length > 0 ? "There isn't room for these on the bar just now. They'll be back when there is"
                                        : "Everything's on the bar. What doesn't fit will wait here"
     }
     // The rows, scrolling once there are more than fit (a long list at a large Interface
@@ -21,7 +23,7 @@ Column {
     Item {
         id: moreList
         width: parent.width
-        visible: moreView.rows.length > 0
+        visible: moreView.keys.length > 0
         height: Math.min(moreRowsCol.implicitHeight, 480, Math.max(160, pop.height - 220))
         readonly property bool overflowing: moreRowsCol.implicitHeight > height + 0.5
         Flickable {
@@ -37,33 +39,35 @@ Column {
                 width: moreList.width - (moreList.overflowing ? 18 : 0)   // room for the scrollbar and a gap before it
                 spacing: 4
                 Repeater {
-                    model: moreView.rows
+                    model: ScriptModel { values: moreView.keys }
                     delegate: RowButton {
                         id: moreRow
-                        required property var modelData
+                        required property var modelData          // (its key)
+                        readonly property var row: pop.moreBar ? pop.moreBar.moreRow(modelData) ?? ({ id: "", tray: null, label: "", icon: 0, image: "", value: "" }) : ({ id: "", tray: null, label: "", icon: 0, image: "", value: "" })
+                        Component.onCompleted: pop.rowMade("more")
                         width: parent.width
-                        onClicked: pop.moreBar.moreClick(modelData, false)
-                        onMenuAsked: pop.moreBar.moreClick(modelData, true)
-                        ClickTap { acceptedButtons: Qt.RightButton; onTapped: pop.moreBar.moreClick(moreRow.modelData, true) }
-                        WheelHandler { onWheel: e => pop.moreBar.moreWheel(moreRow.modelData, e.angleDelta.y) }
+                        onClicked: pop.moreBar.moreClick(moreRow.row, false)
+                        onMenuAsked: pop.moreBar.moreClick(moreRow.row, true)
+                        ClickTap { acceptedButtons: Qt.RightButton; onTapped: pop.moreBar.moreClick(moreRow.row, true) }
+                        WheelHandler { onWheel: e => pop.moreBar.moreWheel(moreRow.row, e.angleDelta.y) }
                         Icon {
                             id: moreIcon
-                            visible: moreRow.modelData.image === ""
+                            visible: moreRow.row.image === ""
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                            code: moreRow.modelData.icon
-                            color: moreRow.modelData.id === "power" ? pop.danger : Config.statusColour(moreRow.modelData.id, pop.text)
+                            code: moreRow.row.icon
+                            color: moreRow.row.id === "power" ? pop.danger : Config.statusColour(moreRow.row.id, pop.text)
                         }
                         Image {
-                            visible: moreRow.modelData.image !== ""
+                            visible: moreRow.row.image !== ""
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                             width: 18; height: 18
                             sourceSize: Qt.size(36, 36)
-                            source: moreRow.modelData.image
+                            source: moreRow.row.image
                         }
                         Label {
                             id: moreName
                             anchors { left: parent.left; leftMargin: 38; verticalCenter: parent.verticalCenter }
-                            text: moreRow.modelData.label
+                            text: moreRow.row.label
                             width: Math.min(implicitWidth, parent.width - 38 - 10 - (moreValue.visible ? moreValue.width + 10 : 0))
                             elide: Text.ElideRight
                         }
@@ -75,7 +79,7 @@ Column {
                             horizontalAlignment: Text.AlignRight
                             elide: Text.ElideRight
                             color: pop.dim; font.weight: Font.Normal
-                            text: moreRow.modelData.value
+                            text: moreRow.row.value
                         }
                     }
                 }

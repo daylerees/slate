@@ -106,21 +106,29 @@ PanelWindow {
     // not much use as a row in More
     readonly property var notInMore: ["windowicon", "windowtitle"]
     readonly property var inMore: overflowed.filter(id => !notInMore.includes(id))
-    function moreRows() {
-        const rows = [];
+    // ...by key: a thing's id, or "tray:<n>" for each tray icon. The More panel's rows are made
+    // from these and only these, so a value changing (a timer each second, the volume) updates
+    // its row (moreRow) rather than making every row again
+    function moreKeys() {
+        const keys = [];
         for (const id of inMore) {
-            const it = Config.barItem(id), t = left.things[id];
-            if (!it || !t) continue;
-            if (id === "tray") {
-                for (const tr of SystemTray.items.values)
-                    rows.push({ id: id, tray: tr, label: Config.trayName(tr) || "App", icon: 0, image: String(tr.icon), value: "" });
-                continue;
-            }
-            rows.push({ id: id, tray: null, label: it.label, icon: it.icon, image: "",
-                        value: id === "workspaces" || id === "workspacename" ? Config.focusedWorkspaceLabel : (t.plain ? t.label : "") });
+            if (!Config.barItem(id) || !left.things[id]) continue;
+            if (id === "tray") { SystemTray.items.values.forEach((tr, i) => keys.push("tray:" + i)); continue; }
+            keys.push(id);
         }
-        return rows;
+        return keys;
     }
+    function moreRow(key) {
+        if (key.startsWith("tray:")) {
+            const tr = SystemTray.items.values[Number(key.slice(5))];
+            return tr ? { id: "tray", tray: tr, label: Config.trayName(tr) || "App", icon: 0, image: String(tr.icon), value: "" } : null;
+        }
+        const it = Config.barItem(key), t = left.things[key];
+        if (!it || !t) return null;
+        return { id: key, tray: null, label: it.label, icon: it.icon, image: "",
+                 value: key === "workspaces" || key === "workspacename" ? Config.focusedWorkspaceLabel : (t.plain ? t.label : "") };
+    }
+    function moreRows() { return moreKeys().map(moreRow).filter(r => !!r); }
     // A row in More pressed, right-clicked or scrolled over: what the thing itself does on the bar
     function moreClick(row, right) {
         if (row.tray) {

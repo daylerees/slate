@@ -646,7 +646,7 @@ ShellRoot {
                 tray: SystemTray.items.values.map(i => i.id),
                 // The lists that keep their rows: rows made in each so far, the tray's icons made and
                 // measured, and the open bar panel's list (Popouts.listState)
-                lists: { tray: topBar.trayTest, panel: popouts.listState(), settings: settings ? settings.rowsMade : {} },
+                lists: { tray: topBar.trayTest, panel: popouts.listState(), settings: settings ? settings.rowsMade : {}, menus: Config.testMenuRowsMade },
                 gameMode: Config.gameMode,
                 titleBar: Config.titleBarOn, titleBarAway: Config.titleBarAway,
                 titleBarLooks: Config.titleBarLooks, titleBarSeen: Config.titleBarSeen,

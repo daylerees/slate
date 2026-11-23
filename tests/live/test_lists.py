@@ -282,3 +282,43 @@ class SettingsPolls(Lists):
             self.assertEqual(self.looks("networkLooks", 2)["facts"], made, "rows were made again though nothing changed")
         with self.subTest("one more fact"):
             self.assertEqual(self.looks("networkLooks", 2, "test", "settingsPoll", "network", "wired=eth0\nip=10.0.0.5/24\ngateway=10.0.0.1\nrate=1000 Mb/s\n")["facts"], made + 1, "the rows there already were made again")
+
+
+class MoreKeepsItsRows(Lists):
+    """The menu bar's More panel (what there isn't room for on the bar): a row's value changing
+    updates that row, rather than every row being made again (it was, on any change: a focus
+    timer each second, the volume, the workspace's name), which lost the keyboard's place and
+    flashed the hover. The bar squeezed so things overflow into More, as the bar-more-long picture does."""
+    SHOW = {"barShowCamera": "true", "barShowClipboard": "true", "barShowScreenshot": "true", "barShowGameMode": "true",
+            "barShowWorkspaceName": "true", "barShowTray": "true", "barShowAssistant": "true"}
+
+    def test_a_value_changing_keeps_the_rows(self):
+        for k, v in self.SHOW.items():
+            self.keep_setting(k)
+            self.config(k, v)
+        self.addCleanup(lambda: self.ipc("test", "arrange", "squeeze", "0", "", ""))
+        self.ipc("test", "arrange", "squeeze", "1440", "", "")
+        self.s.settle(1.0)
+        self.open_panel("more")
+        st = self.wait(lambda st: len(st["bar"]["more"]) >= 2, "things in More")
+        before, values = self.made("more"), st["bar"]["more"]
+        self.assertTrue(any(label == "Workspace name" for label, _ in values), values)
+        # The workspace's name (a value in More) changes, and nothing else does
+        self.s.hyprctl("dispatch", "function() hl.dispatch(hl.dsp.focus({ workspace = 4 })) end")
+        self.addCleanup(lambda: self.s.hyprctl("dispatch", "function() hl.dispatch(hl.dsp.focus({ workspace = 1 })) end"))
+        self.wait(lambda st: st["bar"]["more"] != values, "the workspace's name in More to change")
+        self.s.settle(0.4)
+        self.assertEqual(self.made("more"), before, "More made its rows again for one value changing")
+
+
+class ClosedMenusHaveNoRows(Lists):
+    """A right-click menu that's closed has no rows: the bar's follow Night Light (a ticked row),
+    and they were made again each time it changed while nobody could see them."""
+
+    def test_a_closed_menus_rows_arent_made_again(self):
+        self.keep_setting("nightLight")
+        before = self.lists()["menus"]
+        for on in ("true", "false", "true", "false"):
+            self.config("nightLight", on)
+            self.s.settle(0.2)
+        self.assertEqual(self.lists()["menus"], before, "a closed menu made its rows again")

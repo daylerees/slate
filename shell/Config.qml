@@ -2132,6 +2132,8 @@ Singleton {
     readonly property bool testMode: Quickshell.env("SLATE_TEST") === "1"
     // (the tests: when the daily look for updates, SoftwareUpdates.qml, was made; 0 until it is)
     property real softwareDailyMadeAt: 0
+    // (the tests: rows every right-click menu has made, DesktopMenu.qml)
+    property int testMenuRowsMade: 0
     // (which Config this is, for the tests: your shell.qml must see Slate's own, never a copy)
     readonly property string madeAs: testMode ? String(Date.now()) + "-" + Math.random() : ""
     // The tests' computer has no Wi-Fi and no sound card, and the bar hides what a computer
