@@ -15,10 +15,13 @@ Rectangle {
     property bool compactLabel: false   // with an icon: show just the icon (narrow window)
     signal clicked()
     width: btnRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
-    color: primary ? Config.accentFor(btnHover.hovered) : "transparent"
-    HoverFill { base: win.control; hover: parent.destructive ? Config.hoverDanger : Config.hover; hovered: btnHover.hovered; gone: parent.primary; radius: parent.radius }
+    // Disabled: one look for every button, so none looks clickable when it isn't: faded, its
+    // words and icon in the dim text colour, no accent fill (a primary one) and no hover
+    opacity: enabled ? 1 : 0.4
+    color: primary && enabled ? Config.accentFor(btnHover.hovered) : "transparent"
+    HoverFill { base: win.control; hover: parent.destructive ? Config.hoverDanger : Config.hover; hovered: btnHover.hovered && btn.enabled; gone: parent.primary && btn.enabled; radius: parent.radius }
     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-    readonly property color fg: primary ? win.accentText : destructive ? win.danger : win.text
+    readonly property color fg: !enabled ? win.dim : primary ? win.accentText : destructive ? win.danger : win.text
     Row {
         id: btnRow
         anchors.centerIn: parent

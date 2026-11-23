@@ -18,6 +18,7 @@ Row {
     signal moved(real value)
     signal released()          // let go of the slider (after moving it, or a click)
     spacing: 12
+    opacity: enabled ? 1 : 0.4      // (disabled: faded, as every Settings control is)
     Text {
         anchors.verticalCenter: parent.verticalCenter
         width: 56

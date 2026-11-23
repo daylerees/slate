@@ -87,7 +87,6 @@ Column {
             Button {
                 icon: 0xEB41; label: "Clear"; destructive: true
                 enabled: Config.clipCount > 0
-                opacity: enabled ? 1 : 0.5
                 onClicked: Quickshell.execDetached(["python3", Quickshell.shellPath("scripts/clipstore.py"), "clear"])
             }
         }
@@ -282,7 +281,7 @@ Column {
             onPicked: v => Config.s.nightLightSchedule = v
         }
         Separator { visible: Config.s.nightLightSchedule === "custom" }
-        ChoiceSetting {
+        DropdownSetting {
             visible: Config.s.nightLightSchedule === "custom"
             label: "Turn on at"
             settingKey: "nightLightFrom"
@@ -291,7 +290,7 @@ Column {
             onPicked: v => Config.s.nightLightFrom = v
         }
         Separator { visible: Config.s.nightLightSchedule === "custom" }
-        ChoiceSetting {
+        DropdownSetting {
             visible: Config.s.nightLightSchedule === "custom"
             label: "Turn off at"
             settingKey: "nightLightTo"

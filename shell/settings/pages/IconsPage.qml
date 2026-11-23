@@ -124,6 +124,8 @@ Column {
         readonly property var previewShade: Config.iconTileShadeOf(previewColourFile.text().trim())
         SettingRow {
             label: "Shape"
+            settingKey: "iconShape"
+            defaultText: "Tile"
             detail: "For app icons in the dock, launcher, switcher, bar and notifications"
         }
         Flow {

@@ -404,3 +404,17 @@ class TextSize(Case):
                     if not self.ICON.search(block):
                         missing.append("%s:%d" % (os.path.relpath(path, root), i + 1))
         self.assertEqual(missing, [], "text that doesn't follow Accessibility → Text size (use Config.text(px)): " + ", ".join(missing[:20]))
+
+
+class PageColours(Case):
+    def test_each_settings_page_has_its_own(self):
+        """In Colorful mode each Settings page has a pastel of its own: three pairs shared one
+        (Input, Nova and All Settings; Timers and Startup Apps; Control Center and Wallpaper)."""
+        src = slate.read("shell", "Config.qml")
+        block = src[src.index("readonly property var pagePastels"):src.index("// Slate Software's sections")]
+        pairs = re.findall(r'(\w+): "(#[0-9a-fA-F]{6})"', block)
+        seen = {}
+        for page, colour in pairs:
+            with self.subTest(page):
+                self.assertNotIn(colour.lower(), seen, f"{page} shares its colour with {seen.get(colour.lower())}")
+                seen[colour.lower()] = page

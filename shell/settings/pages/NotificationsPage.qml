@@ -40,19 +40,21 @@ Column {
             key: "dndSchedule"
         }
         Separator { visible: Config.s.dndSchedule }
-        ChoiceSetting {
+        DropdownSetting {
             visible: Config.s.dndSchedule
             label: "From"
             settingKey: "dndFrom"
+            searchable: true        // (48 half-hours: type 7 to get to the morning)
             value: Config.s.dndFrom
             options: win.halfHours(0, 23.5)
             onPicked: v => Config.s.dndFrom = v
         }
         Separator { visible: Config.s.dndSchedule }
-        ChoiceSetting {
+        DropdownSetting {
             visible: Config.s.dndSchedule
             label: "Until"
             settingKey: "dndTo"
+            searchable: true        // (48 half-hours: type 7 to get to the morning)
             value: Config.s.dndTo
             options: win.halfHours(0, 23.5)
             onPicked: v => Config.s.dndTo = v

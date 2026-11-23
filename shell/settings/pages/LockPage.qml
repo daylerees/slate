@@ -121,7 +121,6 @@ Column {
                 Button {
                     visible: greeterRow.state !== "" && !greeterRow.used
                     enabled: greeterRow.info.greetd === "yes" && !greeterRun.running
-                    opacity: enabled ? 1 : 0.4
                     label: "Install"
                     onClicked: win.askQuestion(Object.assign({
                         run: () => greeterRow.run([], "Installing…",
@@ -155,7 +154,7 @@ Column {
     }
     GroupLabel { text: "When you're away" }
     Group {
-        ChoiceSetting {
+        DropdownSetting {
             label: "Lock after"
             settingKey: "idleLockMinutes"
             options: lockCol.minutes
@@ -163,7 +162,7 @@ Column {
             onPicked: v => Config.s.idleLockMinutes = v
         }
         Separator {}
-        ChoiceSetting {
+        DropdownSetting {
             label: "Turn the screen off after"
             settingKey: "idleScreenOffMinutes"
             detail: "Moving the mouse or pressing a key turns it back on"
@@ -172,7 +171,7 @@ Column {
             onPicked: v => Config.s.idleScreenOffMinutes = v
         }
         Separator {}
-        ChoiceSetting {
+        DropdownSetting {
             label: "Suspend after"
             needsMet: Config.canSuspend
             needs: "This computer can't suspend"

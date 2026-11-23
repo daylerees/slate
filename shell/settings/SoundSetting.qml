@@ -9,6 +9,14 @@ SettingRow {
     property string sample             // sounds/<sample>.wav to play as a preview
     property bool available: true
     readonly property bool audible: available && Config.soundVolume(which) > 0
+    // (its volume setting, for the changed-from-default mark; not set yet, its default follows the
+    // earlier on/off switch, so it's said in the slider's terms)
+    settingKey: Config.soundSettings[which] ? Config.soundSettings[which][0] : ""
+    defaultText: {
+        const k = Config.soundSettings[which];
+        const on = !k || !k[1] || Config.defaultOf(k[1]);
+        return on ? Config.defaultOf("soundEffectsVolume") + "%" : "Off";
+    }
     Row {
         spacing: 6
         // Play: the sound at its volume (dimmed while it's off, with nothing to hear). A plain
@@ -38,7 +46,6 @@ SettingRow {
         ValueSlider {
             anchors.verticalCenter: parent.verticalCenter
             enabled: soundSetting.available
-            opacity: enabled ? 1 : 0.4
             from: 0; to: 100; stepSize: 5; suffix: "%"; zeroText: "Off"
             value: soundSetting.available ? Config.soundVolume(soundSetting.which) : 0
             onMoved: v => Config.s[Config.soundSettings[soundSetting.which][0]] = Math.round(v)

@@ -180,7 +180,8 @@ PanelWindow {
             parts.push(pagesMore ? "first " + pages.length + " pages" : pages.length === 1 ? "1 page" : pages.length + " pages");
         return parts.join(" · ");
     }
-    readonly property string modified: info ? "Modified " + Qt.formatDateTime(new Date(info.modified * 1000), "MMMM d, yyyy") : ""
+    // (in the date format from Settings → Date & Time)
+    readonly property string modified: info ? "Modified " + Config.dateText(new Date(info.modified * 1000), "full") : ""
     function glyph() {
         switch (kind) {
         case "folder": return 0xEAAD;

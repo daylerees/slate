@@ -19,6 +19,7 @@ Column {
     IntroText { text: "Rest the pointer in a corner of the screen to run an action." }
     // The screen, with each corner's action; click one to set it below
     property string corner: "TopLeft"
+    readonly property string cornerKey: "hotCorner" + corner          // (its setting: hotCornerTopLeft…)
     readonly property string cornerName: ({ TopLeft: "Top left", TopRight: "Top right", BottomLeft: "Bottom left", BottomRight: "Bottom right" })[corner]
     GroupLabel { text: "Corners" }
     Group {
@@ -39,6 +40,7 @@ Column {
         Separator {}
         DropdownSetting {
             label: hcCol.cornerName
+            settingKey: hcCol.cornerKey
             detail: "What resting the pointer in this corner does"
             options: hcCol.actions
             value: Config.s["hotCorner" + hcCol.corner]

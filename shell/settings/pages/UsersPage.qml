@@ -257,7 +257,7 @@ Column {
                                 id: setPw
                                 label: userRow.changingPassword ? "Change" : "Change password"
                                 primary: userRow.changingPassword
-                                opacity: !userRow.changingPassword || pwRow.ready ? 1 : 0.5
+                                enabled: !userRow.changingPassword || pwRow.ready
                                 onClicked: {
                                     if (!userRow.changingPassword) {
                                         pw0.text = ""; pw1.text = ""; pw2.text = "";
@@ -364,7 +364,7 @@ Column {
                 Button { label: "Cancel"; onClicked: { usersPane.adding = false; addGroup.reset(); } }
                 Button {
                     label: "Add"; primary: true
-                    opacity: addGroup.ready && !actProc.running ? 1 : 0.5
+                    enabled: addGroup.ready && !actProc.running
                     onClicked: addGroup.add()
                 }
             }

@@ -46,7 +46,6 @@ Column {
             }
             Button {
                 enabled: resyncRow.installed
-                opacity: enabled ? 1 : 0.4
                 label: "Resync"
                 onClicked: { resyncRow.status = "Resyncing…"; resyncRun.running = true; }
             }

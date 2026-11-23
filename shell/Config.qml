@@ -1936,13 +1936,14 @@ Singleton {
     readonly property bool colourful: s.colourStyle === "colourful"
     // Each Settings page's own colour (its icon in the sidebar and on All Settings), a pastel,
     // deepened in light mode by tint(); the accent when monotone
+    // (each page its own: tests/static/test_look_and_feel.py checks none repeats)
     readonly property var pagePastels: ({
-        overview: "#b9a6e8", general: "#9db4d8", appearance: "#e8a6c8", displays: "#8fc7e8",
-        input: "#b9a6e8", sound: "#e8b48f", power: "#a6d3a0", windows: "#8fd0c8",
+        overview: "#dce4af", general: "#9db4d8", appearance: "#e8a6c8", displays: "#8fc7e8",
+        input: "#9999e6", sound: "#e8b48f", power: "#a6d3a0", windows: "#8fd0c8",
         workspaces: "#c3a6e6", notifications: "#e8c48f", wifi: "#8fb3e8", bluetooth: "#7fa8e8", printers: "#d8c0a0", users: "#e8b8c8", accessibility: "#9fc6e8", timers: "#e8b0a0", storage: "#b8c8a0",
         bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", unlock: "#a6c4e0", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
-        apps: "#8fd8d0", startup: "#e8b0a0", apprules: "#b8c8a6", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#a6d8c8", icons: "#e8c4a6",
+        apps: "#8fd8d0", startup: "#b9e4af", apprules: "#b8c8a6", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#e6e699", icons: "#e8c4a6",
         screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a",
         // Slate Software's sections and Flathub's categories (SoftwareWindow.qml), the same way
         "software-discover": "#8fb3e8", "software-installed": "#e8c48f", "software-updates": "#a6d8a6",

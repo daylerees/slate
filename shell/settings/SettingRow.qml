@@ -27,7 +27,11 @@ Item {
     property string needsLabel: ""
     readonly property bool waiting: needs !== "" && !needsMet
     readonly property real waitOpacity: waiting ? 0.4 : 1
-    readonly property bool changed: settingKey !== "" && Config.defaultOf(settingKey) !== undefined
+    // (sameAsDefault: for a setting with more than one way of saying its default, whether it says
+    // it now: Theme's "" and "dark" are both Dark)
+    property var sameAsDefault: undefined
+    readonly property bool changed: sameAsDefault !== undefined ? settingKey !== "" && !sameAsDefault
+        : settingKey !== "" && Config.defaultOf(settingKey) !== undefined
         && !Config.sameValue(Config.s[settingKey], Config.defaultOf(settingKey))
     readonly property string defaultShown: {
         if (defaultText !== "") return defaultText;

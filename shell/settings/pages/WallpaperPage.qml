@@ -48,7 +48,7 @@ Column {
                 Button {
                     id: upBtn
                     icon: 0xEA25; label: "Up"
-                    opacity: wallpaperPane.browseDir === "/" ? 0.45 : 1
+                    enabled: wallpaperPane.browseDir !== "/"
                     onClicked: if (wallpaperPane.browseDir !== "/") wallpaperPane.browseDir = wallpaperPane.browseDir.replace(/\/[^\/]*$/, "") || "/"
                 }
                 Button { id: homeBtn; icon: 0xEAC1; label: "Home"; onClicked: wallpaperPane.browseDir = Quickshell.env("HOME") }

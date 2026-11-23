@@ -59,6 +59,9 @@ Column {
     Group {
         SettingRow {
             label: "Theme"
+            settingKey: "themeMode"
+            defaultText: "Dark"
+            sameAsDefault: Config.themeMode === "dark"     // ("" or "dark": both Dark)
             detail: {
                 if (Config.themeMode !== "auto") return "Dark is the default; light flips the bar, panels and windows to light backgrounds with dark text";
                 const h = Config.lightHours(new Date());

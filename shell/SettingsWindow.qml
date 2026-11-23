@@ -431,7 +431,12 @@ FloatingWindow {
     function rowMade(list) { if (Config.testMode) rowsMade[list] = (rowsMade[list] || 0) + 1; }
     property var pretendPolls: ({})
     function pretendPoll(what, text) { const p = Object.assign({}, pretendPolls); if (text === "") delete p[what]; else p[what] = text; pretendPolls = p; }
-    function countChanged() { changedHere = Config.changedCount(currentKeys); }
+    // Settings Restore defaults puts back but no row shows, so it doesn't count them in "N
+    // settings go back": that you've accepted the assistant's risks and its agents (it asks
+    // again), and the sound switches from before the volumes (Migration, kept until 2027-06)
+    readonly property var unshownKeys: ["assistantRisksAccepted", "assistantAgentsAccepted",
+        "volumeSound", "notificationSound", "clickSound", "swishSound", "welcomeSound", "goodbyeSound", "soundEffectsVolume"]
+    function countChanged() { changedHere = Config.changedCount(currentKeys.filter(k => !unshownKeys.includes(k))); }
     onCurrentKeysChanged: countChanged()
     Connections { target: Config; function onSaved() { win.countChanged(); } }
     // A page whose settings aren't Slate's own (Webcam: the camera's) hooks its reset into the
@@ -812,7 +817,8 @@ FloatingWindow {
                         compactLabel: win.compact
                         anchors { right: parent.right; rightMargin: 22; verticalCenter: parent.verticalCenter; verticalCenterOffset: 3 }
                         visible: win.currentKeys.length > 0 || !!win.pageResetRun
-                        opacity: win.changedHere > 0 || win.pageResetChanged ? 1 : 0.45
+                        // (nothing changed here: disabled, in every button's disabled look)
+                        enabled: win.changedHere > 0 || win.pageResetChanged
                         icon: 0xEB77
                         label: "Restore defaults"
                         onClicked: if (win.changedHere > 0 || win.pageResetChanged) win.askRestoreDefaults()
