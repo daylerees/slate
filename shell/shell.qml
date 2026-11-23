@@ -554,6 +554,7 @@ ShellRoot {
                             changed: settings ? settings.changedHere : 0,
                             scroll: settings ? settings.scrolledTo : 0, viewHeight: settings ? Math.round(settings.scrollView.height) : 0,
                             thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
+                            thumbsMade: settings ? settings.thumbsMade : 0,
                             checking: settings ? settings.checking : 0,
                             drop: settings ? settings.dropOpen : "",
                             // Settings greyed out for another one, with what each says it needs
@@ -581,7 +582,8 @@ ShellRoot {
                 icons: { busy: Config.iconsBusy(), colours: Object.keys(Config.iconColours).length, tileDir: Config.tileDir,
                          // (what's keeping it busy, for a wait that never ends)
                          why: Config.iconsBusyWhy() },
-                picker: { open: picker.shown, mode: picker.mode },
+                picker: { open: picker.shown, mode: picker.mode, clipReads: picker.clipReads, emojiReads: Emoji.reads },
+                lookups: SettingsLookups.reads,
                 trayMenu: { open: topBar.trayMenu.visible, depth: topBar.trayMenu.stack.length, hot: topBar.trayMenu.hot, chosen: topBar.trayMenu.testChosen },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
                 weather: { now: popouts.weather ? opt(popouts.weather.temperature_2m) : null, days: popouts.forecast ? popouts.forecast.time.length : 0 },
@@ -616,7 +618,7 @@ ShellRoot {
                 windows: Hyprland.toplevels.values.map(t => ({ title: t.title || "", workspace: t.workspace ? t.workspace.id : -1,
                                                               address: (t.address || "").replace(/^0x/, "") })),
                 overview: { open: wsOverview.shown, screen: wsOverview.screen ? wsOverview.screen.name : "", selected: wsOverview.selected, grid: wsOverview.isGrid,
-                            previews: wsOverview.previewsReady(),
+                            previews: wsOverview.previewsReady(), blurs: wsOverview.blurCount(), blurOn: Config.hyprBlur.enabled,
                             fade: Math.round(wsOverview.fade * 100) / 100, animate: wsOverview.animate, strip: Math.round(wsOverview.stripAt() * 10000) / 10000,
                             // (the workspaces Slate knows of now: the overview shows these as it opens)
                             known: Hyprland.workspaces.values.filter(w => w.id > 0).map(w => w.id).sort((a, b) => a - b),

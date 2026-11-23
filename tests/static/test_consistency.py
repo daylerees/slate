@@ -397,7 +397,7 @@ class Settings(Case):
         for label, body in cases:
             with self.subTest(label):
                 self.assertRegex(body, r"sourceSize(\.width|\.height)?\s*:", f"{label} has no sourceSize")
-        self.assertIn("tile.small ?", tile, "a hidden too-small tile still decodes its picture")
+        self.assertRegex(tile, r"source: tile\.small( \|\| [^?]+)? \?", "a hidden too-small tile still decodes its picture")
 
     def test_rounded_corners_go_through_config(self):
         """Settings → Appearance → Rounded UI elements squares everything, which works because

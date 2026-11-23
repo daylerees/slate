@@ -100,6 +100,8 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ Spinner.qml        Slate's busy spinner (its loading icon turning), for everything that waits
 ├─ PrivateStore.qml   saves something personal (notifications' history, Nova's conversation) where only you can read it
 ├─ Packages.qml       an optional library's package by its name on this distro (scripts/packages.py), for messages saying what to install
+├─ Emoji.qml          the emoji list (data/emoji.json), read once the first time the emoji picker or the launcher's ":" asks
+├─ SettingsLookups.qml  what Settings pages look up from the computer (keyboard layouts, time zones, pointer and icon themes, screenshot tools), read once and kept
 │  ├─ AvatarPicker.qml    choosing your account picture: a window of its own (scripts/set-avatar.sh)
 │  ├─ Displays.qml        Settings → Displays: reads the monitors from Hyprland, applies and saves
 │  │                      them (~/.local/state/slate/displays.json and displays.lua)

@@ -22,14 +22,10 @@ Column {
         // lists them; shell.qml sets the one chosen for GTK, Qt and KDE apps)
         DropdownSetting {
             id: iconThemeSet
-            property var themes: []
-            function look() { iconThemeList.running = false; iconThemeList.running = true; }
-            Process {
-                id: iconThemeList
-                running: true
-                command: [Quickshell.shellPath("scripts/icon-themes.py"), "--icons"]
-                stdout: StdioCollector { onStreamFinished: { try { iconThemeSet.themes = JSON.parse(text); } catch (e) {} } }
-            }
+            // (SettingsLookups.qml: read once, kept for the next time the page opens)
+            readonly property var themes: SettingsLookups.iconThemes
+            function look() { SettingsLookups.refreshThemes("icons"); }
+            Component.onCompleted: SettingsLookups.wantThemes("icons")
             label: "Icons"
             settingKey: "iconTheme"
             detail: Config.s.iconTheme !== "" && !themes.some(t => t.id === Config.s.iconTheme) && themes.length > 0

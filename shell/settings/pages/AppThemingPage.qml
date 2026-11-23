@@ -43,10 +43,12 @@ Column {
         id: appTheming
         // What scripts/apply-theme.py can theme, and which are installed: [{id, label, detail,
         // installed, about, url, packages}] (scripts/slate_apps.py)
-        property var apps: []
+        // (what search already read as Slate started, SettingsIndex.themeApps; asked again only
+        // when it hasn't anything yet, or when you come back to Settings, below)
+        property var apps: SettingsIndex.themeApps
         Process {
             id: appsQuery
-            running: true
+            Component.onCompleted: if (SettingsIndex.themeApps.length === 0) running = true
             command: ["python3", Quickshell.shellPath("scripts/apply-theme.py"), "--apps"]
             stdout: StdioCollector { onStreamFinished: { try { appTheming.apps = JSON.parse(text); } catch (e) {} } }
         }

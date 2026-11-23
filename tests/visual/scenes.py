@@ -719,6 +719,19 @@ SCENES["overview-windows"] = {
     "wait": lambda st: st["overview"]["open"] and st["overview"]["workspaces"] == [1, 2, 3] and st["overview"]["previews"] == 3,
     "settle": 1.5, "undo": [("overview", "close"), _STILL_GONE],
 }
+# ...with see-through terminals and glass on: the blurred wallpaper shows through them on the
+# cards (one blur for all of a monitor's cards)
+def _clear_window(title, text):
+    return ("&foot", "-o", "colors-dark.alpha=0.55", "--title", title, "sh", "-c", "printf '\\033[?25l%s' \"$0\"; exec sleep infinity", text)
+SCENES["overview-blur"] = {
+    "settings": {"glass": "true"},
+    "do": (_to_workspace(1)
+           + [_clear_window(*_STILL[0]), _on(_STILL[0][0], 1)]
+           + _to_workspace(2) + [_clear_window(*_STILL[2]), _on(_STILL[2][0], 2)]
+           + _to_workspace(1) + [("overview", "open")]),
+    "wait": lambda st: st["overview"]["open"] and st["overview"]["previews"] == 2 and st["overview"]["blurs"] == 1,
+    "settle": 2, "undo": [("overview", "close"), lambda st: not any(w["title"] in (_STILL[0][0], _STILL[2][0]) for w in st["windows"])],
+}
 
 # The wallpaper switcher (Super+Alt+W) over windows: the wallpaper covers them so all of it is
 # seen, the row of wallpapers in the lower half, the bar and dock above it

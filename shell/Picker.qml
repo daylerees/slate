@@ -66,7 +66,7 @@ PanelWindow {
         search.text = "";
         typed = false;
         if (m === "clipboard") clipFile.reload();
-        if (m === "emoji") emojiWanted = true;
+        if (m === "emoji") Emoji.want();
         view().currentIndex = 0;
         view().positionViewAtBeginning();
         shown = true;
@@ -96,13 +96,18 @@ PanelWindow {
 
     // ---- Clipboard ---------------------------------------------------------
     property var clips: []
+    property int clipReads: 0                    // (the tests: how many times it was read)
+    onShownChanged: if (shown && clipFile.stale) clipFile.reload()
     FileView {
         id: clipFile
         path: root.clipDir + "/index.json"
         watchChanges: true
         printErrors: false
-        onFileChanged: reload()
-        onLoaded: { try { root.clips = JSON.parse(text()).entries || []; } catch (e) { root.clips = []; } }
+        // (read again on a copy only while the picker shows; otherwise when it next opens: the
+        // history, up to about 25 MB, was read and parsed on every copy anywhere)
+        property bool stale: false
+        onFileChanged: { if (root.shown) reload(); else stale = true; }
+        onLoaded: { stale = false; if (Config.testMode) root.clipReads++; try { root.clips = JSON.parse(text()).entries || []; } catch (e) { root.clips = []; } }
         onLoadFailed: root.clips = []
     }
     readonly property var clipResults: {
@@ -136,15 +141,8 @@ PanelWindow {
     }
 
     // ---- Emoji -------------------------------------------------------------
-    // data/emoji.json: [[emoji, name, keywords, category], ...]. A big file (140 KB), so it's
-    // read the first time the emoji picker opens, not at every start
-    property var emojis: []
-    property bool emojiWanted: false
-    FileView {
-        path: root.emojiWanted ? Quickshell.shellPath("data/emoji.json") : ""
-        blockLoading: true
-        onLoaded: { try { root.emojis = JSON.parse(text()); } catch (e) {} }
-    }
+    // (Emoji.qml: read the first time the emoji picker opens, shared with the launcher's search)
+    readonly property var emojis: Emoji.list
     property var recent: []
     FileView {
         id: recentFile

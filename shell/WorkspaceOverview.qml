@@ -129,6 +129,18 @@ PanelWindow {
     // without them, each window's outline and app icon
     readonly property bool livePreviews: Config.s.overviewPreviews && !Config.gameMode
     function shotFor(addr) { return Carousel.shotFor(shotRepeater, "addr", addr); }
+    // The wallpaper blurred as Hyprland blurs it behind see-through windows, once for each
+    // monitor's shape (every card of a monitor is the same size, so they all show the same):
+    // each card blurred it again for itself, repeats included. Only while there's a blur to show
+    function blurKey(m) { return [m.w, m.fw || m.w, m.fh || m.h, m.rl || 0, m.rt || 0].map(Math.round).join("x"); }
+    readonly property var blurMons: {
+        const out = {};
+        if (!ov.visible || !Config.hyprBlur.enabled) return out;
+        for (const w of (isGrid ? spaces : strip)) { const m = monitorBox(w.id); out[blurKey(m)] = m; }
+        return out;
+    }
+    function blurFor(m) { return Carousel.shotFor(blurRepeater, "key", blurKey(m)); }
+    function blurCount() { return blurRepeater.count; }      // (the test IPC's state)
     // Where the strip (or the grid) has scrolled to, mid-move or at rest (the test IPC's state)
     function stripAt() { return isGrid ? grid.contentY : list.offset; }
     // How many of the live captures have a picture yet (the test IPC's state)
@@ -455,6 +467,41 @@ PanelWindow {
         }
     }
 
+    // (blurFor: off-screen like the captures, shown through the windows on the cards)
+    Item {
+        x: -10000
+        Repeater {
+            id: blurRepeater
+            model: ScriptModel { values: Object.keys(ov.blurMons) }
+            delegate: Item {
+                required property string modelData
+                readonly property string key: modelData
+                readonly property var mon: ov.blurMons[modelData] ?? ({ w: 1, h: 1, fw: 1, fh: 1, rl: 0, rt: 0 })
+                readonly property real sx: ov.cardW / Math.max(1, mon.w)
+                width: (mon.fw || mon.w) * sx
+                height: (mon.fh || mon.h) * sx
+                Image {
+                    id: blurSource
+                    anchors.fill: parent
+                    visible: false
+                    source: ov.wallpaper
+                    fillMode: Image.PreserveAspectCrop
+                    sourceSize: Qt.size(width * 2, height * 2)
+                    asynchronous: true
+                }
+                MultiEffect {
+                    anchors.fill: parent
+                    source: blurSource
+                    blurEnabled: true
+                    blur: 1
+                    blurMax: Math.max(4, Math.min(64, Math.round(Config.hyprBlur.size * Math.pow(2, Config.hyprBlur.passes) * parent.sx)))
+                    contrast: Config.hyprBlur.contrast - 1
+                    saturation: Config.hyprBlur.vibrancy
+                }
+            }
+        }
+    }
+
     Item {
         id: content
         anchors.fill: parent
@@ -640,21 +687,8 @@ PanelWindow {
                     layer.enabled: true
                     layer.effect: MultiEffect { maskEnabled: true; maskSource: previewMask }
 
-                    // The wallpaper blurred as Hyprland blurs it behind see-through windows (its
-                    // size and passes, scaled to the card). Under the sharp one, so it's drawn
-                    // for the windows to show through, but never seen itself
-                    MultiEffect {
-                        id: wallBlur
-                        // Only drawn for windows to show through (below), so not on empty cards
-                        visible: Config.hyprBlur.enabled && card.wins.length > 0
-                        x: wallImg.x; y: wallImg.y; width: wallImg.width; height: wallImg.height
-                        source: wallImg
-                        blurEnabled: true
-                        blur: 1
-                        blurMax: Math.max(4, Math.min(64, Math.round(Config.hyprBlur.size * Math.pow(2, Config.hyprBlur.passes) * card.sx)))
-                        contrast: Config.hyprBlur.contrast - 1
-                        saturation: Config.hyprBlur.vibrancy
-                    }
+                    // (the blurred wallpaper the windows show through: ov.blurFor, one per monitor)
+                    readonly property var wallBlur: Config.hyprBlur.enabled && card.wins.length > 0 ? ov.blurFor(card.mon) : null
                     // The wallpaper as the screen shows it: across the whole screen (behind the
                     // bar too), so the card shows the part in the usable area, just like the
                     // workspace itself
@@ -671,11 +705,14 @@ PanelWindow {
                     }
 
                     Repeater {
-                        model: card.wins
+                        // (by address: a window's preview is kept as positions refresh, not made again with its
+                        // captures, layers and shadow; ScriptModel keeps the rows it's seen)
+                        model: ScriptModel { values: card.wins.map(t => t.address) }
                         delegate: Item {
                             id: ovWin
-                            required property var modelData
-                            readonly property var g: modelData ? ov.geoFor(modelData.address) : null
+                            required property var modelData          // (its address)
+                            readonly property var win: ov.byAddr[modelData] ?? null
+                            readonly property var g: win ? ov.geoFor(win.address) : null
                             visible: !!g          // position not known yet: leave it out rather than misplace it
                             x: g ? (g.at[0] - card.mon.x) * card.sx : 0
                             y: g ? (g.at[1] - card.mon.y) * card.sx : 0
@@ -683,15 +720,15 @@ PanelWindow {
                             height: g ? g.size[1] * card.sx : 0
                             // The window's own rounding, scaled to the card (but enough to see;
                             // a square window stays square)
-                            readonly property real rounding: Config.windowRadius(modelData ? modelData.lastIpcObject : null,
+                            readonly property real rounding: Config.windowRadius(win ? win.lastIpcObject : null,
                                 card.wins.filter(t => t.lastIpcObject && !t.lastIpcObject.floating).length)
                             readonly property real radius: Config.corner(rounding > 0 ? Math.max(2.5, rounding * card.sx) : 0)
                             // What a see-through window shows behind it on screen: the blurred
                             // wallpaper (opaque windows simply cover it)
                             ShaderEffectSource {
                                 anchors.fill: parent
-                                visible: Config.hyprBlur.enabled
-                                sourceItem: wallBlur
+                                visible: !!sourceItem
+                                sourceItem: preview.wallBlur
                                 sourceRect: Qt.rect(ovWin.x - wallImg.x, ovWin.y - wallImg.y, ovWin.width, ovWin.height)
                                 layer.enabled: ovWin.radius > 0
                                 layer.effect: MultiEffect { maskEnabled: true; maskSource: ovWinMask }
@@ -706,7 +743,7 @@ PanelWindow {
                             ShaderEffectSource {
                                 visible: ov.livePreviews
                                 anchors.fill: parent
-                                sourceItem: ov.shotFor(parent.modelData.address)
+                                sourceItem: ov.shotFor(parent.win.address)
                                 live: true
                                 smooth: true
                                 mipmap: true
@@ -714,7 +751,7 @@ PanelWindow {
                                 layer.enabled: true
                                 layer.effect: PreviewShape {
                                     radius: ovWin.radius
-                                    gain: Config.undimGain(ovWin.modelData.activated, ovWin.modelData.lastIpcObject ? ovWin.modelData.lastIpcObject.class : "")
+                                    gain: Config.undimGain(ovWin.win.activated, ovWin.win.lastIpcObject ? ovWin.win.lastIpcObject.class : "")
                                 }
                             }
                             Item {
@@ -736,15 +773,15 @@ PanelWindow {
                                 layer.effect: MultiEffect { shadowEnabled: Config.shadowsOn; shadowColor: Config.shadowColour; shadowOpacity: 0.55; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
                                 AppTile {
                                     anchors.fill: parent
-                                    readonly property var entry: parent.parent.modelData && parent.parent.modelData.wayland ? Config.appEntry(Config.appIdOf(parent.parent.modelData.wayland)) : null
-                                    app: entry ? entry.id : (parent.parent.modelData && parent.parent.modelData.wayland ? Config.appIdOf(parent.parent.modelData.wayland) : "")
+                                    readonly property var entry: parent.parent.win && parent.parent.win.wayland ? Config.appEntry(Config.appIdOf(parent.parent.win.wayland)) : null
+                                    app: entry ? entry.id : (parent.parent.win && parent.parent.win.wayland ? Config.appIdOf(parent.parent.win.wayland) : "")
                                 }
                             }
                             // The window came from a space: its badge in the top left corner
                             SpaceBadge {
                                 x: Math.round(size * 0.3); y: x
                                 size: Math.round(Math.max(14, Math.min(24, parent.width * 0.12, parent.height * 0.2)))
-                                space: Config.s.spaceSwitcherBadges ? Spaces.spaceById(Spaces.spaceOfAddress[parent.modelData.address]) : null
+                                space: Config.s.spaceSwitcherBadges ? Spaces.spaceById(Spaces.spaceOfAddress[parent.win.address]) : null
                             }
                         }
                     }

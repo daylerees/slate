@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import "../.."
 import ".."
 
@@ -10,10 +9,10 @@ Column {
     id: screenshotsPane
     spacing: 4
     PageTitle { text: "Screenshots" }
-    property bool hasSwash: false
-    Process { running: true; command: ["sh", "-c", "command -v swash"]; onExited: code => screenshotsPane.hasSwash = code === 0 }
-    property bool hasRecorder: true
-    Process { running: true; command: ["sh", "-c", "command -v wf-recorder"]; onExited: code => screenshotsPane.hasRecorder = code === 0 }
+    // (SettingsLookups.qml: looked for once, kept for the next time the page opens)
+    readonly property bool hasSwash: SettingsLookups.hasSwash
+    readonly property bool hasRecorder: SettingsLookups.hasRecorder
+    Component.onCompleted: SettingsLookups.wantTools()
     readonly property string home: Quickshell.env("HOME")
     readonly property string folder: Config.s.screenshotFolder || (home + "/Pictures/Screenshots")
     readonly property date example: Config.clockDate(new Date())

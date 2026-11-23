@@ -31,7 +31,9 @@ PanelWindow {
         function onActiveToplevelChanged() {
             const t = Hyprland.activeToplevel;
             if (!t || !t.address) return;
-            sw.mru = [t.address].concat(sw.mru.filter(a => a !== t.address));
+            // (only windows still open: it kept every window ever focused, all session)
+            const open = new Set(Hyprland.toplevels.values.map(w => w.address));
+            sw.mru = [t.address].concat(sw.mru.filter(a => a !== t.address && open.has(a)));
         }
     }
     function currentWindows() {

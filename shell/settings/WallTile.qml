@@ -15,6 +15,21 @@ Item {
     required property string fileName
     readonly property bool current: Config.wallpaper === filePath
     visible: !tile.small
+    // Near enough the view (within a screen's height of it) to be worth drawing: its picture
+    // decoded and its rounded layers made once it first is, and kept (a folder of pictures was
+    // decoded all at once, each with two offscreen layers, as the page opened)
+    readonly property bool near: {
+        const f = win ? win.scrollView : null;
+        if (!f || !visible) return !!visible;
+        const top = y + (parent ? parent.y : 0);            // (in its page: a grid's tile)
+        return top + height > f.contentY - f.height && top < f.contentY + f.height * 2;
+    }
+    property bool seen: false
+    function look() { if (near && !seen) { seen = true; if (win) win.thumbsMade++; } }
+    onNearChanged: if (placed) look()
+    // (looked at once the grid has placed it: as it's made, every tile is at the top)
+    property bool placed: false
+    Timer { running: true; interval: 30; onTriggered: { tile.placed = true; tile.look(); } }
     width: tile.tileW
     height: width * 10 / 16 + 26
     Rectangle {
@@ -26,12 +41,12 @@ Item {
         border.color: parent.current ? win.accent : Config.tint("#4a5360")
         Item {
             anchors { fill: parent; margins: parent.parent.current ? 3 : 0 }
-            layer.enabled: true
+            layer.enabled: tile.seen
             layer.effect: MultiEffect { maskEnabled: true; maskSource: thumbMask }
             Image {
                 anchors.fill: parent
                 // (nothing decoded for a tile that's hidden as too small to be a wallpaper)
-                source: tile.small ? "" : "file://" + filePath
+                source: tile.small || !tile.seen ? "" : "file://" + filePath
                 // Decoded at twice the tile's width, in steps of 64 so resizing the window
                 // doesn't decode every picture again at each pixel
                 sourceSize.width: Math.max(64, Math.ceil(tile.tileW * 2 / 64) * 64)
@@ -54,7 +69,7 @@ Item {
                 id: thumbMask
                 anchors.fill: parent
                 visible: false
-                layer.enabled: true
+                layer.enabled: tile.seen
                 Rectangle { anchors.fill: parent; radius: Config.corner(8) }
             }
         }

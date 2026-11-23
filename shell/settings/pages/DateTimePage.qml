@@ -22,7 +22,7 @@ Column {
     property bool ntp: false
     property bool canNtp: true
     property bool canSet: true            // something here can change the zone
-    property var zones: []
+    readonly property var zones: SettingsLookups.zones
     property date now: new Date()
     // The day alone, for the date examples below: it changes at midnight, where `now`
     // changes every second and rebuilt them each time
@@ -49,11 +49,8 @@ Column {
             }
         }
     }
-    Process {
-        running: true
-        command: [Quickshell.shellPath("bin/slate-init"), "timedate", "zones"]
-        stdout: StdioCollector { onStreamFinished: dateTimePane.zones = text.trim().split("\n").filter(z => z !== "").map(z => ({ value: z, label: z.replace(/_/g, " ") })) }
-    }
+    // (SettingsLookups.qml: read once, kept for the next time the page opens)
+    Component.onCompleted: SettingsLookups.wantZones()
     GroupLabel { text: "Clock" }
     Group {
         SettingRow {

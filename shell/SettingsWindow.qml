@@ -15,6 +15,7 @@ FloatingWindow {
     id: win
     // Wallpaper thumbnails still loading (the tests wait for none before a picture)
     property int thumbsLoading: 0
+    property int thumbsMade: 0           // (the tests: wallpaper tiles that have drawn their picture)
     property bool wallsListing: false
     // A page's first looks at the system still running (printing, the webcam, the login
     // screen…: FirstLook), for the same reason

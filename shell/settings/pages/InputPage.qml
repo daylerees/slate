@@ -13,7 +13,7 @@ Column {
     spacing: 4
     PageTitle { text: "Input" }
     property var cur: ({})
-    property var layoutOptions: []
+    readonly property var layoutOptions: SettingsLookups.layouts
     property bool hasTouchpad: false
     Process {
         running: true
@@ -23,11 +23,8 @@ Column {
             "input:touchpad:scroll_factor"]
         stdout: StdioCollector { onStreamFinished: { try { inputPane.cur = JSON.parse(text); } catch (e) {} } }
     }
-    Process {
-        running: true
-        command: [Quickshell.shellPath("scripts/xkb-layouts.py")]
-        stdout: StdioCollector { onStreamFinished: { try { inputPane.layoutOptions = JSON.parse(text); } catch (e) {} } }
-    }
+    // (SettingsLookups.qml: read once, kept for the next time the page opens)
+    Component.onCompleted: { SettingsLookups.wantLayouts(); SettingsLookups.wantThemes("cursors"); }
     Process {
         running: true
         command: ["hyprctl", "devices", "-j"]
@@ -184,14 +181,8 @@ Column {
         // (scripts/icon-themes.py lists them; Hyprland and apps all follow: slate.lua, apply-theme.py)
         DropdownSetting {
             id: cursorThemeSet
-            property var themes: []
-            function look() { cursorThemeList.running = false; cursorThemeList.running = true; }
-            Process {
-                id: cursorThemeList
-                running: true
-                command: [Quickshell.shellPath("scripts/icon-themes.py"), "--cursors"]
-                stdout: StdioCollector { onStreamFinished: { try { cursorThemeSet.themes = JSON.parse(text).filter(t => t.id !== "Slate-Cursors"); } catch (e) {} } }
-            }
+            readonly property var themes: SettingsLookups.cursorThemes.filter(t => t.id !== "Slate-Cursors")
+            function look() { SettingsLookups.refreshThemes("cursors"); }
             label: "Pointer style"
             settingKey: "cursorTheme"
             detail: Config.s.cursorTheme !== "" && !themes.some(t => t.id === Config.s.cursorTheme) && themes.length > 0

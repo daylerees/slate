@@ -661,11 +661,9 @@ PanelWindow {
 
     // ---- Emoji (Settings → Launcher → Emoji): ":name" -----------------------------------
     // The emoji picker's list (data/emoji.json), read the first time it's wanted
-    property var emojiList: []
-    FileView {
-        path: root.mode === "emoji" || root.emojiList.length > 0 ? Quickshell.shellPath("data/emoji.json") : ""
-        onLoaded: { try { root.emojiList = JSON.parse(text()); } catch (e) {} }
-    }
+    // (Emoji.qml: read the first time ":" is typed, shared with the emoji picker)
+    readonly property var emojiList: Emoji.list
+    onModeChanged: if (mode === "emoji") Emoji.want()
     readonly property var emojiResults: {
         const q = query.slice(1).trim().toLowerCase();
         if (q === "") return [{ kind: "hint", icon: 0xEAF7, name: "Type a name, like :smile", comment: "Enter copies the emoji" }];
