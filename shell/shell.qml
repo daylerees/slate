@@ -506,7 +506,11 @@ ShellRoot {
                 locatePointer: { shows: locatePointer.shows, showing: locatePointer.showing, screen: locatePointer.target ? locatePointer.target.name : "",
                                  x: Math.round(locatePointer.at.x), y: Math.round(locatePointer.at.y) },
                 look: { glass: Config.glass, animate: Config.animate, text13: Config.text(13), dim: String(Config.tint("#8b94a3")) },
-                softwareDaily: { looks: SoftwareUpdates.looks, notices: SoftwareUpdates.notices, waiting: SoftwareUpdates.waiting },
+                // (only once it's been made: reading it here would make it, and hide whether Slate did)
+                softwareDaily: Config.softwareDailyMadeAt
+                    ? { looks: SoftwareUpdates.looks, notices: SoftwareUpdates.notices, waiting: SoftwareUpdates.waiting,
+                        madeAt: Config.softwareDailyMadeAt, slateStarted: root.startedAt }
+                    : { madeAt: 0, slateStarted: root.startedAt },
                 software: softwareLoader.item ? (w => ({
                     built: true, open: w.visible, searchFocused: w.searchFocused, page: w.page,
                     flathubTiles: Config.tileDir + "/flathub", tilesDrawn: w.tilesVersion,
@@ -969,6 +973,10 @@ ShellRoot {
     // Nothing reads this, but keep it: it's what creates the Updates singleton at start (its
     // daily check and the "updates" IPC), as singletons are only made when first used
     readonly property bool updateAvailable: Updates.available
+    // The same for the daily look for app and system updates (SoftwareUpdates.qml): without it, it
+    // was only made when Settings → Updates or Software was opened, so it never looked by itself
+    readonly property int softwareWaiting: SoftwareUpdates.waiting
+    readonly property real startedAt: Date.now()      // (the tests: when this Slate started)
     // A space's colour and icon on the windows it opened (Settings → Menu Bar → Mark windows from a space)
     SpaceBadges { bar: topBar; suppressed: appLauncher.shown || winSwitcher.shown || wsOverview.shown || picker.shown || popouts.shown || wallpaperLayer.switcher.shown }
 

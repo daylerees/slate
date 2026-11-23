@@ -4,6 +4,7 @@ installs one at a time. Its engine (scripts/software.py, unit-tested on its own)
 for with pretend answers (test softwarePretend), so nothing here runs Flatpak or reaches
 Flathub."""
 import json
+import time
 import os
 
 from live import LiveCase
@@ -285,6 +286,24 @@ class DailyLook(LiveCase):
         st = self.daily()
         self.assertEqual(st["notices"], before["notices"], "told with it off, or on a metered connection")
         self.assertEqual(st["looks"], before["looks"] + 1, "a metered connection counted as a look")
+
+
+class DailyLookFromStart(LiveCase):
+    """(On its own: DailyLook's set-up calls it over IPC, which would make it.)"""
+    def daily(self):
+        return self.s.state()["softwareDaily"]
+
+    def test_made_at_start(self):
+        """It exists from Slate's start, with nothing opened: singletons are only made when first
+        used, and it was only used by Settings → Updates and Software, so it never looked by
+        itself. (Read well after the start, so one made by reading the state would show late.)"""
+        st = self.daily()
+        wait = st["slateStarted"] / 1000 + 15 - time.time()
+        if wait > 0:
+            time.sleep(wait)
+            st = self.daily()
+        self.assertGreater(st["madeAt"], 0, "the daily look wasn't made at start, only when something first uses it")
+        self.assertLess(st["madeAt"] - st["slateStarted"], 10000, "the daily look was only made when something first used it")
 
 
 class FirstCatalogue(LiveCase):

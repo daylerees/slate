@@ -28,6 +28,7 @@ Singleton {
     readonly property real checkedAt: known.checked || 0
     property int looks: 0                 // (the tests: how many times it has looked)
     property int notices: 0               // (…and told you)
+    Component.onCompleted: Config.softwareDailyMadeAt = Date.now()   // (…and when it was made: at Slate's start, by shell.qml)
 
     FileView {
         id: file
