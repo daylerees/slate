@@ -238,6 +238,9 @@ Singleton {
         const clamp = m => Math.max(0, Math.min(1440, m));
         return { rise: clamp(720 - 4 * (s.longitude + ha) - eq + offset), set: clamp(720 - 4 * (s.longitude - ha) - eq + offset) };
     }
+    // A time of day in your clock's format (Settings → Menu Bar → Clock: 12- or 24-hour), as the
+    // menu bar's clock shows it: "9:30 PM" or "21:30"
+    function timeText(date) { return Qt.formatTime(date, s.barClockFormat === "24h" ? "HH:mm" : "h:mm AP"); }
     function clockText(minutes) {
         const m = Math.round(minutes);
         return String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");

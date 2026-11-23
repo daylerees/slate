@@ -40,7 +40,7 @@ Scope {
     readonly property bool quiet: dnd || (autoWhy !== "" && letThrough !== autoWhy)
     // Why it's on, in words for the bell and the panels ("" when it's off, or on by hand)
     readonly property string quietWhy: !quiet || dnd ? "" : ({
-        schedule: "until " + Config.clockText(clockAt(Config.s.dndTo)),
+        schedule: "until " + Config.timeText(clockAt(Config.s.dndTo)),
         fullscreen: "while a window is full screen",
         call: "while you're on a call",
         focus: "while you focus" })[autoWhy] || ""

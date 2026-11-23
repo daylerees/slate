@@ -3,6 +3,7 @@ on a schedule (past midnight, on the days chosen), while a window is full screen
 calls. It holds pop-ups back as the switch does, and says why. Switching it off by hand lets
 notifications through until that reason changes. Apps on the "still let through" list pop up
 anyway. (Full screen and calls are pretended here: `notifications testRule`.)"""
+import datetime
 import json
 
 from live import LiveCase
@@ -41,6 +42,22 @@ class Quiet(LiveCase):
         self.assertFalse(self.quiet_at("18:00", 3))
         self.config("dndSchedule", "false")
         self.assertFalse(self.quiet_at("12:00", 3), "off: never")
+
+    def test_the_schedule_says_when_it_ends(self):
+        """In your clock's format, at the schedule's real end. It said "until HH:00" with a wrong
+        hour, from the date's milliseconds read as minutes (a bug)."""
+        self.keep_setting("barClockFormat")
+        now = datetime.datetime.now()
+        end = now + datetime.timedelta(hours=3, minutes=7)
+        self.config("dndFrom", (now - datetime.timedelta(hours=1)).strftime("%H:%M"))
+        self.config("dndTo", end.strftime("%H:%M"))
+        self.config("dndDays", "every")
+        self.config("dndSchedule", "true")
+        for fmt, says in (("24h", end.strftime("%H:%M")), ("12h", end.strftime("%I:%M %p").lstrip("0"))):
+            with self.subTest(fmt=fmt):
+                self.config("barClockFormat", fmt)
+                st = self.wait(lambda st: st["notifications"]["dndWhy"] == "schedule"
+                               and st["notifications"]["dndSays"] == "until " + says, "until " + says)
 
     def test_full_screen_holds_pop_ups_back_and_says_why(self):
         self.config("dndFullscreen", "true")
