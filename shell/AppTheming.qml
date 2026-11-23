@@ -4,7 +4,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 
 Scope {
     id: root
@@ -23,10 +22,9 @@ Scope {
     }
     property int gtkRefreshes: 0                 // (the tests: how many times the script was started)
     Connections {
-        target: Hyprland
+        target: Config
         // A window closed: GTK apps waiting to pick up new colours may now restart
-        function onRawEvent(event) {
-            if (event.name !== "closewindow") return;
+        function onWindowClosed() {
             gtkFlag.closed = true;
             gtkFlag.reload();
         }

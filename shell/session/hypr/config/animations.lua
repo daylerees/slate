@@ -147,7 +147,9 @@ end
 hl.on("workspace.active", function()
     local ws = hl.get_active_workspace()
     if not ws then return end
-    for _, w in ipairs(hl.get_windows()) do
+    -- (only the arriving workspace's windows, where it has an id; every window was looked at)
+    local wins = type(ws.id) == "number" and hl.get_workspace_windows(ws.id) or hl.get_windows()
+    for _, w in ipairs(wins or {}) do
         -- (by name: a named workspace has no id in Hyprland 0.57)
         if w.mapped and w.workspace and w.workspace.name == ws.name then
             hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = "address:" .. w.address }))

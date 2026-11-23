@@ -11,7 +11,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 
 Scope {
     id: root
@@ -69,16 +68,12 @@ Scope {
     }
     // What can bring a floating window in front, take it away or change which it is, that
     // Hyprland does say: at once
+    // (Config.windowsChanged: those events, among them a workspace sent to another screen,
+    // which takes its windows along, and a reload of Hyprland's config, which can change which float)
     Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            if (root.bars.length === 0) return;
-            if (["openwindow", "closewindow", "activewindowv2", "movewindowv2", "changefloatingmode",
-                 "fullscreen", "workspacev2", "focusedmonv2", "pin",
-                 // (a workspace sent to another screen takes its windows along; a reload of
-                 // Hyprland's config can change which float)
-                 "moveworkspacev2", "configreloaded"].includes(event.name)) root.query();
-        }
+        target: Config
+        enabled: root.bars.length > 0
+        function onWindowsChanged() { root.query(); }
     }
     // Unlocked: whatever happened meanwhile. New bars (a workspace went floating, a screen was
     // plugged in, Slate reloaded): each asks as it starts, and once more here when all are in

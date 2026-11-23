@@ -13,7 +13,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 
 Scope {
     id: root
@@ -38,13 +37,9 @@ Scope {
         }
     }
     Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            switch (event.name) {
-            case "monitoradded": case "monitoraddedv2": case "monitorremoved": case "monitorremovedv2": case "configreloaded":
-                refreshLater.restart();
-            }
-        }
+        target: Config
+        function onMonitorsChanged() { refreshLater.restart(); }
+        function onHyprConfigReloaded() { refreshLater.restart(); }
     }
     Timer { id: refreshLater; interval: 300; onTriggered: root.refresh() }
 

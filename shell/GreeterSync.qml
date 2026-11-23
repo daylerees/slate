@@ -4,7 +4,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 
 Scope {
     id: root
@@ -29,10 +28,7 @@ Scope {
         printErrors: false
         onFileChanged: { reload(); greeterSync.restart(); }
     }
-    Connections {
-        target: Hyprland
-        function onRawEvent(e) { if (e.name.startsWith("monitoradded") || e.name.startsWith("monitorremoved")) greeterSync.restart(); }
-    }
+    Connections { target: Config; function onMonitorsChanged() { greeterSync.restart(); } }
     Timer { interval: 10000; running: !Config.testMode; onTriggered: greeterSync.restart() }
 
     // When the login screen's code has changed, offer to install it (a notification

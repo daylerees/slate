@@ -18,8 +18,19 @@ hl.monitor({
 -- busy and the desktop lagged. So its screens are off here (the tests' own session turns on the
 -- one it uses). Found by the vkms device in /sys, not by name: a virtual machine's screen is
 -- called "Virtual-1" too. (SLATE_VKMS_DIRS: the tests' stand-in for where to look)
+-- (no shell started unless the virtual screens' folder is there at all: it's looked for at every
+-- config load and every screen plugged in, and on a real computer it never is)
+local function vkmsThere()
+    if SLATE_VKMS_DIRS then return true end
+    for _, d in ipairs({ "/sys/devices/faux/vkms", "/sys/devices/platform/vkms" }) do
+        local f = io.open(d, "r")
+        if f then f:close(); return true end
+    end
+    return false
+end
 function slateTestScreens()
     local out = {}
+    if not vkmsThere() then return out end
     local p = io.popen("ls -d " .. (SLATE_VKMS_DIRS or "/sys/devices/faux/vkms/drm/card*/card*-* /sys/devices/platform/vkms/drm/card*/card*-*") .. " 2>/dev/null")
     if not p then return out end
     for line in p:lines() do

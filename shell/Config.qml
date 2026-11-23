@@ -1341,10 +1341,26 @@ Singleton {
     // One handler for all of Config's (Hyprland sends many events a second while windows move),
     // and hyprConfigReloaded for the rest of Slate, so other files needn't each look at every event
     signal hyprConfigReloaded()
+    // ...and the window and monitor events others follow, filtered here once:
+    signal windowOpened(string data)              // "address,workspace name,class,title"
+    signal windowClosed(string address)
+    signal windowMoved(string data)               // "address,workspace id,workspace name"
+    signal windowFloatingChanged()
+    signal monitorsChanged()                      // a monitor plugged in or out
+    signal windowsChanged()                       // anything that changes where windows are or which has focus
+    readonly property var windowsChangedBy: new Set(["openwindow", "closewindow", "activewindowv2", "movewindowv2",
+        "changefloatingmode", "fullscreen", "workspacev2", "focusedmonv2", "pin", "moveworkspacev2", "configreloaded"])
     Connections {
         target: Hyprland
         function onRawEvent(event) {
+            if (root.windowsChangedBy.has(event.name)) root.windowsChanged();
             switch (event.name) {
+            case "changefloatingmode":
+                root.windowFloatingChanged();
+                break;
+            case "monitoraddedv2": case "monitorremovedv2":
+                root.monitorsChanged();
+                break;
             case "activelayout":                 // the keyboard layout switched
                 kbActiveLater.restart();
                 break;
@@ -1361,15 +1377,18 @@ Singleton {
             case "openwindow": {                 // "address,workspace name,class,title"
                 const p = event.data.split(",");
                 root.secretWindowMoved(p[0], p[1]);
+                root.windowOpened(event.data);
                 break;
             }
             case "movewindowv2": {               // "address,workspace id,workspace name"
                 const p = event.data.split(",");
                 root.secretWindowMoved(p[0], p.slice(2).join(","));
+                root.windowMoved(event.data);
                 break;
             }
             case "closewindow":                  // "address"
                 root.secretWindowMoved(event.data, "");
+                root.windowClosed(event.data);
                 break;
             case "destroyworkspacev2": {         // a workspace is gone ("id,name"): so is its name
                 const gone = event.data.split(",")[0];

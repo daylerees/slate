@@ -694,14 +694,11 @@ PanelWindow {
     // Which windows float comes from Hyprland's window details: fetched again when a window
     // opens, moves or changes floating (only while that matters to the dock)
     Connections {
-        target: Hyprland
+        target: Config
         enabled: Config.s.dockAutoHide && !Config.floatingWindows
-        function onRawEvent(event) {
-            switch (event.name) {
-            case "openwindow": case "changefloatingmode": case "movewindow": case "movewindowv2":
-                floatCheck.restart();
-            }
-        }
+        function onWindowOpened() { floatCheck.restart(); }
+        function onWindowFloatingChanged() { floatCheck.restart(); }
+        function onWindowMoved() { floatCheck.restart(); }
     }
     // (and once at start, so the windows already open have their details)
     Timer { id: floatCheck; interval: 30; running: true; onTriggered: Hyprland.refreshToplevels() }

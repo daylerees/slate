@@ -16,7 +16,6 @@ pragma Singleton
 // still has the window; an address Hyprland gives a new window comes off at once.
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Wayland
 
 Singleton {
@@ -39,21 +38,20 @@ Singleton {
         function onObjectRemovedPre() { root.hold(); }
     }
     Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            if (event.name === "closewindow") {            // "address"
-                root.hold();
-                const m = Object.assign({}, root.closing);
-                m[String(event.data).replace(/^0x/, "")] = true;
-                root.closing = m;
-                forget.restart();
-            } else if (event.name === "openwindow") {      // "address,workspace,class,title"
-                const a = event.data.split(",")[0].replace(/^0x/, "");
-                if (root.closing[a] === undefined) return;
-                const m = Object.assign({}, root.closing);
-                delete m[a];
-                root.closing = m;
-            }
+        target: Config
+        function onWindowClosed(address) {
+            root.hold();
+            const m = Object.assign({}, root.closing);
+            m[String(address).replace(/^0x/, "")] = true;
+            root.closing = m;
+            forget.restart();
+        }
+        function onWindowOpened(data) {                    // "address,workspace,class,title"
+            const a = data.split(",")[0].replace(/^0x/, "");
+            if (root.closing[a] === undefined) return;
+            const m = Object.assign({}, root.closing);
+            delete m[a];
+            root.closing = m;
         }
     }
 }

@@ -837,16 +837,16 @@ PanelWindow {
         return mon ? (Config.specialOpen[mon.name] || "") : "";
     }
     Connections {
-        target: Hyprland
+        target: Config
         // (only while an app started for the secret workspace is awaited: it handled every
         // Hyprland event all session)
         enabled: root.specialTarget !== ""
-        function onRawEvent(event) {
+        function onWindowOpened(data) {
             // The app we started for the secret workspace has its window: focus it, which
             // shows that workspace again (launching moves focus back to the workspace behind
             // it, which hides the secret one)
-            if (event.name === "openwindow" && root.specialTarget !== "") {
-                const f = event.data.split(",");             // address,workspace,class,title
+            if (root.specialTarget !== "") {
+                const f = data.split(",");                   // address,workspace,class,title
                 if (f[1] === root.specialTarget) {
                     root.specialTarget = "";
                     Quickshell.execDetached(["hyprctl", "dispatch",

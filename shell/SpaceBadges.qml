@@ -93,8 +93,8 @@ Scope {
     onWantedChanged: if (wanted) { monLater.restart(); ownersLater.restart(); }
     Connections {
         target: Hyprland
+        enabled: root.wanted
         function onRawEvent(event) {
-            if (!root.wanted) return;
             if (/^(workspace|activespecial|moveworkspace)/.test(event.name)) root.startSettling();
             if (event.name === "openwindow" || event.name === "closewindow") ownersLater.restart();
             if (/^(workspace|focusedmon|activespecial|moveworkspace|monitor)/.test(event.name)) monLater.restart();

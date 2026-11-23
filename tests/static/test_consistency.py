@@ -770,10 +770,11 @@ class WindowPreviews(Case):
         before asking), drops a closing window's source, and is given its window's address."""
         hold = slate.read("shell", "PreviewHold.qml")
         self.assertRegex(hold, r"target: ToplevelManager\.toplevels\s*\n\s*function onObjectRemovedPre\(\) \{ root\.hold\(\); \}")
-        m = re.search(r'event\.name === "closewindow"\) \{(.*?)\} else if', hold, re.S)
-        self.assertTrue(m and "root.hold()" in m.group(1) and "event.data" in m.group(1),
+        # (Hyprland's closewindow and openwindow, passed on by Config.qml's one handler)
+        m = re.search(r'function onWindowClosed\(address\) \{(.*?)\n        \}', hold, re.S)
+        self.assertTrue(m and "root.hold()" in m.group(1) and "address" in m.group(1).split("root.hold()")[1],
                         "Hyprland's closewindow doesn't hold the previews and mark the window")
-        self.assertIn('event.name === "openwindow"', hold, "a reused address stays marked closing")
+        self.assertIn("function onWindowOpened(data)", hold, "a reused address stays marked closing")
         self.assertRegex(hold, r"id: holdTimer; interval: [1-9]\d{2}\b")
         src = slate.read("shell", "WindowPreview.qml")
         self.assertIn("PreviewHold.closing[addr]", src)
@@ -1438,3 +1439,18 @@ class TileDrawing(Case):
             with self.subTest(f):
                 self.assertNotRegex(slate.read(*f.split("/")), r'tileScript[^\n]*"--tile"',
                                     "draws one tile without Config.tileCommand (so isn't counted)")
+
+
+class HyprlandEvents(Case):
+    def test_one_handler_for_hyprlands_events(self):
+        """Hyprland sends many events a second while windows move. Config.qml looks at each once
+        and passes on what others follow (windowOpened, windowClosed, windowMoved,
+        windowFloatingChanged, monitorsChanged, windowsChanged, hyprConfigReloaded): nine files
+        each ran their own JavaScript for every event. SpaceBadges keeps its own, only while a
+        space feature is on, as it follows a dozen kinds."""
+        allowed = {"Config.qml", "SpaceBadges.qml"}
+        found = set()
+        for path in glob.glob(slate.path("shell", "**", "*.qml"), recursive=True):
+            if "onRawEvent" in open(path).read():
+                found.add(os.path.relpath(path, slate.path("shell")))
+        self.assertEqual(found - allowed, set(), "handles every Hyprland event itself: use Config's signals")

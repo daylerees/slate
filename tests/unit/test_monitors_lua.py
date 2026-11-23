@@ -262,3 +262,19 @@ class MonitorsLua(Case):
                         'local v = screen("Virtual-1", "", %s, "1024x768@60.00"); happen("monitor.added", v)' % vk,
                         before=self.vkms("Virtual-1"))
         self.assertEqual(rules, [("Virtual-1", "off"), ("Virtual-1", "1024x768@60.00")])
+
+
+    def test_no_shell_is_started_without_the_virtual_screens_folder(self):
+        """The tests' virtual screen is looked for at every config load and screen plugged in: on a
+        real computer, with no vkms folder, that's no shell at all (it started one each time)."""
+        case = ("SLATE_VKMS_DIRS = nil\n"
+                "local opened = io.open\n"
+                "io.open = function(path, mode) if tostring(path):match('vkms') then return nil end return opened(path, mode) end\n"
+                "local started = 0\n"
+                "io.popen = function() started = started + 1; return nil end\n"
+                "slateTestScreens()\n"
+                "print('STARTED\\t' .. started)\n")
+        env = dict(self.h.env, STUB_CONFIG=MONITORS, STUB_BEFORE=self.vkms(), STUB_CASE=case)
+        code, out = run([self.lua, self.stub], env=env)
+        self.assertEqual(code, 0, out)
+        self.assertIn("STARTED\t0", out.splitlines())

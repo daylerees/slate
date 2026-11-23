@@ -150,7 +150,7 @@ for _, m in ipairs(modalMatches) do hl.window_rule({ match = m, float = true, ce
 -- Keep floating windows (file pickers etc.) within the screen. Not the drop-down terminal, which
 -- is placed across the screen on purpose (placeDropdown, below): the rule is applied again when
 -- Slate's settings arrive, and squeezed it back to nine tenths of the width
-hl.window_rule({ match = { float = true, class = "negative:^(org\\.slate\\.dropdown)$" }, max_size = { "monitor_w*0.90", "monitor_h*0.90" } })
+hl.window_rule({ match = { float = true, class = "negative:" .. DROPDOWN_CLASS_RE }, max_size = { "monitor_w*0.90", "monitor_h*0.90" } })
 
 -- Ignore apps asking to maximise themselves (tiling decides window sizes)
 hl.window_rule({
@@ -550,7 +550,7 @@ end
 -- It floats on a special workspace of its own, across the top of the monitor you're on, under
 -- the bar (the room Hyprland keeps for it: the monitor's `reserved`), as tall as DROPDOWN_HEIGHT.
 -- Placed each time it's shown, so a changed height or another monitor is followed
-hl.window_rule({ name = "slate-dropdown", match = { class = "^(org\\.slate\\.dropdown)$" }, float = true,
+hl.window_rule({ name = "slate-dropdown", match = { class = DROPDOWN_CLASS_RE }, float = true,
                  workspace = "special:dropdown" })
 local DROPDOWN_GAP = 10
 function placeDropdown()
@@ -569,8 +569,8 @@ function placeDropdown()
         end
     end
 end
-hl.on("window.open", function()
-    for _, w in ipairs(hl.get_windows() or {}) do
-        if w.class == DROPDOWN_CLASS then placeDropdown(); return end
-    end
+-- (placed when it's the drop-down that opened: every window opening used to look through every
+-- window, and placed the hidden drop-down again whenever it existed)
+hl.on("window.open", function(win)
+    if win and win.class == DROPDOWN_CLASS then placeDropdown() end
 end)

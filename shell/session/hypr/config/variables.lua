@@ -89,6 +89,7 @@ TERMINAL_RUN_FLAGS = {
 -- can be given a class; the default one is used when it's one of them, else the first of them
 -- that's installed. DROPDOWN_COMMAND() gives that terminal's command name and the command line
 DROPDOWN_CLASS = "org.slate.dropdown"
+DROPDOWN_CLASS_RE = "^(" .. DROPDOWN_CLASS:gsub("%.", "\\.") .. ")$"     -- (the same, for window rules)
 DROPDOWN_CLASS_FLAGS = {
     ["kitty"]     = "--class ",
     ["foot"]      = "--app-id ",
