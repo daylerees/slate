@@ -362,7 +362,7 @@ Column {
                                     Item {
                                         anchors.centerIn: parent
                                         width: Math.min(22, wsWin.width * 0.6, wsWin.height * 0.6); height: width
-                                        layer.enabled: wsLive.hasContent
+                                        layer.enabled: wsLive.hasContent && Config.shadowsOn      // (only for its shadow)
                                         layer.effect: MultiEffect {
                                             shadowEnabled: Config.shadowsOn
                                             shadowColor: Config.shadowColour

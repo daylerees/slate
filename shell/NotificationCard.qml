@@ -211,7 +211,7 @@ Rectangle {
                 anchors.fill: parent
                 visible: !picture.visible && !tile.visible
                 // (Slate's: an app icon's shape, as the other apps' tiles beside it)
-                radius: icon.fromSlate ? Config.iconCornerFor(width) : 9
+                radius: icon.fromSlate ? Config.iconCornerFor(width) : Config.corner(9)
                 // No icon: the bell on an accent-tinted tile. Slate's notices: Slate's mark coloured
                 // as on the bar's button (the accent along its top, the slab in the theme's slate),
                 // on an app icon's tile

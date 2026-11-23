@@ -8,7 +8,13 @@ import slate
 from slate import Case
 
 # Files whose scrolling views were brought in line (the others keep their own checks)
-SCROLLING = ["Popouts.qml"] + ["panels/" + n for n in os.listdir(slate.path("shell", "panels")) if n.endswith("Panel.qml")] + ["TrayMenu.qml", "Picker.qml", "SettingsWindow.qml", "AvatarPicker.qml", "BarEditor.qml"]
+SCROLLING = ["Popouts.qml"] + ["panels/" + n for n in os.listdir(slate.path("shell", "panels")) if n.endswith("Panel.qml")] + ["TrayMenu.qml", "Picker.qml", "SettingsWindow.qml", "AvatarPicker.qml", "BarEditor.qml",
+             "Launcher.qml", "Assistant.qml", "QuickLook.qml", "SoftwareWindow.qml", "WallpaperSwitcher.qml"]
+
+# Views that scroll sideways, by keys or selection rather than a wheel and a scrollbar: a code
+# block in Nova's answer (the wheel scrolls the conversation), Software's row of screenshots, and
+# the wallpaper switcher's row of cards (it follows the chosen one)
+SIDEWAYS = {"Assistant.qml": {"codeScroll"}, "SoftwareWindow.qml": {"shotFlick"}, "WallpaperSwitcher.qml": {"list"}}
 
 SCROLLING_PANELS = ["Popouts.qml"] + [f for f in SCROLLING if f.startswith("panels/")]
 
@@ -22,6 +28,8 @@ class Scrolling(Case):
             src = slate.read("shell", f)
             for m in re.finditer(r"^\s*(?:Flickable|ListView|GridView)\s*\{\s*\n\s*id:\s*(\w+)", src, re.M):
                 v = m.group(1)
+                if v in SIDEWAYS.get(f, ()):
+                    continue
                 view = rf"(?:{v}|root\.view\(\))" if f == "Picker.qml" else v
                 with self.subTest(f"{f}: {v}"):
                     self.assertRegex(src, rf"SmoothWheel\s*\{{\s*(?:id:\s*\w+;?\s*)?flick:\s*{v}\b", "no smooth wheel")
@@ -216,6 +224,10 @@ class HoverTracksThePointer(Case):
                     o = _binding(text, "opacity")
                     if re.search(r"\b(Config\.|bar\.|wd\.)?hoverStrength\b", o) and re.search(r"\.hovered\b|\blit\b", o):
                         self.assertNotIn("Behavior on opacity", text, "the muted hover fades in and out")
+                    # (the menu bar's containers, shown at Hover opacity under the pointer: their
+                    # 120 ms fade was a hover that faded)
+                    if "barItemHoverOpacity" in o:
+                        self.assertNotIn("Behavior on opacity", text, "the bar's hover opacity fades in and out")
 
     def test_hover_fill_fades_only_with_selection(self):
         """HoverFill shows its hover layer at once; only `gone` (selected, or let go of) fades."""

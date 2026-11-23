@@ -332,14 +332,13 @@ Column {
                     Component.onCompleted: pop.rowMade("tiles")
                     required property int index
                     readonly property rect at: ccTiles.rects[index] ?? Qt.rect(0, 0, 0, 0)
-                    readonly property color fg: selected ? pop.accentText : pop.text
                     x: at.x; y: at.y; width: at.width; height: at.height
                     radius: Config.corner(12)
                     selected: tile.on
-                    // On ones light up too when pointed at (a lighter accent), as they can be turned off
-                    color: selected ? (tileHover.hovered ? Config.accentLit : pop.accent) : "transparent"
-                    HoverFill { base: pop.card; hovered: tileHover.hovered; gone: controlTile.selected; radius: controlTile.radius }
-                    HoverHandler { id: tileHover }
+                    // (RowButton's own hover, on the card; on ones light up too when pointed at, a
+                    // lighter accent, as they can be turned off)
+                    toggles: true
+                    hoverBase: pop.card
                     onClicked: {
                         switch (modelData) {
                         case "wifi": Networking.wifiEnabled = !Networking.wifiEnabled; break;

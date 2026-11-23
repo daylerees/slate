@@ -1417,29 +1417,18 @@ PanelWindow {
             anchors { top: list.top; bottom: list.bottom; left: list.right; leftMargin: 8 }
         }
 
-        // Shades at the top and bottom while there's more to scroll to, rounded like the rows
-        // (square, they showed as hard-cornered blocks, most of all with glass)
-        Rectangle {
+        // Shades at the top and bottom while there's more to scroll to (ScrollShade: Slate's own,
+        // following Settings → Appearance → Shadows), rounded like the rows
+        ScrollShade {
             anchors { left: list.left; right: list.right; top: list.top }
-            height: 36
-            topLeftRadius: Config.corner(10); topRightRadius: Config.corner(10)
-            // Fades with the distance from the start, gone just as you reach it
-            opacity: Math.max(0, Math.min(1, (list.contentY - list.originY) / 24))
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: root.barColor }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
+            cornerRadius: 10
+            distance: list.contentY - list.originY
         }
-        Rectangle {
+        ScrollShade {
+            atBottom: true
             anchors { left: list.left; right: list.right; bottom: list.bottom }
-            height: 36
-            bottomLeftRadius: Config.corner(10); bottomRightRadius: Config.corner(10)
-            // Fades with the distance from the end, gone just as you reach it
-            opacity: Math.max(0, Math.min(1, (list.originY + list.contentHeight - list.height - list.contentY) / 24))
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 1.0; color: root.barColor }
-            }
+            cornerRadius: 10
+            distance: list.originY + list.contentHeight - list.height - list.contentY
         }
 
         Text {

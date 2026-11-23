@@ -1942,7 +1942,7 @@ PanelWindow {
         // (each part fades by itself rather than the container as one picture: drawn that way,
         // through a layer, a container showed nothing at all)
         Behavior on color { ColorAnimation { duration: Config.ms(120) } }
-        Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
+        // (its opacity changes at once: it's the hover, which comes and goes with the pointer)
         Rectangle {
             anchors { fill: parent; margins: bar.fillInset }
             radius: Config.corner(Math.max(0, bar.capsuleRadius - bar.fillInset))

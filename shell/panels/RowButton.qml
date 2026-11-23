@@ -8,6 +8,7 @@ Rectangle {
     property bool selected: false
     property bool toggles: false       // a click turns it off again: lighter under the pointer while it's on
     property bool danger: false        // destructive: the muted hover in red
+    property color hoverBase: "transparent"   // its fill while not selected (the control center's tiles: the card)
     signal clicked()
     // (the keyboard's Menu key, or Shift+F10, on it: what a right-click on it does, for a row
     // that has a menu of its own: the More panel's)
@@ -39,7 +40,7 @@ Rectangle {
     // pointer (as the launcher's highlight is), so moving down a list never leaves a trail
     color: selected ? (toggles && rbHover.hovered ? Config.accentLit : pop.accent) : Qt.rgba(pop.accent.r, pop.accent.g, pop.accent.b, 0)
     Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-    HoverFill { hover: rb.danger ? Config.hoverDanger : Config.hover; hovered: rbHover.hovered; gone: rb.selected; radius: rb.radius }
+    HoverFill { base: rb.hoverBase; hover: rb.danger ? Config.hoverDanger : Config.hover; hovered: rbHover.hovered; gone: rb.selected; radius: rb.radius }
     HoverHandler { id: rbHover }
     ClickTap { onTapped: rb.clicked() }
 }

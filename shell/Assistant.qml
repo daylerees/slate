@@ -1013,27 +1013,18 @@ Scope {
                                 bottomLeftRadius: Config.corner(talkMask.below); bottomRightRadius: Config.corner(talkMask.below)
                             }
                         }
-                        // Shades while there's more above or below: fading out just as you reach the end
-                        // (rounded like the cards they're over: square, they showed as hard-cornered blocks)
-                        Rectangle {
+                        // Shades while there's more above or below (ScrollShade: Slate's own, following
+                        // Settings → Appearance → Shadows), rounded like the cards they're over
+                        ScrollShade {
                             anchors { left: talk.left; right: talk.right; top: parent.top }
-                            height: 28
-                            topLeftRadius: Config.corner(14); topRightRadius: Config.corner(14)
-                            opacity: Math.max(0, Math.min(1, talk.contentY / 24))
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: root.barColor }
-                                GradientStop { position: 1.0; color: "transparent" }
-                            }
+                            cornerRadius: 14
+                            distance: talk.contentY
                         }
-                        Rectangle {
+                        ScrollShade {
+                            atBottom: true
                             anchors { left: talk.left; right: talk.right; bottom: parent.bottom }
-                            height: 28
-                            bottomLeftRadius: Config.corner(14); bottomRightRadius: Config.corner(14)
-                            opacity: Math.max(0, Math.min(1, (talk.contentHeight - talk.height - talk.contentY) / 24))
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: "transparent" }
-                                GradientStop { position: 1.0; color: root.barColor }
-                            }
+                            cornerRadius: 14
+                            distance: talk.contentHeight - talk.height - talk.contentY
                         }
                     }
 

@@ -48,7 +48,7 @@ Column {
                 required property var modelData
                 readonly property bool on: modelData.value === choiceSetting.value
                 width: optText.implicitWidth + 26; height: 32; radius: Config.corner(8)
-                color: on ? win.accent : "transparent"
+                color: on ? win.accent : Qt.rgba(win.accent.r, win.accent.g, win.accent.b, 0)     // (fades without darkening)
                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                 HoverFill { base: win.control; hovered: optHover.hovered; gone: parent.on; radius: parent.radius }
                 Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
