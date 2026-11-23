@@ -678,10 +678,10 @@ class PeopleLooks(Case):
         body = src[src.index("people_folder() {"):src.index("\nPY\n}") + 5]
         self.assertIn("os.fchmod(fd, 0o1777)", body, "people/ isn't made as a sticky folder open to all")
         self.assertIn("os.fchown(fd, 0, 0)", body, "people/ isn't made root's")
-        calls = [i for i in range(len(src)) if src.startswith("people_folder\n", i) and src[i - 1] in " \n"]
-        self.assertEqual(len(calls), 2, "people/ isn't made on both routes")
-        code_only = src.index('if [ "$MODE" = code ]; then')
-        self.assertLess(calls[0], code_only, "a code-only update stops before making people/")
+        full = src[src.index('if [ "$MODE" = full ]; then'):]
+        self.assertIn("people_folder", full[:full.index("\nfi\n")], "a full install doesn't make people/")
+        code = src[src.index('if [ "$MODE" = code ]; then'):]
+        self.assertIn("people_folder", code[:code.index("exit 0")], "a code-only update stops before making people/")
 
 
 class GreeterPeople(RootCase):
@@ -702,7 +702,12 @@ class GreeterPeople(RootCase):
         src = (src.replace("/var/lib/slate-greeter", self.data)
                   .replace("/var/cache/slate-greeter", os.path.join(self.sys, "cache"))
                   .replace("/usr/local/share/slate-greeter", os.path.join(self.sys, "share", "slate-greeter"))
-                  .replace("/usr/local/share/.slate-greeter", os.path.join(self.sys, "share", ".slate-greeter")))
+                  .replace("/usr/local/share/.slate-greeter", os.path.join(self.sys, "share", ".slate-greeter"))
+                  .replace("/etc/greetd", os.path.join(self.sys, "etc-greetd")))
+        os.makedirs(os.path.join(self.sys, "etc-greetd"))
+        self.conf = os.path.join(self.sys, "etc-greetd", "config.toml")
+        with open(self.conf, "w") as f:
+            f.write('[default_session]\ncommand = "agreety"\nuser = "greeter"\n')
         self.script = os.path.join(self.h.dir, "slate-greeter-install")
         with open(self.script, "w") as f:
             f.write(src)
@@ -753,3 +758,44 @@ class GreeterPeople(RootCase):
         self.assertEqual(code, 0, out)
         with open(os.path.join(self.sys, "share", "slate-greeter", "hyprland.lua")) as f:
             self.assertIn("gb", f.read())
+
+
+class GreeterFullInstall(GreeterPeople):
+    """A full install copies your look before anything is swapped, as you through runuser (sudo
+    isn't something Slate installs), so a copy that fails leaves the login screen and greetd as
+    they were rather than half set up."""
+
+    def setUp(self):
+        super().setUp()
+        # sudo isn't there: anything calling it is recorded and fails, as on a computer without it
+        self.stub("sudo", f'echo "sudo $*" >> {self.log}; exit 127')
+        self.synced = os.path.join(self.h.dir, "synced")
+        self.sync_with(f'echo "$(id -un) USER=$USER HOME=$HOME" > {self.synced}')
+
+    def sync_with(self, body):
+        p = os.path.join(self.slate, "bin", "slate-greeter-sync")
+        os.remove(p)                        # (the scratch install may link it to the real one)
+        with open(p, "w") as f:
+            f.write("#!/bin/sh\n" + body + "\n")
+        os.chmod(p, 0o755)
+
+    def install(self):
+        return run([self.script, "--no-check"], env=self.s.env, timeout=30)
+
+    def test_installs_without_sudo(self):
+        code, out = self.install()
+        self.assertEqual(code, 0, out)
+        self.assertFalse(any(c.startswith("sudo") for c in self.root_calls()), self.root_calls())
+        with open(self.synced) as f:
+            self.assertEqual(f.read().split(), ["tester", "USER=tester", "HOME=" + self.h.home])
+        with open(self.conf) as f:
+            self.assertIn("slate-greeter", f.read())
+
+    def test_a_failed_copy_changes_nothing(self):
+        self.sync_with("exit 1")
+        code, out = self.install()
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("couldn't copy your look", out)
+        self.assertFalse(os.path.exists(os.path.join(self.sys, "share", "slate-greeter")), "the new code was swapped in")
+        with open(self.conf) as f:
+            self.assertIn("agreety", f.read(), "greetd was pointed at it")

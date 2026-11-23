@@ -130,19 +130,6 @@ if [ "$CHECK" = 1 ] && ! report=$(runuser -u "$OWNER" -- "$SRC/bin/slate-greeter
     exit 1
 fi
 
-# Swap it in. The copy being replaced becomes the fallback (.good) if someone has logged
-# in with it (the greeter wrote its version to $CACHE/proven), or if there's no fallback
-# yet; otherwise the existing fallback stays, since it's known to work.
-version_of() { cat "$1/version" 2>/dev/null || true; }
-proven=$(cat "$CACHE/proven" 2>/dev/null || true)
-if [ -d "$CODE" ] && { [ ! -d "$CODE.good" ] || { [ -n "$proven" ] && [ "$(version_of "$CODE")" = "$proven" ]; }; }; then
-    rm -rf "$CODE.good"; mv "$CODE" "$CODE.good"
-else
-    rm -rf "$CODE"
-fi
-rm -rf "$CODE.previous"      # the fallback before there was a .good
-mv "$stage" "$CODE"; trap - EXIT
-
 # Each person's own look (people/<them>/, kept by their own Slate without a password): a folder
 # anyone can add their own folder to and nobody can touch anyone else's in (sticky, as /tmp).
 # The login screen only takes a folder owned by the person it's named after.
@@ -165,20 +152,40 @@ if os.geteuid() == 0:            # (always, but under the tests, which can't han
 os.fchmod(fd, 0o1777)
 PY
 }
-if [ -d "$DATA" ]; then
+# 2. (A full install) the appearance folder (yours, so Slate can sync it), the greeter's writable
+#    cache and your look in it, before anything is swapped: if copying your look fails, it stops
+#    here with the login screen and greetd as they were, never half set up. The copy runs as you
+#    (runuser, as everything here: sudo isn't always installed), with only your own name and home
+if [ "$MODE" = full ]; then
+    install -d -m 755 -o "$OWNER" -g "$(id -gn "$OWNER")" "$DATA"
     people_folder
+    install -d -m 755 -o "$GREETER_USER" -g "$GREETER_GROUP" "$CACHE" "$CACHE/cache" "$CACHE/state" "$CACHE/fontconfig"
+    if ! runuser -u "$OWNER" -- env -i HOME="$HOMEDIR" USER="$OWNER" LOGNAME="$OWNER" \
+            PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/bin LANG="${LANG:-C.UTF-8}" "$SRC/bin/slate-greeter-sync"; then
+        echo "Not installed: Slate couldn't copy your look to the login screen, so the current one is unchanged." >&2
+        exit 1
+    fi
 fi
 
+# Swap it in. The copy being replaced becomes the fallback (.good) if someone has logged
+# in with it (the greeter wrote its version to $CACHE/proven), or if there's no fallback
+# yet; otherwise the existing fallback stays, since it's known to work.
+version_of() { cat "$1/version" 2>/dev/null || true; }
+proven=$(cat "$CACHE/proven" 2>/dev/null || true)
+if [ -d "$CODE" ] && { [ ! -d "$CODE.good" ] || { [ -n "$proven" ] && [ "$(version_of "$CODE")" = "$proven" ]; }; }; then
+    rm -rf "$CODE.good"; mv "$CODE" "$CODE.good"
+else
+    rm -rf "$CODE"
+fi
+rm -rf "$CODE.previous"      # the fallback before there was a .good
+mv "$stage" "$CODE"; trap - EXIT
+
+# (an update of the code only: an older install may not have people/ yet)
 if [ "$MODE" = code ]; then
+    if [ -d "$DATA" ]; then people_folder; fi
     echo "Login screen code updated (shows at your next logout or reboot)."
     exit 0
 fi
-
-# 2. Appearance folder (yours, so Slate can sync it) and the greeter's writable cache
-install -d -m 755 -o "$OWNER" -g "$(id -gn "$OWNER")" "$DATA"
-people_folder
-install -d -m 755 -o "$GREETER_USER" -g "$GREETER_GROUP" "$CACHE" "$CACHE/cache" "$CACHE/state" "$CACHE/fontconfig"
-sudo -u "$OWNER" -H "$SRC/bin/slate-greeter-sync"
 
 # 3. Point greetd at it (keeping a backup of the original config, once)
 # (systemd-cat sends Hyprland's log to the journal; otherwise it scrolls past on tty1
