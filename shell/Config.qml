@@ -2630,7 +2630,6 @@ Singleton {
         if (!mode || mode === windowMode) delete m[String(id)];
         else m[String(id)] = mode;
         workspaceModes = m;
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', workspaceModesPath]);
         workspaceModesFile.setText(JSON.stringify(m));
         Quickshell.execDetached(["hyprctl", "dispatch",
             `function() SLATE_TITLEBARS = ${slateTitleBars}; WINDOW_MODE = "${windowMode}"; if setWorkspaceMode then setWorkspaceMode(${id}, ${luaString(m[String(id)] || "")}) end end`]);
@@ -2655,7 +2654,6 @@ Singleton {
     function workspaceNumber(id) { return "Workspace " + id; }      // (what it's called without a name)
     function saveWorkspaceNames(m) {
         workspaceNames = m;
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', workspaceNamesPath]);
         workspaceNamesFile.setText(JSON.stringify(m));
     }
     // Swap two workspaces' places (the overview's reorder): their numbers trade through a
@@ -2721,7 +2719,6 @@ Singleton {
         // (one whose own mode is the new default just follows it from now on)
         for (const k in m) if (m[k] === v) delete m[k];
         workspaceModes = m;
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', workspaceModesPath]);
         workspaceModesFile.setText(JSON.stringify(m));
         s.windowMode = v;          // (shell.qml tells Hyprland, with each workspace's mode)
     }
@@ -2797,14 +2794,7 @@ Singleton {
         if (isLoginScreen || forWallpaper === "" || forWallpaper !== wallpaper || forWallpaper !== s.wallpaper || !isHex(wallpaperAccent)) return;
         const text = JSON.stringify({ wallpaper: forWallpaper, accent: wallpaperAccent, tone: isHex(wallpaperTone) ? wallpaperTone : "" }) + "\n";
         if (colourCache.text() === text) return;
-        cacheDir.running = false; cacheDir.pending = text; cacheDir.running = true;
-    }
-    // (the folder may not exist yet)
-    Process {
-        id: cacheDir
-        property string pending: ""
-        command: ["mkdir", "-p", colourCache.path.replace(/\/[^/]*$/, "")]
-        onExited: code => { if (code === 0) colourCache.setText(pending); }
+        colourCache.setText(text);      // (FileView makes the folder when it's missing)
     }
 
     // The theme's colours, kept in a small file for the "Reloading Slate" cover (reloading/
@@ -2817,17 +2807,12 @@ Singleton {
     onCoverColoursChanged: coverLater.restart()
     // (not while the wallpaper switcher is showing one: once it closes)
     onWallpaperSwitchingChanged: { if (!wallpaperSwitching) coverLater.restart(); if (!wallpaperSwitching && hyprPushHeld) hyprPush.restart(); }   // (the held-back push, hyprPush)
-    Timer { id: coverLater; interval: 800; running: true; onTriggered: if (!root.isLoginScreen && !root.wallpaperSwitching && coverFile.text() !== root.coverColours) { coverDir.running = false; coverDir.running = true; } }
+    Timer { id: coverLater; interval: 800; running: true; onTriggered: if (!root.isLoginScreen && !root.wallpaperSwitching && coverFile.text() !== root.coverColours) coverFile.setText(root.coverColours); }
     FileView {
         id: coverFile
         path: root.cacheHome + "/slate/cover.json"
         blockLoading: true
         printErrors: false
-    }
-    Process {
-        id: coverDir
-        command: ["mkdir", "-p", coverFile.path.replace(/\/[^/]*$/, "")]
-        onExited: code => { if (code === 0) coverFile.setText(root.coverColours); }
     }
 
     FileView {

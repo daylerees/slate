@@ -246,6 +246,14 @@ ShellRoot {
         // Everything on the open Settings page (and its sidebar) that takes a click but not the keyboard
         // The main bar's tray menu, open with pretend rows (JSON [{ text, sep, rows }]), as an
         // app's would be, by a tray icon in the middle of the bar
+        // Write a file through a FileView, as Slate's own saves do, into a folder that may not
+        // exist yet: Slate counts on FileView making it (no mkdir before a save)
+        function fileViewWrite(path: string, text: string): void {
+            const fv = Qt.createQmlObject('import Quickshell.Io; FileView { blockWrites: true }', root, "test-fileview");
+            fv.path = path;
+            fv.setText(text);
+            fv.destroy(1000);
+        }
         function trayMenuPretend(json: string): void { topBar.trayMenu.testOpen(JSON.parse(json), topBar.width / 2, topBar.height); }
         function settingsUnreachable(): string { return JSON.stringify(settingsLoader.item ? settingsLoader.item.testUnreachable() : null); }
         function settingsToggle(label: string): string { return settingsLoader.item && settingsLoader.item.testToggle(label) ? "pressed" : "none"; }

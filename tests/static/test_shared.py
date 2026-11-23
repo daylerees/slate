@@ -159,3 +159,20 @@ class SessionTag(Case):
         for name in ("workspace-modes", "workspace-names"):
             self.assertIn(f'"{name}-%s.json" % (os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") or "none")', py)
             self.assertIn(f'"/slate/{name}-" + root.sessionTag + ".json"', cfg)
+
+
+class NoMkdirBeforeASave(Case):
+    def test_saves_dont_start_a_mkdir_first(self):
+        """FileView makes a missing folder as it writes (tests/live/test_file_saves.py), so nothing
+        starts `mkdir` in the background just before a setText: it wasn't waited for, so it never
+        helped, and it was a process each save."""
+        found = []
+        for root, _, files in os.walk(SHELL):
+            for f in files:
+                if not f.endswith(".qml"):
+                    continue
+                lines = open(os.path.join(root, f), encoding="utf-8").read().split("\n")
+                for i, line in enumerate(lines):
+                    if re.search(r"execDetached\(\[.*\bmkdir\b", line) and any(".setText(" in l for l in lines[i + 1:i + 4]):
+                        found.append(f"{f}:{i + 1}")
+        self.assertEqual(found, [])

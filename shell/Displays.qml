@@ -239,7 +239,7 @@ Scope {
 
     // ---- Saving -----------------------------------------------------------------
     function save() {
-        Quickshell.execDetached(["mkdir", "-p", stateDir]);
+        // (FileView makes stateDir when it's missing: no mkdir first)
         const saved = {}, lines = ["-- Written by Slate (Settings → Displays). Changes here are replaced when you change displays there."];
         for (const m of monitors) {
             const cfg = configOf(m);

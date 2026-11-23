@@ -54,7 +54,6 @@ Column {
         onLoaded: { try { const o = JSON.parse(text()); unlockPage.keyNames = o.names || {}; } catch (e) {} }
     }
     function keepKeyNames() {
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', keyNamesPath]);
         keyNamesFile.setText(JSON.stringify({ names: keyNames }));
     }
     function askAddKey() {
@@ -255,7 +254,6 @@ Column {
         }
     }
     function keep() {
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${0%/*}"', facesPath]);
         facesFile.setText(JSON.stringify({ camera: camera, faces: faces }));
     }
     // face-list's answer (face-add and face-remove end with it): "<id>,<date>,<label>" a line

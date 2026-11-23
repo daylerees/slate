@@ -43,7 +43,7 @@ Scope {
     FileView { id: shaderFile; path: root.shaderPath; atomicWrites: true; printErrors: false }
     function apply() {
         if (on) {
-            Quickshell.execDetached(["mkdir", "-p", Quickshell.env("HOME") + "/.cache/slate"]);
+            // (FileView makes the folder when it's missing: no mkdir first)
             shaderFile.setText(shader);
             Quickshell.execDetached(["hyprctl", "eval", `hl.config({ decoration = { screen_shader = ${Config.luaString(shaderPath)} } })`]);
         } else {
