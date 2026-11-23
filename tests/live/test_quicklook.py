@@ -106,7 +106,7 @@ class QuickLook(LiveCase):
         else:
             # Without poppler's pdftoppm: its details, and what to install
             self.assertEqual(st["view"], "details")
-            self.assertIn("poppler", st["note"])
+            self.assertIn("poppler", st["note"].lower())
 
     def test_anything_else_shows_its_details(self):
         p = self.file("Downloads", "data.bin", data=bytes(range(256)) * 8)

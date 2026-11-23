@@ -163,7 +163,7 @@ Column {
                     color: win.dim
                     font.family: win.font; font.pixelSize: Config.text(13)
                     text: !camPane.preview ? "The preview is off, so the camera isn't on"
-                        : previewLoader.status === Loader.Error ? "The preview needs Qt Multimedia (qt6-multimedia)"
+                        : previewLoader.status === Loader.Error ? "The preview needs Qt Multimedia" + Packages.named("qtmultimedia")
                         : previewLoader.item && previewLoader.item.problem !== "" ? "No picture: " + previewLoader.item.problem
                         : "Starting the camera…"
                 }

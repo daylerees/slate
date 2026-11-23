@@ -216,7 +216,7 @@ Scope {
                 width: Math.min(parent.width - 80, 620)
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
-                text: noPlayer ? "Videos need Qt Multimedia (the qt6-multimedia package)"
+                text: noPlayer ? "Videos need Qt Multimedia" + Packages.named("qtmultimedia")
                     : "No videos in " + Config.screensaverVideoFolder.replace(Quickshell.env("HOME"), "~") + " yet. Add some, or get scenery videos in Settings → Screensaver"
                 color: Qt.rgba(1, 1, 1, 0.6); font.family: Config.s.fontFamily; font.pixelSize: Config.text(15)
             }

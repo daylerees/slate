@@ -95,6 +95,7 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ SoftwareWindow.qml   Software (floating window "Software", app id slate-settings): install, remove and update Flathub apps, update the system (scripts/software.py)
 ├─ SoftwareJobs.qml     Slate Software's installs, removals and updates, one at a time (outlives its window)
 ├─ SoftwareUpdates.qml  the once-a-day look for app and system updates (software.py daily), and its notification
+├─ Packages.qml       an optional library's package by its name on this distro (scripts/packages.py), for messages saying what to install
 │  ├─ AvatarPicker.qml    choosing your account picture: a window of its own (scripts/set-avatar.sh)
 │  ├─ Displays.qml        Settings → Displays: reads the monitors from Hyprland, applies and saves
 │  │                      them (~/.local/state/slate/displays.json and displays.lua)
@@ -236,6 +237,7 @@ scripts/theme-packs.py        a few pointer and icon themes put in with one clic
                               release, pinned to a version and checked by SHA-256
 scripts/set-avatar.sh         sets your account picture (or someone else's, by uid): cropped square, handed to
                               AccountsService, and ~/.face (yours only)
+scripts/packages.py           an optional library's package, by its name on this distro (for Packages.qml's messages)
 scripts/software.py           Slate Software's engine: the Flathub catalog on this computer (search,
                               details), installed apps, app and system updates, and installing,
                               removing and updating (system upgrade through slate-system --upgrade)

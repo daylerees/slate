@@ -123,7 +123,7 @@ Column {
         SoundSetting {
             label: "Clicks"
             detail: Config.clickAvailable ? "A barely-there tap when you press Slate's buttons, menus and switches"
-                                          : "Needs Qt Multimedia (qt6-multimedia), so the click is on time"
+                                          : "Needs Qt Multimedia" + Packages.named("qtmultimedia") + ", so the click is on time"
             which: "click"; sample: "click"; available: Config.clickAvailable
         }
         Separator {}

@@ -44,7 +44,7 @@ Column {
             detail: Config.s.screensaverStyle === "drift" ? "Your wallpaper, dimmed and slowly drifting"
                 : Config.s.screensaverStyle === "slideshow" ? "The pictures in your wallpaper folder, fading from one to the next"
                 : Config.s.screensaverStyle === "videos" ? (Config.multimediaAvailable ? "The videos in a folder, silent, fading from one to the next"
-                    : "The videos in a folder, silent. Needs Qt Multimedia (the qt6-multimedia package), which isn't installed")
+                    : "The videos in a folder, silent. Needs Qt Multimedia" + Packages.named("qtmultimedia") + ", which isn't installed")
                 : "Plain black; best for OLED screens"
         }
         Separator { visible: Config.s.screensaverStyle === "videos" }
