@@ -243,6 +243,11 @@ ShellRoot {
         // netinfo.sh would print it ("": the real thing again), and a look now
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
         // Press the switch on the Settings row with this label, as a click does ("pressed" or "none")
+        // Everything on the open Settings page (and its sidebar) that takes a click but not the keyboard
+        // The main bar's tray menu, open with pretend rows (JSON [{ text, sep, rows }]), as an
+        // app's would be, by a tray icon in the middle of the bar
+        function trayMenuPretend(json: string): void { topBar.trayMenu.testOpen(JSON.parse(json), topBar.width / 2, topBar.height); }
+        function settingsUnreachable(): string { return JSON.stringify(settingsLoader.item ? settingsLoader.item.testUnreachable() : null); }
         function settingsToggle(label: string): string { return settingsLoader.item && settingsLoader.item.testToggle(label) ? "pressed" : "none"; }
         // The open Settings page's own test hook, where it has one: testPretend(json), handing it
         // what it would otherwise find out (Webcam: the cameras)
@@ -569,6 +574,7 @@ ShellRoot {
                          // (what's keeping it busy, for a wait that never ends)
                          why: Config.iconsBusyWhy() },
                 picker: { open: picker.shown, mode: picker.mode },
+                trayMenu: { open: topBar.trayMenu.visible, depth: topBar.trayMenu.stack.length, hot: topBar.trayMenu.hot, chosen: topBar.trayMenu.testChosen },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
                 weather: { now: popouts.weather ? opt(popouts.weather.temperature_2m) : null, days: popouts.forecast ? popouts.forecast.time.length : 0 },
                 control: { switches: Config.controlSwitches, caffeine: Config.caffeine, missing: Config.controlSwitchMissing,

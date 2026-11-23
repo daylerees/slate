@@ -101,6 +101,12 @@ Column {
                         }
                         HoverHandler { id: dirHover }
                         ClickTap { onTapped: wallpaperPane.browseDir = parent.filePath }
+                        // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+                        activeFocusOnTab: visible && enabled
+                        Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { wallpaperPane.browseDir = filePath; e.accepted = true; } }
+                        Accessible.role: Accessible.Button
+                        Accessible.name: fileName
+                        FocusRing { round: 10 }
                     }
                 }
                 Text {

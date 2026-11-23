@@ -25,4 +25,10 @@ Rectangle {
     }
     HoverHandler { id: iconButtonHover }
     ClickTap { onTapped: iconButton.clicked() }
+    // By keyboard: a stop for Tab, Enter or Space presses it, with the ring while it has the keyboard
+    activeFocusOnTab: visible && enabled
+    Keys.onPressed: e => {
+        if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { iconButton.clicked(); e.accepted = true; }
+    }
+    FocusRing { round: 19 }
 }

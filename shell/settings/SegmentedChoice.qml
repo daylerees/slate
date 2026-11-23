@@ -63,6 +63,12 @@ Rectangle {
                     }
                 }
                 ClickTap { onTapped: choice.picked(opt.modelData.value) }
+                // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+                activeFocusOnTab: visible && enabled
+                Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { choice.picked(opt.modelData.value); e.accepted = true; } }
+                Accessible.role: Accessible.Button
+                Accessible.name: opt.modelData.label
+                FocusRing { round: 7 }
             }
         }
     }

@@ -211,6 +211,38 @@ FloatingWindow {
         for (const c of from.children) { const r = findOnPage(c, want); if (r) return r; }
         return null;
     }
+    // (the tests: everything on the page showing, and in the sidebar, that takes a click but
+    // can't take the keyboard, a line each saying what it is and where, as Popouts.unreachable
+    // does for the bar's panels. A click is a tap handler (ClickTap) or a mouse area (ClickArea);
+    // it's reached when it, or something it's inside, is a stop for Tab. Right-click-only ones
+    // are left to the row they're in)
+    function testUnreachable() {
+        const out = [];
+        const kind = o => {
+            const s = String(o);
+            return /^(ClickTap|QQuickTapHandler)/.test(s) ? "click" : /^(ClickArea|QQuickMouseArea)/.test(s) ? "area" : "";
+        };
+        const reached = it => {
+            for (let a = it; a; a = a.parent) if (a.activeFocusOnTab || (a.input && a.input.activeFocusOnTab)) return true;
+            return false;
+        };
+        const walk = it => {
+            for (const o of it.data || []) {
+                const k = kind(o);
+                if (k === "" || !o.enabled || o.keyboardExempt) continue;
+                if (k === "click" && o.acceptedButtons === Qt.RightButton) continue;
+                const owner = o.parent;
+                if (owner && owner.enabled && !reached(k === "area" ? o : owner)) {
+                    const p = owner.mapToItem(null, 0, 0);
+                    out.push((Config.textOf(owner) || String(owner).split("(")[0]) + " @" + Math.round(p.x) + "," + Math.round(p.y));
+                }
+            }
+            for (const c of it.children) if (c.visible) walk(c);
+        };
+        if (pageLoader.item) walk(pageLoader.item);
+        walk(sidebar);
+        return out;
+    }
     // (the tests: a button on the row with that label, pressed)
     function testButton(rowLabel, label) {
         const r = findOnPage(pageLoader.item, it => it.label === rowLabel && it.detail !== undefined);
@@ -627,7 +659,7 @@ FloatingWindow {
                                 Text { text: "Settings"; color: win.dim; font.family: win.font; font.pixelSize: Config.text(12) }
                             }
                         }
-                        MouseArea { anchors.fill: parent; onPressed: win.startSystemMove() }
+                        MouseArea { anchors.fill: parent; onPressed: win.startSystemMove(); property bool keyboardExempt: true }   // (moving the window: a drag)
                     }
                     Repeater {
                         model: win.sidebarSections
@@ -659,6 +691,16 @@ FloatingWindow {
                             }
                             HoverHandler { id: navHover }
                             ClickTap { onTapped: win.section = parent.modelData.id }
+                            // By keyboard and screen reader: a stop for Tab, Enter or Space opens the page
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.PageTab
+                            Accessible.name: modelData.label
+                            Accessible.selected: current
+                            Accessible.onPressAction: win.section = modelData.id
+                            Keys.onPressed: e => {
+                                if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { win.section = modelData.id; e.accepted = true; }
+                            }
+                            FocusRing { round: 9 }
                         }
                     }
                 }

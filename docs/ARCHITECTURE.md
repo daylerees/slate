@@ -41,8 +41,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │                       panels/Icon.qml, panels/Divider.qml, panels/Heading.qml,
 │                       panels/Slider.qml, panels/Switch.qml, panels/RowButton.qml,
 │                       panels/LinkRow.qml, panels/PanelTitle.qml, panels/PanelField.qml,
-│                       panels/ForecastDay.qml, panels/FocusRing.qml (the ring round a
-│                       control while it has the keyboard)
+│                       panels/ForecastDay.qml
 │                       and one file for each panel, loaded when it opens: panels/VolumePanel.qml,
 │                       panels/WifiPanel.qml, panels/KeyboardPanel.qml, panels/ClipboardPanel.qml,
 │                       panels/ScreenshotPanel.qml, panels/BluetoothPanel.qml,
@@ -97,6 +96,7 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ SoftwareUpdates.qml  the once-a-day look for app and system updates (software.py daily), and its notification
 ├─ TileDrawer.qml     draws an app's icon tile once when it's missing (AppTile, the menu bar, the dock)
 ├─ Dashes.qml         a dashed outline round its parent (the bar being arranged, the dock's drop gap)
+├─ FocusRing.qml      the ring round a control while it has the keyboard (the bar's panels, Settings, notifications)
 ├─ Spinner.qml        Slate's busy spinner (its loading icon turning), for everything that waits
 ├─ PrivateStore.qml   saves something personal (notifications' history, Nova's conversation) where only you can read it
 ├─ Packages.qml       an optional library's package by its name on this distro (scripts/packages.py), for messages saying what to install

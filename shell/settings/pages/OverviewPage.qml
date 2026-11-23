@@ -156,6 +156,16 @@ Column {
                             }
                             HoverHandler { id: tileHover }
                             ClickTap { onTapped: win.section = tile.modelData.id }
+                            // By keyboard and screen reader: a stop for Tab, Enter or Space opens the page
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.Button
+                            Accessible.name: modelData.label
+                            Accessible.description: modelData.about
+                            Accessible.onPressAction: win.section = modelData.id
+                            Keys.onPressed: e => {
+                                if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { win.section = tile.modelData.id; e.accepted = true; }
+                            }
+                            FocusRing { round: 12 }
                         }
                     }
                 }

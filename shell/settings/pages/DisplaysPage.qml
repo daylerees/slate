@@ -139,6 +139,12 @@ Column {
                     }
                     HoverHandler { cursorShape: arrange.live.length > 1 ? Qt.OpenHandCursor : Qt.ArrowCursor }
                     ClickTap { onTapped: displaysPane.selected = tile.modelData.name }
+                    // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+                    activeFocusOnTab: visible && enabled
+                    Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { displaysPane.selected = tile.modelData.name; e.accepted = true; } }
+                    Accessible.role: Accessible.Button
+                    Accessible.name: tile.modelData.name
+                    FocusRing { round: 8 }
                     DragHandler {
                         id: drag
                         enabled: arrange.live.length > 1

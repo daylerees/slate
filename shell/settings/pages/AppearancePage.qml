@@ -139,6 +139,10 @@ Column {
                             Behavior on scale { NumberAnimation { duration: Config.ms(100) } }
                             HoverHandler { id: swHover }
                             ClickTap { onTapped: Config.s.accent = parent.modelData }
+                            // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+                            activeFocusOnTab: visible && enabled
+                            Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { Config.s.accent = modelData; e.accepted = true; } }
+                            FocusRing { round: 12 }
                         }
                     }
                 }
@@ -160,6 +164,21 @@ Column {
                         id: hue
                         anchors.verticalCenter: parent.verticalCenter
                         width: 200; height: 24
+                        function setHue(h) {
+                            const c = Qt.hsla(Math.max(0, Math.min(0.999, h)), 0.65, 0.74, 1);
+                            const hex = v => ("0" + Math.round(v * 255).toString(16)).slice(-2);
+                            Config.s.accent = "#" + hex(c.r) + hex(c.g) + hex(c.b);
+                        }
+                        // By keyboard: a stop for Tab; Left and Right move round the colors
+                        activeFocusOnTab: visible
+                        Accessible.role: Accessible.Slider
+                        Accessible.name: "Accent hue"
+                        Keys.onPressed: e => {
+                            const h = Math.max(0, customRow.current.hslHue);
+                            if (e.key === Qt.Key_Right || e.key === Qt.Key_Up) { hue.setHue(h + 1 / 36); e.accepted = true; }
+                            else if (e.key === Qt.Key_Left || e.key === Qt.Key_Down) { hue.setHue(h - 1 / 36); e.accepted = true; }
+                        }
+                        FocusRing { round: 12 }
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width; height: 10; radius: Config.corner(5)
@@ -187,12 +206,7 @@ Column {
                             preventStealing: true
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor      // (a hand over it, as over what's clicked)
-                            function set(mx) {
-                                const h = Math.max(0, Math.min(0.999, mx / width));
-                                const c = Qt.hsla(h, 0.65, 0.74, 1);
-                                const hex = v => ("0" + Math.round(v * 255).toString(16)).slice(-2);
-                                Config.s.accent = "#" + hex(c.r) + hex(c.g) + hex(c.b);
-                            }
+                            function set(mx) { hue.setHue(mx / width); }
                             onPressed: m => set(m.x)
                             onPositionChanged: m => { if (pressed) set(m.x); }
                         }
@@ -410,6 +424,10 @@ Column {
                             }
                             HoverHandler { id: pillHover }
                             ClickTap { onTapped: shadowStage.light = parent.modelData.light }
+                            // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+                            activeFocusOnTab: visible && enabled
+                            Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { shadowStage.light = modelData.light; e.accepted = true; } }
+                            FocusRing { round: 8 }
                         }
                     }
                 }

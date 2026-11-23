@@ -78,4 +78,10 @@ Item {
     }
     HoverHandler { id: wallHover }
     ClickTap { onTapped: tile.picked() }
+    // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+    activeFocusOnTab: visible && enabled
+    Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { tile.picked(); e.accepted = true; } }
+    Accessible.role: Accessible.Button
+    Accessible.name: tile.title
+    FocusRing { round: 10 }
 }

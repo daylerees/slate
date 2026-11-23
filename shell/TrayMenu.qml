@@ -32,8 +32,18 @@ PanelWindow {
         function onCloseMenus() { if (tm.visible) tm.close(); }
         function onFocusedWorkspaceIdChanged() { if (tm.visible) tm.close(); }
     }
-    QsMenuOpener { id: opener; menu: tm.current }
-    readonly property var entries: opener.children ? opener.children.values : []
+    QsMenuOpener { id: opener; menu: tm.current && !tm.current.pretend ? tm.current : null }
+    readonly property var entries: tm.current && tm.current.pretend ? tm.current.rows : opener.children ? opener.children.values : []
+    // (the tests: a menu of pretend rows, as an app's would be ({ text, sep, rows: [submenu] }),
+    // and what was chosen from it, as the test computer has no app with a menu)
+    property string testChosen: ""
+    function testOpen(rows, x, y) {
+        const make = list => list.map(r => r.sep ? { isSeparator: true, enabled: true, hasChildren: false, text: "", icon: "", buttonType: QsMenuButtonType.None }
+            : { text: r.text, icon: "", enabled: r.enabled !== false, isSeparator: false, buttonType: QsMenuButtonType.None,
+                hasChildren: !!r.rows, pretend: true, rows: r.rows ? make(r.rows) : [], triggered: () => tm.testChosen = r.text });
+        testChosen = "";
+        openFor({ pretend: true, rows: make(rows) }, x, y);
+    }
     readonly property bool anyIcons: entries.some(e => e && !e.isSeparator && (String(e.icon) !== ""))
     readonly property bool anyChecks: entries.some(e => e && e.buttonType !== QsMenuButtonType.None)
 
@@ -48,16 +58,50 @@ PanelWindow {
 
     // Clicking anywhere else closes it
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onPressed: tm.close() }
-    Item {
-        focus: tm.visible
-        Keys.onEscapePressed: tm.stack.length > 1 ? tm.stack = tm.stack.slice(0, -1) : tm.close()
+    // By keyboard, as Slate's own menus (DesktopMenu.qml): Up and Down (or Tab) move along the
+    // rows, Enter or Space chooses (a submenu opens in its place, as a click does), Right opens
+    // one too, Left or Backspace goes back, Escape goes back or closes
+    property int hot: -1
+    onStackChanged: hot = -1
+    function usable(i) { const e = entries[i]; return !!e && !e.isSeparator && e.enabled; }
+    function nextFrom(i, step) {
+        for (let k = 1; k <= entries.length; k++) {
+            const j = ((i + step * k) % entries.length + entries.length) % entries.length;
+            if (usable(j)) return j;
+        }
+        return -1;
     }
+    function choose(i) {
+        if (!usable(i)) return;
+        const e = entries[i];
+        if (e.hasChildren) { stack = stack.concat([e]); return; }
+        e.triggered();
+        close();
+    }
+    function back() { if (stack.length > 1) stack = stack.slice(0, -1); else close(); }
+    function key(e) {
+        switch (e.key) {
+        case Qt.Key_Down: case Qt.Key_Tab: hot = nextFrom(hot < 0 ? -1 : hot, 1); break;
+        case Qt.Key_Up: case Qt.Key_Backtab: hot = nextFrom(hot < 0 ? 0 : hot, -1); break;
+        case Qt.Key_Home: hot = nextFrom(-1, 1); break;
+        case Qt.Key_End: hot = nextFrom(0, -1); break;
+        case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space: choose(hot); break;
+        case Qt.Key_Right: if (usable(hot) && entries[hot].hasChildren) choose(hot); break;
+        case Qt.Key_Left: case Qt.Key_Backspace: if (stack.length > 1) back(); break;
+        case Qt.Key_Escape: back(); break;
+        default: return;
+        }
+        e.accepted = true;
+    }
+    Item { focus: tm.visible; Keys.onPressed: e => tm.key(e) }
 
     // Look: the menu bar's colors, as Slate's own menus (DesktopMenu.qml) have
     readonly property color bgColor: bar.barColor
     readonly property color rowHover: bar.capsuleColor
     readonly property color textColor: bar.textColor
     readonly property color dimColor: Config.tint("#8b94a3")
+    // (the lines between groups: faint, as DesktopMenu's, so they read over glass too)
+    readonly property color sepColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.1)
 
     Rectangle {
         id: menuBox
@@ -128,7 +172,7 @@ PanelWindow {
                 Rectangle {
                     visible: tm.stack.length > 1
                     width: menuCol.width - 16; x: 8; height: visible ? 1 : 0
-                    color: tm.rowHover
+                    color: tm.sepColor
                 }
 
                 Repeater {
@@ -136,6 +180,11 @@ PanelWindow {
                     delegate: Item {
                         id: entryRow
                         required property var modelData
+                        required property int index
+                        // (a screen reader: a menu item, by its words, pressed as a click does)
+                        Accessible.role: sep ? Accessible.Separator : Accessible.MenuItem
+                        Accessible.name: rowText.text
+                        Accessible.onPressAction: tm.choose(index)
                         readonly property var e: modelData
                         readonly property bool sep: !!e && e.isSeparator
                         readonly property bool checkable: !!e && e.buttonType !== QsMenuButtonType.None
@@ -146,14 +195,15 @@ PanelWindow {
                             visible: entryRow.sep
                             anchors.centerIn: parent
                             width: parent.width - 16; height: 1
-                            color: tm.rowHover
+                            color: tm.sepColor
                         }
                         Rectangle {
                             visible: !entryRow.sep
                             anchors.fill: parent
                             radius: Config.corner(7)
                             // Under the pointer: the muted hover, flat (the accent is for what stays selected)
-                            color: entryHover.hovered && !!entryRow.e && entryRow.e.enabled ? Config.hover : "transparent"
+                            // (and the row the keys are on)
+                            color: (entryHover.hovered || tm.hot === entryRow.index) && !!entryRow.e && entryRow.e.enabled ? Config.hover : "transparent"
                             // Tick for a checked checkbox or radio item
                             Text {
                                 visible: entryRow.checked
@@ -195,13 +245,7 @@ PanelWindow {
                             HoverHandler { id: entryHover }
                             ClickTap {
                                 hand: false              // (menus keep the arrow)
-                                onTapped: {
-                                    const e = entryRow.e;
-                                    if (!e || !e.enabled) return;
-                                    if (e.hasChildren) { tm.stack = tm.stack.concat([e]); return; }
-                                    e.triggered();
-                                    tm.close();
-                                }
+                                onTapped: tm.choose(entryRow.index)
                             }
                         }
                     }

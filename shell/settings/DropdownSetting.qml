@@ -97,6 +97,24 @@ Item {
         }
         HoverHandler { id: ddHover }
         ClickTap { onTapped: { if (!win.drop.reopening(dropdown)) win.drop.owner = ddButton.open ? null : dropdown; } }
+        // By keyboard: a stop for Tab; Enter or Space opens the list (a searchable one with its
+        // search box ready), Up and Down step to the choice before or after without opening it
+        activeFocusOnTab: visible && dropdown.enabled
+        Accessible.role: Accessible.ComboBox
+        Accessible.name: dropdown.label
+        Accessible.description: dropdown.current ? String(dropdown.current.label || "") : ""
+        Accessible.onPressAction: win.drop.owner = dropdown
+        Keys.onPressed: e => {
+            if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { win.drop.owner = ddButton.open ? null : dropdown; e.accepted = true; }
+            else if (e.key === Qt.Key_Down || e.key === Qt.Key_Up) {
+                const opts = dropdown.options || [];
+                const i = opts.findIndex(o => o.value === dropdown.value);
+                const j = Math.max(0, Math.min(opts.length - 1, i + (e.key === Qt.Key_Down ? 1 : -1)));
+                if (opts[j] && j !== i) dropdown.picked(opts[j].value);
+                e.accepted = true;
+            }
+        }
+        FocusRing { round: 10 }
       }
     }
 }

@@ -40,4 +40,10 @@ Rectangle {
     }
     HoverHandler { id: btnHover }
     ClickTap { onTapped: btn.clicked() }
+    // By keyboard: a stop for Tab, Enter or Space presses it, with the ring while it has the keyboard
+    activeFocusOnTab: visible && enabled
+    Keys.onPressed: e => {
+        if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { btn.clicked(); e.accepted = true; }
+    }
+    FocusRing { round: 10 }
 }

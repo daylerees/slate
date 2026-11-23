@@ -63,4 +63,11 @@ Rectangle {
         Behavior on x { NumberAnimation { duration: Config.ms(sw.knobMs); easing.type: sw.knobEasing } }
     }
     ClickTap { enabled: !sw.plain; onTapped: sw.toggled(!sw.checked) }
+    // By keyboard (on its own, not plain: then its row is what's pressed): a stop for Tab, Space
+    // or Enter switches it, with the ring while it has the keyboard
+    activeFocusOnTab: visible && enabled && !plain
+    Keys.onPressed: e => {
+        if (!sw.plain && (e.key === Qt.Key_Space || e.key === Qt.Key_Return || e.key === Qt.Key_Enter)) { sw.toggled(!sw.checked); e.accepted = true; }
+    }
+    FocusRing { visible: sw.activeFocus && !sw.plain; round: sw.height / 2 + 2 }
 }

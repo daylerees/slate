@@ -95,6 +95,12 @@ Item {
             }
             HoverHandler { id: needsHover }
             ClickTap { enabled: needsLine.linked; onTapped: win.goTo(settingRow.needsPage, settingRow.needsLabel) }
+            // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+            activeFocusOnTab: visible && needsLine.linked
+            Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { win.goTo(settingRow.needsPage, settingRow.needsLabel); e.accepted = true; } }
+            Accessible.role: Accessible.Button
+            Accessible.name: settingRow.needs
+            FocusRing { round: 6 }
         }
         Row {
             id: belowSlot
@@ -130,6 +136,12 @@ Item {
         // Easier to point at than it looks: it reacts 10 px all round
         HoverHandler { id: dotHover; margin: 10; cursorShape: Qt.PointingHandCursor }
         ClickTap { margin: 10; onTapped: Config.resetKeys([settingRow.settingKey]) }
+        // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+        activeFocusOnTab: visible && enabled
+        Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { Config.resetKeys([settingRow.settingKey]); e.accepted = true; } }
+        Accessible.role: Accessible.Button
+        Accessible.name: "Back to the default: " + settingRow.defaultShown
+        FocusRing { round: 8 }
     }
     // (Slate's tooltip, Tooltip.qml; solid, as it lies over the page rather than the desktop)
     Tooltip {

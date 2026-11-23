@@ -175,6 +175,12 @@ Column {
                     }
                     HoverHandler { id: shapeHover }
                     ClickTap { onTapped: Config.s.iconShape = shapeCard.modelData.value }
+                    // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+                    activeFocusOnTab: visible && enabled
+                    Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { Config.s.iconShape = shapeCard.modelData.value; e.accepted = true; } }
+                    Accessible.role: Accessible.Button
+                    Accessible.name: shapeCard.modelData.label
+                    FocusRing { round: 10 }
                 }
             }
         }

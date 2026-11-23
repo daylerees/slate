@@ -22,14 +22,36 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         width: 56
         horizontalAlignment: Text.AlignRight
-        text: valueSlider.zeroText !== "" && valueSlider.value <= valueSlider.from ? valueSlider.zeroText : valueSlider.value.toFixed(valueSlider.decimals) + valueSlider.suffix
+        text: valueSlider.shown
         color: win.dim
         font.family: win.font; font.pixelSize: Config.text(12)
+    }
+    // (a screen reader: a slider, named for its row, with its value as it shows it)
+    readonly property string rowLabel: {
+        for (let p = parent; p; p = p.parent) if (p.settingKey !== undefined && p.label !== undefined) return p.label;
+        return "";
+    }
+    readonly property string shown: zeroText !== "" && value <= from ? zeroText : value.toFixed(decimals) + suffix
+    function step(by) {
+        const v = Math.max(from, Math.min(to, Math.round((value + by * stepSize) / stepSize) * stepSize));
+        if (v !== value) { moved(v); released(); }
     }
     Item {
         width: 200; height: 24
         readonly property real frac: (valueSlider.value - valueSlider.from) / (valueSlider.to - valueSlider.from)
         id: sliderBox
+        Accessible.role: Accessible.Slider
+        Accessible.name: valueSlider.rowLabel
+        Accessible.description: valueSlider.shown
+        Accessible.onIncreaseAction: valueSlider.step(1)
+        Accessible.onDecreaseAction: valueSlider.step(-1)
+        // By keyboard: a stop for Tab, Left and Right (or Down and Up) a step each way
+        activeFocusOnTab: valueSlider.visible && valueSlider.enabled
+        Keys.onPressed: e => {
+            if (e.key === Qt.Key_Right || e.key === Qt.Key_Up) { valueSlider.step(1); e.accepted = true; }
+            else if (e.key === Qt.Key_Left || e.key === Qt.Key_Down) { valueSlider.step(-1); e.accepted = true; }
+        }
+        FocusRing { round: 12 }
         readonly property bool hot: sliderMouse.containsMouse || sliderMouse.pressed
         Rectangle {
             id: trk

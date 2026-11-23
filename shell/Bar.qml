@@ -436,6 +436,7 @@ PanelWindow {
 
     // App tray menus (TrayMenu.qml), opened from a tray icon at its centre on the bar's inner edge
     TrayMenu { id: trayMenuWin; bar: bar }
+    readonly property alias trayMenu: trayMenuWin      // (the tests)
     // Where a menu opened from one of the bar's items points from: the item's centre on the
     // screen, moved out to the bar's inner edge, where the menu's pointer meets it
     function menuAnchor(item) {

@@ -10,6 +10,16 @@ Rectangle {
     property string edge: "top"
     property color accent: Config.accent
     signal picked(string edge)
+    // By keyboard: a stop for Tab; the arrow keys pick the edge they point to (the bar's: any; the
+    // dock's: not the bar's, which picked() is left to refuse as a click on it is)
+    activeFocusOnTab: visible && enabled
+    Accessible.role: Accessible.RadioButton
+    Accessible.name: (bar ? "Menu bar position: " : "Dock position: ") + edge
+    Keys.onPressed: e => {
+        const to = ({ [Qt.Key_Up]: "top", [Qt.Key_Down]: "bottom", [Qt.Key_Left]: "left", [Qt.Key_Right]: "right" })[e.key];
+        if (to) { if (to !== edge) { Config.click(); picked(to); } e.accepted = true; }
+    }
+    FocusRing { round: 12 }
 
     width: 168; height: 104; radius: Config.corner(10)
     color: Config.tint("#151920")

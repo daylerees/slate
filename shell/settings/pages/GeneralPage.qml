@@ -41,6 +41,12 @@ Column {
                 }
                 HoverHandler { id: acctHover }
                 ClickTap { onTapped: win.avatarPicking = true }
+                // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+                activeFocusOnTab: visible && enabled
+                Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { win.avatarPicking = true; e.accepted = true; } }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Change your picture"
+                FocusRing { round: 40 }
             }
             Column {
                 anchors { left: acctPic.right; leftMargin: 14; right: acctButtons.left; rightMargin: 16; verticalCenter: parent.verticalCenter }
@@ -191,7 +197,7 @@ Column {
                         color: win.popupFill
                         border.width: 1; border.color: win.outline
                         Shadow {}       // Slate's one shadow, as under every other menu
-                        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true }   // the page under it stays put
+                        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: w => w.accepted = true; property bool keyboardExempt: true }   // the page under it stays put
                         Column {
                             id: locPopCol
                             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 4 }
@@ -234,7 +240,8 @@ Column {
                                         }
                                     }
                                     HoverHandler { id: placeHover }
-                                    ClickArea { anchors.fill: parent; onClicked: loc.choose(placeRow.modelData) }
+                                    // (by keyboard: Up, Down and Enter in the search box above)
+                                    ClickArea { anchors.fill: parent; onClicked: loc.choose(placeRow.modelData); property bool keyboardExempt: true }
                                 }
                             }
                         }

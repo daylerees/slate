@@ -384,10 +384,20 @@ class TabBetweenBoxes(LiveCase):
         self.wait(lambda st: st["settings"]["open"] and st["settings"]["section"] == "general", "Settings on General")
         self.ipc("settings", "search", "")          # (the search box takes the keyboard)
         self.focus_is("pageFind", "the search box with the keyboard")
-        self.ipc("test", "settingsTab", "true")
-        self.focus_is("locationSearch", "Tab to the page's own box")
-        self.ipc("test", "settingsTab", "false")
-        self.focus_is("pageFind", "Shift+Tab back to the search box")
+        # Tab on through the page's controls (each one takes the keyboard now: the back button, your
+        # picture…) to its own box, then Shift+Tab the same steps back to the search box
+        import time
+        steps = 0
+        while self.s.state()["settings"]["focusedBox"] != "locationSearch":
+            self.assertLess(steps, 8, "Tab didn't reach the page's own box")
+            self.ipc("test", "settingsTab", "true")
+            steps += 1
+            time.sleep(0.25)
+        self.assertGreater(steps, 0)
+        for _ in range(steps):
+            self.ipc("test", "settingsTab", "false")
+            time.sleep(0.25)
+        self.focus_is("pageFind", "Shift+Tab back to the search box, the same steps")
 
 
 class UpdatesPage(LiveCase):

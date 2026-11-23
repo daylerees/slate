@@ -147,7 +147,7 @@ Rectangle {
         e.accepted = true;
     }
     Accessible.onPressAction: card.activated()
-    Panel.FocusRing { round: 9 }
+    FocusRing { round: 9 }
 
     // Refresh "2 min ago" text
     property int tick: 0
@@ -298,7 +298,7 @@ Rectangle {
                         card.closed();
                         e.accepted = true;
                     }
-                    Panel.FocusRing { round: 5 }
+                    FocusRing { round: 5 }
                 }
             }
             Text {
@@ -372,7 +372,7 @@ Rectangle {
                             card.action(modelData.identifier);
                             e.accepted = true;
                         }
-                        Panel.FocusRing { round: 8 }
+                        FocusRing { round: 8 }
                     }
                 }
             }

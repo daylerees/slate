@@ -54,6 +54,12 @@ Column {
                 Text { id: optText; anchors.centerIn: parent; text: parent.modelData.label; color: parent.on ? win.accentText : win.text; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
                 HoverHandler { id: optHover }
                 ClickTap { onTapped: { choiceSetting.picked(parent.modelData.value); choiceSetting.open = false; } }
+                // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+                activeFocusOnTab: visible && enabled
+                Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { choiceSetting.picked(modelData.value); choiceSetting.open = false; e.accepted = true; } }
+                Accessible.role: Accessible.Button
+                Accessible.name: modelData.label
+                FocusRing { round: 8 }
             }
         }
     }

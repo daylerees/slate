@@ -44,6 +44,7 @@ Item {
     }
     MouseArea {
         id: drag
+        property bool keyboardExempt: true      // (a drag: the keyboard scrolls the page itself)
         anchors { fill: parent; leftMargin: -sb.reach; rightMargin: -sb.reach }
         HoverHandler { id: hover }
         preventStealing: true           // keep the drag once started, even if the pointer drifts off

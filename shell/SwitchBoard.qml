@@ -267,6 +267,7 @@ Item {
             }
             MouseArea {
                 id: grab
+                property bool keyboardExempt: true      // (arranging by dragging; the switches are listed in order on the page too)
                 anchors.fill: parent
                 hoverEnabled: true
                 preventStealing: true          // (the page scrolls: the drag stays ours once begun)

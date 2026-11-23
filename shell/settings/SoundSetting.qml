@@ -28,6 +28,12 @@ SettingRow {
             }
             HoverHandler { id: playHover; cursorShape: soundSetting.audible ? Qt.PointingHandCursor : Qt.ArrowCursor }
             TapHandler { enabled: soundSetting.audible; onTapped: Config.playSound(soundSetting.sample, soundSetting.which) }
+            // By keyboard: a stop for Tab, Enter or Space plays it
+            activeFocusOnTab: visible && soundSetting.audible
+            Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { Config.playSound(soundSetting.sample, soundSetting.which); e.accepted = true; } }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Play " + soundSetting.label
+            FocusRing { round: 14 }
         }
         ValueSlider {
             anchors.verticalCenter: parent.verticalCenter

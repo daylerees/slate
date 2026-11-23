@@ -90,6 +90,10 @@ Rectangle {
             }
             HoverHandler { id: cornerHover }
             ClickTap { onTapped: hp.picked(corner.modelData.key) }
+            // By keyboard: a stop for Tab, Enter or Space does what a click does, with the ring while it has the keyboard
+            activeFocusOnTab: visible && enabled
+            Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { hp.picked(corner.modelData.key); e.accepted = true; } }
+            FocusRing { round: 10 }
         }
     }
 
