@@ -1169,18 +1169,11 @@ Scope {
     }
     readonly property bool detectRunning: detect.running
     function openSettings(page) { closeWindow(); Config.slateCall("settings", "page", page || "assistant"); }
-    // Lua for the command line that runs `argsLua` (a Lua string expression) in the default
-    // terminal. Which flag a terminal wants (-e, --, start --...) is the session's one table,
-    // TERMINAL_RUN (variables.lua); a Hyprland config without it gets -e
-    function inTerminalLua(argsLua) {
-        return "(TERMINAL_RUN or function(a) return (TERMINAL or 'kitty') .. ' -e ' .. a end)(" + argsLua + ")";
-    }
     // Sign in: the agent's own command, in your terminal
     function signIn() {
         closeWindow();
         const cmd = root.agent && root.agent.signIn ? root.agent.signIn : "claude";
-        Quickshell.execDetached(["hyprctl", "dispatch",
-            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. ${inTerminalLua(Config.luaString(cmd.replace(/[^\w. -]/g, "")))}) end`]);
+        Config.runInTerminal(cmd.replace(/[^\w. -]/g, ""));
     }
 
     // A paragraph, heading or list item of an answer: its runs as Slate's own markup (rich():

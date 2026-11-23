@@ -61,8 +61,9 @@ Column {
     readonly property var chosen: inUse === "" || inUse === "custom" ? null : (agents.find(a => a.id === inUse) || null)
     function signIn(cmd) {
         // (the agent's own words, from scripts/slate_agents.py: letters, dots, dashes and spaces)
-        Quickshell.execDetached(["hyprctl", "dispatch",
-            `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. TERMINAL .. " -e ${String(cmd).replace(/[^\w. -]/g, "")}") end`]);
+        // In your terminal, as Nova's Sign in does (Config.runInTerminal: the flag your terminal
+        // wants, which isn't always -e)
+        Config.runInTerminal(String(cmd).replace(/[^\w. -]/g, ""));
     }
     // ---- Set up Ollama (scripts/ollama-setup.py): its package and service, with an
     // administrator's password (slate-system --ollama), then a model that can use Slate's tools,

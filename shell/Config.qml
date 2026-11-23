@@ -909,6 +909,20 @@ Singleton {
             c === "\\" || c === quote ? "\\" + c : "\\" + ("00" + c.charCodeAt(0)).slice(-3)) + quote;
     }
 
+    // Lua for the command line that runs `argsLua` (a Lua string expression) in the default
+    // terminal. Which flag a terminal wants (-e, --, start --...) is the session's one table,
+    // TERMINAL_RUN (variables.lua; scripts/spaces.py writes the same); a Hyprland config
+    // without it gets -e
+    function inTerminalLua(argsLua) {
+        return "(TERMINAL_RUN or function(a) return (TERMINAL or 'kitty') .. ' -e ' .. a end)(" + argsLua + ")";
+    }
+    // Runs a command line in the default terminal, as an app of its own (through uwsm, where the
+    // session uses it): Nova's and Settings' Sign in
+    function runInTerminal(cmd) {
+        const lua = `function() hl.exec_cmd((os.getenv("UWSM_FINALIZE_VARNAMES") and "uwsm app -- " or "") .. ${inTerminalLua(luaString(cmd))}) end`;
+        Quickshell.execDetached(["hyprctl", "dispatch", lua]);
+    }
+
     // ---- App icon tint: 0 (off) to 1 (fully in the accent colour); see IconTint.qml
     readonly property real iconTint: s.tintIcons ? Math.max(0, Math.min(100, s.iconTintStrength)) / 100 : 0
 

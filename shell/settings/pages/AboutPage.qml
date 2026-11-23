@@ -181,7 +181,8 @@ Column {
         SettingRow {
             label: "Settings file"
             detail: "settings.json in ~/.config/slate"
-            Button { label: "Open file"; onClicked: Quickshell.execDetached(["xdg-open", Qt.resolvedUrl("settings.json").toString()]) }
+            // (yours, in your Slate folder; xdg-open takes no "--", and the path starts with "/")
+            Button { label: "Open file"; onClicked: Quickshell.execDetached(["xdg-open", Config.userDir + "/settings.json"]) }
         }
         Separator {}
         SettingRow {

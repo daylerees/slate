@@ -76,3 +76,28 @@ class Shared(Case):
                     self.assertIn(shared, src, f"{name} should use {shared}")
                 self.assertNotIn("component DialogButton", src)
                 self.assertNotIn("width: 56; height: 56", src)
+
+    def test_one_way_to_run_in_a_terminal(self):
+        """Running something in your terminal goes through Config.inTerminalLua / runInTerminal,
+        which use the session's TERMINAL_RUN (the flag each terminal wants). Settings → Assistant's
+        Sign in built `TERMINAL .. " -e …"` by hand, which WezTerm, GNOME Terminal, Ptyxis and Xfce
+        Terminal don't take (a bug)."""
+        # (every QML file, Settings' pages and the login screen's included)
+        names = sorted(os.path.relpath(os.path.join(d, f), SHELL) for d, _, fs in os.walk(SHELL) for f in fs if f.endswith(".qml"))
+        self.assertIn("settings/pages/AssistantPage.qml", names)
+        for name in names:
+            if name == "Config.qml":
+                continue
+            with self.subTest(name):
+                src = slate.read("shell", name)
+                self.assertNotIn("TERMINAL_RUN or", src, f"{name} builds its own terminal line: use Config.inTerminalLua")
+                self.assertNotRegex(src, r"TERMINAL \.\. .\s*-e", f"{name} runs the terminal with -e by hand: use Config.runInTerminal")
+        self.assertIn("Config.runInTerminal(", slate.read("shell", "settings", "pages", "AssistantPage.qml"))
+        self.assertIn("Config.runInTerminal(", slate.read("shell", "Assistant.qml"))
+
+    def test_about_opens_your_settings_file(self):
+        """About → Settings file → Open file opened a settings.json next to the page's own file,
+        which isn't there (a bug): it's yours, in your Slate folder."""
+        src = slate.read("shell", "settings", "pages", "AboutPage.qml")
+        line = next(l for l in src.split("\n") if 'label: "Open file"' in l)
+        self.assertIn('Config.userDir + "/settings.json"', line)
