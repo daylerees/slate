@@ -1,10 +1,7 @@
 import QtQuick
-import QtQuick.Effects
-import Quickshell
 import Quickshell.Io
 import ".."
 
-// ---- Building blocks ---------------------------------------------------
 // A process a page runs to see how things stand (its status rows wait on it): counted
 // while it runs, so the tests take their picture once the rows are there (win.checking)
 Process {

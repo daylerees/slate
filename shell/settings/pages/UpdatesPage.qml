@@ -1,13 +1,5 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
-import Quickshell.Io
-import Quickshell.Hyprland
-import Quickshell.Bluetooth
-import Quickshell.Networking
-import Quickshell.Services.Pipewire
-import Quickshell.Services.UPower
-import Qt.labs.folderlistmodel
 import "../../NotificationText.js" as NotificationText
 import "../.."
 import ".."

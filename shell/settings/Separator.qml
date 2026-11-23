@@ -1,7 +1,4 @@
 import QtQuick
-import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import ".."
 
 // (with glass the cards are see-through, and the solid divider grey all but vanished on them:

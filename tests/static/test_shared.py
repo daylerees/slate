@@ -1,6 +1,7 @@
 """Things Slate draws or works out in one place for every window: if a file starts doing it
 its own way again, the copies drift apart (they did, once)."""
 import os
+import re
 
 import slate
 from slate import Case
@@ -101,3 +102,24 @@ class Shared(Case):
         src = slate.read("shell", "settings", "pages", "AboutPage.qml")
         line = next(l for l in src.split("\n") if 'label: "Open file"' in l)
         self.assertIn('Config.userDir + "/settings.json"', line)
+
+
+class Migrations(Case):
+    def test_each_says_until_when_and_is_gone_by_then(self):
+        """Code that reads settings in an older form says until when it's kept ("Migration, kept
+        until YYYY-MM"), and is taken out once that's passed: this fails then, as the reminder."""
+        import datetime
+        today = datetime.date.today().strftime("%Y-%m")
+        found, late = 0, []
+        for root, _, files in os.walk(SHELL):
+            for f in files:
+                if not f.endswith((".qml", ".lua", ".py", ".sh")):
+                    continue
+                path = os.path.join(root, f)
+                for n, line in enumerate(open(path, encoding="utf-8", errors="replace"), 1):
+                    for until in re.findall(r"Migration, kept until (\d{4}-\d{2})", line):
+                        found += 1
+                        if until < today:
+                            late.append(f"{os.path.relpath(path, SHELL)}:{n} (until {until})")
+        self.assertGreater(found, 0)
+        self.assertEqual(late, [], "these migrations are past their date: take them out")

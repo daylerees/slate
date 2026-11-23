@@ -112,7 +112,7 @@ Column {
             anchors { left: avatar.right; leftMargin: 14; verticalCenter: parent.verticalCenter; right: ccButtons.left; rightMargin: 8 }
             spacing: 2
             Label { width: parent.width; text: pop.fullName; font.pixelSize: Config.text(16) }
-            Label { width: parent.width; text: Quickshell.env("USER") + "@" + hostFile.text().trim(); color: pop.dim; font.pixelSize: Config.text(12) }
+            Label { width: parent.width; text: Quickshell.env("USER") + "@" + pop.hostFile.text().trim(); color: pop.dim; font.pixelSize: Config.text(12) }
             Label { width: parent.width; text: pop.uptimeText() + (pop.hyprVersion ? " · Hyprland " + pop.hyprVersion : ""); color: pop.dim; font.pixelSize: Config.text(12) }
         }
         Row {
@@ -285,7 +285,7 @@ Column {
                 wifi: { label: Networking.wifiEnabled ? "Wi-Fi" : "Wi-Fi off", on: Networking.wifiEnabled, code: Networking.wifiEnabled ? 0xEB52 : 0xECFA },
                 bt: { label: "Bluetooth", on: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false, code: 0xEA37 },
                 caffeine: { label: "Caffeine", on: Config.caffeine, code: 0xEF0E },
-                night: { label: "Night Light", on: pop.nightLight, code: 0xEAF8 },
+                night: { label: "Night Light", on: Config.s.nightLight, code: 0xEAF8 },
                 dnd: { label: "Do Not Disturb", on: pop.notifs ? pop.notifs.quiet : false, code: 0xECE9 },
                 perf: { label: "Performance", on: PowerProfiles.profile === PowerProfile.Performance, code: 0xEC45 },
                 airplane: { label: "Airplane Mode", on: Config.s.airplaneMode, code: 0xEB6F },

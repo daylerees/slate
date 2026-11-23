@@ -1514,39 +1514,39 @@ PanelWindow {
             // Workspaces: grey/white dots, plus an accent marker that glides between them
             // (WorkspaceMarker).
             // (two things on the bar: the window mode's icon, and the dots)
-                  Segment {
-                    id: wsMode
-                    // (with the dots, as it always was: no dots, no icon)
-                    wanted: Config.s.barShowWindowMode && Config.s.barShowWorkspaces
-                    readonly property var mode: Config.windowModes.find(m => m.value === Config.focusedMode) ?? Config.windowModes[0]
-                    iconCode: mode.icon
-                    // (its drawn part 13 px tall, as the Slate mark, Apps and Spaces beside it:
-                    // each mode's icon fills a different share of its height)
-                    iconSize: 13 / (mode.ink || 0.75)
-                    // Closer in than a status icon: its glyph is drawn larger to match its
-                    // neighbours' height, so it carries blank space of its own at the sides
-                    pad: 12
-                    // A green pastel in the Colourful look; otherwise the bar's text colour, like
-                    // every other icon on it. Its own mode or the default alike (the panel says
-                    // which)
-                    tint: Config.statusColour("windowmode", bar.textColor)
-                    tipText: "Window mode: " + mode.label
-                    onClicked: bar.openPopout("windowmode", wsMode)
-                  }
-                  // The dots (each with its own hover highlight, behind it)
-                  Segment {
-                    id: wsCap
-                    wanted: Config.s.barShowWorkspaces
-                    hover: false
-                    readonly property real dot: 14
-                    readonly property real dotGap: 5
-                    readonly property var spaces: Config.workspaceList
-                    readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Config.sameWorkspace(w, Hyprland.focusedWorkspace)))
-                    length: (bar.vert ? wsRow.height : wsRow.width) + 16
-                    // The label says which workspace the dot under the pointer is, as the
-                    // overview calls it, under that dot
-                    tip: wsRow.litDot >= 0 && wsRow.spaces[wsRow.litDot] ? Config.workspaceLabelOf(wsRow.spaces[wsRow.litDot]) : ""
-                    tipAt: wsRow.litDot >= 0 ? wsRow.dotItem(wsRow.litDot) : null
+            Segment {
+                id: wsMode
+                // (with the dots, as it always was: no dots, no icon)
+                wanted: Config.s.barShowWindowMode && Config.s.barShowWorkspaces
+                readonly property var mode: Config.windowModes.find(m => m.value === Config.focusedMode) ?? Config.windowModes[0]
+                iconCode: mode.icon
+                // (its drawn part 13 px tall, as the Slate mark, Apps and Spaces beside it:
+                // each mode's icon fills a different share of its height)
+                iconSize: 13 / (mode.ink || 0.75)
+                // Closer in than a status icon: its glyph is drawn larger to match its
+                // neighbours' height, so it carries blank space of its own at the sides
+                pad: 12
+                // A green pastel in the Colourful look; otherwise the bar's text colour, like
+                // every other icon on it. Its own mode or the default alike (the panel says
+                // which)
+                tint: Config.statusColour("windowmode", bar.textColor)
+                tipText: "Window mode: " + mode.label
+                onClicked: bar.openPopout("windowmode", wsMode)
+            }
+            // The dots (each with its own hover highlight, behind it)
+            Segment {
+                id: wsCap
+                wanted: Config.s.barShowWorkspaces
+                hover: false
+                readonly property real dot: 14
+                readonly property real dotGap: 5
+                readonly property var spaces: Config.workspaceList
+                readonly property int activeIndex: Math.max(0, spaces.findIndex(w => Config.sameWorkspace(w, Hyprland.focusedWorkspace)))
+                length: (bar.vert ? wsRow.height : wsRow.width) + 16
+                // The label says which workspace the dot under the pointer is, as the
+                // overview calls it, under that dot
+                tip: wsRow.litDot >= 0 && wsRow.spaces[wsRow.litDot] ? Config.workspaceLabelOf(wsRow.spaces[wsRow.litDot]) : ""
+                tipAt: wsRow.litDot >= 0 ? wsRow.dotItem(wsRow.litDot) : null
                 // The dots and the accent marker, six at most: with more workspaces, the row
                 // scrolls to keep yours in view, and shrinks away at an end with more beyond
                 // (WorkspaceDots)
@@ -1698,179 +1698,179 @@ PanelWindow {
             // The status icons: notifications, clipboard, screenshot, game mode, keyboard,
             // Bluetooth, volume, Wi-Fi, battery. Each a thing of its own on the bar; in Slate's
             // own arrangement they share one container
-                    // Notifications: crossed-out bell during Do Not Disturb, unread count beside it
-                    Segment {
-                        id: bellBtn
-                        wanted: Config.s.barShowNotifications
-                        pastel: "notifications"            // its colour when the look is Colourful
-                        iconCode: bar.notifs && bar.notifs.quiet ? 0xECE9 : 0xEA35
-                        // Unread count beside the bell (hidden during Do Not Disturb)
-                        sample: "50"
-                        label: bar.notifs && bar.notifs.unread > 0 && !bar.notifs.quiet
-                            ? (bar.notifs.unread > 99 ? "99+" : String(bar.notifs.unread)) : ""
-                        tipText: !bar.notifs ? "" : bar.notifs.quiet ? "Notifications: Do Not Disturb is on" + (bar.notifs.quietWhy ? " " + bar.notifs.quietWhy : "")
-                            : bar.notifs.unread === 1 ? "1 new notification" : bar.notifs.unread > 1 ? bar.notifs.unread + " new notifications" : ""
-                        onClicked: bar.openPopout("notifications", bellBtn)
-                    }
-                    // Clipboard history: how many items it holds; click for the list
-                    Segment {
-                        id: clipSeg
-                        wanted: Config.s.barShowClipboard
-                        pastel: "clipboard"            // its colour when the look is Colourful
-                        iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
-                        sample: "12"; textOn: Config.s.barValueClipboard
-                        label: Config.s.barValueClipboard && Config.s.clipboardHistory && Config.clipCount > 0 ? String(Config.clipCount) : ""
-                        tipText: !Config.s.clipboardHistory ? "Clipboard history is off" : Config.clipCount === 1 ? "Clipboard: 1 item"
-                            : Config.clipCount > 1 ? "Clipboard: " + Config.clipCount + " items" : "Clipboard: empty"
-                        onClicked: bar.openPopout("clipboard", clipSeg)
-                    }
-                    // Screenshots: click for area / window / screen. While the screen's being
-                    // recorded it's the recording's indicator (shown even when it's turned off):
-                    // a red dot and how long it's been; a click stops it
-                    Segment {
-                        id: shotSeg
-                        wanted: Config.s.barShowScreenshot || Config.recording
-                        pastel: Config.recording ? "" : "screenshot"     // its colour when the look is Colourful
-                        iconCode: Config.recording ? 0xF692 : 0xF201
-                        tint: Config.recording ? Config.tint("#f28b8b") : bar.textColor
-                        label: Config.recording ? Config.recordingTime() : ""
-                        tipText: Config.recording ? "Recording the screen: click to stop" : ""
-                        onClicked: Config.recording ? Quickshell.execDetached([Quickshell.shellPath("scripts/record.sh"), "stop"])
-                            : bar.openPopout("screenshot", shotSeg)
-                    }
-                    // The camera: an open eye, lit, while an app is using it (Config.cameraOn); a
-                    // closed one otherwise. Only shows: nothing to click
-                    Segment {
-                        id: camSeg
-                        wanted: Config.s.barShowCamera
-                        pastel: "camera"              // its colour when the look is Colourful
-                        iconCode: Config.cameraOn ? 0xEA9A : 0xECF0
-                        tint: Config.cameraOn ? bar.accent : bar.textColor
-                        tipText: Config.cameraOn ? "Your camera is in use" : "Camera: not in use"
-                        clickable: false
-                    }
-                    // Game mode: On or Off beside it, lit while it's on; click for the panel to turn it on or off
-                    Segment {
-                        id: gameSeg
-                        wanted: Config.s.barShowGameMode
-                        pastel: "gamemode"            // its colour when the look is Colourful
-                        iconCode: 0xF1D2
-                        sample: "Off"; textOn: Config.s.barValueGameMode
-                        label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
-                        tint: Config.gameMode ? bar.accent : bar.textColor
-                        tipText: Config.gameMode ? "Game Mode: on" : "Game Mode: off"
-                        onClicked: bar.openPopout("gamemode", gameSeg)
-                    }
-                    // The drink reminder (Timers.qml): a droplet and the time to the next drink, lit
-                    // (and "Drink") when one's due
-                    Segment {
-                        id: drinkSeg
-                        wanted: Config.s.barShowDrink && Timers.drinkOn
-                        pastel: "drink"
-                        iconCode: 0xEA97
-                        sample: "45 min"; textOn: Config.s.barValueDrink
-                        label: !Config.s.barValueDrink ? "" : Timers.drinkOverdue ? "Drink" : Timers.minutes(Timers.drinkLeft)
-                        tint: Timers.drinkOverdue ? bar.accent : bar.textColor
-                        tipText: Timers.drinkOverdue ? "Time for a drink" : "Next drink in " + Timers.minutes(Timers.drinkLeft)
-                        onClicked: bar.openPopout("drink", drinkSeg)
-                    }
-                    // The focus timer (Timers.qml): a clock (a mug on a break), with the time left
-                    Segment {
-                        id: focusSeg
-                        wanted: Config.s.barShowFocus && Timers.focusOn
-                        pastel: "focus"
-                        iconCode: Timers.phase === "break" || Timers.phase === "long" ? 0xEAFB : 0xEA70
-                        sample: "24:59"; textOn: Config.s.barValueFocus
-                        label: !Config.s.barValueFocus || Timers.phase === "idle" ? "" : Timers.clock(Timers.focusLeft)
-                        tint: Timers.phase === "focus" && !Timers.paused ? bar.accent : bar.textColor
-                        tipText: Timers.phase === "idle" ? "Focus timer" : (Timers.phase === "focus" ? "Focusing" : "On a break") + (Timers.paused ? ", paused" : "")
-                        onClicked: bar.openPopout("focus", focusSeg)
-                    }
-                    // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
-                    Segment {
-                        id: kbSeg
-                        wanted: Config.s.barShowKeyboard && Config.kbLayoutList.length > 1
-                        pastel: "keyboard"            // its colour when the look is Colourful
-                        readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
-                        iconCode: 0xEBD6
-                        sample: "GB"; textOn: Config.s.barValueKeyboard
-                        label: Config.s.barValueKeyboard && current ? current.code : ""
-                        tipText: current ? "Keyboard: " + current.name : ""
-                        onClicked: bar.openPopout("keyboard", kbSeg)
-                        onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
-                    }
-                    // Bluetooth: off / on / something connected; beside it, how many are connected
-                    Segment {
-                        id: btSeg
-                        wanted: Config.s.barShowBluetooth && !!Bluetooth.defaultAdapter
-                        pastel: "bluetooth"            // its colour when the look is Colourful
-                        readonly property var adapter: Bluetooth.defaultAdapter
-                        readonly property bool on: !!adapter && adapter.enabled
-                        readonly property var connected: on ? adapter.devices.values.filter(d => d.connected) : []
-                        iconCode: !on ? 0xECEB : connected.length > 0 ? 0xECEA : 0xEA37
-                        sample: "5"; textOn: Config.s.barValueBluetooth
-                        label: Config.s.barValueBluetooth && connected.length > 0 ? String(connected.length) : ""
-                        tipText: !on ? "Bluetooth: off" : connected.length === 1 ? "Bluetooth: " + (connected[0].name || connected[0].deviceName || "1 device connected")
-                            : connected.length > 1 ? "Bluetooth: " + connected.length + " devices connected" : "Bluetooth: on"
-                        onClicked: bar.openPopout("bluetooth", btSeg)
-                    }
-                    Segment {
-                        id: volSeg
-                        // (only with something to turn up or down: speakers or a microphone)
-                        wanted: Config.s.barShowVolume && (!!Pipewire.defaultAudioSink || !!Pipewire.defaultAudioSource || Config.pretendAudio)
-                        pastel: "volume"            // its colour when the look is Colourful
-                        readonly property var sink: Pipewire.defaultAudioSink
-                        readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
-                        readonly property real vol: sink && sink.audio ? sink.audio.volume : 0
-                        tint: muted ? bar.errorColor : bar.textColor
-                        iconCode: muted || vol === 0 ? 0xF1C3 : vol > 0.5 ? 0xEB51 : 0xEB4F
-                        sample: "50%"; textOn: Config.s.barValueVolume
-                        label: Config.s.barValueVolume ? Math.round(vol * 100) + "%" : ""
-                        tipText: !sink ? "" : muted ? "Volume: muted" : "Volume: " + Math.round(vol * 100) + "%"
-                        onClicked: bar.openPopout("volume", volSeg)
-                        onWheel: delta => {
-                            if (!sink || !sink.audio) return;
-                            sink.audio.muted = false;
-                            sink.audio.volume = Math.max(0, Math.min(1, vol + (delta > 0 ? 0.05 : -0.05)));
-                        }
-                        PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
-                    }
-                    // Wi-Fi: just before the battery
-                    Segment {
-                        id: wifiSeg
-                        // The network: Wi-Fi, or the cable while one's plugged in and connected (its
-                        // own icon, and "Wired"). Only on a computer with either
-                        wanted: Config.s.barShowWifi && (!!wifi || !!wired || Config.pretendWifi)
-                        readonly property var wired: Networking.devices.values.find(d => d.type === DeviceType.Wired) ?? null
-                        readonly property bool onWire: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
-                        pastel: "wifi"            // its colour when the look is Colourful
-                        readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
-                        readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
-                        readonly property real signal: net ? net.signalStrength : 0
-                        iconCode: onWire ? 0xF09F : !wifi && !Config.pretendWifi ? 0xF0A0 : !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
-                        sample: "Wi-Fi"; textOn: Config.s.barValueWifi
-                        label: Config.s.barValueWifi ? (onWire ? "Wired" : net ? net.name : "Offline") : ""
-                        tipText: onWire ? "Network: wired" : net ? "Wi-Fi: " + net.name : wifi ? "Wi-Fi: not connected" : ""
-                        onClicked: bar.openPopout("wifi", wifiSeg)
-                    }
-                    Segment {
-                        id: batSeg
-                        // On a computer with no battery it stays, as a way into the same panel
-                        // (power mode, the processor, memory and disk): a bolt, and no percentage
-                        wanted: Config.s.barShowBattery
-                        readonly property bool has: !!UPower.displayDevice && UPower.displayDevice.isPresent
-                        pastel: "battery"            // its colour when the look is Colourful
-                        readonly property var dev: UPower.displayDevice
-                        readonly property real pct: dev && dev.ready ? dev.percentage : 0
-                        readonly property bool charging: dev && (dev.state === UPowerDeviceState.Charging || dev.state === UPowerDeviceState.FullyCharged || dev.state === UPowerDeviceState.PendingCharge)
-                        iconCode: !has ? 0xEA38 : charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
-                        sample: has ? "80%" : ""; textOn: Config.s.barValueBattery && has
-                        label: Config.s.barValueBattery && has ? Math.round(pct * 100) + "%" : ""
-                        // (without a battery it's the way into power: so it says, not "Battery")
-                        tipText: !has ? "Power" : "Battery: " + Math.round(pct * 100) + "%" + (dev.state === UPowerDeviceState.FullyCharged ? ", full"
-                            : charging ? ", charging" : !UPower.onBattery ? ", plugged in" : "")
-                        onClicked: bar.openPopout("battery", batSeg)
-                    }
+            // Notifications: crossed-out bell during Do Not Disturb, unread count beside it
+            Segment {
+                id: bellBtn
+                wanted: Config.s.barShowNotifications
+                pastel: "notifications"            // its colour when the look is Colourful
+                iconCode: bar.notifs && bar.notifs.quiet ? 0xECE9 : 0xEA35
+                // Unread count beside the bell (hidden during Do Not Disturb)
+                sample: "50"
+                label: bar.notifs && bar.notifs.unread > 0 && !bar.notifs.quiet
+                    ? (bar.notifs.unread > 99 ? "99+" : String(bar.notifs.unread)) : ""
+                tipText: !bar.notifs ? "" : bar.notifs.quiet ? "Notifications: Do Not Disturb is on" + (bar.notifs.quietWhy ? " " + bar.notifs.quietWhy : "")
+                    : bar.notifs.unread === 1 ? "1 new notification" : bar.notifs.unread > 1 ? bar.notifs.unread + " new notifications" : ""
+                onClicked: bar.openPopout("notifications", bellBtn)
+            }
+            // Clipboard history: how many items it holds; click for the list
+            Segment {
+                id: clipSeg
+                wanted: Config.s.barShowClipboard
+                pastel: "clipboard"            // its colour when the look is Colourful
+                iconCode: Config.s.clipboardHistory ? 0xEA6F : 0xF0CE
+                sample: "12"; textOn: Config.s.barValueClipboard
+                label: Config.s.barValueClipboard && Config.s.clipboardHistory && Config.clipCount > 0 ? String(Config.clipCount) : ""
+                tipText: !Config.s.clipboardHistory ? "Clipboard history is off" : Config.clipCount === 1 ? "Clipboard: 1 item"
+                    : Config.clipCount > 1 ? "Clipboard: " + Config.clipCount + " items" : "Clipboard: empty"
+                onClicked: bar.openPopout("clipboard", clipSeg)
+            }
+            // Screenshots: click for area / window / screen. While the screen's being
+            // recorded it's the recording's indicator (shown even when it's turned off):
+            // a red dot and how long it's been; a click stops it
+            Segment {
+                id: shotSeg
+                wanted: Config.s.barShowScreenshot || Config.recording
+                pastel: Config.recording ? "" : "screenshot"     // its colour when the look is Colourful
+                iconCode: Config.recording ? 0xF692 : 0xF201
+                tint: Config.recording ? Config.tint("#f28b8b") : bar.textColor
+                label: Config.recording ? Config.recordingTime() : ""
+                tipText: Config.recording ? "Recording the screen: click to stop" : ""
+                onClicked: Config.recording ? Quickshell.execDetached([Quickshell.shellPath("scripts/record.sh"), "stop"])
+                    : bar.openPopout("screenshot", shotSeg)
+            }
+            // The camera: an open eye, lit, while an app is using it (Config.cameraOn); a
+            // closed one otherwise. Only shows: nothing to click
+            Segment {
+                id: camSeg
+                wanted: Config.s.barShowCamera
+                pastel: "camera"              // its colour when the look is Colourful
+                iconCode: Config.cameraOn ? 0xEA9A : 0xECF0
+                tint: Config.cameraOn ? bar.accent : bar.textColor
+                tipText: Config.cameraOn ? "Your camera is in use" : "Camera: not in use"
+                clickable: false
+            }
+            // Game mode: On or Off beside it, lit while it's on; click for the panel to turn it on or off
+            Segment {
+                id: gameSeg
+                wanted: Config.s.barShowGameMode
+                pastel: "gamemode"            // its colour when the look is Colourful
+                iconCode: 0xF1D2
+                sample: "Off"; textOn: Config.s.barValueGameMode
+                label: Config.s.barValueGameMode ? (Config.gameMode ? "On" : "Off") : ""
+                tint: Config.gameMode ? bar.accent : bar.textColor
+                tipText: Config.gameMode ? "Game Mode: on" : "Game Mode: off"
+                onClicked: bar.openPopout("gamemode", gameSeg)
+            }
+            // The drink reminder (Timers.qml): a droplet and the time to the next drink, lit
+            // (and "Drink") when one's due
+            Segment {
+                id: drinkSeg
+                wanted: Config.s.barShowDrink && Timers.drinkOn
+                pastel: "drink"
+                iconCode: 0xEA97
+                sample: "45 min"; textOn: Config.s.barValueDrink
+                label: !Config.s.barValueDrink ? "" : Timers.drinkOverdue ? "Drink" : Timers.minutes(Timers.drinkLeft)
+                tint: Timers.drinkOverdue ? bar.accent : bar.textColor
+                tipText: Timers.drinkOverdue ? "Time for a drink" : "Next drink in " + Timers.minutes(Timers.drinkLeft)
+                onClicked: bar.openPopout("drink", drinkSeg)
+            }
+            // The focus timer (Timers.qml): a clock (a mug on a break), with the time left
+            Segment {
+                id: focusSeg
+                wanted: Config.s.barShowFocus && Timers.focusOn
+                pastel: "focus"
+                iconCode: Timers.phase === "break" || Timers.phase === "long" ? 0xEAFB : 0xEA70
+                sample: "24:59"; textOn: Config.s.barValueFocus
+                label: !Config.s.barValueFocus || Timers.phase === "idle" ? "" : Timers.clock(Timers.focusLeft)
+                tint: Timers.phase === "focus" && !Timers.paused ? bar.accent : bar.textColor
+                tipText: Timers.phase === "idle" ? "Focus timer" : (Timers.phase === "focus" ? "Focusing" : "On a break") + (Timers.paused ? ", paused" : "")
+                onClicked: bar.openPopout("focus", focusSeg)
+            }
+            // Keyboard layout: its short code (GB, FR…); click to pick one, scroll to cycle
+            Segment {
+                id: kbSeg
+                wanted: Config.s.barShowKeyboard && Config.kbLayoutList.length > 1
+                pastel: "keyboard"            // its colour when the look is Colourful
+                readonly property var current: Config.kbLayoutList[Config.kbActive] ?? Config.kbLayoutList[0] ?? null
+                iconCode: 0xEBD6
+                sample: "GB"; textOn: Config.s.barValueKeyboard
+                label: Config.s.barValueKeyboard && current ? current.code : ""
+                tipText: current ? "Keyboard: " + current.name : ""
+                onClicked: bar.openPopout("keyboard", kbSeg)
+                onWheel: delta => Config.switchLayout(Config.kbActive + (delta > 0 ? -1 : 1))
+            }
+            // Bluetooth: off / on / something connected; beside it, how many are connected
+            Segment {
+                id: btSeg
+                wanted: Config.s.barShowBluetooth && !!Bluetooth.defaultAdapter
+                pastel: "bluetooth"            // its colour when the look is Colourful
+                readonly property var adapter: Bluetooth.defaultAdapter
+                readonly property bool on: !!adapter && adapter.enabled
+                readonly property var connected: on ? adapter.devices.values.filter(d => d.connected) : []
+                iconCode: !on ? 0xECEB : connected.length > 0 ? 0xECEA : 0xEA37
+                sample: "5"; textOn: Config.s.barValueBluetooth
+                label: Config.s.barValueBluetooth && connected.length > 0 ? String(connected.length) : ""
+                tipText: !on ? "Bluetooth: off" : connected.length === 1 ? "Bluetooth: " + (connected[0].name || connected[0].deviceName || "1 device connected")
+                    : connected.length > 1 ? "Bluetooth: " + connected.length + " devices connected" : "Bluetooth: on"
+                onClicked: bar.openPopout("bluetooth", btSeg)
+            }
+            Segment {
+                id: volSeg
+                // (only with something to turn up or down: speakers or a microphone)
+                wanted: Config.s.barShowVolume && (!!Pipewire.defaultAudioSink || !!Pipewire.defaultAudioSource || Config.pretendAudio)
+                pastel: "volume"            // its colour when the look is Colourful
+                readonly property var sink: Pipewire.defaultAudioSink
+                readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
+                readonly property real vol: sink && sink.audio ? sink.audio.volume : 0
+                tint: muted ? bar.errorColor : bar.textColor
+                iconCode: muted || vol === 0 ? 0xF1C3 : vol > 0.5 ? 0xEB51 : 0xEB4F
+                sample: "50%"; textOn: Config.s.barValueVolume
+                label: Config.s.barValueVolume ? Math.round(vol * 100) + "%" : ""
+                tipText: !sink ? "" : muted ? "Volume: muted" : "Volume: " + Math.round(vol * 100) + "%"
+                onClicked: bar.openPopout("volume", volSeg)
+                onWheel: delta => {
+                    if (!sink || !sink.audio) return;
+                    sink.audio.muted = false;
+                    sink.audio.volume = Math.max(0, Math.min(1, vol + (delta > 0 ? 0.05 : -0.05)));
+                }
+                PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
+            }
+            // Wi-Fi: just before the battery
+            Segment {
+                id: wifiSeg
+                // The network: Wi-Fi, or the cable while one's plugged in and connected (its
+                // own icon, and "Wired"). Only on a computer with either
+                wanted: Config.s.barShowWifi && (!!wifi || !!wired || Config.pretendWifi)
+                readonly property var wired: Networking.devices.values.find(d => d.type === DeviceType.Wired) ?? null
+                readonly property bool onWire: Networking.devices.values.some(d => d.type === DeviceType.Wired && d.connected)
+                pastel: "wifi"            // its colour when the look is Colourful
+                readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
+                readonly property var net: wifi ? wifi.networks.values.find(n => n.connected) ?? null : null
+                readonly property real signal: net ? net.signalStrength : 0
+                iconCode: onWire ? 0xF09F : !wifi && !Config.pretendWifi ? 0xF0A0 : !net ? 0xECFA : signal > 0.66 ? 0xEB52 : signal > 0.33 ? 0xEBA5 : 0xEBA4
+                sample: "Wi-Fi"; textOn: Config.s.barValueWifi
+                label: Config.s.barValueWifi ? (onWire ? "Wired" : net ? net.name : "Offline") : ""
+                tipText: onWire ? "Network: wired" : net ? "Wi-Fi: " + net.name : wifi ? "Wi-Fi: not connected" : ""
+                onClicked: bar.openPopout("wifi", wifiSeg)
+            }
+            Segment {
+                id: batSeg
+                // On a computer with no battery it stays, as a way into the same panel
+                // (power mode, the processor, memory and disk): a bolt, and no percentage
+                wanted: Config.s.barShowBattery
+                readonly property bool has: !!UPower.displayDevice && UPower.displayDevice.isPresent
+                pastel: "battery"            // its colour when the look is Colourful
+                readonly property var dev: UPower.displayDevice
+                readonly property real pct: dev && dev.ready ? dev.percentage : 0
+                readonly property bool charging: dev && (dev.state === UPowerDeviceState.Charging || dev.state === UPowerDeviceState.FullyCharged || dev.state === UPowerDeviceState.PendingCharge)
+                iconCode: !has ? 0xEA38 : charging || !UPower.onBattery ? 0xEBD9 : pct > 0.8 ? 0xEA32 : pct > 0.55 ? 0xEA31 : pct > 0.3 ? 0xEA30 : 0xEA2F
+                sample: has ? "80%" : ""; textOn: Config.s.barValueBattery && has
+                label: Config.s.barValueBattery && has ? Math.round(pct * 100) + "%" : ""
+                // (without a battery it's the way into power: so it says, not "Battery")
+                tipText: !has ? "Power" : "Battery: " + Math.round(pct * 100) + "%" + (dev.state === UPowerDeviceState.FullyCharged ? ", full"
+                    : charging ? ", charging" : !UPower.onBattery ? ", plugged in" : "")
+                onClicked: bar.openPopout("battery", batSeg)
+            }
 
             // Clock
             Segment {
@@ -1928,7 +1928,6 @@ PanelWindow {
     readonly property color hoverFill: bar.accent
     readonly property real hoverStrength: Config.hoverStrength
 
-    // Rounded container with a soft hover tint and click handling
     // One row across the bar, or one column down a side bar, sized to what it holds (one row
     // or column, left open: a grid counts what it shows itself, and leaves a gap for every
     // column it's told to have, even empty ones)

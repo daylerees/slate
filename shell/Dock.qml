@@ -294,7 +294,6 @@ PanelWindow {
         return out;
     }
 
-    // ---- Magnification -------------------------------------------------
     // ---- The dock's slots, in order ---------------------------------------------
     // The Apps button, what's playing (while something is) and a divider, the pinned apps, a
     // divider, the other running apps, a divider, Downloads and the Waste Basket. Each slot knows its
@@ -746,7 +745,6 @@ PanelWindow {
             previewPop.atY = p.y + (win.edge === "bottom" ? sh - win.height : 0);
         }
         function closePreview(): void { win.previewApp = null; }
-        // The previews' "+N" card, as clicking it does (the app's menu, every window in it)
         // The Downloads stack's grid, as clicking it does:  slate ipc call dock downloads
         function downloads(): void {
             if (!win.downloadsShown) return;
@@ -776,9 +774,6 @@ PanelWindow {
         function emptyTrash(): void { win.emptyTrash(); }
     }
 
-    // ---- Right-click menu ----------------------------------------------
-    // A full-screen invisible layer while open: clicking anywhere outside the menu
-    // (or pressing Escape) closes it
     // ---- Dragging --------------------------------------------------------------
     // An app picked up from the dock leaves its place and follows the pointer (dragPop, a
     // layer of its own). Over the pinned apps, they part to show where it'll go (a gap with

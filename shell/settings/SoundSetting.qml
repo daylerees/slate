@@ -1,7 +1,4 @@
 import QtQuick
-import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import ".."
 
 // One of Slate's sounds: a play button to hear it, and a volume slider, Off at 0; letting go

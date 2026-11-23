@@ -14,7 +14,6 @@
 //   once nothing is (Config.cameraOn: scripts/camera-watch.py)
 
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland

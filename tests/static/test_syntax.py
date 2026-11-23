@@ -33,11 +33,13 @@ def shell_scripts():
     return sorted(set(out))
 
 
-class Syntax(Case):
-    def test_qml(self):
-        """qmllint on every QML file, failing on syntax errors and missing types/imports.
-        The login screen's files are left out: they only make sense in its own layout, and
-        static/greeter loads them for real."""
+_LINT = {}
+
+
+def lint_qml():
+    """qmllint on every QML file but the login screen's (once, for every test that reads it):
+    (the files, what it said)."""
+    if not _LINT:
         qmllint = need("/usr/lib/qt6/bin/qmllint", "/usr/lib64/qt6/bin/qmllint", "qmllint6")
         qml = slate.files("shell", ".qml", skip=("shell/greeter",))
         # Quickshell lets a file in a subfolder (shell/panels/) `import qs` to reach the types
@@ -52,6 +54,16 @@ class Syntax(Case):
             with open(os.path.join(imports, "qs", "qmldir"), "w") as fh:
                 fh.write("\n".join(lines) + "\n")
             code, out = run([qmllint, "-I", imports] + qml, cwd=slate.ROOT, timeout=300)
+        _LINT["qml"], _LINT["out"] = qml, out
+    return _LINT["qml"], _LINT["out"]
+
+
+class Syntax(Case):
+    def test_qml(self):
+        """qmllint on every QML file, failing on syntax errors and missing types/imports.
+        The login screen's files are left out: they only make sense in its own layout, and
+        static/greeter loads them for real."""
+        qml, out = lint_qml()
         problems = {}
         for line in out.splitlines():
             m = re.match(r"Warning: ([^:]+\.qml):(\d*):?(\d*):? (.*)$", line)
@@ -60,6 +72,24 @@ class Syntax(Case):
         for f in qml:
             with self.subTest(f):
                 self.assertFalse(problems.get(f), "; ".join(problems.get(f, [])[:3]))
+
+    def test_no_unused_imports(self):
+        """Every module a QML file imports is one it uses. Settings' pages and the bar's panels
+        had copied their window's whole list (Bluetooth, Networking, Pipewire, UPower…).
+        (Folder imports, "..", are left to qmllint's other checks.)"""
+        qml, out = lint_qml()
+        lines = out.splitlines()
+        unused = {}
+        for i, line in enumerate(lines):
+            m = re.match(r"\w+: ([^:]+\.qml):(\d+):\d+: Unused import \[unused-imports\]$", line)
+            if m and i + 1 < len(lines):
+                imp = lines[i + 1].strip()
+                if re.match(r"import [A-Za-z][\w.]*$", imp):
+                    unused.setdefault(m.group(1), []).append(imp)
+        # (not the template for your own shell.qml: its imports are there for what you'll add)
+        for f in [f for f in qml if not f.startswith("shell/data/user-files/")]:
+            with self.subTest(f):
+                self.assertFalse(unused.get(f), f"imports it doesn't use: {unused.get(f)}")
 
     def test_lua(self):
         luac = need("luac", "luac5.4", "luac5.5")

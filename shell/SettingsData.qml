@@ -30,7 +30,8 @@ JsonAdapter {
     property int goodbyeVolume: -1            // logging out, restarting, shutting down
     property int attentionVolume: -1          // confirmations, password prompts and warnings
     property int answeredVolume: -1           // Nova's answer arriving while you wait
-    // Earlier versions' sound settings: only read to fill in the volumes above
+    // Earlier versions' sound settings: only read to fill in the volumes above (Migration, kept until 2027-06: Config's
+    // soundSettings and soundVolume go with them)
     property bool volumeSound: true
     property bool notificationSound: true
     property bool clickSound: false
@@ -136,7 +137,7 @@ JsonAdapter {
     // Your apps from last time (Settings → Startup Apps): kept as you log out, restart or shut
     // down, and at the next login "ask" offers them back, "always" reopens them, "never" keeps none
     property string reopenApps: "ask"
-    property bool reopenAppsAfterRestart: true  // (old: the restart dialog's switch, before reopenApps; off reads as "never")
+    property bool reopenAppsAfterRestart: true  // (old: the restart dialog's switch, before reopenApps; off reads as "never". Migration, kept until 2027-06)
     // ---- Sound, startup, screenshots
     property var themedApps: []               // Settings → App Theming: app ids that follow Slate's colours (none until switched on)
     property var startupApps: []              // desktop entry ids opened at each login
@@ -163,7 +164,7 @@ JsonAdapter {
     // What's on the bar and in what order (Settings → Menu Bar, by dragging on the bar itself):
     // a list, along the bar, of containers ({ items: [ids], tuck?, tuckIcon?, tuckFrom? }),
     // "title" (the active window, bare) and "space" (a flexible space). [] = Slate's own
-    // arrangement (Config.barLayoutDefault). See plans/menu-bar-layout.md
+    // arrangement (Config.barLayoutDefault). Config.qml's bar… functions change it
     property var barLayout: []
     property bool barBlur: true               // with glass: what's behind the bar is blurred (off: seen straight through it)
     property real barOpacity: 0.75            // with glass: the bar's background, 0 clear … 1 solid
@@ -343,9 +344,6 @@ JsonAdapter {
     // whatever Animations is set to. They override the look without changing it
     property bool reduceTransparency: false
     property bool reduceMotion: false
-    // Zoom (Settings → Accessibility; Super+Plus/Minus, Super+Alt+Z): the whole screen magnified
-    // around the pointer, on or off, how far (1.25–5×), and following the pointer smoothly or
-    // keeping it in the middle ("center")
     // High contrast (Settings → Accessibility): text and edges stand out, surfaces solid
     property bool highContrast: false
     // Text size (Settings → Accessibility): Slate's text, not its icons or layout (1, 1.15, 1.3)
@@ -357,6 +355,9 @@ JsonAdapter {
     property bool pointerTrail: false
     // Screen reader (Settings → Accessibility; Super+Alt+S): Orca reads the screen aloud
     property bool screenReader: false
+    // Zoom (Settings → Accessibility; Super+Plus/Minus, Super+Alt+Z): the whole screen magnified
+    // around the pointer, on or off, how far (1.25–5×), and following the pointer smoothly or
+    // keeping it in the middle ("center")
     property bool zoom: false
     property real zoomLevel: 2
     property string zoomFollow: "smooth"

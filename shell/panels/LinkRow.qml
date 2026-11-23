@@ -1,5 +1,4 @@
 import QtQuick
-import qs
 
 // A link at the foot of a panel ("Keyboard settings", "Show all and search"…): an icon,
 // then what it does

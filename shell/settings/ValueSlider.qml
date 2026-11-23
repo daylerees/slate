@@ -1,7 +1,4 @@
 import QtQuick
-import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import ".."
 
 // Slider with its value shown alongside

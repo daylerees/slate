@@ -4,7 +4,6 @@
 // Hidden while `space` is null.
 
 import QtQuick
-import Quickshell
 
 Rectangle {
     id: b

@@ -1,7 +1,4 @@
 import QtQuick
-import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import ".."
 
 // The box round a text field: the control colour with a sheen, an I-beam pointer, and a faint

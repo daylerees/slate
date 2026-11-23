@@ -5,26 +5,18 @@
 // menus, which are "platform menus", open when a tray icon is right-clicked.)
 // Slate: a desktop shell for Hyprland (bar, dock, launcher, switchers, panels,
 // notifications, settings). Run with:  slate
-// Settings: settings.json here; saved state: ~/.local/state/slate; cache: ~/.cache/slate
+// Settings: ~/.config/slate/settings.json (Config.qml); saved state: ~/.local/state/slate;
+// cache: ~/.cache/slate
 //
-// This file wires the other parts together (the dock is Dock.qml). The dock:
-// - Icons magnify near the pointer with a smooth falloff, so neighbours rise in an
-//   arc and the dock widens to make room.
-// - App icons are "phone app" tiles drawn by scripts/appicon.py --tile
-//   and cached in ~/.cache/slate/tiles/ (a folder per icon style, Config.tileDir).
-// - Hides while the workspace has windows; push the pointer to the bottom edge to
-//   bring it back.
+// This file wires the other parts together: each lives in a file of its own (the bar is
+// Bar.qml, the dock Dock.qml, the panels Popouts.qml…), and its IPC targets, the `test` one
+// included, are here. docs/ARCHITECTURE.md lists them all.
 
 import QtQuick
-import Qt.labs.folderlistmodel
-import QtQuick.Effects
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import Quickshell.Services.SystemTray
 import Quickshell.Hyprland
-import Quickshell.Services.Mpris
 import "NotificationText.js" as NotificationText
 
 ShellRoot {
@@ -35,7 +27,6 @@ ShellRoot {
         model: Config.welcoming ? Quickshell.screens : []
         FadeIn { required property var modelData; screen: modelData }
     }
-    // Slate's own title bar on the focused floating window (Settings → Windows → Title bars)
     // Each workspace's window mode (the menu bar's workspace indicator; Spaces saves and restores it)
     IpcHandler {
         target: "workspacemode"
@@ -59,6 +50,7 @@ ShellRoot {
         // Maximise or restore a window, leaving room for its bar (Super+D, binds.lua)
         function maximise(address: string): void { Config.titleBarMaximise(address); }
     }
+    // Slate's own title bar on the focused floating window (Settings → Windows → Title bars)
     // (one look at Hyprland's windows for every screen's bar, and only while one floats)
     TitleBarWindows { id: titleBarWindows; bars: titleBars.instances; lock: lockScreen }
     Variants {
@@ -148,8 +140,6 @@ ShellRoot {
             }
             return JSON.stringify({ stops: said, gaps: gaps });
         }
-        // Hyprbars (HyprbarsWatch.qml), as Settings → Windows asks for it: check, choose, rebuild,
-        // reload, remove. And answering the question that's showing in the confirmation window
         // Arranging the menu bar without a pointer: what a drag, a click on the bar or a button
         // on the panel comes to (Config's bar… functions)
         function arrange(what: string, a: string, b: string, c: string): void {
@@ -216,8 +206,6 @@ ShellRoot {
             e.locate(x, y);
             return JSON.stringify({ x: e.origin.x, y: e.origin.y });
         }
-        // Weather for the clock panel and control centre, as if it had been fetched for a place
-        // (tests have no network): mild rain now, then four days
         // The control centre's quick switches: their order (ids, comma-separated; "" for none
         // chosen), a press on one by id (the panel open), and which this computer can't use
         function controlSwitches(ids: string): void { Config.s.controlSwitches = ids === "" ? [] : ids.split(","); }
@@ -239,10 +227,10 @@ ShellRoot {
         function removeNotification(i: int): void { const h = notifs.history[i]; if (h) notifs.remove(h.key); }
         // ...or its main action run, as a click on its card does (0: the newest)
         function activateNotification(i: int): void { const h = notifs.history[i]; if (h) notifs.activate(h.key); }
-        // Settings → Printers and Network: what their next looks find, as printers.py list and
-        // netinfo.sh would print it ("": the real thing again), and a look now
         // Settings: Tab (or Shift+Tab) from the text box that has the keyboard
         function settingsTab(forward: bool): void { if (settingsLoader.item) settingsLoader.item.testTab(forward); }
+        // Settings → Printers and Network: what their next looks find, as printers.py list and
+        // netinfo.sh would print it ("": the real thing again), and a look now
         function settingsPoll(what: string, text: string): void { if (settingsLoader.item) settingsLoader.item.pretendPoll(what, text); }
         // Press the switch on the Settings row with this label, as a click does ("pressed" or "none")
         function settingsToggle(label: string): string { return settingsLoader.item && settingsLoader.item.testToggle(label) ? "pressed" : "none"; }
@@ -261,11 +249,11 @@ ShellRoot {
         function newSpace(): void { popouts.newSpaceAsked(); }
         // Saving a space as New Space's Save does (Spaces.save), workspaces as "1,3"
         function saveSpace(name: string, ids: string): void { Spaces.save(name, "#8fb3e8", 0xEDBA, ids.split(",").map(Number)); }
+        // An app folder that was missing at startup has appeared (AppFolders.qml): what it does then
+        function appFolderAppeared(): void { appFolders.asked = false; appFolders.appeared(); }
         // Slate Software: what its engine (scripts/software.py) would say, as a JSON object
         // { status, catalogue, lists, installed, updates, app, act }, used in place of running it
         // (act: how an install, removal or update goes, "ok" or what went wrong)
-        // An app folder that was missing at startup has appeared (AppFolders.qml): what it does then
-        function appFolderAppeared(): void { appFolders.asked = false; appFolders.appeared(); }
         function softwarePretend(json: string): void {
             const p = JSON.parse(json);
             SoftwareJobs.endPretend();
@@ -304,6 +292,8 @@ ShellRoot {
         function hardware(what: string, on: bool): void {
             if (what === "wifi") Config.pretendWifi = on; else if (what === "audio") Config.pretendAudio = on;
         }
+        // Weather for the clock panel and control centre, as if it had been fetched for a place
+        // (tests have no network): mild rain now, then four days
         function weather(on: bool): void {
             Config.s.locationName = on ? "Bristol" : "";
             popouts.weather = on ? { temperature_2m: 14.2, apparent_temperature: 12.8, weather_code: 61 } : null;
@@ -361,6 +351,8 @@ ShellRoot {
                          Right: Qt.Key_Right, Home: Qt.Key_Home, End: Qt.Key_End, Escape: Qt.Key_Escape })[key];
             if (k !== undefined) topBar.menu.key({ key: k, accepted: false });
         }
+        // Hyprbars (HyprbarsWatch.qml), as Settings → Windows asks for it: check, choose, rebuild,
+        // reload, remove. And answering the question that's showing in the confirmation window
         function hyprbars(what: string): void {
             if (what === "choose") Config.hyprbarsChoose();
             else if (what === "rebuild") Config.hyprbarsRebuild();
@@ -385,8 +377,6 @@ ShellRoot {
         function typed(): string { return powerConfirm.inputText; }
         // As the pencil on the window mode panel's title does, for the workspace you're on
         function renameWorkspace(): void { popouts.renameWorkspace(Config.focusedWorkspaceId); }
-        // Magnify the dock as if the pointer were over slot i (-1: as if it had left): the
-        // test session has no pointer device to hover with
         // Drag an app on the dock as the pointer would: picked up (if it isn't already), held
         // over slot i (as the slots are now), `up` pixels up from the dock's middle; then let go
         function dockDrag(key: string, i: int, up: real): void { win.testDrag(key, i, up); }
@@ -442,9 +432,9 @@ ShellRoot {
         function voiceCheck(): void { voiceModel.check(); }
         // As saying yes to an agent that keeps its own tools (Settings → Assistant) leaves it
         function assistantAccepted(id: string): void { Config.s.assistantAgentsAccepted = id === "" ? [] : [id]; }
-        // The prompt window as a run would leave it: {asked, answer, working, actions, error}
         // How quick an answer counts as straight back (no sound), in ms (Nova's quickAnswer)
         function novaQuickAnswer(ms: int): void { nova.quickAnswer = ms; }
+        // The prompt window as a run would leave it: {asked, answer, working, actions, error}
         function nova(json: string): void {
             const st = JSON.parse(json);
             // (history: earlier exchanges, shown above this one)
@@ -458,9 +448,9 @@ ShellRoot {
         }
         // Forget the sounds noted so far (state().sounds: what would have played, Config.testSounds)
         function sounds(): void { Config.testSounds = []; }
-        // A code box's Copy in the latest answer, as clicking it does (block: its place among the blocks)
         // One line from the agent's runner, as it arrives ({"type": "text" | "blocks", …}): to stream an answer
         function novaStream(json: string): void { nova.handle(JSON.parse(json)); }
+        // A code box's Copy in the latest answer, as clicking it does (block: its place among the blocks)
         function novaCopyCode(block: int): void { nova.copyCode(nova.turns.length - 1, block); }
         // Undo on a row of what the latest answer did, as clicking it does (action: its place in the list)
         function novaUndo(action: int): void { nova.undo(nova.turns.length - 1, action); }
@@ -480,6 +470,8 @@ ShellRoot {
         function dockMoreDrop(): void { win.testDropMore(); }
         // Scroll More's or Downloads' grid (open) to y, as far as it goes
         function dockGridScroll(y: real): void { win.testScrollGrid(y); }
+        // Magnify the dock as if the pointer were over slot i (-1: as if it had left): the
+        // test session has no pointer device to hover with
         function dockHover(i: int): void { win.testHoverSlot(i); }
         // A file in the dock's open Downloads or Waste Basket grid under the pointer (-1: none)
         function dockHoverFile(i: int): void { win.testHoverFile(i); }
@@ -648,12 +640,12 @@ ShellRoot {
                 novaVoice: { phase: novaVoice.phase, note: novaVoice.note, on: novaVoice.on, mic: nova.micShown,
                              whisper: voiceModel.whisper !== "", model: voiceModel.model, ready: voiceModel.ready,
                              downloading: voiceModel.downloading, progress: voiceModel.progress, error: voiceModel.error, checks: voiceModel.checks },
-                // Background work that should be idle when nothing needs it: Night light's schedule
-                // timer, Private Mode's portal watch, and the theme check for updated apps
                 // Automatic brightness (AutoBrightness.qml): what the computer has, and what it's doing
                 autoBrightness: AutoBrightness.testState(),
                 // Each display's brightness (DisplayBrightness.qml): what Slate found it can set, and how bright
                 displayBrightness: DisplayBrightness.testState(),
+                // Background work that should be idle when nothing needs it: Night light's schedule
+                // timer, Private Mode's portal watch, and the theme check for updated apps
                 idle: { nightTimer: nightLight.timerRunning, captureWatch: privateMode.watching, themeStaleWatch: appTheming.staleWatching },
                 assistant: { open: nova.shown, working: nova.working, stopShown: nova.stopShown, keysSeen: nova.keysSeen, turns: nova.turns.length, asked: nova.asked, answer: nova.answer, actions: nova.actions,
                              error: nova.error ? nova.error.kind : "", errorText: nova.error ? nova.error.message : "", agent: nova.agent ? nova.agent.id : "", session: nova.session,

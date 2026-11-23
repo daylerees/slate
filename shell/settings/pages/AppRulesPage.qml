@@ -24,14 +24,6 @@ Column {
         list[i] = Object.assign({}, list[i], change);
         Config.s.appRules = list;
     }
-    // What a rule does, in a few words ("Workspace 3 · Floating"), or that it does nothing yet
-    function summary(r) {
-        const parts = [];
-        if (r.workspace > 0) parts.push(Config.workspaceLabel(r.workspace));
-        if (r.as) parts.push(({ float: "Floating", tile: "Tiled", maximize: "Maximized", fullscreen: "Full screen" })[r.as] || "");
-        if (r.monitor) parts.push(r.monitor);
-        return parts.filter(p => p).join(" · ");
-    }
     // Apps to choose from: those with a window open first (their class is known for certain),
     // then every installed app by its window class (StartupWMClass, else its id)
     readonly property var choices: {

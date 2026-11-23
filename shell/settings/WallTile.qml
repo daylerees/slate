@@ -1,7 +1,5 @@
 import QtQuick
 import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import ".."
 
 // A wallpaper in Settings → Appearance: its thumbnail and name; click to use it. For the

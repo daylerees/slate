@@ -53,7 +53,7 @@ PanelWindow {
         Keys.onEscapePressed: tm.stack.length > 1 ? tm.stack = tm.stack.slice(0, -1) : tm.close()
     }
 
-    // Look: the dock menu's
+    // Look: the menu bar's colors, as Slate's own menus (DesktopMenu.qml) have
     readonly property color bgColor: bar.barColor
     readonly property color rowHover: bar.capsuleColor
     readonly property color textColor: bar.textColor

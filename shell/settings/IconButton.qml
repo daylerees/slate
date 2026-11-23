@@ -1,11 +1,8 @@
 import QtQuick
-import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import ".."
 
-// A round icon button (the header's back and close): a glyph that brightens, on a fill and
-// sheen that fade in, under the pointer
+// A round icon button (the header's back and close): under the pointer, the muted hover fill
+// at once and a glyph that brightens
 Rectangle {
     readonly property var win: SettingsHost.win
     id: iconButton

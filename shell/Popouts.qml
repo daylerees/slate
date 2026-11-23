@@ -1,7 +1,8 @@
-// Drop-down panels attached to the bar (on whichever edge it's on): the control centre,
-// spaces, notifications, clipboard, screenshot, volume, Wi-Fi, keyboard layout, Bluetooth,
-// game mode, battery & power, calendar and session. Each opens beside the button that was
-// clicked, joins the bar with curved corners, and slides out of it.
+// Drop-down panels attached to the bar (on whichever edge it's on): the control center, Spaces,
+// notifications, clipboard, screenshot, volume, Wi-Fi, keyboard layout, Bluetooth, game mode,
+// battery & power, calendar, session, the window mode, More, and the drink and focus timers.
+// Each is a file in panels/ (WifiPanel.qml…); it opens beside the button that was clicked,
+// joins the bar with curved corners, and slides out of it.
 //
 // Open from the bar with bar.openPopout("<name>", item). Close by clicking outside,
 // pressing Escape, or clicking the same button again.
@@ -10,13 +11,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
-import Quickshell.Services.UPower
-import Quickshell.Services.Pipewire
-import Quickshell.Networking
-import Quickshell.Bluetooth
-import Quickshell.Services.Mpris
-import QtQuick.Effects
 import "panels"
 
 PanelWindow {
@@ -163,7 +157,7 @@ PanelWindow {
                 const k = kind(o);
                 if (k === "" || !o.enabled) continue;
                 if (k === "click" && o.acceptedButtons === Qt.RightButton) continue;
-                const owner = k === "click" ? o.parent : o.parent;
+                const owner = o.parent;
                 if (owner && !reached(k === "area" ? o : owner)) {
                     const p = owner.mapToItem(content, 0, 0);
                     out.push((Config.textOf(owner) || String(owner).split("(")[0]) + " @" + Math.round(p.x) + "," + Math.round(p.y));
@@ -562,10 +556,9 @@ PanelWindow {
     }
 
     // ---- Control centre state ----------------------------------------------
-    // Caffeine: keeps the session awake (Slate's idle lock and other idle watchers respect it)
-    // Caffeine (Config.caffeine): also asked of the compositor, for apps and tools that listen
+    // Caffeine (Config.caffeine) keeps the session awake: Slate's idle lock and other idle watchers
+    // respect it, and it's asked of the compositor too, for apps and tools that listen
     IdleInhibitor { window: pop.bar; enabled: Config.caffeine }
-    readonly property bool nightLight: Config.s.nightLight   // NightLight.qml applies it
     onCurrentChanged: {
         if (current === "") fromKeys = false;       // (a panel opened from the keyboard: done)
         if (current === "control") uptimeFile.reload();
@@ -617,7 +610,8 @@ PanelWindow {
         command: ["getent", "passwd", Quickshell.env("USER")]
         stdout: StdioCollector { onStreamFinished: { const n = (text.split(":")[4] || "").split(",")[0]; if (n) pop.fullName = n; } }
     }
-    FileView { id: hostFile; path: "/etc/hostname" }
+    FileView { id: hostFileView; path: "/etc/hostname" }
+    property alias hostFile: hostFileView     // (the control center's "you@this-computer")
     property string hyprVersion: ""
     Process {
         running: true
@@ -633,16 +627,8 @@ PanelWindow {
     }
 
     // ---- Shared pieces -----------------------------------------------------
+    // A Tabler icon's character, for the panels' Icon (panels/Icon.qml)
     function glyph(code) { return String.fromCodePoint(code); }
-
-
-
-
-
-
-
-
-
     // Run one of Slate's IPC calls (bin/slate ipc call …)
     function slate(args) { Quickshell.execDetached([Quickshell.shellPath("bin/slate"), "ipc", "call"].concat(args)); }
     // Close the panel and open Settings on one of its pages

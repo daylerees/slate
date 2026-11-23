@@ -1,8 +1,8 @@
 pragma Singleton
 
-// Shared settings for the bar, dock, launcher, switchers and notifications.
-// Saved to settings.json next to this file; changed from the Settings window
-// (slate ipc call settings toggle). Use as  Config.s.<name>
+// Shared settings and helpers for all of Slate. The settings are saved to settings.json in your
+// Slate folder (~/.config/slate; the login screen reads a copy next to its own files) and
+// changed from the Settings window (or slate ipc call config set). Use as  Config.s.<name>
 
 import QtQuick
 import Quickshell
@@ -155,10 +155,6 @@ Singleton {
         }
         return contrasted(Qt.hsla(h < 0 ? 0 : h, sat, l, c.a));
     }
-    // Accessibility → High contrast: every themed color pushed apart. Backgrounds go much nearer
-    // black (white in light mode), text and icons much nearer white (black), so dim text reads
-    // clearly and surfaces separate from what's on them. (A colorful accent passes through
-    // tint() only where it's asked to; the accent itself is left as chosen)
     // Accessibility → Text size: a text size in Slate's own pixels, grown by the setting (1, 1.15
     // or 1.3). Text only: icons, which are font glyphs too, keep their size. Every Text's
     // font.pixelSize goes through it (a static test checks)
@@ -212,6 +208,10 @@ Singleton {
     }
     // ...and Orca, the screen reader (ScreenReader.qml looks)
     property bool orcaAvailable: true
+    // Accessibility → High contrast: every themed color pushed apart. Backgrounds go much nearer
+    // black (white in light mode), text and icons much nearer white (black), so dim text reads
+    // clearly and surfaces separate from what's on them. (A colorful accent passes through
+    // tint() only where it's asked to; the accent itself is left as chosen)
     function contrasted(c) {
         if (!s.highContrast) return c;
         const l = c.hslLightness, light = s.lightMode;
@@ -313,7 +313,7 @@ Singleton {
         return out.charAt(0).toUpperCase() + out.slice(1);
     }
     // A saved name for something on the bar, as it's called now: Nova's button was "chalk"
-    // (its old name) in arrangements and orders saved before it was renamed
+    // (its old name) in arrangements and orders saved before it was renamed (Migration, kept until 2027-06)
     function barId(id) { return id === "chalk" ? "nova" : String(id); }
     // A fixed space in the arrangement: "fixed:<n>px", or "fixed:<n>%" of the screen's width (its
     // height on a side bar): { n, unit } for one, null for anything else. Kept as a word like the
@@ -978,7 +978,6 @@ Singleton {
         if (s.barPosition === v) s.barPosition = opposite(v);
         s.dockPosition = v;
     }
-    // After a hand edit of settings.json, or older settings with both at the bottom: the dock moves
     // The four edges, for a Position submenu (DesktopMenu.qml): the one in use ticked; `move`
     // is moveBar or moveDock
     function edgeMenu(current, move) {
@@ -995,6 +994,8 @@ Singleton {
         const cur = s[key] !== undefined && choices.some(c => c[0] === s[key]) ? s[key] : fallback;
         return choices.map(c => ({ label: c[1], icon: c[0] === cur ? 0xEA5E : 0, run: () => s[key] = c[0] }));
     }
+    // After a hand edit of settings.json, or older settings with both at the bottom: the dock moves
+    // to the edge opposite the bar, as they can't share one
     function separateBarAndDock() { if (s.dockPosition === s.barPosition) s.dockPosition = opposite(s.barPosition); }
     Component.onCompleted: {
         chargeLimitRefresh();       // (whether the battery has a charging limit, and if it's on)
@@ -1003,7 +1004,7 @@ Singleton {
         const saved = file.text();
         titleBarStyleUnset = saved !== "" && saved.indexOf('"titleBarStyle"') < 0;
         // The dock's window previews: a delay of 0 used to mean "off"; now it means "at once",
-        // and there's a switch. Settings from before the switch with 0 keep them off
+        // and there's a switch. Settings from before the switch with 0 keep them off (Migration, kept until 2027-06)
         if (saved !== "" && saved.indexOf('"dockPreviews"') < 0 && s.dockPreviewDelay <= 0) {
             s.dockPreviews = false;
             s.dockPreviewDelay = defaults.dockPreviewDelay;
@@ -1020,8 +1021,6 @@ Singleton {
         s.themeMode = m;
         if (m !== "auto") s.lightMode = m === "light";
     }
-    // Light mode isn't finished: moving off Dark asks first (Settings → Appearance, the welcome).
-    // Remove this, and the questions, once it is
     // Two finished looks (Settings → Appearance → Preset, and the Welcome window's "Glass or
     // flat?"): what each sets
     readonly property var lookPresets: ({
@@ -1117,7 +1116,7 @@ Singleton {
         // Webcams forget their picture settings when unplugged or restarted: put yours back
         Quickshell.execDetached([Quickshell.shellPath("scripts/webcam.py"), "apply"]);
     }
-    // "ask", "always" or "never" (the old restart switch, turned off, reads as never)
+    // "ask", "always" or "never" (the old restart switch, turned off, reads as never: Migration, kept until 2027-06)
     readonly property string reopenMode: ["always", "never"].includes(s.reopenApps) ? s.reopenApps
         : s.reopenAppsAfterRestart === false ? "never" : "ask"
     function pickUpAtLogin() { reopenCheck.running = false; reopenCheck.running = true; }
@@ -1286,7 +1285,7 @@ Singleton {
         + glassRule("SLATE_GLASS_LAUNCHER", "^slate-launcher$", launcherGlassCut, s.launcherBlur)
         // (Nova's window, a real window: blurred behind as every window is, unless Settings →
         // Assistant → Glass's blur is off. Its old layer's rule, named for Nova's old name,
-        // Chalk, is let go in a Hyprland that still has it)
+        // Chalk, is let go in a Hyprland that still has it: Migration, kept until 2027-06)
         + `if SLATE_GLASS_CHALK then SLATE_GLASS_CHALK:set_enabled(false); SLATE_GLASS_CHALK = nil end; `
         + `if not SLATE_NOVA_NO_BLUR then SLATE_NOVA_NO_BLUR = hl.window_rule({ name = "slate-nova-no-blur", match = { class = "^(slate-settings)$", title = "^(${novaTitle})$" }, no_blur = true }) end; `
         + `SLATE_NOVA_NO_BLUR:set_enabled(${glass && s.assistantBlur ? "false" : "true"}); `
@@ -1506,7 +1505,6 @@ Singleton {
         function onKbVariantsChanged() { kbLater.restart(); }
     }
 
-    // ---- Lid and power button (Settings → Power) --------------------------------------
     // ---- What this computer can do (bin/slate-init info) -----------------------------------
     // Slate runs with systemd, and without it where elogind is (Artix, Void, Gentoo…). With
     // neither (seatd alone, say) it still runs, but nothing can suspend, restart or shut down
@@ -1583,9 +1581,6 @@ Singleton {
     }
     // The icon theme: the one chosen in Settings → Icons → Icon theme ("" = this computer's)
     readonly property string iconThemeChosen: /^[\w.+-]+$/.test(s.iconTheme) ? s.iconTheme : ""
-    // ...and the one actually in use, which the tiles are drawn from: the chosen one, else what
-    // GTK apps use (read from gtk-3.0/settings.ini, so a theme set outside Slate counts too;
-    // Slate's folder-colour theme counts as the theme it's made from)
     // The command that shows a notice from Slate (run it with Quickshell.execDetached, or as a
     // Process command when an action's answer is read back). `opts`: page (the Settings page
     // that opens when it's clicked), urgent (critical: it stays up), actions (["id=Label", ...],
@@ -1632,7 +1627,7 @@ Singleton {
     // "" for the shared look next to its code
     property string loginLook: ""
     onLoginLookChanged: Qt.callLater(() => file.reload())
-    // Where Slate keeps its saved state and its cache (XDG_STATE_HOME / XDG_CACHE_HOME). Two
+    // Where Slate keeps its saved state and its cache (XDG_STATE_HOME / XDG_CACHE_HOME). A few
     // paths still use ~/.local/state and ~/.cache directly on purpose: the dock's dock.json
     // (shell.qml), the tiles (tileDir below), the notifications history, the launcher's list and
     // the night light's shader. For anyone who sets those variables, moving them would lose
@@ -1650,6 +1645,9 @@ Singleton {
         const t = iniValue(gtkSettingsFile.text(), "gtk-icon-theme-name");
         return t === "Slate-Icons" ? (iniValue(slateIconsFile.text(), "X-Slate-Base") || "Papirus-Dark") : t;
     }
+    // ...and the one actually in use, which the tiles are drawn from: the chosen one, else what
+    // GTK apps use (read from gtk-3.0/settings.ini, so a theme set outside Slate counts too;
+    // Slate's folder-colour theme counts as the theme it's made from)
     readonly property string iconThemeInUse: iconThemeChosen !== "" ? iconThemeChosen
         : (/^[\w.+-]+$/.test(gtkIconTheme) ? gtkIconTheme : "")
     // Each theme's tiles have folders of their own, tiles/themes/<theme>/<style>: drawn from it
@@ -1684,8 +1682,6 @@ Singleton {
     // Call one of Slate's IPC functions, as `slate ipc call <target> <function> [args…]` does
     // (slate ipc show lists them): slateCall("settings", "page", "updates")
     function slateCall(...args) { Quickshell.execDetached([slateCommand, "ipc", "call", ...args]); }
-    // Restart Slate completely (for changes it can only pick up that way), then open Settings
-    // on a page again once it's back. Run detached, as this Slate is about to stop
     // Settings → Debug → Reload everything: Hyprland's config, then Slate itself as a new
     // process (not the in-place reload), back on the Debug page
     function reloadEverything() {
@@ -1697,6 +1693,8 @@ Singleton {
     // reloads it goes through here, not Quickshell.reload itself. Detached: this Slate's
     // windows are about to go
     function restartSlate() { Quickshell.execDetached(["setsid", "-f", slateCommand, "restart"]); }
+    // Restart Slate completely (for changes it can only pick up that way), then open Settings
+    // on a page again once it's back. Run detached, as this Slate is about to stop
     function restartToPage(page) {
         Quickshell.execDetached(["setsid", "-f", "sh", "-c",
             `sleep 0.5; "$0" restart --full; for i in $(seq 40); do sleep 0.25; "$0" ipc call settings page "$1" >/dev/null 2>&1 && break; done`,
@@ -2055,11 +2053,7 @@ Singleton {
     // (Nova's icon is one colour wherever it's drawn: the Assistant page's, below)
     function partColour(list, i, fallback) { return colourful && list[i] ? tint(list[i]) : fallback; }
 
-    // ---- Game mode (the bar's game mode panel) -----------------------------------------
-    // Turns off what costs the most to draw, and the touchpad ignoring it while you type (games
-    // use both at once): Slate's glass, and Hyprland's blur, shadows, animations and see-through
-    // windows. Your own settings for them are kept, not changed, so turning it off puts them
-    // all back. Not on the login screen, which reads a copy of these settings
+    // Whether this is the login screen's copy of Slate's settings (it runs from slate-greeter's folder)
     readonly property bool isLoginScreen: Quickshell.shellPath("").indexOf("slate-greeter") >= 0
     // Where Slate keeps what lasts only for this login (marks, locks, the workspaces' modes and
     // names): $XDG_RUNTIME_DIR, which is yours alone. Should that not be set, a folder of your
@@ -2090,6 +2084,12 @@ Singleton {
     // screenshots match from run to run. clockDate(d) is the time to show: d, or that one
     readonly property var testTime: testMode && Quickshell.env("SLATE_TEST_TIME") ? new Date(Quickshell.env("SLATE_TEST_TIME")) : null
     function clockDate(d) { return testTime || d; }
+
+    // ---- Game mode (the bar's game mode panel) -----------------------------------------
+    // Turns off what costs the most to draw, and the touchpad ignoring it while you type (games
+    // use both at once): Slate's glass, and Hyprland's blur, shadows, animations and see-through
+    // windows. Your own settings for them are kept, not changed, so turning it off puts them
+    // all back. Not on the login screen, which reads a copy of these settings
     readonly property bool gameMode: s.gameMode && !isLoginScreen
     // Off again: Hyprland reloads its config (quietly), for its own blur, shadows, animations
     // and touchpad setting, then Slate's settings go back on top (hyprPush)
@@ -2851,7 +2851,7 @@ Singleton {
     // videos need it (found by loading the click, which only works with it)
     readonly property bool multimediaAvailable: clickAvailable
     // How loud each sound is (Settings → Sound), 0-100, 0 = off. Not set yet: from the earlier
-    // on/off switch and the single effects volume
+    // on/off switch and the single effects volume (Migration, kept until 2027-06)
     readonly property var soundSettings: ({
         tick: ["tickVolume", "volumeSound"], notification: ["notificationVolume", "notificationSound"],
         click: ["clickVolume", "clickSound"], swish: ["swishVolume", "swishSound"],

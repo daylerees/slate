@@ -1,14 +1,4 @@
 import QtQuick
-import Quickshell
-import Quickshell.Io
-import Quickshell.Wayland
-import Quickshell.Hyprland
-import Quickshell.Services.UPower
-import Quickshell.Services.Pipewire
-import Quickshell.Networking
-import Quickshell.Bluetooth
-import Quickshell.Services.Mpris
-import QtQuick.Effects
 import qs
 
 // Laid out like the other panels: the title with its switch, a line of status, a

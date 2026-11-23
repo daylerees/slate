@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import qs
 
 // The drink reminder (Timers.qml; Settings → Timers): when the next drink is due, how many today,

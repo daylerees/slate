@@ -1,7 +1,4 @@
 import QtQuick
-import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import ".."
 
 // A setting with a dropdown menu of choices (opens over the page; see win.drop)
@@ -58,7 +55,6 @@ Item {
         color: "transparent"
         HoverFill { base: win.control; hovered: ddButton.open || ddHover.hovered; radius: ddButton.radius }
         border.width: open ? 1 : 0; border.color: win.accent
-        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         // Options can carry a folder colour (folder: "#hex"): a little folder in it before the label
         FolderSwatch {
             id: ddFolder

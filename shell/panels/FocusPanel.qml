@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import qs
 
 // The focus timer (Timers.qml; Settings → Timers): a Pomodoro. The round's countdown and its

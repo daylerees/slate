@@ -1,13 +1,5 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
-import Quickshell.Io
-import Quickshell.Hyprland
-import Quickshell.Bluetooth
-import Quickshell.Networking
-import Quickshell.Services.Pipewire
-import Quickshell.Services.UPower
-import Qt.labs.folderlistmodel
 import "../.."
 import ".."
 
@@ -25,7 +17,6 @@ Column {
         const fit = all.filter(e => (e.categories || []).some(c => cats.includes(c)));
         return (fit.length > 0 ? fit : all).map(e => ({ value: e.id, label: e.name, app: e.id }));
     }
-    function nameOf(id) { const e = id ? DesktopEntries.byId(id) : null; return e ? e.name : ""; }
     // (each a dropdown with a search box, as Settings' other long lists are)
     GroupLabel { text: "Apps" }
     Group {
