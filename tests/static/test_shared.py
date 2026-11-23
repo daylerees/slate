@@ -176,3 +176,25 @@ class NoMkdirBeforeASave(Case):
                     if re.search(r"execDetached\(\[.*\bmkdir\b", line) and any(".setText(" in l for l in lines[i + 1:i + 4]):
                         found.append(f"{f}:{i + 1}")
         self.assertEqual(found, [])
+
+
+class HyprlandSettingsAreLua(Case):
+    def test_strings_go_through_lua_string(self):
+        """Slate's Hyprland settings (Config.hyprSettings) quoted their strings with
+        JSON.stringify: JSON's \\u00XX escapes aren't Lua, so one odd character in a layout's or an
+        app's name made the whole block fail and none of the settings applied (a bug)."""
+        src = slate.read("shell", "Config.qml")
+        self.assertIn("const q = v => luaString(String(v));", src)
+        self.assertNotIn("const q = v => JSON.stringify(String(v));", src)
+
+
+class PowerModeAtLogin(Case):
+    def test_set_once_at_login_not_on_every_reload(self):
+        """The power mode for battery or mains (Settings → Power) is set when the power source
+        changes and once as you log in: it was put back on every reload, over a mode you'd chosen
+        by hand, and the login screen set one too (a bug)."""
+        src = slate.read("shell", "Config.qml")
+        block = src[src.index("id: powerAtLogin"):src.index("id: powerAtLogin") + 400]
+        self.assertIn("Component.onCompleted: atLogin = root.welcoming && !root.isLoginScreen", block)
+        self.assertIn("onTriggered: if (atLogin) root.applyPowerProfile()", block)
+        self.assertIn("function onOnBatteryChanged() { if (!root.isLoginScreen) root.applyPowerProfile(); }", src)

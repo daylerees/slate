@@ -1192,7 +1192,9 @@ Singleton {
         // so Hyprland kept its own first guess: Dolphin for folders, though Nautilus was chosen)
         DesktopEntries.applications.values;
         const t = [];
-        const q = v => JSON.stringify(String(v));
+        // (as Lua strings: luaString, never JSON, whose \u00XX escapes Lua can't read, so one odd
+        // character in a layout's or an app's name stopped every one of these settings)
+        const q = v => luaString(String(v));
         const onOff = v => v === "on" ? "true" : "false";
         if (s.kbLayouts !== "") t.push(`kb_layout = ${q(s.kbLayouts)}, kb_variant = ${q(s.kbVariants)}`);
         if (s.capsLock !== "" || s.kbSwitch !== "") {
@@ -1560,20 +1562,31 @@ Singleton {
     }
 
     // ---- Power profile on battery / plugged in (Settings → Power) ------------------------
-    // Set when the power source changes (and as Slate starts); changing it by hand afterwards
-    // sticks until the next change
+    // Set when the power source changes, and once as you log in (not each time Slate reloads:
+    // a mode you'd chosen by hand was put back on every reload); changing it by hand afterwards
+    // sticks until the next change. Never by the login screen
     function applyPowerProfile() {
         const want = UPower.onBattery ? s.profileOnBattery : s.profileOnAC;
         const p = { "power-saver": PowerProfile.PowerSaver, "balanced": PowerProfile.Balanced, "performance": PowerProfile.Performance }[want];
         if (p === undefined) return;
         if (p === PowerProfile.Performance && !PowerProfiles.hasPerformanceProfile) return;
         PowerProfiles.profile = p;
+        powerProfileApplied++;
     }
     Connections {
         target: UPower
-        function onOnBatteryChanged() { root.applyPowerProfile(); }
+        function onOnBatteryChanged() { if (!root.isLoginScreen) root.applyPowerProfile(); }
     }
-    Timer { interval: 3000; running: true; onTriggered: root.applyPowerProfile() }
+    // (whether this Slate started at login, taken as it starts: `welcoming` goes false once the
+    // welcome's been marked, which can be before this fires)
+    property int powerProfileApplied: 0          // (the tests: how many times it's been set)
+    Timer {
+        id: powerAtLogin
+        interval: 3000; running: true
+        property bool atLogin: false
+        Component.onCompleted: atLogin = root.welcoming && !root.isLoginScreen
+        onTriggered: if (atLogin) root.applyPowerProfile()
+    }
 
     // ---- App icons ----------------------------------------------------------------
     // Drawn by scripts/appicon.py in the shape and style from Settings → Appearance → App

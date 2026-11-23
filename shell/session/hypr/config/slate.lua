@@ -139,7 +139,8 @@ end
 local function externalScreens()
     local n = 0
     for _, m in ipairs(hl.get_monitors() or {}) do
-        if m.name and not (m.name:find("^eDP") or m.name:find("^LVDS") or m.name:find("^DSI")) then n = n + 1 end
+        -- (a screen switched off, in Settings → Displays or the tests' virtual one, isn't one to use)
+        if m.name and m.enabled ~= false and not (m.name:find("^eDP") or m.name:find("^LVDS") or m.name:find("^DSI")) then n = n + 1 end
     end
     return n
 end
