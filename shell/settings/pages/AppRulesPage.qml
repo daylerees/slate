@@ -129,13 +129,13 @@ Column {
                     // the list may have changed by the time it's answered)
                     onRemoved: {
                         const cls = ruleBlock.modelData.cls, name = ruleBlock.name;
-                        win.ask = {
+                        win.askQuestion({
                             title: "Remove the rule for " + name + "?",
                             body: name + "'s windows will open wherever and however they like again. The app itself isn't touched, "
                                 + "and you can add the rule back here at any time.",
                             button: "Remove", destructive: true,
                             run: () => Config.s.appRules = (Config.s.appRules || []).filter(r => r.cls !== cls)
-                        };
+                        });
                     }
                 }
             }

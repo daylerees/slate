@@ -177,12 +177,12 @@ Column {
                     Button {
                         label: "Remove"
                         destructive: true
-                        onClicked: win.ask = {
+                        onClicked: win.askQuestion({
                             title: "Remove " + (printerRow.printer.info || printerRow.printer.name) + "?",
                             body: "It'll be taken off this computer's printers, along with any jobs still waiting. You can always add it again later. This asks for your password.",
                             button: "Remove", destructive: true,
                             run: () => printersPane.act(["remove", printerRow.printer.name], "Removing…")
-                        }
+                        })
                     }
                 }
             }

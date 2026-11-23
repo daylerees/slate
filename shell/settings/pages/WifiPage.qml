@@ -220,30 +220,16 @@ Column {
                 Item {
                     visible: wifiPane.askingFor === netRow.n.name
                     width: parent.width; height: 48
-                    Rectangle {
+                    TextField {
+                        id: psk
                         anchors { left: parent.left; right: parent.right; leftMargin: 60; rightMargin: 14; top: parent.top }
-                        height: 36; radius: Config.corner(8)
-                        color: win.control
-                        border.width: 1; border.color: win.accent
-                        TextInput {
-                            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
-                            id: psk
-                            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                            verticalAlignment: TextInput.AlignVCenter
-                            echoMode: TextInput.Password
-                            color: win.text
-                            font.family: win.font; font.pixelSize: Config.text(13)
-                            onVisibleChanged: if (visible) { text = ""; forceActiveFocus(); }
-                            onAccepted: { netRow.n.connectWithPsk(text); wifiPane.askingFor = ""; }
-                            Keys.onEscapePressed: wifiPane.askingFor = ""
-                        }
-                        Text {
-                            visible: psk.text === ""
-                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                            textFormat: Text.PlainText        // never markup: the network's own name
-                            text: "Password for " + netRow.n.name + ", then Enter"
-                            color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
-                        }
+                        height: 36; textSize: 13; padding: 12
+                        secret: true
+                        hintWhileTyping: true
+                        hint: "Password for " + netRow.n.name + ", then Enter"      // (plain text: the network's own name)
+                        onVisibleChanged: if (visible) { text = ""; input.forceActiveFocus(); }
+                        onAccepted: { netRow.n.connectWithPsk(text); wifiPane.askingFor = ""; }
+                        Keys.onEscapePressed: wifiPane.askingFor = ""
                     }
                 }
             }

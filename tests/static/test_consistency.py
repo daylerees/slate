@@ -30,12 +30,10 @@ def settings_window():
 
 def settings_page_sources():
     """Each Settings page's own QML: {page id: the text of its file in shell/settings/pages/},
-    found through the window's `Component { id: <name>Page; <Type> {} }` for it."""
-    src = settings_window()
-    block = js_object_block(src, src.index("sourceComponent: ({"))
-    pages = {comp: page for page, comp in re.findall(r"(\w+):\s*(\w+Page)\b", block)}
-    types = dict(re.findall(r"^    Component \{ id: (\w+Page); (\w+) \{\} \}$", src, re.M))
-    return {pages[comp]: slate.read("shell", "settings", "pages", typ + ".qml") for comp, typ in types.items() if comp in pages}
+    found through SettingsIndex.qml, which names each page's file (All Settings: OverviewPage)."""
+    idx = slate.read("shell", "SettingsIndex.qml")
+    files = dict([("overview", "OverviewPage")] + re.findall(r'\{ id: "(\w+)",[^\n]*?\bfile: "(\w+)"', idx))
+    return {page: slate.read("shell", "settings", "pages", f + ".qml") for page, f in files.items()}
 
 
 def curated_search_entries():
@@ -74,15 +72,19 @@ def tracked_files():
 
 class Settings(Case):
     def test_pages_have_a_page(self):
-        """Every page in SettingsIndex.pages is in SettingsWindow's loader map, and each
-        component the map names exists."""
-        src = settings_window()
-        block = js_object_block(src, src.index("sourceComponent: ({"))
-        mapping = dict(re.findall(r"(\w+):\s*(\w+Page)\b", block))
+        """Every page in SettingsIndex.pages names its file, which is there, and is the only list
+        of pages: the window loads that file by name (it had a map of its own, and a Component for
+        each, to keep in step)."""
+        idx = slate.read("shell", "SettingsIndex.qml")
+        files = dict(re.findall(r'\{ id: "(\w+)",[^\n]*?\bfile: "(\w+)"', idx))
         for page in settings_pages():
             with self.subTest(page):
-                self.assertIn(page, mapping, f"Settings page '{page}' isn't in SettingsWindow's loader map")
-                self.assertRegex(src, rf"\bid:\s*{mapping[page]}\b", f"component {mapping[page]} doesn't exist")
+                self.assertIn(page, files, f"Settings page '{page}' doesn't name its file")
+                self.assertTrue(os.path.isfile(slate.path("shell", "settings", "pages", files[page] + ".qml")),
+                                f"{files[page]}.qml isn't in settings/pages/")
+        src = settings_window()
+        self.assertIn('source: SettingsIndex.pageFile(win.section) !== "" ? Qt.resolvedUrl("settings/pages/" + SettingsIndex.pageFile(win.section) + ".qml") : ""', src)
+        self.assertNotRegex(src, r"Component \{ id: \w+Page;", "a page listed in the window again")
 
     def test_page_ids_unique(self):
         pages = settings_pages()

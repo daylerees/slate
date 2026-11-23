@@ -169,7 +169,10 @@ class QuickLook(LiveCase):
         self.assertGreater(down, 0)
         # (one wtype for both: a second, straight after, lost its keys to the launcher)
         self.key(*["-k", "Down"] * down, "-k", "space")
-        st = self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["view"] == "text", "Quick Look on the text file")["quicklook"]
+        # (and with the keyboard: a key pressed before Quick Look has it goes to the launcher, which
+        # under load lost the Left below)
+        st = self.wait(lambda st: st["quicklook"]["open"] and st["quicklook"]["view"] == "text" and st["quicklook"]["keysReady"],
+                       "Quick Look on the text file, with the keyboard")["quicklook"]
         self.assertEqual(st["path"], first)
         self.assertEqual(st["count"], 2, "the other file in the results, to step to")
         self.assertEqual(self.s.state()["launcher"]["query"], "zephyr", "Space went into the search too")

@@ -123,32 +123,32 @@ Column {
                     enabled: greeterRow.info.greetd === "yes" && !greeterRun.running
                     opacity: enabled ? 1 : 0.4
                     label: "Install"
-                    onClicked: win.ask = Object.assign({
+                    onClicked: win.askQuestion(Object.assign({
                         run: () => greeterRow.run([], "Installing…",
                             "Installed; shows at your next logout or restart", "Slate couldn't install it")
-                    }, win.loginScreenInstallQuestion)
+                    }, win.loginScreenInstallQuestion))
                 }
                 Button {
                     visible: greeterRow.used && greeterRow.state === "outdated"
                     enabled: !greeterRun.running
                     label: "Update"
-                    onClicked: win.ask = Object.assign({
+                    onClicked: win.askQuestion(Object.assign({
                         run: () => greeterRow.run(["--code-only"], "Updating…",
                             "Updated; shows at your next logout or restart", "Slate couldn't update it")
-                    }, win.loginScreenUpdateQuestion)
+                    }, win.loginScreenUpdateQuestion))
                 }
                 Button {
                     visible: greeterRow.used && greeterRow.info.backup === "yes"
                     enabled: !greeterRun.running
                     label: "Switch back"
-                    onClicked: win.ask = {
+                    onClicked: win.askQuestion({
                         title: "Switch back to your old login screen?",
                         body: "greetd goes back to the login screen it had before Slate's, from your next logout or restart. "
                             + "You're welcome to install Slate's again at any time.",
                         button: "Switch back", code: 0xEAE2,
                         run: () => greeterRow.run(["--revert"], "Switching back…",
                             "Switched back; your old login screen shows at your next logout or restart", "Slate couldn't switch it back")
-                    }
+                    })
                 }
             }
         }
@@ -239,13 +239,13 @@ Column {
         }
         // Off asks first: it makes the computer easier to reach
         function askOff() {
-            win.ask = {
+            win.askQuestion({
                 title: "Turn the firewall off?",
                 body: "Anything on your network will be able to try to reach this computer, including things you haven't allowed. "
                     + "You can turn it back on here at any time.",
                 button: "Turn off", destructive: true, code: 0xEAE2,
                 run: () => fw.change(["set", "off"], "Turning it off…")
-            };
+            });
         }
         function refresh() { fwProc.running = false; fwProc.running = true; }
         // (the tests: what the script would say, looked at again as soon as it's given)

@@ -105,7 +105,7 @@ Column {
         const p = ollamaPlan;
         if (!p) return;
         const install = !p.running;
-        win.ask = {
+        win.askQuestion({
             title: "Set up Ollama?",
             body: (install ? "Slate installs Ollama from your system's packages (" + p.package + ") and turns it on, which asks for an administrator's password. Then it downloads "
                            : "Slate downloads ")
@@ -117,7 +117,7 @@ Column {
                 Quickshell.execDetached(["setsid", "-f", "python3", Quickshell.shellPath("scripts/ollama-setup.py"), "setup",
                                          install ? p.package : "-", p.model]);
             }
-        };
+        });
     }
 
     // What Slate adds to a prompt (scripts/assistant.py briefing), read when asked for
@@ -282,20 +282,11 @@ Column {
             label: "Model"
             settingKey: "assistantModel"
             detail: "For agents that let you pick one. Empty: the agent's own choice"
-            FieldFrame {
-                field: modelInput
-                width: 160; height: 30
-                TextInput {
-                    activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
-                    id: modelInput
-                    anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-                    verticalAlignment: TextInput.AlignVCenter
-                    clip: true
-                    color: win.text; selectionColor: win.accent
-                    font.family: win.font; font.pixelSize: Config.text(12)
-                    text: Config.s.assistantModel
-                    onEditingFinished: Config.s.assistantModel = text.trim().replace(/[^\w.:\-\[\]]/g, "")
-                }
+            TextField {
+                id: modelInput
+                width: 160
+                text: Config.s.assistantModel
+                onFinished: Config.s.assistantModel = text.trim().replace(/[^\w.:\-\[\]]/g, "")
             }
         }
         // A command of your own: the command, and whether Slate adds anything to what you type
@@ -305,20 +296,11 @@ Column {
             label: "Command"
             settingKey: "assistantCommand"
             detail: Config.s.assistantCommand === "" ? "Nothing to run yet. Type the command Nova should hand what you ask to" : "Run as you typed it"
-            FieldFrame {
-                field: commandInput
-                width: 260; height: 30
-                TextInput {
-                    activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
-                    id: commandInput
-                    anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-                    verticalAlignment: TextInput.AlignVCenter
-                    clip: true
-                    color: win.text; selectionColor: win.accent
-                    font.family: win.font; font.pixelSize: Config.text(12)
-                    text: Config.s.assistantCommand
-                    onEditingFinished: Config.s.assistantCommand = text.trim()
-                }
+            TextField {
+                id: commandInput
+                width: 260
+                text: Config.s.assistantCommand
+                onFinished: Config.s.assistantCommand = text.trim()
             }
         }
         Separator { visible: assistantPane.inUse === "custom" }

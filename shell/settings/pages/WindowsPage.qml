@@ -34,7 +34,7 @@ Column {
                 const n = Config.workspacesNotIn(v).length;
                 if (n === 0) { Config.setDefaultMode(v, true); return; }
                 const to = Config.windowModes.find(m => m.value === v);
-                win.ask = {
+                win.askQuestion({
                     title: "Tidy up open windows?",
                     body: "New workspaces will use " + to.label + ". " + (n === 1 ? "One workspace has" : n + " workspaces have")
                         + " windows open in another mode: tidy up, moving every workspace to " + to.label
@@ -43,7 +43,7 @@ Column {
                     button: "Tidy up", cancelLabel: "Leave " + (n === 1 ? "it" : "them"), code: to.icon,
                     run: () => Config.setDefaultMode(v, true),
                     cancel: () => Config.setDefaultMode(v, false)
-                };
+                });
             }
         }
         // Floating windows' title bars: Slate's own (the default: nothing to build), or

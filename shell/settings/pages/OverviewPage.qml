@@ -14,61 +14,31 @@ Column {
     property int pick: 0
     onFoundChanged: pick = 0
     function open(e) { if (e) win.goTo(e.page, e.label); }
-    Rectangle {
+    SearchField {
+        id: findField
         width: parent.width; height: 44
-        radius: Config.corner(12)
-        color: win.card          // (flat, as Slate's other text boxes: no sheen)
-        border.width: findField.activeFocus ? 1 : 0; border.color: win.accent
-        Text {
-            id: findIcon
-            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-            text: Config.glyph(0xEB1C)
-            color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 18
+        radius: Config.corner(12)        // (flat, as Slate's other text boxes: no sheen)
+        iconSize: 18; textSize: 14
+        clearable: true
+        hint: "Search settings"
+        onKeyPressed: e => {
+            if (e.key === Qt.Key_Down) { ovPage.pick = Math.min(ovPage.found.length - 1, ovPage.pick + 1); e.accepted = true; }
+            else if (e.key === Qt.Key_Up) { ovPage.pick = Math.max(0, ovPage.pick - 1); e.accepted = true; }
+            else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) { ovPage.open(ovPage.found[ovPage.pick]); e.accepted = true; }
+            else if (e.key === Qt.Key_Escape && text !== "") { text = ""; e.accepted = true; }
         }
-        TextInput {
-            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
-            id: findField
-            anchors { left: findIcon.right; leftMargin: 10; right: clearFind.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-            color: win.text; font.family: win.font; font.pixelSize: Config.text(14)
-            selectionColor: win.accent; selectedTextColor: win.accentText
-            clip: true
-            // Ready to type whenever All Settings shows: when the page loads and each time
-            // the window opens (after the window's own focus has settled), starting afresh
-            function ready() { Qt.callLater(() => Qt.callLater(() => { if (win.visible && win.section === "overview") findField.forceActiveFocus(); })); }
-            Component.onCompleted: ready()
-            Connections {
-                target: win
-                function onVisibleChanged() { if (win.visible) { findField.text = ""; findField.ready(); } }
-                function onSearchFor(t) { if (win.section === "overview") { findField.forceActiveFocus(); findField.text = t; } }
-            }
-            // ...and when the window gets the keyboard (Hyprland focuses it a moment after it shows)
-            readonly property bool windowActive: Window.active
-            onWindowActiveChanged: if (windowActive && text === "") ready()
-            Keys.onPressed: e => {
-                if (e.key === Qt.Key_Down) { ovPage.pick = Math.min(ovPage.found.length - 1, ovPage.pick + 1); e.accepted = true; }
-                else if (e.key === Qt.Key_Up) { ovPage.pick = Math.max(0, ovPage.pick - 1); e.accepted = true; }
-                else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) { ovPage.open(ovPage.found[ovPage.pick]); e.accepted = true; }
-                else if (e.key === Qt.Key_Escape && text !== "") { text = ""; e.accepted = true; }
-            }
-            Text {
-                visible: findField.text === ""
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Search settings"
-                color: win.dim; font: findField.font
-            }
+        // Ready to type whenever All Settings shows: when the page loads and each time
+        // the window opens (after the window's own focus has settled), starting afresh
+        function ready() { Qt.callLater(() => Qt.callLater(() => { if (win.visible && win.section === "overview") findField.input.forceActiveFocus(); })); }
+        Component.onCompleted: ready()
+        Connections {
+            target: win
+            function onVisibleChanged() { if (win.visible) { findField.text = ""; findField.ready(); } }
+            function onSearchFor(t) { if (win.section === "overview") { findField.input.forceActiveFocus(); findField.text = t; } }
         }
-        Text {
-            id: clearFind
-            visible: findField.text !== ""
-            anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            text: Config.glyph(0xEB55)
-            color: clearHover.hovered ? win.text : win.dim
-            // (with the fill behind it, not ahead of it)
-            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-            font.family: win.bar.iconFont; font.pixelSize: 16
-            HoverHandler { id: clearHover }
-            ClickTap { onTapped: { findField.text = ""; findField.forceActiveFocus(); } }
-        }
+        // ...and when the window gets the keyboard (Hyprland focuses it a moment after it shows)
+        readonly property bool windowActive: Window.active
+        onWindowActiveChanged: if (windowActive && text === "") ready()
     }
     Item { width: 1; height: 6 }
     // What's under the search box scrolls by itself (the results, or the tiles), so the

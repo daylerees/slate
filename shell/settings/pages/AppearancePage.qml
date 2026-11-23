@@ -45,13 +45,13 @@ Column {
             onPicked: v => {
                 const p = win.themePresets.find(x => x.name === v);
                 if (!p || win.presetActive(p)) return;
-                win.ask = {
+                win.askQuestion({
                     title: "Apply " + p.name + "?",
                     body: "This gives you a fresh look: it changes the theme, colors, glass and folder colors. "
                         + "Your wallpaper stays as it is, and so does everything else.",
                     button: "Apply", code: 0xEB01,
                     run: () => win.applyPreset(p)
-                };
+                });
             }
         }
     }
@@ -66,41 +66,10 @@ Column {
                     + (Config.s.locationName !== "" ? " (sunrise to sunset in " + Config.s.locationName + ")" : " (set a location below to follow sunrise and sunset)");
             }
             // Three-way switch: Dark | Light | Auto
-            Rectangle {
-                readonly property var modes: ["dark", "light", "auto"]
-                width: 276; height: 34; radius: Config.corner(9)
-                color: win.well
-                Rectangle {
-                    width: 92 - 6; height: parent.height - 6; radius: Config.corner(7)
-                    y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.themeMode)) * 92
-                    color: win.accent
-                    Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
-                }
-                Row {
-                    anchors.fill: parent
-                    Repeater {
-                        model: [{ mode: "dark", label: "Dark", icon: 0xEAF8 }, { mode: "light", label: "Light", icon: 0xEB30 }, { mode: "auto", label: "Auto", icon: 0xF4A3 }]
-                        delegate: Item {
-                            required property var modelData
-                            readonly property bool on: Config.themeMode === modelData.mode
-                            width: 92; height: 34
-                            Rectangle {
-                                anchors { fill: parent; margins: 3 }
-                                radius: Config.corner(7)
-                                color: win.accent
-                                opacity: !parent.on && themeHover.hovered ? Config.hoverStrength : 0
-                            }
-                            HoverHandler { id: themeHover }
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: Config.glyph(parent.parent.modelData.icon); color: parent.parent.on ? win.accentText : win.dim; font.family: win.bar.iconFont; font.pixelSize: 14 }
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
-                            }
-                            ClickTap { onTapped: win.pickThemeMode(parent.modelData.mode) }
-                        }
-                    }
-                }
+            SegmentedChoice {
+                options: [{ value: "dark", label: "Dark", icon: 0xEAF8 }, { value: "light", label: "Light", icon: 0xEB30 }, { value: "auto", label: "Auto", icon: 0xF4A3 }]
+                value: Config.themeMode
+                onPicked: v => win.pickThemeMode(v)
             }
         }
         Separator {}
@@ -228,30 +197,21 @@ Column {
                             onPositionChanged: m => { if (pressed) set(m.x); }
                         }
                     }
-                    FieldFrame {
-                        field: hexInput
+                    TextField {
+                        id: hexInput
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 92; height: 30
-                        TextInput {
-                            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
-                            id: hexInput
-                            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-                            verticalAlignment: TextInput.AlignVCenter
-                            text: Config.s.accent
-                            color: win.text
-                            selectionColor: win.accent
-                            font.family: win.font; font.pixelSize: Config.text(12)
-                            maximumLength: 7
-                            validator: RegularExpressionValidator { regularExpression: /#?[0-9A-Fa-f]{0,6}/ }
-                            function apply() {
-                                let t = text.trim();
-                                if (!t.startsWith("#")) t = "#" + t;
-                                if (/^#[0-9A-Fa-f]{6}$/.test(t)) Config.s.accent = t.toLowerCase();
-                                else text = Config.s.accent;
-                            }
-                            onAccepted: { apply(); focus = false; }
-                            onEditingFinished: apply()
+                        width: 92
+                        text: Config.s.accent
+                        input.maximumLength: 7
+                        input.validator: RegularExpressionValidator { regularExpression: /#?[0-9A-Fa-f]{0,6}/ }
+                        function apply() {
+                            let t = text.trim();
+                            if (!t.startsWith("#")) t = "#" + t;
+                            if (/^#[0-9A-Fa-f]{6}$/.test(t)) Config.s.accent = t.toLowerCase();
+                            else text = Config.s.accent;
                         }
+                        onAccepted: { apply(); input.focus = false; }
+                        onFinished: apply()
                     }
                 }
             }
@@ -549,7 +509,7 @@ Column {
                 interval: 150
                 onTriggered: {
                     if (Math.abs(Config.s.uiScale - Config.uiScale) < 0.001) return;
-                    win.ask = {
+                    win.askQuestion({
                         title: "Restart Slate?",
                         body: "Interface size changes to " + Math.round(Config.s.uiScale * 100) + "% when Slate restarts. "
                             + "Your apps and windows stay open. The bar, dock and Settings step away for a moment, "
@@ -557,7 +517,7 @@ Column {
                         button: "Restart",
                         run: () => Config.uiScaleEdited(),
                         cancel: () => Config.s.uiScale = Config.uiScale
-                    };
+                    });
                 }
             }
         }

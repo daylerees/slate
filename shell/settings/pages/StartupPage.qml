@@ -34,13 +34,13 @@ Column {
                     // place: the list may have changed by the time it's answered)
                     onRemoved: {
                         const id = startRow.modelData, name = entry ? entry.name : id;
-                        win.ask = {
+                        win.askQuestion({
                             title: "Remove " + name + " from startup?",
                             body: name + " won't open by itself when you log in any more. The app itself stays installed, "
                                 + "and you're welcome to add it back here at any time.",
                             button: "Remove", destructive: true,
                             run: () => Config.s.startupApps = (Config.s.startupApps || []).filter(a => a !== id)
-                        };
+                        });
                     }
                 }
             }

@@ -15,42 +15,11 @@ Column {
                 ? "Apps as a grid of icons, with the selected one's name along the bottom. Arrow keys move around it; Ctrl+Left/Right opens an app on a new workspace beside this one"
                 : "Apps in a list, with descriptions. Left/Right opens an app on a new workspace beside this one"
             // Two-way switch: List | Grid
-            Rectangle {
-                readonly property var modes: ["list", "grid"]
-                width: 184; height: 34; radius: Config.corner(9)
-                color: win.well
-                Rectangle {
-                    width: 92 - 6; height: parent.height - 6; radius: Config.corner(7)
-                    y: 3; x: 3 + Math.max(0, parent.modes.indexOf(Config.s.launcherLayout)) * 92
-                    color: win.accent
-                    Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
-                }
-                Row {
-                    anchors.fill: parent
-                    Repeater {
-                        model: [{ mode: "list", label: "List", icon: 0xEC14 }, { mode: "grid", label: "Grid", icon: 0xEDBA }]
-                        delegate: Item {
-                            id: layoutOpt
-                            required property var modelData
-                            readonly property bool on: Config.s.launcherLayout === modelData.mode
-                            width: 92; height: 34
-                            Rectangle {
-                                anchors { fill: parent; margins: 3 }
-                                radius: Config.corner(7)
-                                color: win.accent
-                                opacity: !layoutOpt.on && layoutHover.hovered ? Config.hoverStrength : 0
-                            }
-                            HoverHandler { id: layoutHover }
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: Config.glyph(layoutOpt.modelData.icon); color: layoutOpt.on ? win.accentText : win.dim; font.family: win.bar.iconFont; font.pixelSize: 15 }
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: layoutOpt.modelData.label; color: layoutOpt.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
-                            }
-                            ClickTap { onTapped: Config.s.launcherLayout = layoutOpt.modelData.mode }
-                        }
-                    }
-                }
+            SegmentedChoice {
+                options: [{ value: "list", label: "List", icon: 0xEC14 }, { value: "grid", label: "Grid", icon: 0xEDBA }]
+                iconSize: 15
+                value: Config.s.launcherLayout
+                onPicked: v => Config.s.launcherLayout = v
             }
         }
         Separator { visible: Config.s.launcherLayout === "grid" }

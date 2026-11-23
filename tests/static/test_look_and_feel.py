@@ -72,14 +72,23 @@ class TitleBarHover(Case):
 
 
 class Questions(Case):
+    def test_settings_asks_one_way(self):
+        """Every question a Settings page asks goes through win.askQuestion: they were asked three
+        ways (setting win.ask, askAfter, win.confirmer directly, some without a null check)."""
+        import glob
+        for p in glob.glob(slate.path("shell", "settings", "pages", "*.qml")):
+            src = open(p, encoding="utf-8").read()
+            with self.subTest(os.path.basename(p)):
+                self.assertNotRegex(src, r"win\.ask\s*=|confirmer\.confirmWith\(", "asks its own way: use win.askQuestion")
+
     def test_updates_confirm_in_slates_confirmation_window(self):
-        """Updating over your changes and going back are asked with win.ask (PowerConfirm), not
+        """Updating over your changes and going back are asked with win.askQuestion (PowerConfirm), not
         by a second click on the same button."""
         page = slate.read("shell", "settings", "pages", "UpdatesPage.qml")
         self.assertNotIn("confirmUpdate", page)
         self.assertNotIn("confirmRevert", page)
         self.assertNotRegex(page, r"(?i)click again")
-        self.assertEqual(len(re.findall(r"win\.ask\s*=", page)), 2, "Update anyway and Go back both ask")
+        self.assertEqual(len(re.findall(r"win\.askQuestion\(", page)), 2, "Update anyway and Go back both ask")
         self.assertIn("Updates.install()", page)
         self.assertIn("Updates.revert()", page)
 

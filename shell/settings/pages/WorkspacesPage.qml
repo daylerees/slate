@@ -50,46 +50,10 @@ Column {
             settingKey: "workspaceShape"
             detail: "The shape of the workspace dots on the bar, the window switcher, the overview and the on-screen display"
             // Two-way switch: Circles | Squares, each with a small preview
-            Rectangle {
-                readonly property var shapes: ["circle", "square"]
-                width: 184; height: 34; radius: Config.corner(9)
-                color: win.well
-                Rectangle {
-                    width: 92 - 6; height: parent.height - 6; radius: Config.corner(7)
-                    y: 3; x: 3 + Math.max(0, parent.shapes.indexOf(Config.s.workspaceShape)) * 92
-                    color: win.accent
-                    Behavior on x { NumberAnimation { duration: Config.ms(160); easing.type: Easing.OutCubic } }
-                }
-                Row {
-                    anchors.fill: parent
-                    Repeater {
-                        model: [{ shape: "circle", label: "Circles" }, { shape: "square", label: "Squares" }]
-                        delegate: Item {
-                            required property var modelData
-                            readonly property bool on: Config.s.workspaceShape === modelData.shape
-                            width: 92; height: 34
-                            Rectangle {
-                                anchors { fill: parent; margins: 3 }
-                                radius: Config.corner(7)
-                                color: win.accent
-                                opacity: !parent.on && shapeHover.hovered ? Config.hoverStrength : 0
-                            }
-                            HoverHandler { id: shapeHover }
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 7
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 10; height: 10
-                                    radius: parent.parent.modelData.shape === "square" ? 10 * 0.28 : 5
-                                    color: parent.parent.on ? win.accentText : win.dim
-                                }
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: parent.parent.modelData.label; color: parent.parent.on ? win.accentText : win.dim; font.family: win.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
-                            }
-                            ClickTap { onTapped: Config.s.workspaceShape = parent.modelData.shape }
-                        }
-                    }
-                }
+            SegmentedChoice {
+                options: [{ value: "circle", label: "Circles", dot: "circle" }, { value: "square", label: "Squares", dot: "square" }]
+                value: Config.s.workspaceShape
+                onPicked: v => Config.s.workspaceShape = v
             }
         }
     }

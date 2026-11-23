@@ -203,18 +203,18 @@ FloatingWindow {
         const cls = t.wayland ? t.wayland.appId : t.lastIpcObject ? t.lastIpcObject.class : "";
         return cls === "slate-settings";
     }
-    // (the tests: press the switch on the row with this label on the page showing, as a click
-    // does: it says it was toggled, and the row decides. false when there's no such switch)
-    // (the tests: a button on the row with that label, pressed; a page's own state, where it keeps one)
+    // The first item showing under `from` (depth first, the page itself left out) that `want` says
+    // yes to: what the tests' hooks and search's "go to this setting" look for on the page
+    function findOnPage(from, want) {
+        if (!from) return null;
+        if (from.visible && want(from) && from !== pageLoader.item) return from;
+        for (const c of from.children) { const r = findOnPage(c, want); if (r) return r; }
+        return null;
+    }
+    // (the tests: a button on the row with that label, pressed)
     function testButton(rowLabel, label) {
-        const find = (it, want) => {
-            if (!it) return null;
-            if (it.visible && want(it) && it !== pageLoader.item) return it;
-            for (const c of it.children) { const r = find(c, want); if (r) return r; }
-            return null;
-        };
-        const r = find(pageLoader.item, it => it.label === rowLabel && it.detail !== undefined);
-        const b = r ? find(r, it => it !== r && it.label === label && it.clicked !== undefined && it.enabled) : null;
+        const r = findOnPage(pageLoader.item, it => it.label === rowLabel && it.detail !== undefined);
+        const b = r ? findOnPage(r, it => it !== r && it.label === label && it.clicked !== undefined && it.enabled) : null;
         if (!b) return false;
         b.clicked();
         return true;
@@ -222,13 +222,7 @@ FloatingWindow {
     // (the tests: where the dropdown on the row with this label has its button, in the window,
     // for a real click; and which dropdown's list is open)
     function testDropButton(label) {
-        const find = (it, want) => {
-            if (!it) return null;
-            if (it.visible && want(it) && it !== pageLoader.item) return it;
-            for (const c of it.children) { const r = find(c, want); if (r) return r; }
-            return null;
-        };
-        const d = find(pageLoader.item, it => it.label === label && it.searchable !== undefined && it.button !== undefined);
+        const d = findOnPage(pageLoader.item, it => it.label === label && it.searchable !== undefined && it.button !== undefined);
         if (!d) return null;
         const p = d.button.mapToItem(null, 0, 0);
         return { x: Math.round(p.x), y: Math.round(p.y), w: Math.round(d.button.width), h: Math.round(d.button.height) };
@@ -236,33 +230,17 @@ FloatingWindow {
     readonly property string dropOpen: dropLayer.owner ? String(dropLayer.owner.label || "") : ""
     // (the tests: open that dropdown's list, as its button does)
     function testOpenDrop(label) {
-        const find = (it, want) => {
-            if (!it) return null;
-            if (it.visible && want(it) && it !== pageLoader.item) return it;
-            for (const c of it.children) { const r = find(c, want); if (r) return r; }
-            return null;
-        };
-        const d = find(pageLoader.item, it => it.label === label && it.searchable !== undefined && it.button !== undefined);
+        const d = findOnPage(pageLoader.item, it => it.label === label && it.searchable !== undefined && it.button !== undefined);
         if (d) dropLayer.owner = d;
         return !!d;
     }
     function pageTestState() { const p = pageLoader.item; return p && p.testState !== undefined ? p.testState : null; }
     function pageItem() { return pageLoader.item; }
+    // (the tests: press the switch on the row with this label on the page showing, as a click
+    // does: it says it was toggled, and the row decides. false when there's no such switch)
     function testToggle(label) {
-        const row = it => {
-            if (!it) return null;
-            if (it.visible && it.label === label && it !== pageLoader.item) return it;
-            for (const c of it.children) { const r = row(c); if (r) return r; }
-            return null;
-        };
-        const sw = it => {
-            for (const c of it.children) {
-                if (c.visible && c.checked !== undefined && c.toggled !== undefined && c.enabled) return c;
-                const r = sw(c); if (r) return r;
-            }
-            return null;
-        };
-        const r = row(pageLoader.item), t = r ? sw(r) : null;
+        const r = findOnPage(pageLoader.item, it => it.label === label);
+        const t = r ? findOnPage(r, it => it !== r && it.checked !== undefined && it.toggled !== undefined && it.enabled) : null;
         if (!t) return false;
         t.toggled(!t.checked);
         return true;
@@ -273,13 +251,7 @@ FloatingWindow {
         if (!label || !pageLoader.item) return;
         // The setting (anything with that label), or a heading with that text
         const match = it => it.visible && (it.label === label || (it.text === label && it.label === undefined && it.font !== undefined && it.font.pixelSize <= 13));
-        const look = it => {
-            if (!it) return null;
-            if (match(it) && it !== pageLoader.item) return it;
-            for (const c of it.children) { const r = look(c); if (r) return r; }
-            return null;
-        };
-        const hit = look(pageLoader.item);
+        const hit = findOnPage(pageLoader.item, match);
         // Not there yet (rows a page makes once it's loaded something, like App theming's
         // apps): look again for a moment
         if (!hit) {
@@ -434,22 +406,18 @@ FloatingWindow {
     // title's Restore defaults: whether anything's changed, and what puts it back
     property bool pageResetChanged: false
     property var pageResetRun: null
-    // Any other question, asked in Slate's confirmation window: { title, body, button, run,
+    // Every question a page asks, in Slate's confirmation window: { title, body, button, run,
     // cancel (optional), cancelLabel (optional: the other button's label, when it's a choice
     // rather than backing out), destructive (optional: a red button Enter doesn't press),
-    // option (optional: { label, detail }, a switch in the question, off to start; run gets
-    // whether it's on) }. Setting this asks it, and it's cleared again at once
-    property var ask: null
-    onAskChanged: {
-        if (!ask) return;
-        const q = ask; ask = null; askInConfirmer(q);
-    }
-    // A question { title, body, button, destructive?, code?, option?, run(optionOn), cancel? }
-    function askInConfirmer(q) {
+    // code (optional: its icon), option (optional: { label, detail }, a switch in the question,
+    // off to start), input (optional: { text, placeholder, maxLength }, a box to type in) }.
+    // run(optionOn, typed) when it's answered yes
+    function askQuestion(q) {
+        if (!confirmer || !q) return;
         confirmer.confirmWith({ title: q.title, body: q.body, button: q.button,
                                 code: q.code || (q.destructive ? 0xEB41 : 0xEB13), danger: !!q.destructive, option: q.option || null,
-                                cancelLabel: q.cancelLabel || "" },
-                              v => { if (q.run) q.run(v); }, q.cancel || null);
+                                cancelLabel: q.cancelLabel || "", input: q.input || null },
+                              (v, typed) => { if (q.run) q.run(v, typed); }, q.cancel || null);
     }
     // Settings → Security → Slate login screen. It's optional (nothing installs it unless you
     // ask), so installing says plainly what can go wrong and what keeping it working takes
@@ -548,7 +516,7 @@ FloatingWindow {
     // a new one, with its own attention sound
     property var nextAsk: null
     function askAfter(q) { nextAsk = q; nextAskTimer.restart(); }
-    Timer { id: nextAskTimer; interval: 260; onTriggered: { win.ask = win.nextAsk; win.nextAsk = null; } }
+    Timer { id: nextAskTimer; interval: 260; onTriggered: { const q = win.nextAsk; win.nextAsk = null; win.askQuestion(q); } }
     // Restoring defaults that restarts Slate to apply them (Interface size, Log detail)
     readonly property bool resetRestarts: restartsFor(currentKeys)
     function restartsFor(keys) {
@@ -735,7 +703,7 @@ FloatingWindow {
                 MouseArea { anchors.fill: parent; z: -1; onPressed: win.startSystemMove() }
 
                 // ---- Search every setting (SettingsIndex), from any page -------------------
-                Rectangle {
+                SearchField {
                     id: pageSearch
                     // Above the rest of the header (the title row and Restore defaults come after it,
                     // so they'd otherwise draw over its results)
@@ -743,67 +711,35 @@ FloatingWindow {
                     visible: win.section !== "overview"
                     // Level with the close button (top right), and clear of it
                     anchors { top: parent.top; topMargin: 15; left: parent.left; leftMargin: 22; right: parent.right; rightMargin: 58 }
-                    height: 36; radius: Config.corner(10)
+                    height: 36
                     // Flat: a faint fill and no sheen, so it stays quiet above the page
                     color: win.faint
-                    border.width: pageFind.activeFocus ? 1 : 0; border.color: win.accent
-                    readonly property var found: pageFind.text.trim() === "" ? [] : SettingsIndex.search(pageFind.text, 8)
+                    edge: 12; gap: 8
+                    clearable: true; clearSize: 15
+                    hint: "Search settings"
+                    input.objectName: "pageFind"
+                    readonly property var found: text.trim() === "" ? [] : SettingsIndex.search(text, 8)
                     property int pick: 0
                     onFoundChanged: pick = 0
                     function open(e) {
                         if (!e) return;
-                        pageFind.text = "";
-                        pageFind.focus = false;
+                        pageSearch.text = "";
+                        pageSearch.input.focus = false;
                         win.goTo(e.page, e.label);
                     }
                     // A fresh search on each page, and each time Settings opens
                     Connections {
                         target: win
-                        function onSectionChanged() { pageFind.text = ""; }
-                        function onVisibleChanged() { pageFind.text = ""; }
-                        function onSearchFor(t) { if (pageSearch.visible) { pageFind.forceActiveFocus(); pageFind.text = t; } }
+                        function onSectionChanged() { pageSearch.text = ""; }
+                        function onVisibleChanged() { pageSearch.text = ""; }
+                        function onSearchFor(t) { if (pageSearch.visible) { pageSearch.input.forceActiveFocus(); pageSearch.text = t; } }
                     }
-                    Text {
-                        id: pageFindIcon
-                        anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                        text: Config.glyph(0xEB1C)
-                        color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
-                    }
-                    TextInput {
-                        id: pageFind
-                        objectName: "pageFind"
-                        activeFocusOnTab: true          // Tab: on into the page's own boxes
-                        anchors { left: pageFindIcon.right; leftMargin: 8; right: pageFindClear.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                        color: win.text; font.family: win.font; font.pixelSize: Config.text(13)
-                        selectionColor: win.accent; selectedTextColor: win.accentText
-                        clip: true
-                        Keys.onPressed: e => {
-                            const f = pageSearch.found;
-                            if (e.key === Qt.Key_Down) { pageSearch.pick = Math.min(f.length - 1, pageSearch.pick + 1); e.accepted = true; }
-                            else if (e.key === Qt.Key_Up) { pageSearch.pick = Math.max(0, pageSearch.pick - 1); e.accepted = true; }
-                            else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) { pageSearch.open(f[pageSearch.pick]); e.accepted = true; }
-                            else if (e.key === Qt.Key_Escape) { if (text !== "") text = ""; else focus = false; e.accepted = true; }
-                        }
-                        Text {
-                            visible: pageFind.text === ""
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Search settings"
-                            color: win.dim; font: pageFind.font
-                        }
-                    }
-                    HoverHandler { cursorShape: Qt.IBeamCursor }
-                    TapHandler { onTapped: pageFind.forceActiveFocus() }
-                    Text {
-                        id: pageFindClear
-                        visible: pageFind.text !== ""
-                        anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                        text: Config.glyph(0xEB55)
-                        color: pageFindClearHover.hovered ? win.text : win.dim
-                        // (with the fill behind it, not ahead of it)
-                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-                        font.family: win.bar.iconFont; font.pixelSize: 15
-                        HoverHandler { id: pageFindClearHover }
-                        ClickTap { onTapped: { pageFind.text = ""; pageFind.forceActiveFocus(); } }
+                    onKeyPressed: e => {
+                        const f = pageSearch.found;
+                        if (e.key === Qt.Key_Down) { pageSearch.pick = Math.min(f.length - 1, pageSearch.pick + 1); e.accepted = true; }
+                        else if (e.key === Qt.Key_Up) { pageSearch.pick = Math.max(0, pageSearch.pick - 1); e.accepted = true; }
+                        else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) { pageSearch.open(f[pageSearch.pick]); e.accepted = true; }
+                        else if (e.key === Qt.Key_Escape) { if (text !== "") text = ""; else input.focus = false; e.accepted = true; }
                     }
                 }
 
@@ -848,7 +784,7 @@ FloatingWindow {
             Rectangle {
                 id: pageHits
                 z: 6
-                visible: pageFind.activeFocus && pageFind.text.trim() !== ""
+                visible: pageSearch.input.activeFocus && pageSearch.text.trim() !== ""
                 // Under the search box (the header sits at the pane's top left)
                 x: header.x + pageSearch.x; y: header.y + pageSearch.y + pageSearch.height + 6
                 width: pageSearch.width
@@ -865,7 +801,7 @@ FloatingWindow {
                         visible: pageSearch.found.length === 0
                         width: parent.width
                         topPadding: 10; bottomPadding: 10; leftPadding: 12
-                        text: "No settings match “" + pageFind.text.trim() + "”"
+                        text: "No settings match “" + pageSearch.text.trim() + "”"
                         color: win.dim; font.family: win.font; font.pixelSize: Config.text(13)
                         elide: Text.ElideRight
                     }
@@ -953,9 +889,8 @@ FloatingWindow {
                     // Only while Settings shows: closed, the page (its wallpaper thumbnails, folder
                     // watching, device lists…) is let go, and built again on opening
                     active: win.visible
-                    sourceComponent: ({ overview: overviewPage, general: generalPage, appearance: appearancePage, bar: barPage, control: controlPage, dock: dockPage, launcher: launcherPage, spaces: spacesPage,
-                        displays: displaysPage, input: inputPage, sound: soundPage, power: powerPage, shortcuts: shortcutsPage,
-                        unlock: unlockPage, apps: appsPage, startup: startupPage, apprules: appRulesPage, datetime: timePage, screenshots: shotsPage, windows: windowsPage, notifications: notificationsPage, bluetooth: bluetoothPage, printers: printersPage, users: usersPage, accessibility: accessibilityPage, timers: timersPage, storage: storagePage, about: aboutPage, wifi: wifiPage, hotcorners: hotCornersPage, debug: debugPage, webcam: webcamPage, lock: lockPage, screensaver: screensaverPage, updates: updatesPage, workspaces: workspacesPage, apptheming: appThemingPage, wallpaper: wallpaperPage, icons: iconsPage, assistant: assistantPage })[win.section]
+                    // (each page is a file of its own, named once in SettingsIndex.pages)
+                    source: SettingsIndex.pageFile(win.section) !== "" ? Qt.resolvedUrl("settings/pages/" + SettingsIndex.pageFile(win.section) + ".qml") : ""
                     onLoaded: {
                         scroller.contentY = 0; dropLayer.owner = null;
                         if (win.findLabel) Qt.callLater(() => Qt.callLater(win.showFound));
@@ -1215,77 +1150,37 @@ FloatingWindow {
     }
 
 
-    Component { id: overviewPage; OverviewPage {} }
-    Component { id: generalPage; GeneralPage {} }
-
-    Component { id: barPage; BarPage {} }
-
-    Component { id: dockPage; DockPage {} }
-
-    Component { id: spacesPage; SpacesPage {} }
-
-    Component { id: screensaverPage; ScreensaverPage {} }
-
-    Component { id: controlPage; ControlPage {} }
-
-    Component { id: launcherPage; LauncherPage {} }
-
-    Component { id: displaysPage; DisplaysPage {} }
-
-    Component { id: inputPage; InputPage {} }
-
-    Component { id: soundPage; SoundPage {} }
-
-    Component { id: powerPage; PowerPage {} }
-
-    Component { id: shortcutsPage; ShortcutsPage {} }
-
-    Component { id: appsPage; AppsPage {} }
-
-    Component { id: startupPage; StartupPage {} }
-    Component { id: appRulesPage; AppRulesPage {} }
-
-    Component { id: timePage; DateTimePage {} }
-
-    Component { id: shotsPage; ScreenshotsPage {} }
-
-    Component { id: assistantPage; AssistantPage {} }
-
-    Component { id: windowsPage; WindowsPage {} }
-
-    Component { id: workspacesPage; WorkspacesPage {} }
-
-    Component { id: notificationsPage; NotificationsPage {} }
 
 
-    Component { id: appearancePage; AppearancePage {} }
 
-    Component { id: wallpaperPage; WallpaperPage {} }
 
-    Component { id: iconsPage; IconsPage {} }
 
-    Component { id: appThemingPage; AppThemingPage {} }
 
-    Component { id: wifiPage; WifiPage {} }
 
-    Component { id: lockPage; LockPage {} }
-    Component { id: unlockPage; UnlockPage {} }
 
-    Component { id: hotCornersPage; HotCornersPage {} }
 
-    Component { id: bluetoothPage; BluetoothPage {} }
 
-    Component { id: printersPage; PrintersPage {} }
 
-    Component { id: usersPage; UsersPage {} }
-    Component { id: accessibilityPage; AccessibilityPage {} }
-    Component { id: timersPage; TimersPage {} }
-    Component { id: storagePage; StoragePage {} }
 
-    Component { id: updatesPage; UpdatesPage {} }
 
-    Component { id: webcamPage; WebcamPage {} }
 
-    Component { id: debugPage; DebugPage {} }
-    Component { id: aboutPage; AboutPage {} }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

@@ -74,7 +74,7 @@ Column {
                 button: "Install"
             };
             // (in Slate's confirmation window, like shutting down or emptying the waste basket)
-            win.ask = Object.assign({ run: go, code: 0xEA96 }, q);
+            win.askQuestion(Object.assign({ run: go, code: 0xEA96 }, q));
         }
         Process {
             id: installer

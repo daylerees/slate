@@ -85,23 +85,10 @@ Column {
     }
     Item { width: 1; height: 6 }
 
-    Rectangle {
-        width: parent.width; height: 40; radius: Config.corner(10)
-        color: win.card
-        border.width: findKeys.activeFocus ? 1 : 0; border.color: win.accent
-        Text {
-            id: keysGlass
-            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-            text: Config.glyph(0xEB1C); color: win.dim; font.family: win.bar.iconFont; font.pixelSize: 16
-        }
-        TextInput {
-            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
-            id: findKeys
-            anchors { left: keysGlass.right; leftMargin: 10; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            color: win.text; font.family: win.font; font.pixelSize: Config.text(13); clip: true
-            selectionColor: win.accent; selectedTextColor: win.accentText
-            Text { visible: findKeys.text === ""; text: "Search shortcuts"; color: win.dim; font: findKeys.font; anchors.verticalCenter: parent.verticalCenter }
-        }
+    SearchField {
+        id: findKeys
+        width: parent.width
+        hint: "Search shortcuts"
     }
     Repeater {
         model: shortcutsPane.groups

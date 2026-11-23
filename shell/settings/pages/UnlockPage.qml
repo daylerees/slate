@@ -58,17 +58,18 @@ Column {
         keyNamesFile.setText(JSON.stringify({ names: keyNames }));
     }
     function askAddKey() {
-        win.confirmer.confirmWith({
+        win.askQuestion({
             title: "Add a security key?",
             body: "Plug in your key, and touch it when it blinks. Then Slate asks for your password to save it. "
                 + "Only the key's public half is kept, on this computer.",
-            button: "Add", code: 0xEAC7, danger: false,
-            input: { text: "", placeholder: "A name for it, like YubiKey", maxLength: 40 }
-        }, (opt, typed) => {
-            addingKeyName = String(typed || "").trim().slice(0, 40);
-            keySaid = "Touch your security key"; keyProblem = false;
-            keyReg.command = [fpTool("pamu2fcfg"), "-n"];
-            keyReg.running = true;
+            button: "Add", code: 0xEAC7,
+            input: { text: "", placeholder: "A name for it, like YubiKey", maxLength: 40 },
+            run: (opt, typed) => {
+                addingKeyName = String(typed || "").trim().slice(0, 40);
+                keySaid = "Touch your security key"; keyProblem = false;
+                keyReg.command = [fpTool("pamu2fcfg"), "-n"];
+                keyReg.running = true;
+            }
         });
     }
     // pamu2fcfg -n: its last line is the key's registration (":<handle>,<public key>,<type>,<flags>")
@@ -95,13 +96,13 @@ Column {
     }
     function askRemoveKey(i) {
         const name = keyName(keyHandles[i], i);
-        win.ask = {
+        win.askQuestion({
             title: "Remove “" + name + "”?",
             body: "This key won't unlock the lock screen any more. Your password and any other keys still work, "
                 + "and you can add it again at any time.",
             button: "Remove", destructive: true, code: 0xEAC7,
             run: () => helper(["key-remove", String(i + 1)], "Removing…", "Removed", "Slate couldn't remove it", false)
-        };
+        });
     }
     // ---- The login screen: the same ways in, on Slate's own (greetd) login screen, each turned on
     // for it apart from the lock screen (slate-unlock login-enable: /etc/pam.d/slate-greetd)
@@ -165,7 +166,7 @@ Column {
     function askAddFinger() {
         const finger = addingFinger;
         if (finger === "") return;
-        win.ask = {
+        win.askQuestion({
             title: "Add your " + fingerLabel(finger).toLowerCase() + "?",
             body: "Touch the reader with it, lift it, and touch again, until Slate says it's done. A few touches, "
                 + "each a little different, help it know your finger. It stays on this computer.",
@@ -175,16 +176,16 @@ Column {
                 fp.command = [fpTool("fprintd-enroll"), "-f", finger];
                 fp.running = true;
             }
-        };
+        });
     }
     function askRemoveFinger(finger) {
-        win.ask = {
+        win.askQuestion({
             title: "Remove your " + fingerLabel(finger).toLowerCase() + "?",
             body: "Slate won't recognize this finger any more. Your password and your other fingers still work, "
                 + "and you can add it again at any time.",
             button: "Remove", destructive: true, code: 0xEBD1,
             run: () => { fpSaid = ""; fpDelete.command = [fpTool("fprintd-delete"), unlockPage.me, "-f", finger]; fpDelete.running = true; }
-        };
+        });
     }
     Process {
         id: fpDelete
@@ -310,27 +311,28 @@ Column {
     // looking at you
     function askAdd() {
         const first = faces.length === 0;
-        win.confirmer.confirmWith({
+        win.askQuestion({
             title: first ? "Add your face?" : "Add another look?",
             body: "Look straight at your camera when it starts. Slate asks for your password, then takes a few seconds "
                 + "to learn your face. It stays on this computer." + (first ? "" : " Another look (with glasses, say) helps it know you."),
-            button: "Add", code: 0xEA9B, danger: false,
-            input: { text: first ? "Me" : "", placeholder: "A name for it, like Glasses", maxLength: 40 }
-        }, (opt, typed) => {
-            const label = String(typed || "").trim().replace(/[^A-Za-z0-9 _.-]/g, "").slice(0, 40) || (first ? "Me" : "Face " + (faces.length + 1));
-            const args = ["face-add", /^[A-Za-z0-9]/.test(label) ? label : "Face " + (faces.length + 1)];
-            if (chosen) args.push(chosen.path);
-            helper(args, "Looking at you…", "Added. You can unlock with your face once it's on below", "Slate couldn't add your face", true);
+            button: "Add", code: 0xEA9B,
+            input: { text: first ? "Me" : "", placeholder: "A name for it, like Glasses", maxLength: 40 },
+            run: (opt, typed) => {
+                const label = String(typed || "").trim().replace(/[^A-Za-z0-9 _.-]/g, "").slice(0, 40) || (first ? "Me" : "Face " + (faces.length + 1));
+                const args = ["face-add", /^[A-Za-z0-9]/.test(label) ? label : "Face " + (faces.length + 1)];
+                if (chosen) args.push(chosen.path);
+                helper(args, "Looking at you…", "Added. You can unlock with your face once it's on below", "Slate couldn't add your face", true);
+            }
         });
     }
     function askRemove(face) {
-        win.ask = {
+        win.askQuestion({
             title: "Remove “" + face.label + "”?",
             body: "Slate won't recognize you by this look any more. Your password and any other looks still work, "
                 + "and you can add it again at any time.",
             button: "Remove", destructive: true, code: 0xEA9B,
             run: () => helper(["face-remove", String(face.id)], "Removing…", "Removed", "Slate couldn't remove it", true)
-        };
+        });
     }
     function setOn(on) {
         helper([on ? "enable" : "disable", "face"], on ? "Turning it on…" : "Turning it off…",

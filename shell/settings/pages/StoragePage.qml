@@ -116,11 +116,12 @@ Column {
             detail: storagePage.measured.kinds ? Config.bytesText(storagePage.measured.kinds.trash || 0) + " in it" : ""
             Button {
                 label: "Empty"; icon: 0xEB41; destructive: true
-                onClicked: win.confirmer.confirmWith({
+                onClicked: win.askQuestion({
                     title: "Empty the waste basket?",
                     body: "Everything in it will be deleted for good. Just so you know, this can't be undone.",
-                    button: "Empty", code: 0xEB41, danger: true
-                }, () => { Quickshell.execDetached(["gio", "trash", "--empty"]); emptied.restart(); })
+                    button: "Empty", destructive: true,
+                    run: () => { Quickshell.execDetached(["gio", "trash", "--empty"]); emptied.restart(); }
+                })
                 Timer { id: emptied; interval: 1500; onTriggered: storagePage.again() }
             }
         }
@@ -130,11 +131,12 @@ Column {
             detail: "Thumbnails, and apps' temporary files nothing has used for a month. Apps make them again when they need them"
             Button {
                 label: "Clear"; icon: 0xEB41; destructive: true
-                onClicked: win.confirmer.confirmWith({
+                onClicked: win.askQuestion({
                     title: "Clear old caches?",
                     body: "Thumbnails and temporary files apps haven't used for a month will be deleted. Your own files stay as they are, and apps make what they need again.",
-                    button: "Clear", code: 0xEB41, danger: true
-                }, () => { clearing.running = false; clearing.running = true; })
+                    button: "Clear", destructive: true,
+                    run: () => { clearing.running = false; clearing.running = true; }
+                })
             }
         }
     }

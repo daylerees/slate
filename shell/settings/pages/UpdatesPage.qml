@@ -129,13 +129,13 @@ Column {
                     onClicked: {
                         // Over files you've changed, ask first (in Slate's confirmation window)
                         if (updatesPane.touched.length === 0) { Updates.install(); return; }
-                        win.ask = {
+                        win.askQuestion({
                             title: "Update over your changes?",
                             body: "You've changed some of Slate's own files. Updating replaces them, and your versions stay in "
                                 + Updates.kept + ". Your settings.json, hypr/ and user/ aren't touched.",
                             button: "Update anyway", code: 0xEA96,
                             run: () => Updates.install()
-                        };
+                        });
                     }
                 }
             }
@@ -230,14 +230,14 @@ Column {
             Button {
                 enabled: !Updates.busy
                 label: "Go back"
-                onClicked: win.ask = {
+                onClicked: win.askQuestion({
                     title: "Go back to " + (Updates.previous === "unknown" ? "the previous version" : updatesPane.nice(Updates.previous)) + "?",
                     body: "Slate switches to the version kept in " + Updates.kept + " and restarts. Your settings and tweaks "
                         + "stay as they are now, and the version you leave is kept instead, so you can switch back."
                         + (Updates.how === "shared" ? " It asks for an administrator's password." : ""),
                     button: "Go back", code: 0xEA60,
                     run: () => Updates.revert()
-                }
+                })
             }
         }
     }

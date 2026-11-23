@@ -114,6 +114,9 @@ shell.qml               root: creates everything below, plus the dock itself
 │     ├─ Building blocks (shell/settings/): SettingRow.qml (label, description and a control; says what it
 │     │  needs), Group.qml and GroupLabel.qml (a card of rows under its heading), PageTitle.qml,
 │     │  IntroText.qml, Footnote.qml, Separator.qml, IconButton.qml, Button.qml, FieldFrame.qml,
+│     │  TextField.qml (a text box: FieldFrame round its TextInput, with a hint),
+│     │  SegmentedChoice.qml (two or three choices side by side: Dark | Light | Auto),
+│     │  SearchField.qml (a search box: the window's, All Settings', Shortcuts'),
 │     │  FirstLook.qml (a process a page runs to see how things stand),
 │     │  ToggleSetting.qml and SettingToggle.qml (the switches), ValueSlider.qml, SoundSetting.qml,
 │     │  DropdownSetting.qml, FontSetting.qml, ChoiceSetting.qml, ListItemRow.qml,

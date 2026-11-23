@@ -15,13 +15,14 @@ class Preview(LiveCase):
         super().setUp()
         self.addCleanup(lambda: self.ipc("settings", "close"))
 
-    def page(self, want, what):
-        return self.wait(lambda st: st["settings"]["page"] is not None and want(st["settings"]["page"]), what)["settings"]["page"]
+    def page(self, want, what, timeout=8):
+        return self.wait(lambda st: st["settings"]["page"] is not None and want(st["settings"]["page"]), what, timeout=timeout)["settings"]["page"]
 
     def test_the_preview_loads(self):
         self.ipc("settings", "page", "webcam")
         self.page(lambda p: "cams" in p, "the Webcam page")
         self.assertEqual(self.ipc("test", "settingsPagePretend", json.dumps({"cams": [CAM], "preview": True})), "done")
-        p = self.page(lambda p: p["previewLoaded"] or p["previewFailed"], "the preview to load, or fail")
+        # (Qt Multimedia's first load can take a while on a busy computer)
+        p = self.page(lambda p: p["previewLoaded"] or p["previewFailed"], "the preview to load, or fail", timeout=25)
         self.assertFalse(p["previewFailed"], "the preview didn't load (it would say Qt Multimedia is missing)")
         self.assertTrue(p["previewLoaded"])

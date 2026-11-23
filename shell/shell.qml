@@ -399,8 +399,8 @@ ShellRoot {
         // confirmation window (power: custom)
         function settingsAsk(): void {
             const w = settingsLoader.item;
-            if (w) w.ask = { title: "Test question?", body: "From the tests", button: "Yes",
-                             option: { label: "Also this", detail: "A switch" }, run: v => {}, cancel: () => {} };
+            if (w) w.askQuestion({ title: "Test question?", body: "From the tests", button: "Yes",
+                             option: { label: "Also this", detail: "A switch" }, run: v => {}, cancel: () => {} });
         }
         // The page title's Restore defaults, as clicking it does: it asks in Slate's confirmation
         // window first (answered with answer())

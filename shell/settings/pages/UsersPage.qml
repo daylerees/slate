@@ -84,38 +84,6 @@ Column {
     }
     function taken(username) { return state.users.some(u => u.username === username); }
 
-    // A text box on a row: FieldFrame round a TextInput
-    component Field: FieldFrame {
-        property alias text: input.text
-        property alias input: input
-        property string hint: ""
-        property bool secret: false
-        signal accepted()
-        signal edited()          // typed into
-        signal finished()        // Enter, or left
-        field: input
-        width: 220; height: 30
-        TextInput {
-            activeFocusOnTab: true          // Tab / Shift+Tab: the next or the box before
-            id: input
-            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-            verticalAlignment: TextInput.AlignVCenter
-            clip: true
-            color: win.text; selectionColor: win.accent
-            font.family: win.font; font.pixelSize: Config.text(12)
-            echoMode: parent.secret ? TextInput.Password : TextInput.Normal
-            onAccepted: parent.accepted()
-            onTextEdited: parent.edited()
-            onEditingFinished: parent.finished()
-        }
-        Text {
-            visible: input.text === "" && !input.activeFocus
-            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-            text: parent.hint
-            color: win.dim; font.family: win.font; font.pixelSize: Config.text(12)
-        }
-    }
-
     PageTitle { text: "Users" }
     IntroText { text: "The people who can log in to this computer, each with their own files, settings and password. Adding someone or changing their account asks for an administrator's password." }
 
@@ -203,7 +171,7 @@ Column {
                                     usersPane.note = u.name + " is logged in right now. Once they log out, you can remove them";
                                     return;
                                 }
-                                win.ask = {
+                                win.askQuestion({
                                     title: "Remove " + u.name + "?",
                                     body: u.name + " won't be able to log in anymore. Their files stay in " + (u.home || "their home folder")
                                         + " unless you choose to delete them too. This asks for an administrator's password.",
@@ -211,7 +179,7 @@ Column {
                                     option: { label: "Delete their files too", detail: "Everything in " + (u.home || "their home folder") + " goes, and can't be brought back" },
                                     run: deleteFiles => usersPane.act(["remove", String(u.uid), deleteFiles ? "delete" : "keep"],
                                         (deleteFiles ? "Removing " + u.name + " and their files…" : "Removing " + u.name + "…"))
-                                };
+                                });
                             }
                         }
                     }
@@ -225,7 +193,7 @@ Column {
                     SettingRow {
                         label: "Name"
                         detail: "How they're shown on the login screen and the lock screen"
-                        Field {
+                        TextField {
                             id: nameField
                             hint: "Full name"
                             Component.onCompleted: text = userRow.user.name
@@ -282,9 +250,9 @@ Column {
                             : mine ? "The one you log in and unlock with" : "The one they log in with. Let them know what it is"
                         Row {
                             spacing: 8
-                            Field { id: pw0; visible: userRow.changingPassword && pwRow.mine; width: 120; secret: true; hint: "Current"; onAccepted: pw1.input.forceActiveFocus() }
-                            Field { id: pw1; visible: userRow.changingPassword; width: pwRow.mine ? 120 : 150; secret: true; hint: "New password"; onAccepted: pw2.input.forceActiveFocus() }
-                            Field { id: pw2; visible: userRow.changingPassword; width: pwRow.mine ? 120 : 150; secret: true; hint: "Again"; onAccepted: setPw.clicked() }
+                            TextField { id: pw0; visible: userRow.changingPassword && pwRow.mine; width: 120; secret: true; hint: "Current"; onAccepted: pw1.input.forceActiveFocus() }
+                            TextField { id: pw1; visible: userRow.changingPassword; width: pwRow.mine ? 120 : 150; secret: true; hint: "New password"; onAccepted: pw2.input.forceActiveFocus() }
+                            TextField { id: pw2; visible: userRow.changingPassword; width: pwRow.mine ? 120 : 150; secret: true; hint: "Again"; onAccepted: setPw.clicked() }
                             Button {
                                 id: setPw
                                 label: userRow.changingPassword ? "Change" : "Change password"
@@ -354,14 +322,14 @@ Column {
             visible: usersPane.adding
             label: "Full name"
             detail: "As it's shown on the login screen"
-            Field { id: fullField; hint: "Sam Lee"; onAccepted: (addGroup.usernameTyped ? pass1 : userField).input.forceActiveFocus() }
+            TextField { id: fullField; hint: "Sam Lee"; onAccepted: (addGroup.usernameTyped ? pass1 : userField).input.forceActiveFocus() }
         }
         Separator { visible: usersPane.adding }
         SettingRow {
             visible: usersPane.adding
             label: "Username"
             detail: "What they log in with, and the name of their home folder. It can't be changed later"
-            Field {
+            TextField {
                 id: userField
                 hint: addGroup.username || "sam"
                 onAccepted: pass1.input.forceActiveFocus()
@@ -375,8 +343,8 @@ Column {
             detail: "Type it twice. You can change it later, and so can they"
             Row {
                 spacing: 8
-                Field { id: pass1; width: 150; secret: true; hint: "Password"; onAccepted: pass2.input.forceActiveFocus() }
-                Field { id: pass2; width: 150; secret: true; hint: "Again"; onAccepted: addGroup.add() }
+                TextField { id: pass1; width: 150; secret: true; hint: "Password"; onAccepted: pass2.input.forceActiveFocus() }
+                TextField { id: pass2; width: 150; secret: true; hint: "Again"; onAccepted: addGroup.add() }
             }
         }
         Separator { visible: usersPane.adding }

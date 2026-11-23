@@ -64,13 +64,13 @@ Column {
             onPicked: v => {
                 if (v === (Config.s.logLevel || "normal")) return;
                 const name = ({ normal: "Normal", detailed: "Detailed", everything: "Everything" })[v];
-                win.ask = {
+                win.askQuestion({
                     title: "Restart Slate?",
                     body: "Log detail changes to " + name + " when Slate restarts. Your apps and windows stay open. "
                         + "The bar, dock and Settings step away for a moment, then Settings opens again right here.",
                     button: "Restart",
                     run: () => { Config.s.logLevel = v; Config.logLevelEdited(); }
-                };
+                });
             }
         }
         Separator {}
@@ -114,7 +114,7 @@ Column {
             Button {
                 label: "Reset…"
                 destructive: true
-                onClicked: win.ask = {
+                onClicked: win.askQuestion({
                     title: "Reset Slate?",
                     body: "Every setting goes back to its default, and Slate forgets your dock pins, saved Spaces, launcher "
                         + "history, notifications, clipboard history, display layout and app theming. Your apps and "
@@ -137,7 +137,7 @@ Column {
                         run: () => Quickshell.execDetached(["setsid", "-f", Quickshell.shellPath("bin/slate-factory-reset")]
                             .concat(userFiles ? ["--user-files"] : []))
                     })
-                }
+                })
             }
         }
     }

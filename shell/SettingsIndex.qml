@@ -20,47 +20,54 @@ Singleton {
     // keeps that page lit in the sidebar.
     // SettingsWindow shows these; the launcher and search use the icons and names below.
     readonly property var pages: [
-        { id: "general", label: "General", icon: 0xEB20, about: "Your account, location, night light and clipboard history" },
-        { id: "appearance", label: "Appearance", icon: 0xEB01, about: "Theme, colors, glass, fonts, size and motion; wallpaper and icons from here" },
-        { id: "wallpaper", label: "Wallpaper", icon: 0xEF56, more: true, parent: "appearance", about: "Your desktop picture: your own, Slate's, and changing by itself" },
-        { id: "icons", label: "Icons", icon: 0xF1D4, more: true, parent: "appearance", about: "The icon theme, folder colors, and how app icons look" },
-        { id: "displays", label: "Displays", icon: 0xEA89, about: "Resolution, scale, rotation and arranging your screens" },
-        { id: "input", label: "Input", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad" },
-        { id: "sound", label: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and sound effects" },
-        { id: "power", label: "Power", icon: 0xEA38, more: true, about: "Power mode, the charging limit, the lid and the power button" },
-        { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling, scrolling or floating, gaps, borders, focus and Super+Tab" },
-        { id: "workspaces", label: "Workspaces", icon: 0xEDBA, about: "Switching, wrapping round, indicators and the overview" },
-        { id: "notifications", label: "Notifications", icon: 0xEA35, more: true, about: "Where pop-ups go, how long they stay, Do Not Disturb" },
-        { id: "storage", label: "Storage", icon: 0xEA88, more: true, about: "How full your drives are, what's using the space, and freeing some" },
-        { id: "timers", label: "Timers", icon: 0xEA70, more: true, about: "A drink reminder and a focus timer, on the menu bar or the dock" },
-        { id: "accessibility", label: "Accessibility", icon: 0xEBA9, about: "Easier to see and use: a screen reader, zoom, contrast, text size, an on-screen keyboard" },
-        { id: "wifi", label: "Network", icon: 0xF09F, about: "Your connection, wired and Wi-Fi, and networks to join" },
-        { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices" },
-        { id: "printers", label: "Printers", icon: 0xEB0E, more: true, about: "Adding printers, test pages, and scanning" },
-        { id: "webcam", label: "Webcam", icon: 0xEA54, more: true, about: "The camera's picture: brightness, color, light and flicker" },
-        { id: "bar", label: "Menu Bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows" },
-        { id: "control", label: "Control Center", icon: 0xEB3F, more: true, about: "Its quick switches: which ones, and in what order" },
-        { id: "dock", label: "Dock", icon: 0xEAD3, more: true, about: "Position, auto-hide, icon size and magnification" },
-        { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use" },
-        { id: "spaces", label: "Spaces", icon: 0xEEF6, more: true, about: "Saved sets of workspaces, and how their windows are marked" },
-        { id: "hotcorners", label: "Hot Corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen" },
-        { id: "users", label: "Users", icon: 0xEBF2, more: true, about: "The people on this computer: adding, changing and removing accounts" },
-        { id: "lock", label: "Security", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen and the firewall" },
-        { id: "unlock", label: "Face, Fingerprint & Keys", icon: 0xEA9B, more: true, parent: "lock", about: "Unlocking the lock screen without typing your password" },
-        { id: "screensaver", label: "Screensaver", icon: 0xEAF8, more: true, about: "A clock, your wallpaper, a slideshow or videos while you're away" },
-        { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable" },
-        { id: "apps", label: "Default Apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator" },
-        { id: "startup", label: "Startup Apps", icon: 0xEC45, more: true, about: "Apps that open when you log in" },
-        { id: "apprules", label: "App Rules", icon: 0xEFD6, more: true, about: "Where and how an app's windows open: a workspace, floating, full screen" },
-        { id: "datetime", label: "Region", icon: 0xEA70, more: true, about: "Time zone, the clock, and how dates and temperatures are written" },
-        { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, parent: "appearance", about: "Other apps following Slate's colors: terminals, editors, GTK, Qt…" },
-        { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, marking up, and recording" },
-        { id: "assistant", label: "Assistant", icon: 0xF014, more: true, about: "AI agents using Slate: what they may do and see" },
-        { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back" },
-        { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up" },
+        { id: "general", label: "General", icon: 0xEB20, about: "Your account, location, night light and clipboard history", file: "GeneralPage" },
+        { id: "appearance", label: "Appearance", icon: 0xEB01, about: "Theme, colors, glass, fonts, size and motion; wallpaper and icons from here", file: "AppearancePage" },
+        { id: "wallpaper", label: "Wallpaper", icon: 0xEF56, more: true, parent: "appearance", about: "Your desktop picture: your own, Slate's, and changing by itself", file: "WallpaperPage" },
+        { id: "icons", label: "Icons", icon: 0xF1D4, more: true, parent: "appearance", about: "The icon theme, folder colors, and how app icons look", file: "IconsPage" },
+        { id: "displays", label: "Displays", icon: 0xEA89, about: "Resolution, scale, rotation and arranging your screens", file: "DisplaysPage" },
+        { id: "input", label: "Input", icon: 0xEBD6, about: "Keyboard layouts, key repeat, the mouse and the touchpad", file: "InputPage" },
+        { id: "sound", label: "Sound", icon: 0xEB51, about: "Speakers, microphones, volume and sound effects", file: "SoundPage" },
+        { id: "power", label: "Power", icon: 0xEA38, more: true, about: "Power mode, the charging limit, the lid and the power button", file: "PowerPage" },
+        { id: "windows", label: "Windows", icon: 0xEFE6, about: "Tiling, scrolling or floating, gaps, borders, focus and Super+Tab", file: "WindowsPage" },
+        { id: "workspaces", label: "Workspaces", icon: 0xEDBA, about: "Switching, wrapping round, indicators and the overview", file: "WorkspacesPage" },
+        { id: "notifications", label: "Notifications", icon: 0xEA35, more: true, about: "Where pop-ups go, how long they stay, Do Not Disturb", file: "NotificationsPage" },
+        { id: "storage", label: "Storage", icon: 0xEA88, more: true, about: "How full your drives are, what's using the space, and freeing some", file: "StoragePage" },
+        { id: "timers", label: "Timers", icon: 0xEA70, more: true, about: "A drink reminder and a focus timer, on the menu bar or the dock", file: "TimersPage" },
+        { id: "accessibility", label: "Accessibility", icon: 0xEBA9, about: "Easier to see and use: a screen reader, zoom, contrast, text size, an on-screen keyboard", file: "AccessibilityPage" },
+        { id: "wifi", label: "Network", icon: 0xF09F, about: "Your connection, wired and Wi-Fi, and networks to join", file: "WifiPage" },
+        { id: "bluetooth", label: "Bluetooth", icon: 0xEA37, about: "Pairing and connecting devices", file: "BluetoothPage" },
+        { id: "printers", label: "Printers", icon: 0xEB0E, more: true, about: "Adding printers, test pages, and scanning", file: "PrintersPage" },
+        { id: "webcam", label: "Webcam", icon: 0xEA54, more: true, about: "The camera's picture: brightness, color, light and flicker", file: "WebcamPage" },
+        { id: "bar", label: "Menu Bar", icon: 0xEAD7, more: true, about: "Position, auto-hide, and what it shows", file: "BarPage" },
+        { id: "control", label: "Control Center", icon: 0xEB3F, more: true, about: "Its quick switches: which ones, and in what order", file: "ControlPage" },
+        { id: "dock", label: "Dock", icon: 0xEAD3, more: true, about: "Position, auto-hide, icon size and magnification", file: "DockPage" },
+        { id: "launcher", label: "Launcher", icon: 0xEB1C, more: true, about: "App descriptions and ordering by use", file: "LauncherPage" },
+        { id: "spaces", label: "Spaces", icon: 0xEEF6, more: true, about: "Saved sets of workspaces, and how their windows are marked", file: "SpacesPage" },
+        { id: "hotcorners", label: "Hot Corners", icon: 0xF7A0, more: true, about: "Actions for the corners of the screen", file: "HotCornersPage" },
+        { id: "users", label: "Users", icon: 0xEBF2, more: true, about: "The people on this computer: adding, changing and removing accounts", file: "UsersPage" },
+        { id: "lock", label: "Security", icon: 0xEAE2, more: true, about: "Locking, screen off and sleep when idle; the login screen and the firewall", file: "LockPage" },
+        { id: "unlock", label: "Face, Fingerprint & Keys", icon: 0xEA9B, more: true, parent: "lock", about: "Unlocking the lock screen without typing your password", file: "UnlockPage" },
+        { id: "screensaver", label: "Screensaver", icon: 0xEAF8, more: true, about: "A clock, your wallpaper, a slideshow or videos while you're away", file: "ScreensaverPage" },
+        { id: "shortcuts", label: "Shortcuts", icon: 0xEA78, more: true, about: "Every keyboard shortcut, searchable", file: "ShortcutsPage" },
+        { id: "apps", label: "Default Apps", icon: 0xEBB6, more: true, about: "Terminal, browser, files, editor and calculator", file: "AppsPage" },
+        { id: "startup", label: "Startup Apps", icon: 0xEC45, more: true, about: "Apps that open when you log in", file: "StartupPage" },
+        { id: "apprules", label: "App Rules", icon: 0xEFD6, more: true, about: "Where and how an app's windows open: a workspace, floating, full screen", file: "AppRulesPage" },
+        { id: "datetime", label: "Region", icon: 0xEA70, more: true, about: "Time zone, the clock, and how dates and temperatures are written", file: "DateTimePage" },
+        { id: "apptheming", label: "App Theming", icon: 0xEB01, more: true, parent: "appearance", about: "Other apps following Slate's colors: terminals, editors, GTK, Qt…", file: "AppThemingPage" },
+        { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, marking up, and recording", file: "ScreenshotsPage" },
+        { id: "assistant", label: "Assistant", icon: 0xF014, more: true, about: "AI agents using Slate: what they may do and see", file: "AssistantPage" },
+        { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back", file: "UpdatesPage" },
+        { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up", file: "DebugPage" },
         // About is always last
-        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it" }
+        { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it", file: "AboutPage" }
     ]
+    // Each page's file in settings/pages/ (without ".qml"), All Settings (overview) included:
+    // what the window loads for it, and what settings-index.py reads
+    function pageFile(id) {
+        if (id === "overview") return "OverviewPage";
+        const p = pages.find(x => x.id === id);
+        return p ? p.file : "";
+    }
     // Each page's icon and name by its id, All Settings (overview) included
     readonly property var pageIcons: {
         const icons = { overview: 0xEA03 };
