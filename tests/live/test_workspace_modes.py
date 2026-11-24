@@ -106,6 +106,28 @@ class WorkspaceModes(Waits, LiveCase):
         c = self.steady(lambda: self.client(floated["address"]), floor=0.1)
         self.assertFalse(c["floating"], "not re-tiled when the workspace went back to the default")
 
+    def test_back_to_tiling_leaves_windows_that_always_float(self):
+        """A floating workspace's rule marked every window it floated, including ones that float
+        by their own rule (a calculator, the volume mixer), and going back to tiling tiled those
+        too. Now only what the workspace floated is re-tiled."""
+        self.keep_setting("titleBarStyle")
+        self.config("titleBarStyle", "slate")
+        self.ipc("workspacemode", "set", "8", "floating")
+        self.go(8)
+        self.mode_in_hyprland(8)
+        before = {c["address"] for c in self.s.hyprctl("clients", json_out=True)}
+        # (foot under the volume mixer's class: it floats by the floatApps rule)
+        self.s.hyprctl("eval", 'hl.exec_cmd("foot --app-id org.pulseaudio.pavucontrol")')
+        mixer = self.new_window(before)
+        plain = self.foot_on(8)
+        self.assertTrue(mixer["floating"] and plain["floating"])
+        self.ipc("workspacemode", "set", "8", "")
+        self.mode_in_hyprland(8)
+        c = self.steady(lambda: self.client(plain["address"]), floor=0.1)
+        self.assertFalse(c["floating"], "the workspace's own floated window wasn't re-tiled")
+        c = self.steady(lambda: self.client(mixer["address"]), floor=0.1)
+        self.assertTrue(c["floating"], "a window that always floats was tiled on the way back")
+
     def test_solo_one_window_per_workspace(self):
         """Solo: a second window opening on the workspace moves on to a new one of its own, which
         is Solo too; dialogs (floating) would stay."""

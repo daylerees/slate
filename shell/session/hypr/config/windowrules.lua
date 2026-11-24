@@ -2,6 +2,22 @@
 -- Add your own in ~/.config/slate/hypr/rules.lua.
 
 -- Floating windows remember their size
+-- Windows that float by their own rule (calculators, Steam's small windows, dialogs, settings
+-- tools, Slate's own): each such rule goes through alwaysFloats, which also gives them the tag
+-- "slate-floats". A floating workspace marks the windows it floats "slate-floated", so going
+-- back to tiling re-tiles only those, and it leaves these out (slateFloatsByItself): they were
+-- marked too, and a calculator or the volume mixer came back tiled
+local function alwaysFloats(rule)
+    rule.tag = "+slate-floats"
+    return hl.window_rule(rule)
+end
+function slateFloatsByItself(w)
+    for _, t in ipairs(w and w.tags or {}) do
+        if t == "slate-floats" or t == "slate-floats*" then return true end      -- (* a rule's tag)
+    end
+    return false
+end
+
 hl.window_rule({ match = { float = true }, persistent_size = true })
 
 -- Picture-in-Picture
@@ -23,9 +39,9 @@ local gamingApps = "^(steam_app.*|gamescope)$"
 hl.window_rule({ match = { xdg_tag = "^(.*game.*)$" }, fullscreen_state = 2, content = "game", sync_fullscreen = true })
 -- (Steam's Friends List: a small window of its own, floating beside the store rather than
 -- squeezing it)
-hl.window_rule({ match = { class = "^(steam)$", title = "^(Friends List)$" }, float = true })
+alwaysFloats({ match = { class = "^(steam)$", title = "^(Friends List)$" }, float = true })
 -- (Steam's own small window while a game starts: floating where you are)
-hl.window_rule({ match = { class = "^(steam)$", title = "^(Launching\\.{3})$" }, float = true, center = true })
+alwaysFloats({ match = { class = "^(steam)$", title = "^(Launching\\.{3})$" }, float = true, center = true })
 hl.window_rule({
     match = {
         class         = gamingApps,
@@ -81,7 +97,7 @@ hl.window_rule({ match = { class = "^(.*\\.exe)$", float = true }, monitor = pri
 -- (loose on purpose: game launchers name themselves in many ways, faugus-launcher,
 -- com.heroicgameslauncher.hgl, org.prismlauncher.PrismLauncher, minecraft-launcher, and there's
 -- no list of them to keep)
-hl.window_rule({ match = { class = "^(.*[Ll]auncher.*)$" }, float = true, monitor = primary })
+alwaysFloats({ match = { class = "^(.*[Ll]auncher.*)$" }, float = true, monitor = primary })
 if primary then hl.window_rule({ match = { class = "^(vesktop|discord)$" }, monitor = primary }) end
 -- Calculators open small and floating: the ones offered as CALCULATOR (variables.lua) and a few
 -- more, each by its windows' own class. By name, never "anything with calc in it": that caught
@@ -90,11 +106,11 @@ if primary then hl.window_rule({ match = { class = "^(vesktop|discord)$" }, moni
 local calculators = "^(org\\.gnome\\.Calculator|gnome-calculator|org\\.kde\\.kcalc|kcalc"
     .. "|qalculate-gtk|qalculate-qt|io\\.github\\.Qalculate.*|galculator|mate-calc"
     .. "|io\\.elementary\\.calculator|[Xx][Cc]alc)$"
-hl.window_rule({ match = { class = calculators }, float = true, size = { "max(monitor_w, monitor_h)*0.17", "min(monitor_w, monitor_h)*0.43" } })
-hl.window_rule({ match = { class = "^(org\\.kde\\.keditfiletype)$" }, float = true })
+alwaysFloats({ match = { class = calculators }, float = true, size = { "max(monitor_w, monitor_h)*0.17", "min(monitor_w, monitor_h)*0.43" } })
+alwaysFloats({ match = { class = "^(org\\.kde\\.keditfiletype)$" }, float = true })
 hl.window_rule({ match = { class = "^(org\\.kde\\.ark)$" }, size = { "max(monitor_w, monitor_h)*0.40", "min(monitor_w, monitor_h)*0.40" } })
-hl.window_rule({ match = { class = "^(.*swash)$", title = "^(Swash)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
-hl.window_rule({
+alwaysFloats({ match = { class = "^(.*swash)$", title = "^(Swash)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
+alwaysFloats({
     match = {
         class = "^(org\\.kde\\.dolphin)$",
         title = "negative:^(Moving.*|Create New.*|Extract.*|Compress.*|Copying.*|Progress.*|Configure.*|Properties.*|Choose\\sApplication.*)$",
@@ -130,7 +146,7 @@ local floatApps = {
     { class = "^(org.pulseaudio.pavucontrol|blueman-manager|nm-applet|nm-connection-editor)$" },
     { title = "^(Winetricks.*|Protontricks.*)$" },
 }
-for _, m in ipairs(floatApps) do hl.window_rule({ match = m, float = true }) end
+for _, m in ipairs(floatApps) do alwaysFloats({ match = m, float = true }) end
 
 -- Float and centre common dialogs (file pickers, prompts, progress)
 local modalMatches = {
@@ -145,7 +161,7 @@ local modalMatches = {
     { title = "^([Dd]ialog)( .*)?$" },
     { class = "^(hyprland-share-picker)$"},
 }
-for _, m in ipairs(modalMatches) do hl.window_rule({ match = m, float = true, center = true }) end
+for _, m in ipairs(modalMatches) do alwaysFloats({ match = m, float = true, center = true }) end
 
 -- Keep floating windows (file pickers etc.) within the screen. Not the drop-down terminal, which
 -- is placed across the screen on purpose (placeDropdown, below): the rule is applied again when
@@ -211,9 +227,9 @@ hl.layer_rule({ name = "slate-titlebar-blur", match = { namespace = "^slate-titl
 -- apps use): floats in the middle of the screen, at the size it asks for
 -- (880×620 times the interface size), kept within the screen by the floating-window limit
 -- above, and pinned: open, it stays with you on every workspace, as Nova does (below)
-hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Settings)$" }, float = true, center = true, pin = true })
+alwaysFloats({ match = { class = "^(slate-settings)$", title = "^(Settings)$" }, float = true, center = true, pin = true })
 -- Software, Slate's: floats in the middle too, at its own size, but stays on its workspace (an app)
-hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Software)$" }, float = true, center = true })
+alwaysFloats({ match = { class = "^(slate-settings)$", title = "^(Software)$" }, float = true, center = true })
 -- One of Slate's own windows, by its title ("Settings", "Software"), as a window to hand a
 -- dispatcher ("address:…"), or nil: a title alone would also find another app's "Settings"
 function slateWindowAddress(title)
@@ -227,7 +243,7 @@ end
 -- it at), pinned so it's on whichever workspace you're looking at. It has its own header to
 -- drag it by and its own close button, so it gets no title bar of Slate's (TitleBar.qml), and
 -- none is made room for above it (slateFitFloating, slateKeepUnderBar)
-hl.window_rule({ name = "slate-nova", match = { class = "^(slate-settings)$", title = "^(Nova)$" }, float = true, center = true, pin = true })
+alwaysFloats({ name = "slate-nova", match = { class = "^(slate-settings)$", title = "^(Nova)$" }, float = true, center = true, pin = true })
 function slateIsNova(w)
     return w ~= nil and w.class == "slate-settings" and w.title == "Nova"
 end
@@ -239,7 +255,7 @@ function slateIsPinned(w)
 end
 -- Choosing your account picture (Settings → General): a dialog of Slate's own, pinned with
 -- Settings so it's never left behind it (pinned windows are drawn over the others)
-hl.window_rule({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true, pin = true })
+alwaysFloats({ match = { class = "^(slate-settings)$", title = "^(Choose a picture)$" }, float = true, center = true, pin = true })
 
 -- Window mode. Settings → Windows sets the default (WINDOW_MODE), and each workspace can have
 -- its own (WORKSPACE_MODES[id], from the menu bar's workspace indicator): tiling, master (Side
@@ -488,7 +504,12 @@ hl.on("window.open", function(win)
         return
     end
     if not wants then return end
-    hl.dispatch(hl.dsp.window.tag({ tag = "+slate-floated", window = target }))
+    -- (marked as one this workspace floated, unless it floats by its own rule: going back to
+    -- tiling re-tiles only those. The workspace's rule marks it too, but a rule's mark goes
+    -- with the rule when it's switched off, which is just when it's looked for)
+    if not slateFloatsByItself(w) then
+        hl.dispatch(hl.dsp.window.tag({ tag = "+slate-floated", window = target }))
+    end
     slateFitFloating(win.address)
     local address = win.address
     hl.timer(function() slateFitFloating(address) end, { timeout = 350, type = "oneshot" })

@@ -1983,15 +1983,42 @@ Singleton {
     // (~/.local/state/slate/keyset.lua), then Hyprland's config reloads to use it
     readonly property string keysetPath: root.stateHome + "/slate/keyset.lua"
     signal keysetApplied()
+    readonly property var keysets: ["slate", "hyprland", "hyprland-extras"]
     function setKeyset(v) {
-        if (["slate", "hyprland", "hyprland-extras"].indexOf(v) < 0) return;
-        s.keyset = v;
+        if (keysets.indexOf(v) < 0) return;
+        if (s.keyset !== v) s.keyset = v;      // (onKeysetChanged below writes it)
+        else keysetInStep(true);
+    }
+    // The file binds.lua reads kept in step with the setting, however it changed: the dropdown
+    // and Welcome, but also Restore defaults, an import and the assistant, which only changed
+    // the setting, so Hyprland kept the old keys while Settings showed the new set. Looked at
+    // as Slate starts, too
+    FileView { id: keysetFile; path: root.keysetPath; printErrors: false; blockLoading: true }
+    property bool keysetAgain: false
+    function keysetInStep(force) {
+        if (isLoginScreen) return;
+        if (keysetProc.running) { keysetAgain = true; return; }
+        const v = keysets.indexOf(s.keyset) >= 0 ? s.keyset : "slate";
+        keysetFile.reload();
+        // (no file: binds.lua's own default, Slate's set)
+        const have = keysetFile.text() || 'KEYSET = "slate"\n';
+        if (!force && have === 'KEYSET = "' + v + '"\n') return;
         keysetProc.command = ["sh", "-c", "mkdir -p \"$(dirname \"$0\")\" && printf 'KEYSET = \"%s\"\\n' \"$1\" > \"$0\" && hyprctl reload >/dev/null",
                               keysetPath, v];
         ownHyprReloadAt = Date.now();      // Slate's own reload: no "reloaded" notice
         keysetProc.running = true;
+        if (testMode) testKeysetWrites++;
     }
-    Process { id: keysetProc; onExited: root.keysetApplied() }
+    property int testKeysetWrites: 0       // (the tests: how many times the file was written)
+    Connections { target: root.s; function onKeysetChanged() { root.keysetInStep(false); } }
+    Timer { interval: 1500; running: true; onTriggered: root.keysetInStep(false) }
+    Process {
+        id: keysetProc
+        onExited: {
+            root.keysetApplied();
+            if (root.keysetAgain) { root.keysetAgain = false; root.keysetInStep(false); }
+        }
+    }
 
     // ---- App theming (scripts/apply-theme.py, run by shell.qml) ----------------------------
     // Settings → App Theming → Refresh asks for every switched-on app's theme to be written again

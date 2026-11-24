@@ -62,6 +62,7 @@ local SHORTCUT_DESCRIPTIONS = {
     ["SUPER + SHIFT + Print"]      = "Slate: Record an area of the screen, or stop recording",
     ["SUPER + Minus"]              = "Slate: Zoom out",
     ["SUPER + Plus"]               = "Slate: Zoom in",
+    ["SUPER + equal"]              = "Slate: Zoom in (the + and = key)",
     ["SUPER + code:82"]            = "Slate: Zoom out (keypad -)",
     ["SUPER + code:86"]            = "Slate: Zoom in (keypad +)",
     ["SUPER + ALT + Z"]            = "Slate: Zoom on or off",
@@ -566,6 +567,9 @@ end
 if SLATE_KEYS or EXTRAS then
     hl.bind(mainMod .. " + Minus", function() zoomBy(-0.25) end, { repeating = true })
     hl.bind(mainMod .. " + Plus", function() zoomBy(0.25) end, { repeating = true })
+    -- (and the key + shares with =: on US and UK keyboards + is Shift and =, and Hyprland matches
+    -- a bind's key without its Shift, so Plus alone never fired there)
+    hl.bind(mainMod .. " + equal", function() zoomBy(0.25) end, { repeating = true })
 
     -- Zoom with the keypad's - and +
     hl.bind(mainMod .. " + code:82", function() zoomBy(-0.25) end, { repeating = true })

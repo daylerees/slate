@@ -328,6 +328,16 @@ class BindsLua(Case):
                 if m and not 10 <= int(m.group(1)) <= 19:
                     self.assertNotRegex(binds[0][0] or "", r"\d", f"{keyset}: {keys} is numbered")
 
+    def test_zoom_in_on_the_key_plus_shares_with_equals(self):
+        """Super and + zooms in on US and UK keyboards too, where + is Shift and = (Hyprland
+        matches a bind's key without its Shift, so "Plus" alone never fired there)."""
+        for keyset in ("slate", "hyprland-extras"):
+            shortcuts = self.shortcuts(keyset)
+            for keys in ("SUPER + equal", "SUPER + Plus"):
+                with self.subTest(keyset=keyset, keys=keys):
+                    self.assertIn(keys, shortcuts, "not bound")
+                    self.assertIn("Zoom in", shortcuts[keys][0][0])
+
     def test_zoom_on_off_and_with_the_wheel(self):
         """Accessibility → Zoom's keys: Super+Alt+Z, and Super+Alt with the scroll wheel, in
         both sets that zoom, each described as zoom (Settings → Shortcuts lists them)."""
