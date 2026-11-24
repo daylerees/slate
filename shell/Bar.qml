@@ -7,6 +7,7 @@
 // seconds.
 
 import QtQuick
+import QtQuick.Shapes
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
@@ -99,7 +100,8 @@ PanelWindow {
     }
     readonly property string clockText: clock.text
     readonly property real titleWidth: titleText.implicitWidth      // (tests) the window's title, written out in full
-    readonly property var scrollState: ({ at: Math.round(scroll), max: Math.round(scrollMax), handle: scrollGrip.visible })
+    // (worked out when a test asks: shell.qml's state)
+    function scrollState() { return ({ at: Math.round(scroll), max: Math.round(scrollMax), handle: scrollGrip.visible }); }
     // What's in More, for its panel (Popouts.qml): a row each, in the order they left. The
     // tray is a row for each of its icons; the window's icon goes with its title
     // The window's icon and title just wait, out of sight, until there's room for them again:
@@ -176,8 +178,9 @@ PanelWindow {
     property point testPointer: Qt.point(-1, -1)
     // (tests) The band of the bar itself in its window (less the room for the shadow and the
     // flared corners): where a pointer counts as on the bar
-    readonly property var band: ({ x: Math.round(content.x + (vert ? bgX : 0)), y: Math.round(content.y + (vert ? 0 : bgY)),
-                                   w: Math.round(vert ? barHeight : content.width), h: Math.round(vert ? content.height : barHeight) })
+    // (worked out when a test asks: shell.qml's state)
+    function band() { return ({ x: Math.round(content.x + (vert ? bgX : 0)), y: Math.round(content.y + (vert ? 0 : bgY)),
+                                   w: Math.round(vert ? barHeight : content.width), h: Math.round(vert ? content.height : barHeight) }); }
     // (tests) The pretend pointer at x, y ("hover"), taken away ("leave"), or pressed there
     // ("click"): what it's over (the thing's name, and the dot for the workspaces), and whether
     // that's lit
@@ -509,7 +512,8 @@ PanelWindow {
     property var keyPath: []                // (the tests: the names selected, in turn)
     onKeySegChanged: if (keySeg) { keyAt = keySeg.name; keyPath = keyPath.concat([keySeg.name]).slice(-20); }
     // (the tests: the Screenshot button, which is the recording's indicator while recording)
-    readonly property var shotState: ({ shown: shotSeg.wanted && shotSeg.visible, label: shotSeg.label, recording: shotSeg.iconCode === 0xF692 })
+    // (worked out when a test asks: shell.qml's state)
+    function shotState() { return ({ shown: shotSeg.wanted && shotSeg.visible, label: shotSeg.label, recording: shotSeg.iconCode === 0xF692 }); }
     WlrLayershell.keyboardFocus: keyNav ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     // The things a key can stop on, in the order they're drawn along the bar
     function keyStops() {
@@ -663,10 +667,11 @@ PanelWindow {
     // (and the tray: icons made and measured since Slate started, so a test can tell an icon
     // that was kept from one made again)
     property var trayTest: ({ made: 0, measured: 0 })
-    readonly property var dotsState: wsRow ? { shown: wsRow.shown, count: wsRow.count, first: wsRow.first,
+    // (worked out when a test asks: shell.qml's state)
+    function dotsState() { return wsRow ? { shown: wsRow.shown, count: wsRow.count, first: wsRow.first,
                                               firstWanted: wsRow.firstWanted, active: wsRow.activeIndex, width: wsRow.width,
                                               names: wsRow.spaces.map(w => Config.workspaceLabelOf(w)),
-                                              occupied: Hyprland.workspaces.values.filter(w => w.id > 0 && wsRow.occupied(w)).map(w => w.id) } : null
+                                              occupied: Hyprland.workspaces.values.filter(w => w.id > 0 && wsRow.occupied(w)).map(w => w.id) } : null; }
     // (and the bell's unread count beside it, "" for none)
     readonly property string bellText: bellBtn.label
 
@@ -699,8 +704,9 @@ PanelWindow {
     property real previewShift: lineFull * Config.barPreview / 2
     Behavior on previewShift { NumberAnimation { duration: Config.ms(240); easing.type: Easing.OutCubic } }
     // (tests: where the line's room starts and ends along the bar, and the bar's length)
-    readonly property var lineSpan: ({ preview: Config.barPreview, start: sidePadding + previewShift,
-                                      end: sidePadding + previewShift + lineLength, length: vert ? content.height : content.width })
+    // (worked out when a test asks: shell.qml's state)
+    function lineSpan() { return ({ preview: Config.barPreview, start: sidePadding + previewShift,
+                                      end: sidePadding + previewShift + lineLength, length: vert ? content.height : content.width }); }
     // (tests, and the arranging panel's narrow preview: the line made this much shorter)
     property real squeeze: 0
 
@@ -1007,7 +1013,9 @@ PanelWindow {
             // Concave corners that flare from the bar into the screen edges
             Repeater {
                 model: 2
-                Canvas {
+                // (a Shape, as TitleBar's are: drawn by the GPU, recoloured without being
+                // painted again in software on every frame of a colour change)
+                Shape {
                     required property int index
                     width: bar.cornerRadius; height: bar.cornerRadius
                     // At the bar's two ends, on its inner side; the shape is drawn for the top
@@ -1020,21 +1028,13 @@ PanelWindow {
                         origin.x: bar.cornerRadius / 2; origin.y: bar.cornerRadius / 2
                     }
                     visible: Config.s.roundedScreenCorners
-                    onVisibleChanged: if (visible) requestPaint()
-                    // Repaint when the theme colour changes
-                    readonly property color fill: bar.barBackground
-                    onFillChanged: requestPaint()
-                    onAvailableChanged: if (available) requestPaint()
-                    onPaint: {
-                        const r = bar.cornerRadius, ctx = getContext("2d");
-                        ctx.reset();
-                        ctx.fillStyle = fill;
-                        ctx.beginPath();
-                        ctx.moveTo(0, 0);
-                        ctx.lineTo(r, 0);
-                        ctx.arc(r, r, r, -Math.PI / 2, Math.PI, true);
-                        ctx.closePath();
-                        ctx.fill();
+                    preferredRendererType: Shape.CurveRenderer
+                    ShapePath {
+                        fillColor: bar.barBackground; strokeColor: "transparent"; strokeWidth: -1
+                        startX: 0; startY: 0
+                        PathLine { x: bar.cornerRadius; y: 0 }
+                        PathArc { x: 0; y: bar.cornerRadius; radiusX: bar.cornerRadius; radiusY: bar.cornerRadius; direction: PathArc.Counterclockwise }
+                        PathLine { x: 0; y: 0 }
                     }
                 }
             }

@@ -510,12 +510,12 @@ ShellRoot {
                 mainScreen: Config.primaryScreen ? Config.primaryScreen.name : "",
                 bars: Config.bars.map(b => ({ screen: b.screen ? b.screen.name : "", primary: b.primary, dimmed: b.dimmed,
                                               popoutHere: b.popoutHere, width: Math.round(b.width), height: Math.round(b.height),
-                                              dots: b.dotsState, bell: b.bellText, shot: b.shotState, clock: b.clockText })),
+                                              dots: b.dotsState(), bell: b.bellText, shot: b.shotState(), clock: b.clockText })),
                 wakes: Config.wakes,
                 storage: { checks: storageWatch.checks, said: storageWatch.said, warned: Object.keys(storageWatch.warned) },
                 popout: popouts.current, popoutKeyFocus: popouts.keyFocusText, popoutKeyPath: popouts.keyFocusPath, popoutActive: popouts.windowActive,
                 popoutScreen: popouts.screen ? popouts.screen.name : "", popoutAnchor: Math.round(popouts.anchorX),
-                popoutBox: popouts.panelBox,
+                popoutBox: popouts.panelBox(),
                 // What's in effect after game mode and Accessibility have had their say
                 screenReader: { on: screenReader.on, applied: screenReader.applied },
                 onScreenKeyboard: { shown: onScreenKeyboard.shown, sent: onScreenKeyboard.sent, last: onScreenKeyboard.last, wtype: onScreenKeyboard.haveWtype },
@@ -699,7 +699,7 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: !!barEditor.item && barEditor.item.shown, editorBuilt: !!barEditor.item, edge: popouts.edge,
-                       line: topBar.lineState(), span: topBar.lineSpan, gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState, order: Config.barOverflowOrder, priority: barEditor.item ? barEditor.item.priorityState : { open: false, list: [], scroll: 0, scrollMax: 0, lengthMenu: false, length: "" }, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState, band: topBar.band,
+                       line: topBar.lineState(), span: topBar.lineSpan(), gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState(), order: Config.barOverflowOrder, priority: barEditor.item ? barEditor.item.priorityState : { open: false, list: [], scroll: 0, scrollMax: 0, lengthMenu: false, length: "" }, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState(), band: topBar.band(),
                        // (the label off the bar saying what the pointer's over: BarLabel.qml)
                        label: topBar.label.testState },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,

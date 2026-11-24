@@ -1454,3 +1454,13 @@ class HyprlandEvents(Case):
             if "onRawEvent" in open(path).read():
                 found.add(os.path.relpath(path, slate.path("shell")))
         self.assertEqual(found - allowed, set(), "handles every Hyprland event itself: use Config's signals")
+
+
+class NoSoftwarePainting(Case):
+    def test_the_bar_and_panels_draw_their_curves_with_shapes(self):
+        """The bar's flared corners and the joins where a panel meets it were Canvases, painted
+        in software and again on every frame of a colour change (going in and out of Edit
+        layout); they're Shapes, as TitleBar's corners are, drawn by the GPU."""
+        for name in ("Bar.qml", "Popouts.qml", "TitleBar.qml"):
+            with self.subTest(name):
+                self.assertNotRegex(slate.read("shell", name), r"\bCanvas \{", f"{name} paints with a Canvas")

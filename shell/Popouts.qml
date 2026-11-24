@@ -8,6 +8,7 @@
 // pressing Escape, or clicking the same button again.
 
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -112,7 +113,7 @@ PanelWindow {
     // panel opened from the bar by keyboard (Bar.qml: popouts.fromKeys), as it opens
     property bool fromKeys: false
     // (the tests: the words on the control that has the keyboard in the panel, "" for none)
-    readonly property string keyFocusText: { const f = panelKeys.Window.activeFocusItem; return f && f !== panelKeys && f !== content ? keyStops().indexOf(f) + ":" + (Config.textOf(f) || "?") : ""; }
+    readonly property string keyFocusText: { if (!Config.testMode) return ""; const f = panelKeys.Window.activeFocusItem; return f && f !== panelKeys && f !== content ? keyStops().indexOf(f) + ":" + (Config.textOf(f) || "?") : ""; }
     property var keyFocusPath: []
     // (the window given the keyboard, opened from the keyboard, nothing chosen yet: the first)
     readonly property bool windowActive: contentItem.Window.active
@@ -398,8 +399,9 @@ PanelWindow {
     // control centre and the power menu; whichever buttons you've put there) sits flush
     // against the start / end of the screen, rounded only on its one corner out in the screen
     // Where the open panel is on its screen (Slate's px), for the tests: its shadow's place
-    readonly property var panelBox: ({ x: Math.round(margins.left + panelArea.x + body.x), y: Math.round(margins.top + panelArea.y + body.y),
-                                       width: Math.round(panelArea.width), height: Math.round(panelArea.height) })
+    // (worked out when a test asks: shell.qml's state)
+    function panelBox() { return ({ x: Math.round(margins.left + panelArea.x + body.x), y: Math.round(margins.top + panelArea.y + body.y),
+                                       width: Math.round(panelArea.width), height: Math.round(panelArea.height) }); }
     readonly property bool atScreenStart: edge === "start"
     readonly property bool atScreenEnd: edge === "end"
     Item {
@@ -508,7 +510,10 @@ PanelWindow {
     // Curved joins between the bar and the panel's sides
     Repeater {
         model: 2
-        Canvas {
+        // (a Shape, as TitleBar's are: drawn by the GPU, recoloured without being painted again
+        // in software on every frame of a colour change)
+        Shape {
+            id: join
             required property int index
             width: bar.cornerRadius; height: bar.cornerRadius
             // None at the screen's edge, for a panel flush against it; and none at all with
@@ -526,30 +531,31 @@ PanelWindow {
                 yScale: pop.sideways ? (index === 0 ? -1 : 1) : (pop.fromBottom ? -1 : 1)
                 origin.x: bar.cornerRadius / 2; origin.y: bar.cornerRadius / 2
             }
-            readonly property color fill: pop.bg
+            readonly property real r: bar.cornerRadius
             readonly property color shade: pop.barShadeOn ? pop.barShadeColour : "transparent"
-            onFillChanged: requestPaint()
-            onShadeChanged: requestPaint()
-            onAvailableChanged: if (available) requestPaint()
-            onPaint: {
-                const r = bar.cornerRadius, ctx = getContext("2d");
-                ctx.reset();
-                ctx.fillStyle = fill;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(r, 0);
-                ctx.lineTo(r, r);
-                ctx.arc(0, r, r, 0, -Math.PI / 2, true);
-                ctx.closePath();
-                ctx.fill();
-                // ...and the bar's shadow on it, as on the panel: darkest at the bar, gone a little
-                // way off (the shape's drawn for a top bar and mirrored, so on a side bar the
-                // bar's edge is its right-hand one)
-                const g = pop.sideways ? ctx.createLinearGradient(r, 0, r - pop.barShade, 0) : ctx.createLinearGradient(0, 0, 0, pop.barShade);
-                g.addColorStop(0, shade);
-                g.addColorStop(1, Qt.rgba(shade.r, shade.g, shade.b, 0));
-                ctx.fillStyle = g;
-                ctx.fill();
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                fillColor: pop.bg; strokeColor: "transparent"; strokeWidth: -1
+                startX: 0; startY: 0
+                PathLine { x: join.r; y: 0 }
+                PathLine { x: join.r; y: join.r }
+                PathArc { x: 0; y: 0; radiusX: join.r; radiusY: join.r; direction: PathArc.Counterclockwise }
+            }
+            // ...and the bar's shadow on it, as on the panel: darkest at the bar, gone a little way
+            // off (the shape's drawn for a top bar and mirrored, so on a side bar the bar's edge
+            // is its right-hand one)
+            ShapePath {
+                strokeColor: "transparent"; strokeWidth: -1
+                fillGradient: LinearGradient {
+                    x1: pop.sideways ? join.r : 0; y1: 0
+                    x2: pop.sideways ? join.r - pop.barShade : 0; y2: pop.sideways ? 0 : pop.barShade
+                    GradientStop { position: 0; color: join.shade }
+                    GradientStop { position: 1; color: Qt.rgba(join.shade.r, join.shade.g, join.shade.b, 0) }
+                }
+                startX: 0; startY: 0
+                PathLine { x: join.r; y: 0 }
+                PathLine { x: join.r; y: join.r }
+                PathArc { x: 0; y: 0; radiusX: join.r; radiusY: join.r; direction: PathArc.Counterclockwise }
             }
         }
     }
