@@ -628,6 +628,15 @@ PanelWindow {
     // ---- Shared pieces -----------------------------------------------------
     // Run one of Slate's IPC calls (bin/slate ipc call …)
     function slate(args) { Config.slateCall(...args); }
+    // The power menu, from the control center's power button: opened as the bar's own power
+    // button opens it, so it takes that button's place and side (switched in place, it kept the
+    // control center's edge, and opened flush against the wrong side of the screen). With no
+    // power button on the bar, where the control center was
+    function openSessionFromControl() {
+        const b = bar.focusedBar ? bar.focusedBar() : bar;
+        b.openPanel("session");
+        if (current !== "session") { anchorX = width - 40; displayed = "session"; current = "session"; }
+    }
     // Close the panel and open Settings on one of its pages
     function openSettingsPage(page) { close(); slate(["settings", "page", page]); }
 

@@ -945,6 +945,17 @@ Singleton {
     // name or a command can hold a quote, a backslash or a closing bracket, and the rest of it
     // would run as Lua. (\x22 is the double quote: a bare one in the pattern would read as the
     // start of a string to tools/check-greeter-files)
+    // A file's path as a file:// address, each part encoded: a name with # or ? (or %) in it is
+    // still that file, not a page and a fragment (QuickLook, the launcher's recent files, the
+    // dock's downloads)
+    function fileUrl(p) { return "file://" + String(p).split("/").map(encodeURIComponent).join("/"); }
+    // Text taken from XML (an attribute, as recently-used.xbel's hrefs are) with its entities
+    // turned back: GLib writes ' as &#39; and & as &amp;
+    function xmlUnescape(t) {
+        return String(t).replace(/&(#x[0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos);/g, (m, e) =>
+            e === "amp" ? "&" : e === "lt" ? "<" : e === "gt" ? ">" : e === "quot" ? "\"" : e === "apos" ? "'"
+            : String.fromCodePoint(e[1] === "x" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)));
+    }
     function luaString(text) {
         const quote = "\x22";
         return quote + String(text).replace(/[\\\x22\x00-\x1f\x7f]/g, c =>

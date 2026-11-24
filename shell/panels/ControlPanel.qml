@@ -131,7 +131,7 @@ Column {
                     HoverHandler { id: controlButtonHover }
                     onClicked: {
                         if (modelData.act === "settings") { pop.close(); pop.slate(["settings", "open"]); }
-                        else { pop.anchorX = pop.width - 40; pop.displayed = "session"; pop.current = "session"; }
+                        else pop.openSessionFromControl();
                     }
                     Icon { anchors.centerIn: parent; code: parent.modelData.code; color: parent.modelData.act === "session" ? pop.danger : pop.text }
                 }

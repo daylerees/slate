@@ -115,7 +115,7 @@ PanelWindow {
         opened();
     }
     // A path as a file:// URL, each part encoded: a name with # or ? in it is still that file
-    function fileUrl(p) { return "file://" + p.split("/").map(encodeURIComponent).join("/"); }
+    function fileUrl(p) { return Config.fileUrl(p); }
 
     Process {
         id: reader

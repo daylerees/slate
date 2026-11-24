@@ -296,6 +296,8 @@ ShellRoot {
         function softwareDailyEvery(ms: int): void { SoftwareUpdates.testEvery = ms; }
         // Night light put to Hyprland again, as at every start and every reload of Hyprland's config
         function nightLightApply(): void { nightLight.apply(); }
+        // The control center's power button, as clicking it does
+        function controlPower(): void { popouts.openSessionFromControl(); }
         // Logging in, for your apps from last time (Config.pickUpAtLogin; atLogin never fires under the tests)
         function pickUpAtLogin(): void { Config.pickUpAtLogin(); }
         // Settings → Updates as the updater would leave it (update.json): a new version, its download, a failure
@@ -591,7 +593,8 @@ ShellRoot {
                          why: Config.iconsBusyWhy() },
                 picker: { open: picker.shown, mode: picker.mode, clipReads: picker.clipReads, emojiReads: Emoji.reads },
                 lookups: SettingsLookups.reads,
-                trayMenu: { open: topBar.trayMenu.visible, depth: topBar.trayMenu.stack.length, hot: topBar.trayMenu.hot, chosen: topBar.trayMenu.testChosen },
+                trayMenu: { open: topBar.trayMenu.visible, depth: topBar.trayMenu.stack.length, hot: topBar.trayMenu.hot, chosen: topBar.trayMenu.testChosen,
+                            lastInView: topBar.trayMenu.testHotInView() },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },
                 weather: { now: popouts.weather ? opt(popouts.weather.temperature_2m) : null, days: popouts.forecast ? popouts.forecast.time.length : 0 },
                 control: { switches: Config.controlSwitches, caffeine: Config.caffeine, missing: Config.controlSwitchMissing,

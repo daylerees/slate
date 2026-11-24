@@ -1247,7 +1247,7 @@ PanelWindow {
             case "trash-open": win.openTrash(); break;
             case "downloads-open": win.openDownloads(); break;
             case "file-look": win.lookAt(app.files, app.at); return;       // (closes the menu itself)
-            case "file-open": Qt.openUrlExternally("file://" + app.files[app.at].path); break;
+            case "file-open": Qt.openUrlExternally(Config.fileUrl(app.files[app.at].path)); break;
             case "media-toggle": if (win.player) win.player.togglePlaying(); break;
             case "media-next": if (win.player) win.player.next(); break;
             case "media-previous": if (win.player) win.player.previous(); break;
@@ -1406,7 +1406,7 @@ PanelWindow {
                                 id: dlThumb
                                 anchors.fill: parent
                                 visible: !!dl.kind.image && status === Image.Ready
-                                source: dl.kind.image ? "file://" + dl.modelData.path : ""
+                                source: dl.kind.image ? Config.fileUrl(dl.modelData.path) : ""
                                 sourceSize: Qt.size(128, 128)
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
@@ -1439,7 +1439,7 @@ PanelWindow {
                         }
                         ClickTap {
                             hand: false
-                            onTapped: { Qt.openUrlExternally("file://" + dl.modelData.path); appMenu.closeMenu(); }
+                            onTapped: { Qt.openUrlExternally(Config.fileUrl(dl.modelData.path)); appMenu.closeMenu(); }
                         }
                         // Right-click: its own menu (Quick Look, Open), as More's apps have theirs
                         ClickTap {

@@ -56,7 +56,22 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
-    // Clicking anywhere else closes it
+    // Clicking anywhere else closes it, except on the menu bar: that's left out, so a click there
+    // reaches the bar and does what it does (another tray icon, the clock…), and closes this
+    // too (Config.barPressed), as Slate's own menus do (DesktopMenu.qml). It used to take two
+    // clicks: one to close this, one for the bar
+    mask: Region {
+        x: 0; y: 0; width: tm.width; height: tm.height
+        Region {
+            readonly property rect bar: Config.barRectOn(tm.screen)
+            x: bar.x; y: bar.y; width: bar.width; height: bar.height
+            intersection: Intersection.Subtract
+        }
+    }
+    Connections {
+        target: Config
+        function onBarPressed() { if (tm.visible) tm.close(); }
+    }
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onPressed: tm.close() }
     // By keyboard, as Slate's own menus (DesktopMenu.qml): Up and Down (or Tab) move along the
     // rows, Enter or Space chooses (a submenu opens in its place, as a click does), Right opens
@@ -79,6 +94,22 @@ PanelWindow {
         close();
     }
     function back() { if (stack.length > 1) stack = stack.slice(0, -1); else close(); }
+    // (the tests: whether the keyboard's row is in view)
+    function testHotInView() {
+        if (hot < 0) return false;
+        const r = rowRepeater.itemAt(hot);
+        if (!r) return false;
+        const top = r.mapToItem(menuScroll.contentItem, 0, 0).y;
+        return top >= menuScroll.contentY - 1 && top + r.height <= menuScroll.contentY + menuScroll.height + 1;
+    }
+    // The row the keyboard's on, scrolled into view in a menu taller than the screen allows
+    function intoView(item) {
+        if (!(menuScroll.contentHeight > menuScroll.height)) return;
+        const top = item.mapToItem(menuScroll.contentItem, 0, 0).y, bottom = top + item.height, room = 4;
+        const hi = menuScroll.contentHeight - menuScroll.height;
+        if (top - room < menuScroll.contentY) menuScroll.contentY = Math.max(0, top - room);
+        else if (bottom + room > menuScroll.contentY + menuScroll.height) menuScroll.contentY = Math.min(hi, bottom + room - menuScroll.height);
+    }
     function key(e) {
         switch (e.key) {
         case Qt.Key_Down: case Qt.Key_Tab: hot = nextFrom(hot < 0 ? -1 : hot, 1); break;
@@ -176,6 +207,7 @@ PanelWindow {
                 }
 
                 Repeater {
+                    id: rowRepeater
                     model: tm.entries
                     delegate: Item {
                         id: entryRow
@@ -187,6 +219,9 @@ PanelWindow {
                         Accessible.onPressAction: tm.choose(index)
                         readonly property var e: modelData
                         readonly property bool sep: !!e && e.isSeparator
+                        // (moved to by the keyboard: into view)
+                        readonly property bool keyed: tm.hot === index
+                        onKeyedChanged: if (keyed) tm.intoView(entryRow)
                         readonly property bool checkable: !!e && e.buttonType !== QsMenuButtonType.None
                         readonly property bool checked: checkable && e.checkState === Qt.Checked
                         width: menuCol.width

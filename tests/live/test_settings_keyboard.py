@@ -7,6 +7,7 @@ import re
 
 import slate
 from live import LiveCase
+from pointer import Pointer
 
 
 def settings_pages():
@@ -67,3 +68,32 @@ class TrayMenuByKeyboard(LiveCase):
         self.wait(lambda st: st["trayMenu"]["depth"] == 1 and st["trayMenu"]["open"], "Left: back to the menu")
         self.press("-k", "Escape")
         self.wait(lambda st: not st["trayMenu"]["open"], "Escape: closed")
+
+
+class TrayMenuAndTheBar(LiveCase):
+    """An app's tray menu leaves the menu bar clickable, as Slate's own menus do: a click on the
+    bar (the clock, another tray icon) used to only close the menu, so it took two clicks. And
+    the keyboard's row is scrolled into view in a menu taller than the screen."""
+
+    def open_menu(self, rows):
+        self.ipc("test", "trayMenuPretend", " " + json.dumps(rows))
+        self.wait(lambda st: st["trayMenu"]["open"], "the tray menu")
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.s.settle(0.4)
+
+    def test_a_click_on_the_bar_does_what_it_does(self):
+        self.open_menu(TrayMenuByKeyboard.ROWS)
+        clock = self.s.state()["bar"]["line"]["clock"]
+        with Pointer(self.s.env, self.s.width, self.s.height) as p:
+            p.move(clock["x"] + clock["w"] // 2, clock["y"] + clock["h"] // 2)
+            p.button(True)
+            p.button(False)
+        st = self.wait(lambda st: not st["trayMenu"]["open"] and st["popout"] == "calendar",
+                       "the menu closed and the calendar open, in one click", timeout=5)
+
+    def test_the_keyboards_row_scrolls_into_view(self):
+        rows = [{"text": "Row %d" % i} for i in range(80)]
+        self.open_menu(rows)
+        self.press("-k", "End")
+        st = self.wait(lambda st: st["trayMenu"]["hot"] == 79, "End: the last row")["trayMenu"]
+        self.wait(lambda st: st["trayMenu"]["lastInView"], "the last row scrolled into view", timeout=3)

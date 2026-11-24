@@ -53,6 +53,9 @@ SCENES = {
                          "undo": [("picker", "close")]},
     "picker-emoji": {"do": [("picker", "emoji")], "wait": lambda st: st["picker"]["open"], "settle": 1.5,
                      "undo": [("picker", "close")]},
+    # (light mode: the backdrop is the theme's own light base, the labels dark on it)
+    "overview-light": {"settings": {"themeMode": "light", "lightMode": "true"}, "do": [("overview", "open")],
+                       "wait": lambda st: st["overview"]["open"], "settle": 1.2, "undo": [("overview", "close")]},
     "overview": {"do": [("overview", "open")], "wait": lambda st: st["overview"]["open"],
                  "undo": [("overview", "close")]},
     "lock-preview": {"do": [("lock", "preview", "lock")], "wait": lambda st: st["lock"]["previewing"], "settle": 1.5,

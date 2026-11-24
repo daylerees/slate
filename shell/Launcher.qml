@@ -513,7 +513,7 @@ PanelWindow {
             const appName = e ? e.name : Config.appIdOf(t);
             if (!((t.title || "") + " " + appName).toLowerCase().includes(q)) continue;
             out.push({ kind: "window", id: e ? e.id : Config.appIdOf(t), name: t.title || appName,
-                comment: "Open window · " + appName, run: () => t.activate() });
+                comment: "Open window · " + appName, run: () => root.goToWindow(t) });
             if (out.length >= 5) break;
         }
         return out;
@@ -572,7 +572,11 @@ PanelWindow {
             const found = [];
             let m;
             const t = text();
-            while ((m = re.exec(t)) !== null) found.push({ path: decodeURIComponent(m[1]), when: m[2] });
+            // (each href is XML first, then a URL: "Dayle's notes" is Dayle&#39;s%20notes. One
+            // that won't decode is left out, not the whole list)
+            while ((m = re.exec(t)) !== null) {
+                try { found.push({ path: decodeURIComponent(Config.xmlUnescape(m[1])), when: m[2] }); } catch (e) {}
+            }
             found.sort((a, b) => a.when < b.when ? 1 : -1);
             for (const f of found) if (!seen.has(f.path)) { seen.add(f.path); out.push(f.path); if (out.length >= 200) break; }
             root.recentFiles = out;
@@ -617,12 +621,12 @@ PanelWindow {
             const base = f.split("/").pop();
             if (!base.toLowerCase().includes(q)) continue;
             out.push({ kind: "file", icon: fileGlyph(f, false), name: base, comment: "Recent · " + shortPath(f), path: f,
-                run: () => Qt.openUrlExternally("file://" + f) });
+                run: () => Qt.openUrlExternally(Config.fileUrl(f)) });
             if (out.length >= 4) break;
         }
         for (const d of foundFolders)
             out.push({ kind: "file", icon: 0xEAAD, name: d.split("/").pop(), comment: "Folder · " + shortPath(d), path: d,
-                run: () => Qt.openUrlExternally("file://" + d) });
+                run: () => Qt.openUrlExternally(Config.fileUrl(d)) });
         return out;
     }
 
@@ -921,6 +925,24 @@ PanelWindow {
         id: newWsLaunch
         interval: 150
         onTriggered: { if (root.pendingEntry) root.launch(root.pendingEntry); root.pendingEntry = null; }
+    }
+
+    // A window chosen from the results: asked of Hyprland by its address once the launcher has
+    // let go of the keyboard (launch() closes it). Wayland's own "activate" is ignored by
+    // Hyprland, and it won't move focus while the launcher holds the keyboard anyway, so
+    // choosing a window did nothing (as the switcher found, Switcher.qml)
+    property string windowTarget: ""
+    function goToWindow(t) {
+        const h = Hyprland.toplevels.values.find(x => x.wayland === t);
+        const a = h && h.address ? (String(h.address).startsWith("0x") ? String(h.address) : "0x" + h.address) : "";
+        if (!/^0x[0-9a-fA-F]+$/.test(a)) { t.activate(); return; }
+        windowTarget = a;
+        windowFocus.restart();
+    }
+    Timer {
+        id: windowFocus
+        interval: 60
+        onTriggered: Quickshell.execDetached(["hyprctl", "dispatch", `function() hl.dispatch(hl.dsp.focus({ window = "address:${root.windowTarget}" })) end`])
     }
 
     function capitalised(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }

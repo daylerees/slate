@@ -434,7 +434,11 @@ PanelWindow {
     }
     visible: shown || fade > 0
     anchors { top: true; bottom: true; left: true; right: true }
-    color: Qt.rgba(0.04, 0.05, 0.06, 0.94 * fade * (1 - backdropGone))
+    // The backdrop: near-black, or in light mode the theme's own light base (the labels and the
+    // lifted card's ring are the theme's text color, which goes dark in light mode, and were dark
+    // on near-black)
+    readonly property color backdrop: Config.s.lightMode ? Config.palette.base : Qt.rgba(0.04, 0.05, 0.06, 1)
+    color: Qt.rgba(backdrop.r, backdrop.g, backdrop.b, 0.94 * fade * (1 - backdropGone))
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "slate-overview"
     WlrLayershell.layer: WlrLayer.Overlay

@@ -123,3 +123,30 @@ class AccountPicture(LiveCase):
         self.wait(lambda st: st["popout"] == "control", "the control centre")
         self.wait(lambda st: st["lists"]["panel"]["avatarFallback"] is not None, "the profile card")
         self.assertTrue(self.s.state()["lists"]["panel"]["avatarFallback"], "no person icon without a picture")
+
+
+class PowerFromControl(LiveCase):
+    """The control center's power button opens the power menu where the bar's own power button
+    does: switched in place, it kept the control center's side, and opened flush against the
+    wrong edge of the screen."""
+
+    def place(self):
+        st = self.s.state()
+        box = st["popoutBox"]
+        return st["bar"]["edge"], box["x"], box["width"]
+
+    def test_the_power_menu_opens_where_its_button_does(self):
+        self.addCleanup(lambda: self.ipc("popout", "close"))
+        self.ipc("bar", "panel", "session")
+        self.wait(lambda st: st["popout"] == "session", "the power menu")
+        self.s.settle(0.8)
+        own = self.place()
+        self.ipc("popout", "close")
+        self.wait(lambda st: st["popout"] == "", "it to close")
+        self.ipc("bar", "panel", "control")
+        self.wait(lambda st: st["popout"] == "control", "the control center")
+        self.s.settle(0.5)
+        self.ipc("test", "controlPower")
+        self.wait(lambda st: st["popout"] == "session", "the power menu from the control center")
+        self.s.settle(0.8)
+        self.assertEqual(self.place(), own, "opened from the control center, it isn't where its own button puts it")
