@@ -728,7 +728,8 @@ SCENES["overview-blur"] = {
     "do": (_to_workspace(1)
            + [_clear_window(*_STILL[0]), _on(_STILL[0][0], 1)]
            + _to_workspace(2) + [_clear_window(*_STILL[2]), _on(_STILL[2][0], 2)]
-           + _to_workspace(1) + [("overview", "open")]),
+           # (and the spare workspace Slate keeps after the last in use: a third dot)
+           + _to_workspace(1) + [lambda st: st["bars"][0]["dots"]["count"] == 3, ("overview", "open")]),
     "wait": lambda st: st["overview"]["open"] and st["overview"]["previews"] == 2 and st["overview"]["blurs"] == 1,
     "settle": 2, "undo": [("overview", "close"), lambda st: not any(w["title"] in (_STILL[0][0], _STILL[2][0]) for w in st["windows"])],
 }
