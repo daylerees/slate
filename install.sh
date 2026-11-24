@@ -640,7 +640,11 @@ if [ "$LINK" -eq 1 ]; then
     if [ -L "$DEST" ] && [ "$(readlink -f "$DEST")" = "$ROOT/shell" ]; then
         ok "$DEST already links to this folder"
     else
-        keep=$(mktemp -d)
+        # (your own files, held a moment while the link goes in: in the runtime folder, yours
+        # alone, never /tmp. The same rule as bin/slate's)
+        RUNTIME="${XDG_RUNTIME_DIR:-}"
+        [ -n "$RUNTIME" ] || { RUNTIME="${XDG_STATE_HOME:-$HOME/.local/state}/slate/run"; mkdir -p "$RUNTIME" && chmod 700 "$RUNTIME"; }
+        keep=$(mktemp -d "$RUNTIME/slate-link.XXXXXX")
         for k in "${KEEP[@]}"; do [ -e "$DEST/$k" ] && cp -a "$DEST/$k" "$keep/"; done
         if [ -e "$DEST" ] || [ -L "$DEST" ]; then
             b="$DEST.before-link"; rm -rf "$b"; mv "$DEST" "$b"; ok "Moved what was in $DEST to $b"

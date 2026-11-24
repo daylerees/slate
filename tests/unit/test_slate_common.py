@@ -39,6 +39,37 @@ class WritePrivate(unittest.TestCase):
         finally:
             os.umask(old)
 
+    def test_a_file_and_folder_from_before_are_made_private(self):
+        """One written readable by anyone by an older Slate is made yours alone, folder too."""
+        old = os.umask(0o022)
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                folder = os.path.join(d, "slate")
+                os.makedirs(folder, mode=0o755)
+                os.chmod(folder, 0o755)
+                path = os.path.join(folder, "x.txt")
+                with open(path, "w") as f:
+                    f.write("old")
+                os.chmod(path, 0o644)
+                common.write_private(path, "new")
+                self.assertEqual(open(path).read(), "new")
+                self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
+                self.assertEqual(stat.S_IMODE(os.stat(folder).st_mode), 0o700)
+        finally:
+            os.umask(old)
+
+    def test_never_through_a_link(self):
+        with tempfile.TemporaryDirectory() as d:
+            target = os.path.join(d, "elsewhere.txt")
+            with open(target, "w") as f:
+                f.write("someone else's")
+            os.makedirs(os.path.join(d, "slate"))
+            link = os.path.join(d, "slate", "x.txt")
+            os.symlink(target, link)
+            with self.assertRaises(OSError):
+                common.write_private(link, "new")
+            self.assertEqual(open(target).read(), "someone else's")
+
     def test_replaced_all_at_once_and_private(self):
         """A file that was readable by anyone is replaced by one that's yours alone, with nothing
         left beside it."""

@@ -1311,7 +1311,9 @@ class OutsideTextIsPlain(Case):
         src = slate.read("shell", "Assistant.qml")
         sent = re.search(r"doneNote\.command = (Config\.notify\(.*?\));", src, re.S)
         self.assertTrue(sent, "the notification has moved")
-        self.assertRegex(sent.group(1), r'^Config\.notify\("Nova", esc\(line\),')
+        self.assertRegex(sent.group(1), r'^Config\.notify\("Nova", said,')
+        # (said: the agent's words escaped, or with the conversation not kept, Slate's own words)
+        self.assertRegex(src, r'const said = Config\.s\.assistantKeepChat \? esc\(line\)\s*:')
         # (Config.notify puts "--" before the title and text)
         self.assertIn('return c.concat(["--", title, body]);', slate.read("shell", "Config.qml"))
 
@@ -1477,3 +1479,13 @@ class InstallContainerScript(Case):
         inner = src[start:src.index("' > \"$LOG\"", start)]
         bare = [l.strip() for l in inner.replace("'\"'\"'", "").splitlines() if "'" in l]
         self.assertEqual(bare, [], "a bare ' in the container's script")
+
+
+class NovaNoticeKeepsToKeepChat(Case):
+    def test_the_answer_notice_leaves_out_the_words_when_chats_arent_kept(self):
+        """Nova's "answered" notification goes into the notification history, on disk: with
+        Keep the conversation off, it says only that Nova has answered, none of the answer."""
+        src = slate.read("shell", "Assistant.qml")
+        i = src.index('doneNote.command = Config.notify("Nova"')
+        block = src[i - 600:i + 200]
+        self.assertIn("Config.s.assistantKeepChat ? esc(line)", block, "the answer's words go in the notice whatever the setting")

@@ -26,8 +26,12 @@ def runtime_dir():
 def write_private(path, text):
     """Write text to path, readable by you alone: the folder is made 0700 and the file is
     created 0600 (whatever the umask), then filled."""
-    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    folder = os.path.dirname(path)
+    os.makedirs(folder, mode=0o700, exist_ok=True)
+    os.chmod(folder, 0o700)                  # (one made readable by anyone, by an older Slate)
+    # (never through a link; and a file that was there, readable by anyone, is made yours alone)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+    os.fchmod(fd, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
         fh.write(text)
 

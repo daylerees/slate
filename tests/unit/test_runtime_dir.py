@@ -74,6 +74,11 @@ class RuntimeDir(Case):
                 text = f.read()
             with self.subTest(os.path.basename(path)):
                 self.assertNotRegex(text, r"\$\(mktemp(\s+-d)?\s*\)", "a temporary file in /tmp")
+                self.assertNotRegex(text, r"mktemp(\s+-d)?\s+/tmp/", "a temporary file in /tmp")
+        # (and the installer's copy of your own files, held a moment while it links your Slate
+        # folder: the runtime folder. Its staged copy of Slate's code, which is no one's own and
+        # too big for some runtime folders, can stay in /tmp)
+        self.assertIn('keep=$(mktemp -d "$RUNTIME/', slate.read("install.sh"), "install.sh keeps your files in /tmp")
 
     def test_python_scripts_share_the_one_rule(self):
         """runtime_dir() was copied into four scripts: they import slate_common's now, and no

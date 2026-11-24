@@ -68,3 +68,18 @@ class FactoryResetUnlock(Case):
         said = " ".join(self.s.calls("notify-send")[0])
         self.assertIn("Unlocking without your password is still on", said)
         self.assertIn("Settings → Security", said)
+
+    def test_the_backup_is_yours_alone(self):
+        """The backup holds your settings, clipboard history, notifications and chats: made 0700
+        whatever the umask (it was readable by other accounts)."""
+        import stat
+        old = os.umask(0o022)
+        try:
+            self.reset()
+        finally:
+            os.umask(old)
+        backups = os.path.join(self.h.data, "slate", "backups")
+        made = [os.path.join(backups, n) for n in os.listdir(backups) if n.startswith("factory-reset-")]
+        self.assertTrue(made)
+        for p in made + [os.path.join(made[0], "state")]:
+            self.assertEqual(stat.S_IMODE(os.stat(p).st_mode), 0o700, p)

@@ -18,7 +18,8 @@ SLATE_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/slate"     # your own files (Confi
 state="${XDG_STATE_HOME:-$HOME/.local/state}/slate"
 share="${XDG_DATA_HOME:-$HOME/.local/share}/slate"
 backup="$share/backups/factory-reset-$(date +%Y-%m-%d-%H%M%S)"
-mkdir -p "$backup/state" || exit 1
+# (yours alone: it holds your settings, clipboard history, notifications and chats)
+(umask 077; mkdir -p "$backup/state") || exit 1
 
 # Unlocking without the password (a face, a fingerprint, a key) is a file root owns
 # (/etc/pam.d/slate-lock): taken away with your password, asked for now, while Slate (which

@@ -14,7 +14,12 @@
 set -euo pipefail
 
 DATA="${SLATE_GREETER_DATA:-/var/lib/slate-greeter}"
-t=$(mktemp -d /tmp/slate-greeter-check.XXXXXX)      # short path: Quickshell's socket lives in it
+# (a short path: Quickshell's socket lives in it. The runtime folder when it's this account's own,
+# else /tmp: run by the login screen's installer through runuser, XDG_RUNTIME_DIR can be root's.
+# Either way mktemp -d makes a folder only this account can open)
+base=${XDG_RUNTIME_DIR:-}
+{ [ -n "$base" ] && [ -d "$base" ] && [ -O "$base" ] && [ -w "$base" ]; } || base=/tmp
+t=$(mktemp -d "$base/slate-greeter-check.XXXXXX")
 trap 'rm -rf "$t"' EXIT
 mkdir -p "$t/home" "$t/run"; chmod 700 "$t/run"
 

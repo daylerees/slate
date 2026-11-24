@@ -346,7 +346,11 @@ Scope {
         if (!shown && !Config.testMode) {
             const line = error ? error.message.split("\n")[0].slice(0, 160) : firstLine(cur);
             if (line !== "") {
-                doneNote.command = Config.notify("Nova", esc(line), { page: "assistant", actions: ["default=Open"], wait: true });
+                // (with the conversation not kept, none of its words: notifications are kept in
+                // their history, on disk, so the answer's first line would have been after all)
+                const said = Config.s.assistantKeepChat ? esc(line)
+                    : error ? "Nova couldn't answer. Open it to see why." : "Nova has answered. Open it to see what it said.";
+                doneNote.command = Config.notify("Nova", said, { page: "assistant", actions: ["default=Open"], wait: true });
                 doneNote.running = true;
             }
         }
