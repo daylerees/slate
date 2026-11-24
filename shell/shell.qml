@@ -528,7 +528,7 @@ ShellRoot {
                         barFocus: (Config.bars.find(b => b.keyNav) || { keyAt: "" }).keyAt, barPath: topBar.keyPath, dockPath: win.keyPath },
                 locatePointer: { shows: locatePointer.shows, showing: locatePointer.showing, screen: locatePointer.target ? locatePointer.target.name : "",
                                  x: Math.round(locatePointer.at.x), y: Math.round(locatePointer.at.y) },
-                look: { glass: Config.glass, animate: Config.animate, text13: Config.text(13), dim: String(Config.tint("#8b94a3")) },
+                look: { glass: Config.glass, animate: Config.animate, text13: Config.text(13), dim: String(Config.palette.dim) },
                 // (only once it's been made: reading it here would make it, and hide whether Slate did)
                 softwareDaily: Config.softwareDailyMadeAt
                     ? { looks: SoftwareUpdates.looks, notices: SoftwareUpdates.notices, waiting: SoftwareUpdates.waiting,

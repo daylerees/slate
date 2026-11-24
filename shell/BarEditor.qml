@@ -48,9 +48,9 @@ PanelWindow {
     // ---- Look: the bar's panels' own colours (Popouts.qml) --------------------------
     readonly property var pop: PanelHost.pop
     readonly property color text: bar.textColor
-    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color dim: Config.palette.dim
     readonly property color accent: bar.accent
-    readonly property color accentText: Config.tint("#12151a")
+    readonly property color accentText: Config.palette.accentText
     readonly property color danger: bar.errorColor
     readonly property color card: bar.capsuleColor
     readonly property int pad: 16
@@ -301,7 +301,7 @@ PanelWindow {
                 required property int index
                 anchors.verticalCenter: parent.verticalCenter
                 width: 12; height: 12; radius: Config.dotRadius(12)
-                color: index === 0 ? root.accent : index === 1 ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
+                color: index === 0 ? root.accent : index === 1 ? Config.palette.mid : Config.palette.faint
             }
         }
     }
@@ -1050,8 +1050,8 @@ PanelWindow {
                 x: dropLayer.menuX; y: dropLayer.menuY
                 width: 200; height: dropLayer.menuH
                 radius: Config.corner(12)
-                color: Config.tint("#1d222a")
-                border.width: 1; border.color: Config.tint("#2a313c")
+                color: Config.palette.card
+                border.width: 1; border.color: Config.palette.control
                 Shadow {}
                 MouseArea { anchors.fill: parent }     // clicks between rows stay in the menu
                 Column {

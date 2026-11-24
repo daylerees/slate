@@ -10,7 +10,7 @@ so it applies to every change.
 
 - **Active color**: the strong accent, for things that *stay selected* (the chosen row, tab
   or option, the page you're on, a toggle that's on). In code: `Config.accent` / `pop.accent` /
-  `win.accent`, with the dark `accentText` (`Config.tint("#12151a")`) for text and icons on it.
+  `win.accent`, with the dark `accentText` (`Config.palette.accentText`) for text and icons on it.
 - **Muted hover**: the duller fill for whatever the *pointer is over*. In code: `Config.hover`
   (the accent at 22%). Text keeps its normal color.
 
@@ -289,10 +289,10 @@ which of these applied:
 Anything in `Assistant.qml`, `NovaMic.qml`, `NovaVoice.qml`, Settings → Assistant, Nova's bar button or its
 questions follows the theme, with nothing hard-coded. Before calling a change there done:
 
-- **Colors** come from the theme: `Config.tint("#…")`, `Config.surface` / `Config.raised`,
+- **Colors** come from the theme: `Config.palette` (its named colors), `Config.surface` / `Config.raised`,
   `Config.accent`, `Config.pageColour("assistant")`, `Config.hover` / `hoverOn`,
   `Config.shadowColour`. No bare hex, "black" or "white":
-  `grep -n '"#[0-9a-fA-F]\{6,8\}"\|"black"\|"white"' shell/Assistant.qml shell/NovaMic.qml shell/NovaVoice.qml | grep -v 'Config.tint("#'`
+  `grep -n '"#[0-9a-fA-F]\{6,8\}"\|"black"\|"white"' shell/Assistant.qml shell/NovaMic.qml shell/NovaVoice.qml`
   prints nothing.
 - **Light mode** and **Tint from wallpaper** follow from `tint()`; text on the accent uses the
   window's `accentText`.

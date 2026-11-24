@@ -29,7 +29,7 @@ Rectangle {
     width: maxWidth > 0 ? Math.min(maxWidth, words.implicitWidth + 2 * padX) : words.implicitWidth + 2 * padX
     height: words.implicitHeight + 2 * padY
     radius: Config.corner(6)
-    color: solid ? Config.tint("#0f1216") : Config.surface(Config.tint("#0f1216"))     // the bar's and the dock's
+    color: solid ? Config.palette.base : Config.surface(Config.palette.base)     // the bar's and the dock's
     Gloss { radius: parent.radius }   // glass: a sheen
     Shadow { visible: tip.shadowed }  // raised: Slate's shadow (Settings → Appearance; off in game mode)
 
@@ -40,7 +40,7 @@ Rectangle {
         elide: Text.ElideRight
         textFormat: Text.PlainText        // never markup: an app's name, a window's or a tray icon's title
         text: tip.text
-        color: Config.tint("#eef1f5")
+        color: Config.palette.text
         font.family: Config.s.fontFamily
         font.weight: Font.Medium
         font.pixelSize: Config.text(13)

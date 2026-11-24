@@ -299,7 +299,7 @@ Column {
                             width: parent.width
                             height: Math.round(width / Math.max(1, wsCard.modelData.aspect || 1.6))
                             radius: Config.corner(8)
-                            color: Config.tint("#0b0d10")
+                            color: Config.palette.deep
                             clip: true
                             Image {
                                 anchors.fill: parent

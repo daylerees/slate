@@ -32,12 +32,12 @@ Item {
         radius: ri.radius
         // Opaque (the accent mixed into a neutral), so glass never shows one shape through another;
         // it dims with the picture's `brightness` when the pointer is over it
-        color: Qt.darker(Qt.tint(Config.tint("#2a313c"), Qt.rgba(Config.accent.r, Config.accent.g, Config.accent.b, 0.2)),
+        color: Qt.darker(Qt.tint(Config.palette.control, Qt.rgba(Config.accent.r, Config.accent.g, Config.accent.b, 0.2)),
                          1 - ri.brightness * 1.8)
         Text {
             anchors.centerIn: parent
             text: String.fromCodePoint(0xEB4D)     // user
-            color: Qt.tint(Config.tint("#8b94a3"), Qt.rgba(Config.accent.r, Config.accent.g, Config.accent.b, 0.35))
+            color: Qt.tint(Config.palette.dim, Qt.rgba(Config.accent.r, Config.accent.g, Config.accent.b, 0.35))
             opacity: Math.max(0, 1 + ri.brightness * 1.2)
             font.family: tabler.name
             font.pixelSize: Math.round(Math.min(ri.width, ri.height) * 0.6)

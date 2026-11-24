@@ -124,7 +124,7 @@ Scope {
             required property var modelData
             screen: modelData
             anchors { top: true; bottom: true; left: true; right: true }
-            color: Config.tint("#0f1216")          // plain slate until (or if no) image loads
+            color: Config.palette.base          // plain slate until (or if no) image loads
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "slate-wallpaper"
             WlrLayershell.layer: WlrLayer.Background

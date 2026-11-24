@@ -139,19 +139,19 @@ PanelWindow {
     // How rounded the icons' corners are (Settings → Icons → App icons), for the dock's own corners
     readonly property real iconCorner: Config.iconCornerFor(base)
     readonly property int hideDelay: 700     // ms after the pointer leaves
-    readonly property color bgColor: Config.surface(Config.tint("#0f1216"))      // same as the top bar
+    readonly property color bgColor: Config.surface(Config.palette.base)      // same as the top bar
     // What's drawn on the dock's own buttons (the Apps bars, the Downloads and bin symbols, the
     // media controls) is laid out once, at the size of a fully magnified tile, and scaled to
     // the tile as it grows and shrinks. Sized afresh at every step instead, a symbol's size
     // went in whole pixels and its place snapped to them, so it wobbled inside a tile that
     // moved smoothly
     readonly property real symbolRef: Math.max(1, base * maxScale)
-    readonly property color dockColor: Config.dockSurface(Config.tint("#0f1216"))    // the dock's own background: clearer with glass
+    readonly property color dockColor: Config.dockSurface(Config.palette.base)    // the dock's own background: clearer with glass
     // Slate's own tiles (Apps, media, Downloads, the Waste Basket). Dark without glass: a little
     // lighter, as they were hard to tell from the dock
-    readonly property color tileColor: Config.frostedTile(Config.tint(!Config.glass && !Config.s.lightMode ? "#29303a" : "#1d222a"))
-    readonly property color textColor: Config.tint("#eef1f5")
-    readonly property color dotColor: Config.tint("#c5ccd6")
+    readonly property color tileColor: Config.frostedTile(Config.palette.dockTile)
+    readonly property color textColor: Config.palette.text
+    readonly property color dotColor: Config.palette.soft
     readonly property color activeDotColor: Config.accent
 
     // ---- Window --------------------------------------------------------
@@ -1035,7 +1035,7 @@ PanelWindow {
         // Pulled far enough to unpin it: says so, above it, as a warning (the theme's soft red)
         Rectangle {
             id: removeTip
-            readonly property color warn: Config.tint("#f28b8b")
+            readonly property color warn: Config.palette.danger
             visible: win.dragAway
             anchors { horizontalCenter: floater.horizontalCenter; bottom: floater.top; bottomMargin: 8 }
             width: removeRow.implicitWidth + 20
@@ -1866,9 +1866,9 @@ PanelWindow {
                 // Without glass: the theme's own shades (Config.tint: light or dark, and the
                 // wallpaper's tint), a slot a shade off the dock with an edge past the tiles'.
                 // With glass: frosted, like the tiles
-                color: Config.glass ? Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.07) : Config.tint("#181c22")
+                color: Config.glass ? Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.07) : Config.palette.plate
                 // The edge: solid on glass, dashed when flat (edgeColor, drawn below)
-                readonly property color edgeColor: Config.glass ? Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.3) : Config.tint("#3d4553")
+                readonly property color edgeColor: Config.glass ? Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, 0.3) : Config.palette.plateEdge
                 border.width: Config.glass ? 1.5 : 0
                 border.color: edgeColor
                 Dashes { visible: !Config.glass; colour: dragGap.edgeColor; line: 1.5 }

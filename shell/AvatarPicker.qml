@@ -26,10 +26,10 @@ FloatingWindow {
 
     // ---- Look (as Settings) --------------------------------------------------
     readonly property color text: bar.textColor
-    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color dim: Config.palette.dim
     readonly property color accent: bar.accent
-    readonly property color accentText: Config.tint("#12151a")
-    readonly property color panel: Config.tint("#151920")
+    readonly property color accentText: Config.palette.accentText
+    readonly property color panel: Config.palette.panel
     readonly property string font: bar.fontFamily
     readonly property string iconFont: bar.iconFont
     readonly property string home: Quickshell.env("HOME")
@@ -149,7 +149,7 @@ FloatingWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             text: Config.glyph(({ Pictures: 0xEB0A, Camera: 0xEA54, Screenshots: 0xF201, Wallpapers: 0xEB0A, Downloads: 0xEA96,
                                               Desktop: 0xEA89, Documents: 0xEAA2, Home: 0xEAC1 })[parent.parent.modelData.label] || 0xEAAD)
-                            color: parent.parent.on ? Config.tint("#12151a") : pk.dim
+                            color: parent.parent.on ? Config.palette.accentText : pk.dim
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             font.family: pk.iconFont; font.pixelSize: 16
                         }
@@ -157,7 +157,7 @@ FloatingWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             textFormat: Text.PlainText        // never markup: a folder's name
                             text: parent.parent.modelData.label
-                            color: parent.parent.on ? Config.tint("#12151a") : pk.text
+                            color: parent.parent.on ? Config.palette.accentText : pk.text
                             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                             font.family: pk.font; font.pixelSize: Config.text(13); font.weight: Font.Medium
                         }
@@ -233,7 +233,7 @@ FloatingWindow {
                     anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 4 }
                     width: parent.width - 12; height: width
                     radius: Config.corner(12)
-                    color: cell.fileIsDir ? (cellHover.hovered ? Config.hover : "transparent") : Config.raised(Config.tint("#1d222a"))
+                    color: cell.fileIsDir ? (cellHover.hovered ? Config.hover : "transparent") : Config.raised(Config.palette.card)
                     border.width: cell.picked ? 2 : 0
                     border.color: pk.accent
                     // Folders: a folder icon
@@ -272,7 +272,7 @@ FloatingWindow {
                     Rectangle {
                         visible: !cell.fileIsDir
                         anchors.fill: parent; radius: parent.radius
-                        color: Config.tint("#eef1f5")        // the theme's light (dark in light mode)
+                        color: Config.palette.text        // the theme's light (dark in light mode)
                         opacity: cellHover.hovered && !cell.picked ? 0.08 : 0
                         Behavior on opacity { NumberAnimation { duration: Config.ms(100) } }
                     }
@@ -327,9 +327,9 @@ FloatingWindow {
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: 156; height: 156; radius: Config.corner(78)
-                color: Config.raised(Config.tint("#1d222a"))
+                color: Config.raised(Config.palette.card)
                 Gloss { radius: parent.radius }   // glass: a sheen, as on the bar's containers
-                border.width: 1; border.color: Config.tint("#2a313c")
+                border.width: 1; border.color: Config.palette.control
                 RoundImage {
                     fallback: true      // nothing picked yet: the themed person icon
                     anchors { fill: parent; margins: 3 }
@@ -359,7 +359,7 @@ FloatingWindow {
             spacing: 8
             Rectangle {
                 width: cancelText.implicitWidth + 28; height: 34; radius: Config.corner(9)
-                color: cancelHover.hovered ? Config.hoverOn(Config.raised(Config.tint("#2a313c"))) : Config.raised(Config.tint("#2a313c"))
+                color: cancelHover.hovered ? Config.hoverOn(Config.raised(Config.palette.control)) : Config.raised(Config.palette.control)
                 Text { id: cancelText; anchors.centerIn: parent; text: "Cancel"; color: pk.text; font.family: pk.font; font.pixelSize: Config.text(12); font.weight: Font.Medium }
                 HoverHandler { id: cancelHover }
                 ClickTap { onTapped: pk.visible = false }

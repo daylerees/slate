@@ -325,14 +325,14 @@ PanelWindow {
     // The bar's own colour, so a panel is of a piece with the bar it comes out of, at an opacity
     // and with a blur of its own (Settings → Menu Bar → Glass → Panel opacity, Panel blur)
     readonly property color bg: !Config.glass ? bar.barColor
-        : (c => Qt.rgba(c.r, c.g, c.b, Config.panelGlassOpacity))(Config.tint(Config.s.lightMode ? "#0f1216" : "#0c0e12"))
+        : (c => Qt.rgba(c.r, c.g, c.b, Config.panelGlassOpacity))(Config.palette.glassBase)
     readonly property color card: bar.capsuleColor
     readonly property color text: bar.textColor
-    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color dim: Config.palette.dim
     readonly property color accent: bar.accent
-    readonly property color accentText: Config.tint("#12151a")
+    readonly property color accentText: Config.palette.accentText
     readonly property color danger: bar.errorColor
-    readonly property color warn: Config.tint("#f2cf8b")       // getting full or busy: before the red
+    readonly property color warn: Config.palette.warn       // getting full or busy: before the red
     // The panels' clocks, in the clock style set for the bar (Settings → Menu Bar → Clock),
     // without seconds: they're big and don't tick every second
     readonly property real radius: Config.corner(14)

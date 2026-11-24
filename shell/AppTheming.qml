@@ -62,10 +62,10 @@ Scope {
     // Apps switched on in Settings → App Theming follow Slate's theme:
     // scripts/apply-theme.py writes their themes from these colours, a moment after a change
     readonly property string themeJson: JSON.stringify({
-        accent: Config.accent.toString(), accentText: Config.tint("#12151a").toString(),
-        bg: Config.tint("#0f1216").toString(), surface: Config.tint("#1d222a").toString(),
-        surfaceHigh: Config.tint("#262c35").toString(), text: Config.tint("#eef1f5").toString(),
-        dim: Config.tint("#8b94a3").toString(), error: Config.tint("#f28b8b").toString(),
+        accent: Config.accent.toString(), accentText: Config.palette.accentText.toString(),
+        bg: Config.palette.base.toString(), surface: Config.palette.card.toString(),
+        surfaceHigh: Config.palette.divider.toString(), text: Config.palette.text.toString(),
+        dim: Config.palette.dim.toString(), error: Config.palette.danger.toString(),
         light: Config.s.lightMode,
         codeFont: Config.s.codeFontFamily,
         // The cursor size set in Settings (0 = not set): Slate's own environment still has the

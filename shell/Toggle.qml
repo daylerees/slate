@@ -28,7 +28,7 @@ Rectangle {
     property color fillBase: "transparent"
     property color onColor: Config.accentFor(hovered)
     property color offColor: "transparent"
-    property color knobOn: Config.tint("#12151a")
+    property color knobOn: Config.palette.accentText
     property color knobOff: "white"
     property color ringColor: Config.accent
     property int colorMs: 120

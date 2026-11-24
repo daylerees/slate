@@ -406,7 +406,7 @@ Scope {
                                 anchors { top: parent.top; topMargin: 8; horizontalCenter: parent.horizontalCenter }
                                 width: root.thumbW; height: root.thumbH
                                 radius: Config.corner(8)
-                                color: Config.tint("#1d222a")
+                                color: Config.palette.card
                                 Image {
                                     anchors.fill: parent
                                     source: root.thumbs[card.modelData] ? "file://" + root.thumbs[card.modelData]
@@ -427,7 +427,7 @@ Scope {
                                     anchors.centerIn: parent
                                     width: 36; height: 36
                                     radius: Config.corner(18)
-                                    color: Config.tint("#1d222a")         // (the card's own fill)
+                                    color: Config.palette.card         // (the card's own fill)
                                     opacity: card.chosen && root.spinning ? 1 : 0
                                     visible: opacity > 0
                                     Behavior on opacity { NumberAnimation { duration: Config.ms(150) } }
@@ -443,7 +443,7 @@ Scope {
                                 textFormat: Text.PlainText        // never markup: a file's name
                                 text: root.nameOf(card.modelData)
                                 // (dark on the chosen one, which sits on the active colour)
-                                color: card.chosen ? Config.tint("#12151a") : root.bar.textColor
+                                color: card.chosen ? Config.palette.accentText : root.bar.textColor
                                 Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 font.family: root.bar.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
                                 elide: Text.ElideMiddle
@@ -487,7 +487,7 @@ Scope {
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
                         text: "No wallpapers here yet. Pictures in your wallpaper folder (Settings → Wallpaper) will show up here"
-                        color: Config.tint("#8b94a3")
+                        color: Config.palette.dim
                         font.family: root.bar.fontFamily; font.pixelSize: Config.text(13)
                     }
                     // What the keys do
@@ -499,7 +499,7 @@ Scope {
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                         text: "Enter keeps it · Esc puts yours back"
-                        color: Config.tint("#8b94a3")
+                        color: Config.palette.dim
                         font.family: root.bar.fontFamily; font.pixelSize: Config.text(12)
                     }
                 }

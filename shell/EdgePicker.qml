@@ -22,8 +22,8 @@ Rectangle {
     FocusRing { round: 12 }
 
     width: 168; height: 104; radius: Config.corner(10)
-    color: Config.tint("#151920")
-    border.width: 1; border.color: Config.tint("#323a46")
+    color: Config.palette.panel
+    border.width: 1; border.color: Config.palette.edge
 
     readonly property real gap: 6         // from the screen's edge
     readonly property real thick: 10
@@ -48,7 +48,7 @@ Rectangle {
             radius: Config.corner(3)
             color: current ? ep.accent : "transparent"
             Behavior on color { ColorAnimation { duration: Config.ms(100) } }
-            HoverFill { base: Config.tint("#262c35"); hovered: ep.over === spot.modelData; gone: spot.current; radius: spot.radius }
+            HoverFill { base: Config.palette.divider; hovered: ep.over === spot.modelData; gone: spot.current; radius: spot.radius }
         }
     }
     // Which edge the pointer's on, worked out here for the whole picture: the edges are thin, so

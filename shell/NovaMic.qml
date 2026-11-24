@@ -10,9 +10,9 @@ Rectangle {
     id: mic
     property var voice: null
     property string iconFont: ""
-    property color ink: Config.tint("#8b94a3")       // the icon at rest (the window's dim text)
+    property color ink: Config.palette.dim       // the icon at rest (the window's dim text)
     property color accent: Config.accent
-    property color accentText: Config.tint("#12151a")
+    property color accentText: Config.palette.accentText
     readonly property string phase: voice ? voice.phase : ""
     readonly property bool lit: phase === "listening" || phase === "starting"
     readonly property bool moving: visible && Config.animate && !Config.gameMode

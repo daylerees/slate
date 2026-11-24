@@ -35,14 +35,14 @@ FloatingWindow {
     // same colours under the same names
     Component.onCompleted: if (!SettingsHost.win) SettingsHost.win = sw
     readonly property color card: bar.capsuleColor
-    readonly property color control: Config.raised(Config.tint("#2a313c"))
-    readonly property color divider: Config.tint("#262c35")
-    readonly property color outline: Config.tint("#2a313c")
+    readonly property color control: Config.raised(Config.palette.control)
+    readonly property color divider: Config.palette.divider
+    readonly property color outline: Config.palette.control
     readonly property color text: bar.textColor
-    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color dim: Config.palette.dim
     readonly property color accent: bar.accent
-    readonly property color accentText: Config.tint("#12151a")
-    readonly property color well: Config.tint("#151920")
+    readonly property color accentText: Config.palette.accentText
+    readonly property color well: Config.palette.panel
     readonly property color faint: Qt.rgba(text.r, text.g, text.b, 0.06)
     readonly property color danger: bar.errorColor
     readonly property string font: bar.fontFamily

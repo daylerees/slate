@@ -16,15 +16,15 @@ Rectangle {
     signal key(string name)
     signal hide()                           // the hide key, bottom left
     property bool sounds: true
-    property color keyFill: Config.tint("#2a313c")
-    property color keyText: Config.tint("#eef1f5")
-    property color accentText: Config.tint("#12151a")
+    property color keyFill: Config.palette.control
+    property color keyText: Config.palette.text
+    property color accentText: Config.palette.accentText
     property string fontFamily: Config.s.fontFamily
     property real keySize: 46
     readonly property real gap: 6
     property int shift: 0                   // 0 off, 1 the next letter, 2 caps lock
     property bool symbols: false
-    color: Config.tint("#0f1216")
+    color: Config.palette.base
     radius: Config.corner(16)
     width: keySize * 10 + gap * 9 + 28
     height: column.implicitHeight + 28

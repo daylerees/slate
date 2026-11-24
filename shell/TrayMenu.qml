@@ -99,7 +99,7 @@ PanelWindow {
     readonly property color bgColor: bar.barColor
     readonly property color rowHover: bar.capsuleColor
     readonly property color textColor: bar.textColor
-    readonly property color dimColor: Config.tint("#8b94a3")
+    readonly property color dimColor: Config.palette.dim
     // (the lines between groups: faint, as DesktopMenu's, so they read over glass too)
     readonly property color sepColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.1)
 

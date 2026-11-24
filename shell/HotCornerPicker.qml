@@ -9,8 +9,8 @@ Rectangle {
     property string selected: "TopLeft"          // TopLeft, TopRight, BottomLeft or BottomRight
     property var actions: []                     // [{ value, label }]
     property color accent: Config.accent
-    property color textColor: Config.tint("#eef1f5")
-    property color dimColor: Config.tint("#8b94a3")
+    property color textColor: Config.palette.text
+    property color dimColor: Config.palette.dim
     property string fontFamily: ""
     property string iconFont: ""
     signal picked(string corner)
@@ -20,8 +20,8 @@ Rectangle {
     function labelFor(v) { const a = actions.find(x => x.value === v); return a ? a.label : v; }
 
     width: 420; height: 230; radius: Config.corner(14)
-    color: Config.tint("#151920")
-    border.width: 1; border.color: Config.tint("#323a46")
+    color: Config.palette.panel
+    border.width: 1; border.color: Config.palette.edge
 
     Repeater {
         model: [{ key: "TopLeft", name: "Top left" }, { key: "TopRight", name: "Top right" },
@@ -47,7 +47,7 @@ Rectangle {
             border.width: current ? 2 : 0
             border.color: hp.accent
             HoverFill {
-                base: Config.tint("#262c35"); hovered: cornerHover.hovered
+                base: Config.palette.divider; hovered: cornerHover.hovered
                 topLeftRadius: corner.topLeftRadius; topRightRadius: corner.topRightRadius
                 bottomLeftRadius: corner.bottomLeftRadius; bottomRightRadius: corner.bottomRightRadius
             }
@@ -59,7 +59,7 @@ Rectangle {
                 Rectangle {
                     width: 32; height: 32; radius: Config.corner(8)
                     anchors.verticalCenter: parent.verticalCenter
-                    color: corner.on ? Qt.rgba(hp.accent.r, hp.accent.g, hp.accent.b, 0.18) : Config.tint("#1d222a")
+                    color: corner.on ? Qt.rgba(hp.accent.r, hp.accent.g, hp.accent.b, 0.18) : Config.palette.card
                     Text {
                         anchors.centerIn: parent
                         text: String.fromCodePoint(corner.on ? (hp.icons[corner.action] || 0xF7A0) : 0xF7A0)

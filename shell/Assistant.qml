@@ -33,20 +33,20 @@ Scope {
 
     // ---- Look: the launcher's ------------------------------------------------
     // (at its own opacity with glass: Settings → Assistant → Glass)
-    readonly property color barColor: Config.assistantSurface(Config.tint("#0f1216"))
-    readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))
+    readonly property color barColor: Config.assistantSurface(Config.palette.base)
+    readonly property color fieldColor: Config.raised(Config.palette.card)
     // Nova's side of the conversation: a touch of its own colour over the field's
     readonly property color replyColor: Qt.tint(fieldColor, Qt.rgba(Config.pageColour("assistant").r, Config.pageColour("assistant").g, Config.pageColour("assistant").b, 0.10))
-    readonly property color textColor: Config.tint("#eef1f5")
-    readonly property color dimTextColor: Config.tint("#8b94a3")
+    readonly property color textColor: Config.palette.text
+    readonly property color dimTextColor: Config.palette.dim
     readonly property color accent: Config.accent
-    readonly property color accentText: Config.tint("#12151a")
-    readonly property color danger: Config.tint("#f28b8b")
+    readonly property color accentText: Config.palette.accentText
+    readonly property color danger: Config.palette.danger
     readonly property string fontFamily: Config.s.fontFamily
     // Code in an answer: the monospaced font (Settings → Appearance), on a plate a step darker
     // than the bubble (solid, so on glass it isn't a lighter patch laid over the bubble)
     readonly property string codeFont: String(Config.s.codeFontFamily || "monospace").replace(/[^\w .-]/g, "")
-    readonly property color codePlate: Config.tint("#14181e")
+    readonly property color codePlate: Config.palette.code
 
     // ---- An answer's words, as Slate's own markup -------------------------------------
     // The blocks the runner sends (scripts/safe_markdown.py), checked again here as they arrive
@@ -583,7 +583,7 @@ Scope {
                             // green pill (the accent with the Colourful look off). Flat, with glass too
                             Rectangle {
                                 id: trial
-                                readonly property color ink: Config.colourful ? Config.tint("#9ed6a6") : root.accent
+                                readonly property color ink: Config.colourful ? Config.palette.mint : root.accent
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: trialRow.implicitWidth + 18; height: 22; radius: Config.corner(11)
                                 color: Qt.rgba(ink.r, ink.g, ink.b, 0.16)
@@ -764,7 +764,7 @@ Scope {
                                             visible: opacity > 0 && (turn.t.answer !== "" || reply.wrong)
                                             shownFor: replyHover.hovered
                                             done: root.copied === turn.index + ":nova"
-                                            base: Config.tint("#2a313c"); ink: root.textColor
+                                            base: Config.palette.control; ink: root.textColor
                                             onPressed: root.copy(turn.index + ":nova", reply.wrong ? turn.t.error.message : turn.t.answer)
                                         }
                                         Column {
@@ -1253,7 +1253,7 @@ Scope {
         id: chip
         property bool shownFor: false
         property bool done: false
-        property color base: Config.tint("#2a313c")
+        property color base: Config.palette.control
         property color ink: root.textColor
         // Under the pointer: the accent, or on your own (accent-coloured) bubble its opposite
         property color hoverBase: root.accent
@@ -1285,7 +1285,7 @@ Scope {
         property bool primary: false
         property int icon: 0
         signal pressed()
-        readonly property color control: Config.raised(Config.tint("#2a313c"))
+        readonly property color control: Config.raised(Config.palette.control)
         readonly property color fg: primary ? root.accentText : root.textColor
         width: pillRow.implicitWidth + 28; height: 32; radius: Config.corner(8)
         color: primary ? Config.accentFor(pillHover.hovered) : "transparent"

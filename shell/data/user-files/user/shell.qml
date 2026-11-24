@@ -7,7 +7,7 @@
 //
 // Quickshell's docs: https://quickshell.org/docs/
 // Slate's own pieces are usable here too, e.g. Config.s (settings), Config.accent,
-// Config.tint("#1d222a") (theme colours), Spaces.list.
+// Config.palette.card (theme colours), Spaces.list.
 //
 // Examples: remove the "//" in front of the lines of one to try it.
 
@@ -31,11 +31,11 @@ Scope {
     //         WlrLayershell.layer: WlrLayer.Bottom
     //         Rectangle {
     //             anchors.fill: parent; radius: 8
-    //             color: Config.tint("#1d222a")
+    //             color: Config.palette.card
     //             Text {
     //                 id: clock
     //                 anchors.centerIn: parent
-    //                 color: Config.tint("#eef1f5")
+    //                 color: Config.palette.text
     //                 font.family: Config.s.fontFamily; font.pixelSize: Config.text(13)
     //                 SystemClock { id: time; precision: SystemClock.Minutes }
     //                 text: Qt.formatTime(time.date, "hh:mm")

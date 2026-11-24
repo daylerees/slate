@@ -87,17 +87,17 @@ Item {
     function corner(r) { return r * roundness; }       // (Config.corner, eased)
     property color accent: Config.accent
     Behavior on accent { ColorAnimation { duration: Config.ms(450) } }
-    property color accentText: Config.tint("#12151a")
+    property color accentText: Config.palette.accentText
     Behavior on accentText { ColorAnimation { duration: Config.ms(450) } }
-    property color frame: Config.tint("#0f1216")
+    property color frame: Config.palette.base
     Behavior on frame { ColorAnimation { duration: Config.ms(450) } }
-    property color field: Config.tint("#1d222a")
+    property color field: Config.palette.card
     Behavior on field { ColorAnimation { duration: Config.ms(450) } }
-    property color text: Config.tint("#eef1f5")
+    property color text: Config.palette.text
     Behavior on text { ColorAnimation { duration: Config.ms(450) } }
-    property color dim: Config.tint("#8b94a3")
+    property color dim: Config.palette.dim
     Behavior on dim { ColorAnimation { duration: Config.ms(450) } }
-    readonly property color error: Config.tint("#f28b8b")
+    readonly property color error: Config.palette.danger
     readonly property string font: Config.s.fontFamily
     property url iconFontSource: "file://" + Quickshell.shellPath("fonts/tabler.ttf")   // the greeter passes its own copy
     FontLoader { id: tabler; source: ls.iconFontSource }
@@ -130,8 +130,8 @@ Item {
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Config.tint("#262c35") }
-            GradientStop { position: 1.0; color: Config.tint("#0f1216") }
+            GradientStop { position: 0.0; color: Config.palette.divider }
+            GradientStop { position: 1.0; color: Config.palette.base }
         }
     }
     // The wallpaper, crossfading when it changes (the login screen, choosing someone with a look

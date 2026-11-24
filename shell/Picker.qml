@@ -36,10 +36,10 @@ PanelWindow {
     readonly property int fadeMs: 200
     readonly property real dropDistance: 18
     readonly property int slideMs: 140
-    readonly property color barColor: Config.surface(Config.tint("#0f1216"))
-    readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))
-    readonly property color textColor: Config.tint("#eef1f5")
-    readonly property color dimTextColor: Config.tint("#8b94a3")
+    readonly property color barColor: Config.surface(Config.palette.base)
+    readonly property color fieldColor: Config.raised(Config.palette.card)
+    readonly property color textColor: Config.palette.text
+    readonly property color dimTextColor: Config.palette.dim
     readonly property color accent: Config.accent
     readonly property string fontFamily: Config.s.fontFamily
     readonly property string emojiFont: "Noto Color Emoji"
@@ -354,7 +354,7 @@ PanelWindow {
                         visible: !clipRow.image
                         textFormat: Text.PlainText        // never markup: something you copied, from anywhere
                         text: clipRow.image ? "" : root.preview(clipRow.modelData.text).slice(0, 300)
-                        color: clipRow.ListView.isCurrentItem ? Config.tint("#12151a") : root.textColor
+                        color: clipRow.ListView.isCurrentItem ? Config.palette.accentText : root.textColor
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: root.fontFamily
                         font.pixelSize: Config.text(14)
@@ -367,7 +367,7 @@ PanelWindow {
                         textFormat: Text.PlainText        // never markup
                         text: root.clipDetail(clipRow.modelData)
                         // On the selected row: the text-on-accent colour, a little softer (as the Launcher's)
-                        readonly property color ink: Config.tint("#12151a")
+                        readonly property color ink: Config.palette.accentText
                         color: clipRow.ListView.isCurrentItem ? Qt.rgba(ink.r, ink.g, ink.b, 0.72) : root.dimTextColor
                         Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: root.fontFamily
@@ -506,7 +506,7 @@ PanelWindow {
                     id: clearLabel
                     anchors.centerIn: parent
                     text: "Clear all"
-                    color: Config.tint("#f28b8b")
+                    color: Config.palette.danger
                     font.family: root.fontFamily
                     font.pixelSize: Config.text(12)
                     font.weight: Font.Medium

@@ -93,15 +93,50 @@ Singleton {
     // The day a week starts on, as Date.getDay() counts them (0 Sunday … 6 Saturday)
     readonly property int weekStartDay: s.weekStart === "sunday" ? 0 : s.weekStart === "saturday" ? 6 : 1
     readonly property bool fahrenheit: s.temperatureUnit === "fahrenheit"
+    // ---- Slate's palette ---------------------------------------------------------------
+    // Every color Slate's windows draw with, by what it's for: tint() (light or dark, toned by the
+    // wallpaper) worked out once here for all of them. Written as dark-theme values; nowhere else
+    // writes a color for tint() (tests/static: test_look_and_feel, Palette)
+    readonly property QtObject palette: QtObject {
+        readonly property color text:       root.tint("#eef1f5")      // words and icons
+        readonly property color dim:        root.tint("#8b94a3")      // quieter words: details, hints, captions
+        readonly property color accentText: root.tint("#12151a")      // words and icons on the active color
+        readonly property color base:       root.tint("#0f1216")      // a window's or panel's own background
+        readonly property color card:       root.tint("#1d222a")      // a card or group on that background
+        readonly property color control:    root.tint("#2a313c")      // a control's fill: buttons, fields, tracks
+        readonly property color danger:     root.tint("#f28b8b")      // what removes or can't be undone, and errors
+        readonly property color warn:       root.tint("#f2cf8b")      // getting full or busy: before the red
+        readonly property color divider:    root.tint("#262c35")      // lines between things, a raised plate
+        readonly property color panel:      root.tint("#151920")      // a small window's background (the pickers, the avatar)
+        readonly property color edge:       root.tint("#323a46")      // a solid control under the pointer, a small window's outline
+        readonly property color ring:       root.tint("#3a424e")      // the outline round a swatch, picture or idle button
+        readonly property color outline:    root.tint("#4a5360")      // the outline round a wallpaper tile
+        readonly property color quiet:      root.tint("#444c58")      // the bar's quietest words
+        readonly property color plateEdge:  root.tint("#3d4553")      // the edge of a plate in the dock's menus
+        readonly property color plate:      root.tint("#181c22")      // a plate in the dock's menus
+        readonly property color code:       root.tint("#14181e")      // the plate behind code in Nova's answers
+        readonly property color deep:       root.tint("#0b0d10")      // the darkest fill (Spaces' icon well)
+        readonly property color mark:       root.tint("#566173")      // Slate's mark at rest
+        readonly property color faint:      root.tint("#4f5866")      // what's there but not in use: empty dots, other months' days
+        readonly property color idle:       root.tint("#5a6372")      // an inactive window's border with high contrast
+        readonly property color mid:        root.tint("#aeb6c2")      // a dot for a workspace with windows
+        readonly property color soft:       root.tint("#c5ccd6")      // the dock's dots, the bar's dimmer words
+        readonly property color sand:       root.tint("#e8c48f")      // a warm note in Welcome
+        readonly property color green:      root.tint("#a6d3a0")      // App theming's color, with Colorful on
+        readonly property color mint:       root.tint("#9ed6a6")      // Nova's own green, with Colorful on
+        readonly property color glassBase:  root.tint(root.s.lightMode ? "#0f1216" : "#0c0e12")      // behind glass: the bar's and panels' see-through base
+        readonly property color capsule:    root.tint(root.s.lightMode ? "#262c35" : "#1d222a")      // the bar's containers
+        readonly property color dockTile:   root.tint(!root.glass && !root.s.lightMode ? "#29303a" : "#1d222a")      // an app's tile in the dock
+    }
     // The muted hover of something destructive (Remove, Clear, Delete, Force Quit…): the same,
     // in the red such things are written in, so pointing at one says what it will do
-    readonly property color hoverDanger: { const d = tint("#f28b8b"); return Qt.rgba(d.r, d.g, d.b, hoverStrength); }
+    readonly property color hoverDanger: { const d = palette.danger; return Qt.rgba(d.r, d.g, d.b, hoverStrength); }
     // (Under the pointer, something that has a fill of its own takes the muted hover in its
     // place, not laid over it: hovering looks the same on a card, a button or a bare row, with
     // glass or without. A solid fill gets it as it looks on the panel behind (the hover over
     // the panels' colour), solid too: animated from solid to see-through, a colour passes
     // through a brighter, fuller accent on the way and settles back, a flash on every hover)
-    function hoverOn(base) { return base.a > 0.99 ? Qt.tint(tint("#0f1216"), hover) : hover; }
+    function hoverOn(base) { return base.a > 0.99 ? Qt.tint(palette.base, hover) : hover; }
     // The wallpaper on screen: the one saved, or one the wallpaper switcher (Super+Alt+W,
     // WallpaperSwitcher.qml) is showing for a moment, with the theme's colours following it
     property string wallpaperPreview: ""
@@ -1613,7 +1648,7 @@ Singleton {
     readonly property string tileScript: Quickshell.shellPath("scripts/appicon.py")
     // The tile behind icons that don't fill their shape (IconPlate.qml): slate, following the theme;
     // with glass, solid with the frosting over it (frostedTile)
-    readonly property color iconPlateColor: frostedTile(tint("#2a313c"))
+    readonly property color iconPlateColor: frostedTile(palette.control)
     // Tiles with glass (behind app icons everywhere, and the dock's own buttons): the tile's own
     // colour, solid, with the frosting over it (as one colour), so icons sit on something
     // rather than on a faint film
@@ -2837,8 +2872,8 @@ Singleton {
     // still be in the colours in use (light or dark, the wallpaper's tint, the accent).
     // Written a moment after any of them changes. Not on the login screen
     readonly property string coverColours: JSON.stringify({
-        background: "" + tint("#0f1216"), text: "" + tint("#eef1f5"), dim: "" + tint("#8b94a3"), accent: "" + accent,
-        mark: "" + tint("#566173") }) + "\n"
+        background: "" + palette.base, text: "" + palette.text, dim: "" + palette.dim, accent: "" + accent,
+        mark: "" + palette.mark }) + "\n"
     onCoverColoursChanged: coverLater.restart()
     // (not while the wallpaper switcher is showing one: once it closes)
     onWallpaperSwitchingChanged: { if (!wallpaperSwitching) coverLater.restart(); if (!wallpaperSwitching && hyprPushHeld) hyprPush.restart(); }   // (the held-back push, hyprPush)

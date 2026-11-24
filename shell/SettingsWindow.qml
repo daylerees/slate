@@ -85,20 +85,20 @@ FloatingWindow {
     // ---- Look --------------------------------------------------------------
     readonly property color card: bar.capsuleColor
     readonly property color text: bar.textColor
-    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color dim: Config.palette.dim
     readonly property color accent: bar.accent
-    readonly property color accentText: Config.tint("#12151a")
+    readonly property color accentText: Config.palette.accentText
     readonly property color danger: bar.errorColor
     // Buttons, switches, fields and other controls: solid grey, or with glass the frosted fill the
     // bar's containers have (a hint of the wallpaper's colour), so their sheen picks it up too
-    readonly property color control: Config.raised(Config.tint("#2a313c"))
+    readonly property color control: Config.raised(Config.palette.control)
     // The theme's greys, named for what they're used for (each worked out once, not per item)
-    readonly property color well: Config.tint("#151920")           // sunken areas: the content pane, search wells, segmented tracks
-    readonly property color divider: Config.tint("#262c35")        // separators, chosen rows, meter tracks
-    readonly property color outline: Config.tint("#2a313c")        // borders, idle icon tiles
-    readonly property color popupFill: Config.tint("#1d222a")      // dropdown menus and other pop-ups
-    readonly property color controlHoverSolid: Config.tint("#323a46")  // a button under the pointer (without glass)
-    readonly property color ring: Config.tint("#3a424e")           // the outline round a swatch or picture
+    readonly property color well: Config.palette.panel           // sunken areas: the content pane, search wells, segmented tracks
+    readonly property color divider: Config.palette.divider        // separators, chosen rows, meter tracks
+    readonly property color outline: Config.palette.control        // borders, idle icon tiles
+    readonly property color popupFill: Config.palette.card      // dropdown menus and other pop-ups
+    readonly property color controlHoverSolid: Config.palette.edge  // a button under the pointer (without glass)
+    readonly property color ring: Config.palette.ring           // the outline round a swatch or picture
     readonly property color faint: Qt.rgba(text.r, text.g, text.b, 0.06)   // a whisper of the text colour, for flat fills
     readonly property string font: bar.fontFamily
     // Dropdown choices every half hour, from one hour to another (halfHours(16, 23.5): 16:00,

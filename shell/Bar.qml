@@ -33,28 +33,28 @@ PanelWindow {
     readonly property real screenCornerRadius: 17
     readonly property real screenCornerShape: 3.0
     // (See-through with glass: Settings → Appearance → Glass)
-    readonly property color barColor: Config.surface(Config.tint("#0f1216"))
+    readonly property color barColor: Config.surface(Config.palette.base)
     // The menu bar's own background: with glass in dark mode, darker and less see-through
     // than other glass (a quarter of the way from Glass → Opacity to solid), so the bar reads as a steady
     // band whatever the wallpaper does behind it
     // (and clearer still by Settings → Menu Bar → Background opacity: Config.barGlassOpacity)
     readonly property color barBackground: !Config.glass ? barColor
-        : (c => Qt.rgba(c.r, c.g, c.b, Config.barGlassOpacityUsual + (1 - Config.barGlassOpacityUsual) * bar.arrangeLook))(Config.tint(Config.s.lightMode ? "#0f1216" : "#0c0e12"))
+        : (c => Qt.rgba(c.r, c.g, c.b, Config.barGlassOpacityUsual + (1 - Config.barGlassOpacityUsual) * bar.arrangeLook))(Config.palette.glassBase)
     // In light mode a shade deeper than other fields, to stand out from the tinted bar
-    readonly property color capsuleColor: Config.raised(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
+    readonly property color capsuleColor: Config.raised(Config.palette.capsule)
     // On the bar itself, a container with an opacity chosen (Settings → Menu Bar → Glass) is
     // drawn solid, and the whole of it faded to that (Capsule, below; Settings' cards and the arranging panel's chips keep
     // capsuleColor as it is)
-    readonly property color capsuleSolid: Config.frostedTile(Config.tint(Config.s.lightMode ? "#262c35" : "#1d222a"))
-    readonly property color textColor: Config.tint("#eef1f5")
-    readonly property color dimTextColor: Config.tint("#8b94a3")
-    readonly property color dimColor: Config.tint("#c5ccd6")
+    readonly property color capsuleSolid: Config.frostedTile(Config.palette.capsule)
+    readonly property color textColor: Config.palette.text
+    readonly property color dimTextColor: Config.palette.dim
+    readonly property color dimColor: Config.palette.soft
     readonly property color accent: Config.accent
-    readonly property color errorColor: Config.tint("#f28b8b")
+    readonly property color errorColor: Config.palette.danger
     // With glass: a translucent line in the dim text colour (light in dark mode, dark in light
     // mode, tinted toward the wallpaper), which stays visible whatever's behind the bar
     readonly property color separatorColor: Config.glass ? withAlpha(dimColor, 0.35)
-                                                           : Config.tint("#444c58")
+                                                           : Config.palette.quiet
     // The bar's own right-click menu, pointing at the bar from just off it where it was
     // clicked (x, y on the screen, in Slate's units). The test hook opens it this way too, so
     // tests and the docs' picture show the menu where a real right-click puts it
@@ -1409,7 +1409,7 @@ PanelWindow {
                     size: 19.5              // (its drawn part, accent line to slab, 13 px tall)
                     flat: true              // (straight on here; tilted elsewhere)
                     accent: bar.accent
-                    body: bar.popoutHere && bar.popouts.current === "control" ? bar.textColor : Config.tint("#566173")
+                    body: bar.popoutHere && bar.popouts.current === "control" ? bar.textColor : Config.palette.mark
                     Behavior on body { ColorAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
                 }
             }
@@ -1725,7 +1725,7 @@ PanelWindow {
                 wanted: Config.s.barShowScreenshot || Config.recording
                 pastel: Config.recording ? "" : "screenshot"     // its colour when the look is Colourful
                 iconCode: Config.recording ? 0xF692 : 0xF201
-                tint: Config.recording ? Config.tint("#f28b8b") : bar.textColor
+                tint: Config.recording ? Config.palette.danger : bar.textColor
                 label: Config.recording ? Config.recordingTime() : ""
                 tipText: Config.recording ? "Recording the screen: click to stop" : ""
                 onClicked: Config.recording ? Quickshell.execDetached([Quickshell.shellPath("scripts/record.sh"), "stop"])

@@ -175,12 +175,12 @@ PanelWindow {
     Item { focus: dm.visible; Keys.onPressed: e => dm.key(e) }
 
     // Look: the dock's
-    readonly property color bgColor: Config.surface(Config.tint("#0f1216"))
+    readonly property color bgColor: Config.surface(Config.palette.base)
     // Separators: a faint line of the text's colour, so they're as subtle over glass (where a
     // solid dark line all but vanished) as on a solid menu, and in light mode
     readonly property color sepColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.1)
-    readonly property color textColor: Config.tint("#eef1f5")
-    readonly property color dimColor: Config.tint("#8b94a3")
+    readonly property color textColor: Config.palette.text
+    readonly property color dimColor: Config.palette.dim
 
     // A menu's card and its rows: the menu, and a submenu beside it
     component MenuCard: Rectangle {
@@ -267,7 +267,7 @@ PanelWindow {
                             anchors { left: parent.left; leftMargin: card.icons ? 36 : 20; right: parent.right; rightMargin: row.opens ? 30 : 10; verticalCenter: parent.verticalCenter }
                             textFormat: Text.PlainText        // never markup: some rows carry an app's name or a window's title
                             text: row.modelData.label || ""
-                            color: row.modelData.danger ? Config.tint("#f28b8b") : dm.textColor
+                            color: row.modelData.danger ? Config.palette.danger : dm.textColor
                             font.family: Config.s.fontFamily; font.pixelSize: Config.text(13); font.weight: Font.Medium
                             elide: Text.ElideRight
                         }

@@ -150,8 +150,8 @@ PanelWindow {
     readonly property real r: flat ? 0 : Config.windowRounding / s + border
     // A little see-through (Hyprland blurs what's behind it: windowrules.lua)
     readonly property color barColor: Qt.rgba(barSolid.r, barSolid.g, barSolid.b, 0.85)
-    readonly property color barSolid: Config.tint("#0f1216")
-    readonly property color textColor: Config.tint("#eef1f5")
+    readonly property color barSolid: Config.palette.base
+    readonly property color textColor: Config.palette.text
     readonly property bool buttonsLeft: Config.s.titleButtons === "left"
 
     Rectangle {
@@ -267,7 +267,7 @@ PanelWindow {
                     readonly property bool danger: modelData.act === "close"
                     // The muted hover (the red one for close), laid over the resting grey, as
                     // everywhere else: the active colour is for what stays selected
-                    readonly property color rest: Config.tint("#3a424e")
+                    readonly property color rest: Config.palette.ring
                     color: btnArea.containsMouse ? Qt.tint(rest, danger ? Config.hoverDanger : Config.hover) : rest
                     Text {
                         anchors.centerIn: parent
@@ -306,7 +306,7 @@ PanelWindow {
         x: tb.handle.x - size / 2; y: tb.handle.y - size / 2
         width: size; height: size; radius: Config.corner(12)
         color: tb.barColor
-        border.width: 1; border.color: Config.glass ? Config.glassEdge : Config.tint("#2a313c")
+        border.width: 1; border.color: Config.glass ? Config.glassEdge : Config.palette.control
         opacity: tb.moved ? 1 : 0
         scale: tb.moved ? 1 : 0.8
         Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }

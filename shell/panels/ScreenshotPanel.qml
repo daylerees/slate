@@ -112,11 +112,11 @@ Column {
         onClicked: { pop.close(); Quickshell.execDetached([Quickshell.shellPath("scripts/record.sh"), "stop"]); }
         Icon {
             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-            code: 0xF695; font.pixelSize: 16; color: Config.tint("#f28b8b")
+            code: 0xF695; font.pixelSize: 16; color: Config.palette.danger
         }
         Label {
             anchors { left: parent.left; leftMargin: 36; verticalCenter: parent.verticalCenter }
-            text: "Stop recording · " + Config.recordingTime(); font.weight: Font.Normal; color: Config.tint("#f28b8b")
+            text: "Stop recording · " + Config.recordingTime(); font.weight: Font.Normal; color: Config.palette.danger
         }
     }
     // What's recorded with it: either, both (mixed) or neither

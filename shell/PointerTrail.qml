@@ -85,7 +85,7 @@ Scope {
                     x: d ? d.x - width / 2 : 0; y: d ? d.y - width / 2 : 0
                     color: Config.accent
                     border.width: 1
-                    border.color: Config.tint("#12151a")
+                    border.color: Config.palette.accentText
                     opacity: 0.85 * (1 - age)
                 }
             }

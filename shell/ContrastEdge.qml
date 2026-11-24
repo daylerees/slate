@@ -12,6 +12,6 @@ Rectangle {
     visible: Config.s.highContrast
     color: "transparent"
     border.width: line
-    border.color: Config.tint("#eef1f5")
+    border.color: Config.palette.text
     antialiasing: true
 }

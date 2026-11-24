@@ -1,6 +1,7 @@
 """Places that must follow docs/CONVENTIONS.md "Look and feel", found by reading the code:
 scrolling views get shades, a scrollbar and smooth wheel; the title bar's buttons hover with
 the muted hover, not the active colour; questions go through Slate's confirmation window."""
+import glob
 import os
 import re
 
@@ -276,7 +277,7 @@ class Tooltips(Case):
         src = slate.read("shell", "Tooltip.qml")
         self.assertRegex(src, r"(?m)^Rectangle \{", "a tooltip is a box")
         self.assertIn("radius: Config.corner(6)", src)
-        self.assertIn('Config.surface(Config.tint("#0f1216"))', src, "not the bar's and the dock's colour")
+        self.assertIn('Config.surface(Config.palette.base)', src, "not the bar's and the dock's colour")
         self.assertIn("Gloss { radius: parent.radius }", src, "no sheen with glass")
         self.assertRegex(src, r"(?m)^    Shadow \{ visible: tip\.shadowed \}", "not raised with Slate's shadow, as other raised surfaces are")
         # ...except in the dock's window with its blur, where Hyprland blurs behind anything at
@@ -418,3 +419,16 @@ class PageColours(Case):
             with self.subTest(page):
                 self.assertNotIn(colour.lower(), seen, f"{page} shares its colour with {seen.get(colour.lower())}")
                 seen[colour.lower()] = page
+
+
+class Palette(Case):
+    def test_colors_for_tint_are_named_once_in_config(self):
+        """Slate's palette was written out by hand about 200 times across 49 files, each window
+        working the theme out again for itself, where one mistyped value drifts silently. Every
+        color for tint() is named once, in Config.palette, and used by its name."""
+        found = []
+        for path in glob.glob(slate.path("shell", "**", "*.qml"), recursive=True):
+            for n, line in enumerate(open(path), 1):
+                if re.search(r'tint\([^)]*"#', line) and "root.tint(" not in line:
+                    found.append(f"{os.path.relpath(path, slate.path('shell'))}:{n}: {line.strip()[:90]}")
+        self.assertEqual(found, [], "a color for tint() written out: use (or add) a Config.palette name")

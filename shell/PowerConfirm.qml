@@ -20,13 +20,13 @@ PanelWindow {
     id: root
 
     // ---- Look --------------------------------------------------------------
-    readonly property color cardColor: Config.surface(Config.tint("#0f1216"))     // same as the top bar
-    readonly property color buttonColor: Config.tint("#1d222a")   // bar capsules
-    readonly property color textColor: Config.tint("#eef1f5")
-    readonly property color dimTextColor: Config.tint("#8b94a3")
+    readonly property color cardColor: Config.surface(Config.palette.base)     // same as the top bar
+    readonly property color buttonColor: Config.palette.card   // bar capsules
+    readonly property color textColor: Config.palette.text
+    readonly property color dimTextColor: Config.palette.dim
     readonly property color accent: Config.accent
-    readonly property color accentText: Config.tint("#12151a")
-    readonly property color danger: Config.tint("#f28b8b")
+    readonly property color accentText: Config.palette.accentText
+    readonly property color danger: Config.palette.danger
     readonly property string fontFamily: Config.s.fontFamily
     readonly property int fadeMs: 180
 
@@ -306,7 +306,7 @@ PanelWindow {
                         anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                         plain: true; hovered: reopenHover.hovered
                         checked: reopen.on
-                        offColor: Config.tint("#2a313c")
+                        offColor: Config.palette.control
                         knobOn: root.accentText; knobOff: root.textColor
                     }
                 }

@@ -28,11 +28,11 @@ PanelWindow {
     id: root
 
     // ---- Look --------------------------------------------------------------
-    readonly property color cardColor: Config.surface(Config.tint("#0f1216"))     // as the launcher's
-    readonly property color tileColor: Config.raised(Config.tint("#1d222a"))      // bar capsules
-    readonly property color textColor: Config.tint("#eef1f5")
-    readonly property color dimTextColor: Config.tint("#8b94a3")
-    readonly property color accentText: Config.tint("#12151a")
+    readonly property color cardColor: Config.surface(Config.palette.base)     // as the launcher's
+    readonly property color tileColor: Config.raised(Config.palette.card)      // bar capsules
+    readonly property color textColor: Config.palette.text
+    readonly property color dimTextColor: Config.palette.dim
+    readonly property color accentText: Config.palette.accentText
     readonly property string fontFamily: Config.s.fontFamily
     readonly property string codeFont: String(Config.s.codeFontFamily || "monospace").replace(/[^\w .-]/g, "")
     readonly property int fadeMs: 160

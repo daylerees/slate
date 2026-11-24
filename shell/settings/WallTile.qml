@@ -38,7 +38,7 @@ Item {
         radius: Config.corner(10)
         color: win.card
         border.width: parent.current ? 3 : wallHover.hovered ? 1 : 0
-        border.color: parent.current ? win.accent : Config.tint("#4a5360")
+        border.color: parent.current ? win.accent : Config.palette.outline
         Item {
             anchors { fill: parent; margins: parent.parent.current ? 3 : 0 }
             layer.enabled: tile.seen

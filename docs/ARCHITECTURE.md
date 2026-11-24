@@ -440,7 +440,9 @@ opening any of them closes bar panels (wired in `shell.qml`).
 - `Config.tint(hex)` maps every theme color: light mode flips grays (dark ↔ light) and
   deepens colors; "background tint from wallpaper" shifts grays toward the wallpaper's
   hue. With both off it returns the color unchanged (the default dark slate). **All
-  theme colors in the QML go through `Config.tint()`** — keep it that way for new UI.
+  theme colors in the QML go through `Config.tint()`**, worked out once in
+  `Config.palette` and used by name (`Config.palette.text`, `.dim`, `.card`, `.danger`…):
+  a new color gets a name there, never a `tint("#…")` of its own (a static test checks).
 - Workspace names: a workspace can have a name of its own (the pencil on the window mode
   panel), shown wherever Slate would say "Workspace 3": always through
   `Config.workspaceLabel(id)`, never built by hand (a test checks). Kept by Slate, not as

@@ -10,7 +10,7 @@ Item {
     id: mark
     property real size: 18
     property color accent: Config.accent
-    property color body: Config.tint("#566173")
+    property color body: Config.palette.mark
     property bool flat: false
     width: size; height: size
 

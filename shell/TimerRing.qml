@@ -9,7 +9,7 @@ Item {
     property real progress: 1
     property real thickness: Math.max(2, size * 0.06)
     property color colour: Config.accent
-    property color trackColour: Config.tint("#2a313c")
+    property color trackColour: Config.palette.control
     width: size; height: size
     Shape {
         anchors.fill: parent

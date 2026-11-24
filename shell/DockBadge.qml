@@ -23,7 +23,7 @@ Rectangle {
         id: badgeText
         anchors.centerIn: parent
         text: badge.text
-        color: Config.tint("#12151a")
+        color: Config.palette.accentText
         font.family: Config.s.fontFamily; font.weight: Font.DemiBold
         font.pixelSize: Config.text(badge.textSize)
     }

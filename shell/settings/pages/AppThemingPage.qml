@@ -165,7 +165,7 @@ Column {
                         Rectangle {
                             readonly property bool on: appSetting.app.installed
                             // Installed: Slate's pastel green when colourful (as Power's), else the accent
-                            readonly property color tone: Config.colourful ? Config.tint("#a6d3a0") : win.accent
+                            readonly property color tone: Config.colourful ? Config.palette.green : win.accent
                             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                             width: chipRow.implicitWidth + 18; height: 24; radius: Config.corner(12)
                             color: on ? Qt.rgba(tone.r, tone.g, tone.b, 0.16) : win.control

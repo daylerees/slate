@@ -80,7 +80,7 @@ Column {
                 Label {
                     anchors.centerIn: parent
                     text: parent.day.getDate()
-                    color: parent.isToday ? pop.accentText : parent.inMonth ? pop.text : Config.tint("#4f5866")
+                    color: parent.isToday ? pop.accentText : parent.inMonth ? pop.text : Config.palette.faint
                     font.pixelSize: Config.text(12)
                 }
             }

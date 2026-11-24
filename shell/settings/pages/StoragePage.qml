@@ -60,7 +60,7 @@ Column {
                     Meter {
                         width: 180
                         value: driveRow.modelData.used / driveRow.modelData.size
-                        colour: driveRow.modelData.free < Math.max(5e9, driveRow.modelData.size * 0.1) ? Config.tint("#f28b8b") : win.accent
+                        colour: driveRow.modelData.free < Math.max(5e9, driveRow.modelData.size * 0.1) ? Config.palette.danger : win.accent
                         trackColour: win.control
                     }
                 }

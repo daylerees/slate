@@ -226,7 +226,7 @@ PanelWindow {
             anchors { left: osdIcon.right; leftMargin: 14; right: osdText.left; rightMargin: 14; verticalCenter: parent.verticalCenter }
             value: osd.value
             trackColour: osd.bar.capsuleColor
-            colour: osd.dimmed ? Config.tint("#4f5866") : osd.bar.accent
+            colour: osd.dimmed ? Config.palette.faint : osd.bar.accent
             slideMs: 120
         }
         Text {

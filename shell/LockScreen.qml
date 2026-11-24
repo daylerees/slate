@@ -608,12 +608,12 @@ Scope {
         Rectangle {
             anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 20 }
             width: previewLabel.implicitWidth + 28; height: 34; radius: Config.corner(17)
-            color: Config.tint("#0f1216")
+            color: Config.palette.base
             Text {
                 id: previewLabel
                 anchors.centerIn: parent
                 text: "Preview · click here to close"
-                color: Config.tint("#eef1f5")
+                color: Config.palette.text
                 font.family: Config.s.fontFamily; font.pixelSize: Config.text(12); font.weight: Font.Medium
             }
             TapHandler { onTapped: root.previewing = false }

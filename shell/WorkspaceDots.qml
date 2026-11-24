@@ -146,8 +146,8 @@ Item {
                 scale: cell.size
                 // Inactive workspaces dimmed a little (the marker shows the one in use);
                 // brighter under the pointer
-                color: cell.lit ? (cell.full ? Config.tint("#eef1f5") : Config.tint("#8b94a3"))
-                    : cell.full ? Config.tint("#aeb6c2") : Config.tint("#4f5866")
+                color: cell.lit ? (cell.full ? Config.palette.text : Config.palette.dim)
+                    : cell.full ? Config.palette.mid : Config.palette.faint
                 Behavior on color { ColorAnimation { duration: Config.ms(150) } }
             }
             // What takes the pointer: the dot, and reachAcross past it each side

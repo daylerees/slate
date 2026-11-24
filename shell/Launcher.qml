@@ -41,13 +41,13 @@ PanelWindow {
     readonly property int fadeMs: 200
     readonly property real dropDistance: 18   // how far the panel drops as it fades in
     // (the bar's colour, at the launcher's own opacity with glass: Settings → Launcher → Glass)
-    readonly property color barColor: Config.launcherSurface(Config.tint("#0f1216"))
-    readonly property color fieldColor: Config.raised(Config.tint("#1d222a"))    // bar capsules
-    readonly property color selectColor: Config.tint("#262c35")
-    readonly property color textColor: Config.tint("#eef1f5")
-    readonly property color dimTextColor: Config.tint("#8b94a3")
+    readonly property color barColor: Config.launcherSurface(Config.palette.base)
+    readonly property color fieldColor: Config.raised(Config.palette.card)    // bar capsules
+    readonly property color selectColor: Config.palette.divider
+    readonly property color textColor: Config.palette.text
+    readonly property color dimTextColor: Config.palette.dim
     readonly property color accent: Config.accent        // theme accent (Settings → Appearance)
-    readonly property color accentText: Config.tint("#12151a")      // text on the accent
+    readonly property color accentText: Config.palette.accentText      // text on the accent
     readonly property int slideMs: 90
     // How long a slide takes to get up to speed (and to settle): short, so the highlight answers
     // a key at once rather than creeping off (eased over the whole slide, it felt laggy)
@@ -1213,7 +1213,7 @@ PanelWindow {
                     // see-through, and the accent behind would show through it
                     IconPlate {
                         anchors.fill: parent; z: -1
-                        color: row.selected && Config.glass ? Config.iconTileFor(app, Config.tint("#2a313c")) : Config.iconTileFor(app, Config.iconPlateColor)
+                        color: row.selected && Config.glass ? Config.iconTileFor(app, Config.palette.control) : Config.iconTileFor(app, Config.iconPlateColor)
                         Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     }
                     IconGloss {}                // glass: a sheen on the tile, as on the dock's icons
@@ -1254,7 +1254,7 @@ PanelWindow {
                     radius: Config.corner(9)
                     // Solid on the highlight: with glass it's see-through, and its icon would
                     // vanish into the accent behind it
-                    color: row.selected && Config.glass ? Config.tint("#1d222a") : root.fieldColor
+                    color: row.selected && Config.glass ? Config.palette.card : root.fieldColor
                     Behavior on color { ColorAnimation { duration: Config.ms(row.fadeMs) } }
                     border.width: 1; border.color: root.selectColor
                     Text {
@@ -1262,7 +1262,7 @@ PanelWindow {
                         text: row.glyphTile ? String.fromCodePoint(row.modelData.icon) : ""
                         // A setting's icon takes its page's colour in colourful mode, as in Settings
                         // (a toggle in the accent while it's on, dim while it's off)
-                        color: row.modelData.danger ? Config.tint("#f28b8b")
+                        color: row.modelData.danger ? Config.palette.danger
                             : row.setting ? Config.pageColour(row.modelData.page)
                             : row.kind === "toggle" && !row.modelData.toggleOn ? root.dimTextColor : root.accent
                         font.family: Config.iconFont
@@ -1274,7 +1274,7 @@ PanelWindow {
                     visible: row.emojiTile
                     anchors.fill: tile
                     radius: Config.corner(9)
-                    color: row.selected && Config.glass ? Config.tint("#1d222a") : root.fieldColor
+                    color: row.selected && Config.glass ? Config.palette.card : root.fieldColor
                     border.width: 1; border.color: root.selectColor
                     Text {
                         anchors.centerIn: parent

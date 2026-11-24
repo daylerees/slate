@@ -19,8 +19,8 @@ Scope {
         // (Accessibility → High contrast: a bright, solid border round the window you're in, and
         // a plainly visible one round the rest)
         const hc = Config.s.highContrast;
-        const active = hc ? rgba(Config.tint("#eef1f5"), 1) : rgba(Config.accent, 0.6);
-        const inactive = hc ? rgba(Config.tint("#5a6372"), 1) : rgba(Config.tint("#0f1216"), 0.85);
+        const active = hc ? rgba(Config.palette.text, 1) : rgba(Config.accent, 0.6);
+        const inactive = hc ? rgba(Config.palette.idle, 1) : rgba(Config.palette.base, 0.85);
         // Glass (with its gloss): a sheen on the borders, as Hyprland can draw one. Its gradients
         // spread their colours evenly, so the light is the first of several: a bright catch on
         // the top left corner, fading within the first sixth or so into the colour itself, a
@@ -32,7 +32,7 @@ Scope {
         const sheen = (pairs) => pairs.map(p => `"${rgba(p[0], p[1])}"`).join(", ");
         const activeColors = g > 0 ? sheen(Config.activeBorderSheen) : `"${active}"`;
         const inactiveBorder = g > 0
-            ? `{ colors = { ${sheen(Config.borderSheen(Config.tint("#0f1216"), 0.85, 0.3, 0.1, 0))} }, angle = 45 }`
+            ? `{ colors = { ${sheen(Config.borderSheen(Config.palette.base, 0.85, 0.3, 0.1, 0))} }, angle = 45 }`
             : `"${inactive}"`;
         const size = Math.max(hc ? 3 : 0, Math.min(12, Config.s.windowBorderSize));   // Settings → Windows (at least 3 in high contrast)
         const dim = Math.max(0, Math.min(80, Config.s.inactiveDim)) / 100;   // Settings → Windows
@@ -53,11 +53,11 @@ Scope {
             + `if setWindowMode then setWindowMode(${Config.windowMode === "floating"}, false) end; `
             + `if setSpareWorkspace then setSpareWorkspace(${Config.s.keepEmptyWorkspace}) end; `;
         // Floating windows' title bars (hyprbars, when built): Slate's bar colour, text, font and button colours
-        const bars = `if HYPRBARS_LOADED then pcall(hl.config, { plugin = { hyprbars = { bar_color = "${rgba(Config.tint("#0f1216"), 1)}", `
-            + `col = { text = "${rgba(Config.tint("#eef1f5"), 1)}" }, inactive_button_color = "${rgba(Config.tint("#3a424e"), 1)}", `
+        const bars = `if HYPRBARS_LOADED then pcall(hl.config, { plugin = { hyprbars = { bar_color = "${rgba(Config.palette.base, 1)}", `
+            + `col = { text = "${rgba(Config.palette.text, 1)}" }, inactive_button_color = "${rgba(Config.palette.ring, 1)}", `
             + `bar_text_font = ${Config.luaString(Config.s.fontFamily)}, bar_text_size = ${Math.round(13 * Config.uiScale)}, bar_height = ${Math.round(13 * 2.6 * Config.uiScale)}, `
             + `bar_buttons_alignment = "${Config.s.titleButtons === "left" ? "left" : "right"}" } } }); `
-            + `if HYPRBARS_IDLE then pcall(hl.config, { plugin = { hyprbars = { idle_button_color = "${rgba(Config.tint("#5a6372"), 1)}" } } }) end end; `;
+            + `if HYPRBARS_IDLE then pcall(hl.config, { plugin = { hyprbars = { idle_button_color = "${rgba(Config.palette.idle, 1)}" } } }) end end; `;
         return solos + mode + bars + `ACTIVE_BORDER = { colors = { ${activeColors} }${g > 0 ? ", angle = 45" : ""} }; INACTIVE_BORDER = ${inactiveBorder}; BORDER_SIZE = ${size}; `
             + `hl.config({ general = { border_size = BORDER_SIZE, gaps_in = ${gapIn}, gaps_out = ${gapOut}, col = { active_border = ACTIVE_BORDER, inactive_border = INACTIVE_BORDER } }, `
             + `decoration = { dim_inactive = ${dim > 0}, dim_strength = ${dim.toFixed(2)} } })`;
@@ -70,7 +70,7 @@ Scope {
     // flicker, and the accent changes with every theme preset and, from the wallpaper, with it
     readonly property string barButtonsLua: {
         const rgb = c => "rgb(" + c.toString().slice(1, 7) + ")";
-        return `return { accent = "${rgb(Config.accent)}", accent_text = "${rgb(Config.tint("#12151a"))}", `
+        return `return { accent = "${rgb(Config.accent)}", accent_text = "${rgb(Config.palette.accentText)}", `
             + `button_size = ${Math.round(13 * 1.25 * Config.uiScale)} }\n`;
     }
     onBarButtonsLuaChanged: barButtonsSync.restart()

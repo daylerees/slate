@@ -118,13 +118,13 @@ PanelWindow {
     WlrLayershell.keyboardFocus: shown ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     // ---- Look ------------------------------------------------------------------
-    readonly property color bg: Config.surface(Config.tint("#0f1216"))
-    readonly property color card: Config.raised(Config.tint("#1d222a"))
-    readonly property color line: Config.tint("#2a313c")
-    readonly property color text: Config.tint("#eef1f5")
-    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color bg: Config.surface(Config.palette.base)
+    readonly property color card: Config.raised(Config.palette.card)
+    readonly property color line: Config.palette.control
+    readonly property color text: Config.palette.text
+    readonly property color dim: Config.palette.dim
     readonly property color accent: Config.accent
-    readonly property color accentText: Config.tint("#12151a")
+    readonly property color accentText: Config.palette.accentText
     readonly property string font: bar.fontFamily
     readonly property string iconFont: bar.iconFont
 
@@ -269,7 +269,7 @@ PanelWindow {
                                     id: modeArt
                                     anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
                                     height: 130; radius: Config.corner(9)
-                                    color: Config.tint("#151920")
+                                    color: Config.palette.panel
                                     Item {
                                         anchors { fill: parent; margins: 10 }
                                         visible: modeCard.modelData.key === "tiling"
@@ -449,7 +449,7 @@ PanelWindow {
                             Text {
                                 width: parent.width; wrapMode: Text.Wrap
                                 text: "This changes those apps' own settings (their color or theme files). Don't worry: each one is backed up first, and switching an app off in Settings \u2192 App Theming puts its original back."
-                                color: Config.tint("#e8c48f"); font.family: w.font; font.pixelSize: Config.text(12)
+                                color: Config.palette.sand; font.family: w.font; font.pixelSize: Config.text(12)
                             }
                         }
                         HoverHandler { id: appsHover }
@@ -1008,7 +1008,7 @@ PanelWindow {
                             : w.pwNote !== "" ? w.pwNote
                             : passwordPage.chosen && passwordPage.again && passwordPage.again.text !== "" && passwordPage.chosen.text !== passwordPage.again.text ? "Those new passwords don't match"
                             : ""
-                        color: w.pwChanged || w.pwBusy ? w.dim : Config.tint("#f28b8b")
+                        color: w.pwChanged || w.pwBusy ? w.dim : Config.palette.danger
                         font.family: w.font; font.pixelSize: Config.text(12)
                         height: text === "" ? 0 : implicitHeight + 8
                         topPadding: 4

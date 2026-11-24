@@ -126,7 +126,7 @@ Column {
                     width: 34; height: 34
                     // Flat and solid, with glass too: the card's own solid colour, no edge and
                     // nothing showing through; under the pointer, the muted hover over it
-                    readonly property color base: Config.tint("#1d222a")
+                    readonly property color base: Config.palette.card
                     color: controlButtonHover.hovered ? Qt.tint(base, Config.hover) : base
                     HoverHandler { id: controlButtonHover }
                     onClicked: {

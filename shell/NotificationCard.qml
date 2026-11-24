@@ -30,7 +30,7 @@ Rectangle {
     readonly property string shownBody: bodyLabel.text
 
     readonly property color textColor: bar.textColor
-    readonly property color dim: Config.tint("#8b94a3")
+    readonly property color dim: Config.palette.dim
     readonly property string tilePath: entry && entry.entryId ? Config.tilePath(entry.entryId) : ""
     readonly property var actions: notif ? notif.actions.filter(a => a.identifier !== "default" && a.text) : []
     readonly property color accent: bar.accent
@@ -77,7 +77,7 @@ Rectangle {
     radius: Config.corner(9)
     // (a pop-up: the bar's colour at the notifications' own opacity with glass, and their hover
     // opacity while the pointer's on it: Settings → Notifications → Glass)
-    color: inPanel ? "transparent" : Config.toastSurface(Config.tint("#0f1216"), cardHover.hovered)
+    color: inPanel ? "transparent" : Config.toastSurface(Config.palette.base, cardHover.hovered)
     HoverFill { visible: card.inPanel; base: bar.capsuleColor; hovered: cardHover.hovered; radius: card.radius }
     // Glass: a sheen, as a bold glossy band over the top half (the gentle fade taller shapes
     // get barely showed on a card), a touch stronger than on the bar's capsules
@@ -221,7 +221,7 @@ Rectangle {
                     anchors.centerIn: parent
                     size: 24
                     accent: card.bar.accent
-                    body: Config.tint("#566173")
+                    body: Config.palette.mark
                 }
                 Text {
                     visible: !icon.fromSlate
