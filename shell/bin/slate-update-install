@@ -89,6 +89,10 @@ ssh-keygen -Y verify -f "$SIGNERS" -I slate-release -n slate-release -s "$work/$
 # Unpacked only once it's matched: plain files and folders, nothing outside its own folder
 mkdir "$work/src"
 tar -xzf "$work/$archive" -C "$work/src" --no-same-owner --no-same-permissions
+# (the one folder inside, put there by git archive inside the signed bytes, names the release:
+# it's what ties the signature to the tag, so an older genuine release published again under a
+# newer tag isn't taken. scripts/update.py checks the same)
+[ "$(ls -A "$work/src")" = "slate-$tag" ] || fail "$tag isn't the release it says it is, so nothing was changed"
 shell="$work/src/slate-$tag/shell"
 [ -f "$shell/shell.qml" ] || fail "release $tag doesn't hold Slate where it should"
 [ -z "$(find "$work/src" -type b -o -type c -o -type p -o -type s | head -n 1)" ] \

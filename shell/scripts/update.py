@@ -4,7 +4,7 @@
     update.py check [--force]   look for a newer release (at most every 20 hours unless --force)
     update.py modified          Slate's own files changed by hand since it was installed
     update.py install           download the latest release, check it against the checksum
-                                published with it, and install it (install.sh --update), or
+                                published with it and Slate's signature, and install it (install.sh --update), or
                                 for Slate installed for everyone, have slate-update-install do
                                 that as root, with an administrator's password
     update.py revert            go back to the version before (<Slate's folder>.previous),
@@ -26,8 +26,12 @@ install.sh keeps the whole previous copy, one version back (~/.config/slate.prev
 
 What `install` trusts: the release's tag has to look like a version (v1.2.3) and be newer than
 the Slate that's installed, the download addresses are built here from REPO and that tag (never
-taken from GitHub's reply), and the download has to match the SHA-256 published beside it
-before anything is unpacked or run. Both files are made by tools/release-assets.sh.
+taken from GitHub's reply), and the download has to match the SHA-256 published beside it and
+carry Slate's signature (data/release-signers) before anything is unpacked or run. Then the one
+folder inside it has to be called slate-<tag>: the signature covers the archive's bytes, not the
+tag it's published under, and that name (put there by git archive, inside the signed bytes) is
+what ties the two, so an older genuine release can't be published again as a newer one. The
+three files are made by tools/release-assets.sh; slate-update-install checks the same.
 """
 import hashlib, json, os, re, shutil, subprocess, sys, tarfile, tempfile, time, urllib.error, urllib.parse, urllib.request
 
@@ -387,7 +391,12 @@ def install():
         src = os.path.join(tmp, "src")
         with tarfile.open(archive) as t:
             t.extractall(src, filter="data")
-        root = os.path.join(src, os.listdir(src)[0])
+        # (the folder inside names the release it is: a signed archive of an older version,
+        # published again under a newer tag, isn't what the tag says it is)
+        if os.listdir(src) != ["slate-" + tag]:
+            raise Refused("%s isn't the release it says it is, so Slate didn't install it. Your Slate is just "
+                          "as it was." % tag)
+        root = os.path.join(src, "slate-" + tag)
         with open(os.path.join(root, "shell", "VERSION"), "w") as f:
             f.write(tag + "\n")
         st.update(status="installing", got=0, size=0)

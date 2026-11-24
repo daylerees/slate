@@ -428,6 +428,14 @@ class Install(Releases):
         self.release(self.TAG, swapped, signature=self.key.sign(self.good))
         self.refused("isn't signed by Slate's own key")
 
+    def test_an_older_release_relabelled_refused(self):
+        """The signature covers the archive, not the tag it's published under: an older genuine
+        release (slate-v0.30.0/ inside, really signed) published again as a newer one isn't
+        installed. It would have brought back the updater from before signing."""
+        old = release_archive("v0.30.0", self.marker, "old")
+        self.release(self.TAG, old)
+        self.refused("isn't the release it says it is")
+
     def test_no_key_in_this_copy_refused(self):
         os.remove(os.path.join(self.dest, "data", "release-signers"))
         self.refused("no key to check it with")

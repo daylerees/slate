@@ -171,6 +171,15 @@ class UpdateInstall(Case):
         self.assertIn("no key to check", out)
         self.unchanged()
 
+    def test_an_older_release_relabelled(self):
+        """An older genuine release (slate-v1.5.0/ inside, really signed) published again as
+        v2.0.0 isn't taken: the folder inside names the release."""
+        self.publish(release("v1.5.0"), tag=TAG)
+        code, out = self.go(TAG)
+        self.assertNotEqual(code, 0)
+        self.assertIn("isn't the release it says it is", out)
+        self.unchanged()
+
     def test_only_newer(self):
         """An older or the same release, however genuine, could bring back what a later one fixed."""
         for tag in ("v1.0.0", "v0.9.9"):
