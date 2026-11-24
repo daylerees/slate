@@ -48,7 +48,8 @@ CHECK_EVERY = 20 * 3600
 # A release's tag, exactly: it goes into the download addresses, so nothing else is accepted
 TAG = re.compile(r"v\d+\.\d+\.\d+\Z")
 # Where a release's own files are (tools/release-assets.sh makes them, and they're uploaded
-# with the release): slate-<tag>.tar.gz, and its SHA-256 in slate-<tag>.tar.gz.sha256
+# with the release): slate-<tag>.tar.gz, its SHA-256 in slate-<tag>.tar.gz.sha256, and its
+# signature in slate-<tag>.tar.gz.sig
 DOWNLOADS = f"https://github.com/{REPO}/releases/download"
 # The only places the updater talks to: GitHub, and where GitHub sends a release's files on
 # from. A redirect anywhere else is refused
@@ -56,6 +57,17 @@ HOSTS = ("api.github.com", "github.com", "release-assets.githubusercontent.com",
 # Far more than a release weighs (about 90 MB), and the checksum file is one short line
 MAX_BYTES = 400 * 1024 * 1024
 MAX_CHECKSUM_BYTES = 4096
+# Who may sign a release: Slate's public key, in ssh-keygen's allowed-signers form, in this
+# copy of Slate (data/release-signers). A release is installed only if its archive carries an
+# SSH signature (ssh-keygen -Y sign) from that key, for this purpose (the namespace): the
+# checksum only shows the download arrived whole, the signature shows who made it
+SIGNER = "slate-release"
+NAMESPACE = "slate-release"
+MAX_SIGNATURE_BYTES = 4096
+
+
+def signers_file():
+    return os.path.join(HERE, "data", "release-signers")
 
 
 class Refused(Exception):
@@ -217,11 +229,36 @@ def newer_than_installed(tag):
         raise Refused("%s isn't newer than the Slate you have (%s), so there's nothing to install." % (tag, have))
 
 
+def signed_by_slate(archive, signature):
+    """Whether archive carries Slate's signature (signature: the .sig file beside it). Raises
+    Refused when it can't be checked at all."""
+    signers = signers_file()
+    if not os.path.isfile(signers):
+        raise Refused("Slate couldn't check who made this update, so it wasn't installed: this copy of Slate has "
+                      "no key to check it with. Running ./install.sh from the release sorts that out.")
+    if not shutil.which("ssh-keygen"):
+        raise Refused("Slate couldn't check who made this update, so it wasn't installed: that needs ssh-keygen, "
+                      "which comes with OpenSSH. Install OpenSSH and try again; your Slate is just as it was.")
+    with open(archive, "rb") as f:
+        r = subprocess.run(["ssh-keygen", "-Y", "verify", "-f", signers, "-I", SIGNER, "-n", NAMESPACE, "-s", signature],
+                           stdin=f, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
+    return r.returncode == 0
+
+
 def fetch_release(tag, folder, progress=None):
     """Download a release's archive into folder and check it against the SHA-256 published
-    with it. Returns (the archive's path, its SHA-256); raises Refused, with nothing unpacked,
-    when there's no checksum to check against or the download doesn't match it."""
+    with it and Slate's signature. Returns (the archive's path, its SHA-256); raises Refused,
+    with nothing unpacked, when there's no checksum or signature to check against or the
+    download doesn't match them."""
     name = "slate-%s.tar.gz" % tag
+    sig = os.path.join(folder, name + ".sig")
+    try:
+        download("%s/%s/%s.sig" % (DOWNLOADS, tag, name), sig, MAX_SIGNATURE_BYTES, timeout=20)
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+        raise Refused("Slate couldn't check who made this update, so it wasn't installed: %s isn't signed. "
+                      "Your Slate is just as it was, and you can try again later." % tag)
     sums = os.path.join(folder, name + ".sha256")
     try:
         download("%s/%s/%s.sha256" % (DOWNLOADS, tag, name), sums, MAX_CHECKSUM_BYTES, timeout=20)
@@ -243,6 +280,10 @@ def fetch_release(tag, folder, progress=None):
         os.remove(archive)
         raise Refused("The download didn't match the checksum published with %s, so Slate didn't install it. "
                       "Your Slate is just as it was, and you can try again." % tag)
+    if not signed_by_slate(archive, sig):
+        os.remove(archive)
+        raise Refused("%s isn't signed by Slate's own key, so Slate didn't install it. Your Slate is just as "
+                      "it was." % tag)
     return archive, got
 
 
@@ -348,7 +389,7 @@ def install():
         st.update(status="installing", got=0, size=0)
         save(st)
         with open(LOG, "w") as log:
-            log.write("%s matched the checksum published with %s (sha256 %s)\n\n" % (os.path.basename(archive), tag, digest))
+            log.write("%s matched the checksum published with %s (sha256 %s) and is signed by Slate's key\n\n" % (os.path.basename(archive), tag, digest))
             log.flush()
             rc = subprocess.run(["bash", os.path.join(root, "install.sh"), "--update"], cwd=root,
                                 stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,

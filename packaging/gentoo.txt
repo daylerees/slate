@@ -41,6 +41,7 @@ sys-process/procps
 x11-libs/libnotify
 media-libs/fontconfig
 net-misc/curl
+net-misc/openssh    # ssh-keygen: checks an update's signature before it's installed (scripts/update.py, bin/slate-update-install)
 x11-misc/xdg-utils
 
 # Features

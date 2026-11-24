@@ -1,0 +1,4 @@
+# Who may sign a release of Slate: its public key, in ssh-keygen's allowed-signers form. Both
+# updaters (scripts/update.py, bin/slate-update-install) install a release only if its archive
+# carries a signature from this key, for releases (the namespace). tools/release-assets.sh signs.
+slate-release namespaces="slate-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEV+FqPjWr/WqIDBTdzOYGjLtJFhDWbycYZFV+FWb6ee

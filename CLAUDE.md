@@ -316,18 +316,21 @@ message and the release notes both carry a summary of the changes since the prev
 for people using Slate rather than a list of commit subjects. Leave out site- and
 docs-only changes unless they matter to users.
 
-Every release carries two files the updater needs: `slate-<tag>.tar.gz` and
-`slate-<tag>.tar.gz.sha256`. Slate's updater downloads them, and installs nothing unless the
-archive matches the checksum, so a release without them can't be installed from Settings →
-Updates. `tools/release-assets.sh <tag>` makes both from the tag (after it's created) and
-prints their paths, so create the release with them:
+Every release carries three files the updater needs: `slate-<tag>.tar.gz`,
+`slate-<tag>.tar.gz.sha256` and `slate-<tag>.tar.gz.sig`. Slate's updaters download them, and
+install nothing unless the archive matches the checksum and carries Slate's signature (checked
+against `shell/data/release-signers`), so a release without them can't be installed from
+Settings → Updates. `tools/release-assets.sh <tag>` makes all three from the tag (after it's
+created), signing with the author's release key (`~/.local/share/slate-dev/release-signing/`,
+also in their password manager; never in the repository), and prints their paths, so create
+the release with them:
 
     gh release create <tag> --title <tag> --notes-file <notes> $(tools/release-assets.sh <tag>)
 
 For a release that's already published without them: `gh release upload <tag>
-$(tools/release-assets.sh <tag>)`. Afterwards, check both are there: `gh release view <tag>
+$(tools/release-assets.sh <tag>)`. Afterwards, check all three are there: `gh release view <tag>
 --json assets -q '.assets[].name'`. Never replace an archive once it's published without
-replacing its `.sha256` with it.
+replacing its `.sha256` and `.sig` with it.
 
 Each release also gets a section at the top of `site/changelog.html` (newest first, below the
 `<!-- New releases go here, newest first. -->` marker) with the same notes as the GitHub

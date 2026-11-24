@@ -1464,3 +1464,16 @@ class NoSoftwarePainting(Case):
         for name in ("Bar.qml", "Popouts.qml", "TitleBar.qml"):
             with self.subTest(name):
                 self.assertNotRegex(slate.read("shell", name), r"\bCanvas \{", f"{name} paints with a Canvas")
+
+
+class InstallContainerScript(Case):
+    def test_the_container_script_is_one_quoted_string(self):
+        """tools/test-install-docker.sh hands the container its checks as one single-quoted
+        string. An apostrophe in it ("root's") ends the string early, and the lines after it
+        run on the computer instead of in the container; it happened once, harmlessly, as sudo
+        wanted a password. Inside, a quote is written '"'"'."""
+        src = slate.read("tools", "test-install-docker.sh")
+        start = src.index("bash -c '") + len("bash -c '")
+        inner = src[start:src.index("' > \"$LOG\"", start)]
+        bare = [l.strip() for l in inner.replace("'\"'\"'", "").splitlines() if "'" in l]
+        self.assertEqual(bare, [], "a bare ' in the container's script")

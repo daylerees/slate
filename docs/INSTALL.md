@@ -366,9 +366,11 @@ release in place itself. Your settings and overrides are always kept: `settings.
   `./install.sh --update`, with no password.
 
 - The download is the release's own `slate-<tag>.tar.gz` from Slate's repository on GitHub, and
-  it's checked against the SHA-256 published beside it (`slate-<tag>.tar.gz.sha256`) before
-  anything is unpacked or run. One that doesn't match, a release without a checksum, or a
-  version that isn't newer than yours isn't installed, and Settings says why.
+  it's checked against the SHA-256 published beside it (`slate-<tag>.tar.gz.sha256`), and
+  against Slate's signature (`slate-<tag>.tar.gz.sig`, made with Slate's own key, which your
+  copy of Slate carries), before anything is unpacked or run. One that doesn't match, a
+  release without a checksum or a signature, or a version that isn't newer than yours isn't
+  installed, and Settings says why.
 - The version you had is kept in `/usr/local/share/slate.previous` (one version back), and
   Settings → Updates can go back to it. Your settings and overrides stay as they are when
   you switch, and the version you leave becomes the backup, so you can switch back again.

@@ -10,6 +10,7 @@ import tarfile
 import slate
 from slate import Case, run
 from stubs import Stubs
+from signing import Key
 
 TAG = "v2.0.0"
 BASE = "https://test.invalid/releases/download"
@@ -48,6 +49,7 @@ class UpdateInstall(Case):
         self.libexec = os.path.join(self.h.dir, "libexec", "slate")
         self.code = os.path.join(self.h.dir, "share", "slate")
         self.web = os.path.join(self.h.dir, "web")
+        self.key = Key(os.path.join(self.h.dir, "keys"))
         os.makedirs(self.libexec)
         os.makedirs(self.web)
         self.installed("v1.0.0")
@@ -78,14 +80,21 @@ class UpdateInstall(Case):
     def installed(self, version, where=None):
         d = where or self.code
         os.makedirs(d, exist_ok=True)
-        for name, text in (("shell.qml", "old\n"), ("VERSION", version + "\n")):
+        os.makedirs(os.path.join(d, "data"), exist_ok=True)
+        for name, text in (("shell.qml", "old\n"), ("VERSION", version + "\n"), ("data/release-signers", self.key.signers())):
             with open(os.path.join(d, name), "w") as f:
                 f.write(text)
 
-    def publish(self, archive, tag=TAG, checksum=None):
+    def publish(self, archive, tag=TAG, checksum=None, signature=None):
+        """signature: the .sig's bytes, None to sign with the installed copy's key, or False for none."""
         name = "slate-%s.tar.gz" % tag
         with open(os.path.join(self.web, name), "wb") as f:
             f.write(archive)
+        if signature is None:
+            signature = self.key.sign(archive)
+        if signature is not False:
+            with open(os.path.join(self.web, name + ".sig"), "wb") as f:
+                f.write(signature)
         with open(os.path.join(self.web, name + ".sha256"), "w") as f:
             f.write((checksum or hashlib.sha256(archive).hexdigest()) + "  " + name + "\n")
 
@@ -124,6 +133,42 @@ class UpdateInstall(Case):
         code, out = self.go(TAG)
         self.assertNotEqual(code, 0)
         self.assertIn("doesn't match the checksum", out)
+        self.unchanged()
+
+    def test_an_unsigned_release(self):
+        """Anyone who could publish a release (a stolen token, say) could have had their code
+        installed as root on every computer: only a release signed by Slate's key goes in."""
+        self.publish(release(), signature=False)
+        code, out = self.go(TAG)
+        self.assertNotEqual(code, 0)
+        self.assertIn("couldn't download", out)
+        self.unchanged()
+
+    def test_a_release_signed_by_another_key(self):
+        other = Key(os.path.join(self.h.dir, "keys"), "someone-else")
+        archive = release()
+        self.publish(archive, signature=other.sign(archive))
+        code, out = self.go(TAG)
+        self.assertNotEqual(code, 0)
+        self.assertIn("isn't signed by Slate's own key", out)
+        self.unchanged()
+
+    def test_a_signature_made_for_something_else(self):
+        """Slate's key signing something for another purpose (another namespace) isn't a release."""
+        archive = release()
+        self.publish(archive, signature=self.key.sign(archive, namespace="file"))
+        code, out = self.go(TAG)
+        self.assertNotEqual(code, 0)
+        self.assertIn("isn't signed by Slate's own key", out)
+        self.unchanged()
+
+    def test_the_key_is_the_installed_copys(self):
+        """Whose signature counts is read from the copy that's root's, never from the release."""
+        os.remove(os.path.join(self.code, "data", "release-signers"))
+        self.publish(release(extra={"shell/data/release-signers": self.key.signers()}))
+        code, out = self.go(TAG)
+        self.assertNotEqual(code, 0)
+        self.assertIn("no key to check", out)
         self.unchanged()
 
     def test_only_newer(self):

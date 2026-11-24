@@ -344,8 +344,10 @@ scripts/update.py             GitHub releases: check, list hand-changed files (a
                               Installs only a proper tag (v1.2.3) newer than what's here, from
                               addresses it builds itself (this repository's release files, with
                               redirects only to GitHub's hosts), and only once the archive
-                              matches the SHA-256 published with the release. Both files
-                              (slate-<tag>.tar.gz and its .sha256) are made by
+                              matches the SHA-256 published with the release and carries
+                              Slate's signature (ssh-keygen -Y, checked against
+                              data/release-signers in the copy that's root's). The three files
+                              (slate-<tag>.tar.gz, its .sha256 and its .sig) are made by
                               tools/release-assets.sh and uploaded with every release; a release
                               without them can't be installed from Settings
 bin/slate-init                the one place that knows the init system and login service: systemd, or
@@ -773,6 +775,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `libnotify` | `notify-send` (login-screen update prompt, screenshot fallback) |
 | `fontconfig` | font lists in Settings, greeter font sync |
 | `curl` | weather |
+| `openssh` (`ssh-keygen`) | checks an update's signature before it's installed (`scripts/update.py`, `bin/slate-update-install`) |
 | `xdg-utils` | `xdg-open` (open settings file, links) |
 | `glib2` (`gio`) | the dock: emptying and binning to the Waste Basket (`gio trash`), opening files dropped on an app (`gio launch`, `scripts/open-with.sh`) |
 | `gvfs` | the `trash:` location `gio trash --empty` needs: without it, emptying the Waste Basket does nothing |

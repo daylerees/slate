@@ -11,8 +11,9 @@ what's still open.
   to run straight from this folder), never back.
 - **Public, with releases**: the code is at <https://github.com/daylerees/slate>, MIT
   (`LICENSE`), with the bundled fonts and cursors under their own licenses. Each release
-  carries `slate-<tag>.tar.gz` and its checksum (`tools/release-assets.sh`), which Settings →
-  Updates checks before installing.
+  carries `slate-<tag>.tar.gz`, its checksum and its signature (`tools/release-assets.sh`),
+  which Settings → Updates checks before installing. A build of your own that updates from
+  your releases needs your own key in `shell/data/release-signers`.
 - **Installer**: `install.sh` installs packages per distro (`packaging/*.txt`,
   `packaging/nixos.nix`), checks Hyprland's and Quickshell's versions, builds Quickshell from
   source where it isn't packaged (`packaging/build-quickshell.sh`), puts Slate in place, adds

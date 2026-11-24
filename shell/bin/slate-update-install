@@ -2,7 +2,8 @@
 # Install a newer release of Slate for everyone on the computer, or go back to the one before,
 # as root (Settings → Updates, through `slate-system --root`, with an administrator's password).
 #   slate-update-install <tag>      download release <tag> (v1.2.3), check it against the
-#                                   checksum published with it, and put it in
+#                                   checksum published with it and Slate's signature (the key in
+#                                   the installed copy's data/release-signers), and put it in
 #                                   /usr/local/share/slate; the one there is kept as slate.previous
 #   slate-update-install --revert   go back to slate.previous; the one left becomes slate.previous
 #
@@ -24,6 +25,9 @@ HERE=$(dirname "$(readlink -f "$0")")
 CODE=/usr/local/share/slate
 DOWNLOADS=https://github.com/daylerees/slate/releases/download     # (as REPO in scripts/update.py)
 MAX_BYTES=$((400 * 1024 * 1024))                                    # far more than a release weighs
+# Who may sign a release (as SIGNER, NAMESPACE in scripts/update.py): the key in the copy that's
+# root's, checked below, so no one but root can change whose signature is accepted
+SIGNERS=$CODE/data/release-signers
 
 fail() { echo "slate-update-install: $*" >&2; exit 1; }
 
@@ -70,10 +74,17 @@ get() {    # get <url> <file> <limit>
 archive="slate-$tag.tar.gz"
 get "$DOWNLOADS/$tag/$archive" "$work/$archive" "$MAX_BYTES"
 get "$DOWNLOADS/$tag/$archive.sha256" "$work/$archive.sha256" 4096
+get "$DOWNLOADS/$tag/$archive.sig" "$work/$archive.sig" 4096
 want=$(grep -oE '^[0-9a-f]{64}' "$work/$archive.sha256" | head -n 1 || true)
 [ -n "$want" ] || fail "the checksum published with $tag couldn't be read"
 have=$(sha256sum "$work/$archive" | cut -d' ' -f1)
 [ "$have" = "$want" ] || fail "the download doesn't match the checksum published with $tag, so nothing was changed"
+# ...and made by Slate: signed with the key the installed copy names
+[ -f "$SIGNERS" ] || fail "there's no key to check $tag's signature with ($SIGNERS), so nothing was changed"
+command -v ssh-keygen >/dev/null || fail "checking $tag's signature needs ssh-keygen (OpenSSH), so nothing was changed"
+ssh-keygen -Y verify -f "$SIGNERS" -I slate-release -n slate-release -s "$work/$archive.sig" \
+    < "$work/$archive" >/dev/null 2>&1 \
+    || fail "$tag isn't signed by Slate's own key, so nothing was changed"
 
 # Unpacked only once it's matched: plain files and folders, nothing outside its own folder
 mkdir "$work/src"

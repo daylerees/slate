@@ -48,6 +48,9 @@ todo=$(sudo -u tester $S/bin/slate-system --check 2>&1 | tr "\n" " ")
 echo "slate-system --check (as you): ${todo:-nothing to do}"
 out=$(sudo /usr/local/libexec/slate/slate-update-install v0.0.1 2>&1 || true)
 case "$out" in *"newer"*) echo "update helper accepts the copy for everyone: ok (refused only as not newer)" ;; *) echo "update helper: UNEXPECTED: $out" ;; esac
+# Whose signature an update needs: the key in the copy for everyone (root'"'"'s), and ssh-keygen to check it
+[ -f $S/data/release-signers ] && [ "$(stat -c %U $S/data/release-signers)" = root ] && echo "release key in the copy for everyone: ok, root'"'"'s" || echo "release key: MISSING or not root'"'"'s"
+command -v ssh-keygen >/dev/null && echo "ssh-keygen (checks updates'"'"' signatures): ok" || echo "ssh-keygen: MISSING"
 # The firewall helper: owned by root, told only its own words, and never run from the Slate folder
 F=/usr/local/libexec/slate/slate-firewall
 [ -x "$F" ] && [ "$(stat -c %U "$F")" = root ] && echo "firewall helper: ok, root'"'"'s" || echo "firewall helper: MISSING or not root'"'"'s"

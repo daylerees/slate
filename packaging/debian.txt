@@ -48,6 +48,7 @@ procps
 libnotify-bin
 fontconfig
 curl
+openssh-client      # ssh-keygen: checks an update's signature before it's installed (scripts/update.py, bin/slate-update-install)
 xdg-utils
 
 # Features

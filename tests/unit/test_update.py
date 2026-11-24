@@ -24,6 +24,7 @@ from unittest import mock
 import slate
 from slate import Case, run
 from stubs import Stubs
+from signing import Key
 
 
 def manifest(dest):
@@ -269,6 +270,11 @@ class Releases(Case):
                             ("LOG", os.path.join(self.h.dir, "update.log"))):
             setattr(self.mod, name, value)
         self.have("v0.31.0")
+        # (this copy's release key: the tests' own, in its data/release-signers)
+        self.key = Key(os.path.join(self.h.dir, "keys"))
+        os.makedirs(os.path.join(self.dest, "data"), exist_ok=True)
+        with open(os.path.join(self.dest, "data", "release-signers"), "w") as f:
+            f.write(self.key.signers())
         self.net = Internet()
         self.good = release_archive(self.TAG, self.marker, "good")
         # What GitHub's reply calls the download: somewhere else entirely, which must never be
@@ -280,9 +286,10 @@ class Releases(Case):
         with open(os.path.join(self.dest, "VERSION"), "w") as f:
             f.write(version + "\n" if version else "")
 
-    def release(self, tag, archive, checksum=None, reply_tag=None):
-        """Publish a release: GitHub's reply, and its two files (each behind the redirect
-        GitHub answers with). checksum: the checksum file's text, or False for none."""
+    def release(self, tag, archive, checksum=None, reply_tag=None, signature=None):
+        """Publish a release: GitHub's reply, and its three files (each behind the redirect
+        GitHub answers with). checksum: the checksum file's text, or False for none.
+        signature: the .sig's bytes, None to sign with this copy's key, or False for none."""
         name = "slate-%s.tar.gz" % tag
         self.net.pages[self.API] = json.dumps({"tag_name": reply_tag if reply_tag is not None else tag, "body": "notes",
                                                "html_url": "", "tarball_url": self.ELSEWHERE}).encode()
@@ -297,6 +304,14 @@ class Releases(Case):
         else:
             self.net.pages[sums] = ("to", stored + name + ".sha256")
             self.net.pages[stored + name + ".sha256"] = checksum.encode()
+        sig = "%s/%s/%s.sig" % (self.BASE, tag, name)
+        if signature is None:
+            signature = self.key.sign(archive)
+        if signature is False:
+            self.net.pages.pop(sig, None)
+        else:
+            self.net.pages[sig] = ("to", stored + name + ".sig")
+            self.net.pages[stored + name + ".sig"] = signature
 
     def install(self):
         with self.net.open():
@@ -376,6 +391,35 @@ class Install(Releases):
         self.release(self.TAG, self.good, checksum="<html>Not here</html>\n")
         self.refused("Slate couldn't check this download")
 
+    def test_unsigned_refused(self):
+        """The checksum shows the download arrived whole, not who made it: anyone who could
+        publish a release (a stolen token, say) could have had their code installed. A release
+        without Slate's signature isn't installed, and its archive isn't even fetched."""
+        self.release(self.TAG, self.good, signature=False)
+        st = self.refused("Slate couldn't check who made this update")
+        self.assertIn("isn't signed", st["error"])
+        self.assertFalse([u for u in self.net.asked if u.endswith(".tar.gz")], self.net.asked)
+
+    def test_signed_by_another_key_refused(self):
+        other = Key(os.path.join(self.h.dir, "keys"), "someone-else")
+        self.release(self.TAG, self.good, signature=other.sign(self.good))
+        self.refused("isn't signed by Slate's own key")
+
+    def test_signed_for_something_else_refused(self):
+        self.release(self.TAG, self.good, signature=self.key.sign(self.good, namespace="file"))
+        self.refused("isn't signed by Slate's own key")
+
+    def test_a_signature_for_another_archive_refused(self):
+        """A genuine signature, moved onto an archive it wasn't made for (with that archive's own
+        checksum published beside it)."""
+        swapped = release_archive(self.TAG, self.marker, "swapped")
+        self.release(self.TAG, swapped, signature=self.key.sign(self.good))
+        self.refused("isn't signed by Slate's own key")
+
+    def test_no_key_in_this_copy_refused(self):
+        os.remove(os.path.join(self.dest, "data", "release-signers"))
+        self.refused("no key to check it with")
+
     def test_older_releases_have_no_other_way_in(self):
         """There's no unchecked path for releases from before checksums: one that's newer than
         what's installed but has no checksum file is refused like any other."""
@@ -452,16 +496,19 @@ class Install(Releases):
 
     @unittest.skipUnless(shutil.which("git") and shutil.which("sha256sum"), "needs git and sha256sum")
     def test_release_assets_script(self):
-        """tools/release-assets.sh packs a tag into the two files the updater asks for: its
-        checksum file reads back, matches, and the archive installs."""
+        """tools/release-assets.sh packs a tag into the three files the updater asks for: its
+        checksum file reads back, matches, its signature is this key's, and the archive installs."""
         repo = os.path.join(self.h.dir, "repo")
-        os.makedirs(os.path.join(repo, "shell"))
+        os.makedirs(os.path.join(repo, "shell", "data"))
+        with open(os.path.join(repo, "shell", "data", "release-signers"), "w") as f:
+            f.write(self.key.signers())
         with open(os.path.join(repo, "install.sh"), "w") as f:
             f.write('#!/bin/bash\necho "$1 packed" >> "%s"\n' % self.marker)
         with open(os.path.join(repo, "shell", "shell.qml"), "w") as f:
             f.write("// Slate\n")
         env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_SYSTEM=os.devnull, GIT_AUTHOR_NAME="t",
-                   GIT_AUTHOR_EMAIL="t@example.com", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.com")
+                   GIT_AUTHOR_EMAIL="t@example.com", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.com",
+                   SLATE_RELEASE_KEY=self.key.path)
         # (a repository of its own, whatever git folder the tests themselves run from)
         for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"):
             env.pop(name, None)
@@ -474,7 +521,7 @@ class Install(Releases):
         out = os.path.join(self.h.dir, "assets")
         made = self.ok(["bash", script, self.TAG, out], cwd=repo, env=env).split()
         name = "slate-%s.tar.gz" % self.TAG
-        self.assertEqual(made, [os.path.join(out, name), os.path.join(out, name + ".sha256")])
+        self.assertEqual(made, [os.path.join(out, name), os.path.join(out, name + ".sha256"), os.path.join(out, name + ".sig")])
         with open(made[0], "rb") as f:
             archive = f.read()
         with open(made[1]) as f:
@@ -482,13 +529,21 @@ class Install(Releases):
         self.assertEqual(self.mod.checksum_in(checksum), hashlib.sha256(archive).hexdigest())
         with tarfile.open(made[0]) as t:
             self.assertEqual(sorted(t.getnames()), ["slate-v9.9.9", "slate-v9.9.9/install.sh", "slate-v9.9.9/shell",
+                                                    "slate-v9.9.9/shell/data", "slate-v9.9.9/shell/data/release-signers",
                                                     "slate-v9.9.9/shell/shell.qml"])
         # The same tag packs to the same bytes
         again = self.ok(["bash", script, self.TAG, os.path.join(self.h.dir, "again")], cwd=repo, env=env).split()
         with open(again[0], "rb") as f:
             self.assertEqual(f.read(), archive)
-        self.release(self.TAG, archive, checksum=checksum)
+        with open(made[2], "rb") as f:
+            signature = f.read()
+        self.release(self.TAG, archive, checksum=checksum, signature=signature)
         self.assertEqual(self.install()["status"], "done")
+        # A key that isn't the one the updaters trust signs nothing (every update would be refused)
+        other = Key(os.path.join(self.h.dir, "keys"), "someone-else")
+        r = run(["bash", script, self.TAG, os.path.join(self.h.dir, "other")], cwd=repo, env=dict(env, SLATE_RELEASE_KEY=other.path))
+        self.assertEqual(r[0], 1, r[1])
+        self.assertIn("isn't the one in shell/data/release-signers", r[1])
         self.assertEqual(self.ran(), "--update packed")
         # Not a release's tag, or one that isn't there: nothing made
         for tag, code in (("9.9.9", 2), ("v9.9.9-rc1", 2), ("", 2), ("v1.0.0", 1)):
