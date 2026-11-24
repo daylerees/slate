@@ -20,7 +20,6 @@ Rectangle {
         text: Config.glyph(iconButton.icon)
         color: iconButtonHover.hovered ? win.text : win.dim
         // (with the fill behind it, not ahead of it)
-        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         font.family: win.bar.iconFont; font.pixelSize: 18
     }
     HoverHandler { id: iconButtonHover }

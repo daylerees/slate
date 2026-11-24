@@ -125,11 +125,10 @@ Column {
                     required property var modelData
                     width: 34; height: 34
                     // Flat and solid, with glass too: the card's own solid colour, no edge and
-                    // nothing showing through; under the pointer, the muted hover over it
-                    readonly property color base: Config.palette.card
+                    // nothing showing through; under the pointer, the muted hover over it, at
+                    // once (RowButton's hoverBase: its own colour override faded the hover in)
+                    hoverBase: Config.palette.card
                     Accessible.name: modelData.act === "settings" ? "Settings" : "Power"
-                    color: controlButtonHover.hovered ? Qt.tint(base, Config.hover) : base
-                    HoverHandler { id: controlButtonHover }
                     onClicked: {
                         if (modelData.act === "settings") { pop.close(); pop.slate(["settings", "open"]); }
                         else pop.openSessionFromControl();

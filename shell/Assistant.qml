@@ -618,7 +618,6 @@ Scope {
                                 text: String.fromCodePoint(0xEB55)
                                 color: closeHover.hovered ? root.textColor : root.dimTextColor
                                 // (with the fill behind it, not ahead of it)
-                                Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                 font.family: Config.iconFont; font.pixelSize: 18
                             }
                             HoverHandler { id: closeHover }
@@ -1267,7 +1266,6 @@ Scope {
         z: 2
         width: 24; height: 24; radius: Config.corner(8)
         color: chipHover.hovered ? hoverBase : base
-        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         opacity: shownFor || done ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }

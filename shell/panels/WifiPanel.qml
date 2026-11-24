@@ -329,4 +329,10 @@ Column {
             color: pop.dim
         }
     }
+
+    Divider {}
+    LinkRow {
+        code: 0xEB20; text: "Network settings"
+        onClicked: pop.openSettingsPage("wifi")
+    }
 }

@@ -257,4 +257,10 @@ Column {
             }
         }
     }
+
+    Divider {}
+    LinkRow {
+        code: 0xEB20; text: "Power settings"
+        onClicked: pop.openSettingsPage("power")
+    }
 }

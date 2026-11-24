@@ -259,7 +259,7 @@ PanelWindow {
                         Text {
                             visible: card.icons
                             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                            text: row.modelData.icon ? String.fromCodePoint(row.modelData.icon) : ""
+                            text: row.modelData.icon ? Config.glyph(row.modelData.icon) : ""
                             color: dm.dimColor
                             font.family: Config.iconFont; font.pixelSize: 16
                         }
@@ -275,7 +275,7 @@ PanelWindow {
                         Text {
                             visible: row.opens
                             anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                            text: String.fromCodePoint(0xEA61)          // chevron right
+                            text: Config.glyph(0xEA61)          // chevron right
                             color: row.open && dm.subWanted === row.index ? dm.textColor : dm.dimColor
                             font.family: Config.iconFont; font.pixelSize: 15
                         }

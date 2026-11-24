@@ -217,10 +217,24 @@ class HoverTracksThePointer(Case):
             src = slate.read(f)
             names = [_HOVER] + [rf"\b{n}\b" for n in re.findall(rf"property color (\w+):[^\n]*(?:{_HOVER})", src)]
             hover = re.compile("|".join(names))
+            # (what follows the pointer: a HoverHandler's `hovered`, or a bool made from the
+            # pointer, like the dots' `lit`; not a `lit` that's a state, as NovaMic's listening)
+            under = re.findall(r"property bool (\w+):[^\n]*(?:\.hovered|containsMouse|\bunder\b)", src)
+            pointer = re.compile("|".join([r"\.hovered\b"] + [rf"(?<![\w.])(?:\w+\.)?{n}\b" for n in under]))
             for line, text in _objects(src):
                 with self.subTest(f"{f}:{line}"):
                     if hover.search(_binding(text, "color")):
                         self.assertNotIn("Behavior on color", text, "the muted hover fades: drop the fade, or put the hover in a HoverFill")
+                    # (a color that follows the pointer some other way: brighter under it, or its
+                    # own tint of the hover, as the control center's buttons and the workspace
+                    # dots had. The lit accent, accentFor, keeps its fade on purpose)
+                    c = _binding(text, "color")
+                    own = {n for n, d in re.findall(r"property bool (\w+):([^\n]*)", text)
+                           if not re.search(r"\.hovered|containsMouse|\bunder\b", d)}
+                    if own:      # (a `lit` of this object's own, not from the pointer: the bar's busy beat)
+                        c = re.sub(r"(?<![\w.])(?:%s)\b" % "|".join(own), "", c)
+                    if pointer.search(c) and "accentFor" not in c and "accentLit" not in c:
+                        self.assertNotIn("Behavior on color", text, "a color that follows the pointer fades")
                     # (a hover drawn as the accent at the hover's strength, shown by opacity)
                     o = _binding(text, "opacity")
                     if re.search(r"\b(Config\.|bar\.|wd\.)?hoverStrength\b", o) and re.search(r"\.hovered\b|\blit\b", o):
@@ -432,3 +446,34 @@ class Palette(Case):
                 if re.search(r'tint\([^)]*"#', line) and "root.tint(" not in line:
                     found.append(f"{os.path.relpath(path, slate.path('shell'))}:{n}: {line.strip()[:90]}")
         self.assertEqual(found, [], "a color for tint() written out: use (or add) a Config.palette name")
+
+
+class PanelFooters(Case):
+    """Every bar panel ends with a link to its Settings page (CONVENTIONS: bar panels; the docs
+    promise it): the Wi-Fi, Sound, Battery and Notifications panels had none."""
+    # (the calendar has no settings of its own beyond the clock's, and the session panel is
+    # its actions; the control center has its Settings button at the top)
+    WITHOUT = {"CalendarPanel.qml", "SessionPanel.qml", "ControlPanel.qml"}
+
+    def test_every_panel_links_to_its_settings(self):
+        import glob, os
+        for path in sorted(glob.glob(os.path.join(slate.ROOT, "shell", "panels", "*Panel.qml"))):
+            name = os.path.basename(path)
+            if name in self.WITHOUT:
+                continue
+            with self.subTest(name):
+                src = open(path, encoding="utf-8").read()
+                self.assertRegex(src, r'LinkRow \{[^}]*?code: 0xEB20; text: "[^"]+ settings"', "no \"… settings\" link at the bottom")
+
+
+class ClearingAsks(Case):
+    def test_clearing_the_clipboard_asks_first(self):
+        """Both clear buttons (the picker's Clear all and the panel's Clear history) deleted the
+        whole history in one click: they ask in Slate's confirmation window first."""
+        picker = slate.read("shell", "Picker.qml")
+        self.assertIn("ClickTap { onTapped: root.askClearClips() }", picker)
+        self.assertIn("confirmer.confirmWith(Config.clearClipsQuestion", picker)
+        panel = slate.read("shell", "panels", "ClipboardPanel.qml")
+        self.assertIn("pop.powerConfirm.confirmWith(Config.clearClipsQuestion", panel)
+        self.assertIn("win.askQuestion(Object.assign({}, Config.clearClipsQuestion", slate.read("shell", "settings", "pages", "GeneralPage.qml"))
+        self.assertIn("confirmer: powerConfirm", slate.read("shell", "shell.qml")[slate.read("shell", "shell.qml").index("Picker {"):][:200])

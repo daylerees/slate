@@ -92,7 +92,14 @@ Column {
         visible: Config.s.clipboardHistory && clipView.entries.length > 0
         code: 0xEB41; text: "Clear history"
         iconColor: pop.danger; textColor: pop.danger; danger: true
-        onClicked: { clipView.entries = []; Quickshell.execDetached(["python3", clipView.script, "clear"]); }
+        // (the panel closes and Slate's confirmation window asks first, as the picker's Clear all does)
+        onClicked: {
+            pop.close();
+            pop.powerConfirm.confirmWith(Config.clearClipsQuestion, () => {
+                clipView.entries = [];
+                Quickshell.execDetached(["python3", clipView.script, "clear"]);
+            });
+        }
     }
     LinkRow {
         code: 0xEB20; text: "Clipboard settings"

@@ -108,21 +108,31 @@ PanelWindow {
     // not much use as a row in More
     readonly property var notInMore: ["windowicon", "windowtitle"]
     readonly property var inMore: overflowed.filter(id => !notInMore.includes(id))
-    // ...by key: a thing's id, or "tray:<n>" for each tray icon. The More panel's rows are made
-    // from these and only these, so a value changing (a timer each second, the volume) updates
-    // its row (moreRow) rather than making every row again
+    // ...by key: a thing's id, or "tray:<app's id>:<n>" for each tray icon (n counting an app's
+    // icons, for one with two). The More panel's rows are made from these and only these, so a
+    // value changing (a timer each second, the volume) updates its row (moreRow) rather than
+    // making every row again. (Keyed by place in the tray once, a row kept its key when an app
+    // before it quit, and went on to act on the next app along)
+    function trayKeys() {
+        const seen = {};
+        return SystemTray.items.values.map(tr => {
+            const id = String(tr.id || "");
+            seen[id] = (seen[id] || 0) + 1;
+            return "tray:" + id + ":" + seen[id];
+        });
+    }
     function moreKeys() {
         const keys = [];
         for (const id of inMore) {
             if (!Config.barItem(id) || !left.things[id]) continue;
-            if (id === "tray") { SystemTray.items.values.forEach((tr, i) => keys.push("tray:" + i)); continue; }
+            if (id === "tray") { keys.push(...trayKeys()); continue; }
             keys.push(id);
         }
         return keys;
     }
     function moreRow(key) {
         if (key.startsWith("tray:")) {
-            const tr = SystemTray.items.values[Number(key.slice(5))];
+            const tr = SystemTray.items.values[trayKeys().indexOf(key)];
             return tr ? { id: "tray", tray: tr, label: Config.trayName(tr) || "App", icon: 0, image: String(tr.icon), value: "" } : null;
         }
         const it = Config.barItem(key), t = left.things[key];

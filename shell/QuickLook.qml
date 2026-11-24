@@ -626,7 +626,6 @@ PanelWindow {
             anchors.centerIn: parent
             text: String.fromCodePoint(hb.code)
             color: hbHover.hovered ? root.textColor : root.dimTextColor
-            Behavior on color { ColorAnimation { duration: Config.ms(100) } }
             font.family: Config.iconFont; font.pixelSize: 18
         }
         HoverHandler { id: hbHover }

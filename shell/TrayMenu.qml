@@ -128,7 +128,6 @@ PanelWindow {
 
     // Look: the menu bar's colors, as Slate's own menus (DesktopMenu.qml) have
     readonly property color bgColor: bar.barColor
-    readonly property color rowHover: bar.capsuleColor
     readonly property color textColor: bar.textColor
     readonly property color dimColor: Config.palette.dim
     // (the lines between groups: faint, as DesktopMenu's, so they read over glass too)
@@ -186,7 +185,7 @@ PanelWindow {
                         Text {
                             id: backArrow
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                            text: String.fromCodePoint(0xEA60)
+                            text: Config.glyph(0xEA60)
                             color: tm.dimColor
                             font.family: tm.bar.iconFont; font.pixelSize: 14
                         }
@@ -243,7 +242,7 @@ PanelWindow {
                             Text {
                                 visible: entryRow.checked
                                 anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
-                                text: String.fromCodePoint(0xEA5E)
+                                text: Config.glyph(0xEA5E)
                                 color: Config.accent
                                 font.family: tm.bar.iconFont; font.pixelSize: 14
                             }
@@ -273,7 +272,7 @@ PanelWindow {
                             Text {
                                 visible: !!entryRow.e && entryRow.e.hasChildren
                                 anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                                text: String.fromCodePoint(0xEA61)
+                                text: Config.glyph(0xEA61)
                                 color: tm.dimColor
                                 font.family: tm.bar.iconFont; font.pixelSize: 14
                             }

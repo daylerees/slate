@@ -82,7 +82,6 @@ Rectangle {
     // Glass: a sheen, as a bold glossy band over the top half (the gentle fade taller shapes
     // get barely showed on a card), a touch stronger than on the bar's capsules
     Gloss { visible: Config.glassGloss && !card.inPanel; radius: parent.radius; band: true; strength: 0.7 }       // (flat in the bell panel)
-    Behavior on color { ColorAnimation { duration: Config.ms(inPanel ? 100 : 160) } }
     // Pop-ups float a little: Slate's shadow (with glass too: it has the card's shape cut out
     // of it, so nothing shows through), kept within the room their window leaves round them
     Shadow { visible: Config.shadowsOn && !card.inPanel; strength: Config.toastShadowShare }
@@ -284,7 +283,6 @@ Rectangle {
                         text: String.fromCodePoint(0xEB55)
                         color: closeHover.hovered ? card.textColor : card.dim
                         // (with the fill behind it, not ahead of it)
-                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                         font.family: card.bar.iconFont; font.pixelSize: 13
                     }
                     HoverHandler { id: closeHover }

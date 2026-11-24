@@ -118,4 +118,10 @@ Column {
             }
         }
     }
+
+    Divider {}
+    LinkRow {
+        code: 0xEB20; text: "Sound settings"
+        onClicked: pop.openSettingsPage("sound")
+    }
 }

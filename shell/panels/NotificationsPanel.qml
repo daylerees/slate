@@ -125,4 +125,10 @@ Column {
         ScrollShade { parent: nList; z: 3; atBottom: true; y: nList.height - height; width: nList.width; cornerRadius: 8
                       distance: nList.originY + nList.contentHeight - nList.height - nList.contentY }
     }
+
+    Divider {}
+    LinkRow {
+        code: 0xEB20; text: "Notification settings"
+        onClicked: pop.openSettingsPage("notifications")
+    }
 }

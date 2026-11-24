@@ -3142,6 +3142,13 @@ Singleton {
     // Hyprland's config is loaded again so its own value returns. Not for a default that's a real
     // value Slate sends anyway (key repeat's 500 and 16, focus follows mouse "on"): reloading
     // for those brought nothing back
+    // Clearing the clipboard history asks first, the same from the picker and the bar's panel
+    // (in Slate's confirmation window, as emptying the waste basket does)
+    readonly property var clearClipsQuestion: ({
+        title: "Clear your clipboard history?",
+        body: "Everything you've copied will be removed from it for good, pictures included. Just so you know, this can't be undone.",
+        button: "Clear", code: 0xEB41, danger: true
+    })
     function hyprKeyEdited(key, was) {
         const notSetHere = ["", -1, -2].some(n => sameValue(defaults[key], n));
         if (hyprKeys.includes(key) && notSetHere && !sameValue(was, defaults[key]) && sameValue(root.s[key], defaults[key]))

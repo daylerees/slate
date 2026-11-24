@@ -132,6 +132,13 @@ PanelWindow {
         clipRun(["delete", e.id]);
     }
     function clearClips() { typed = true; clips = []; clipRun(["clear"]); }
+    // Clear all: the picker closes and Slate's confirmation window asks (it cleared in one click)
+    property var confirmer: null
+    function askClearClips() {
+        if (!confirmer) return;
+        close();
+        confirmer.confirmWith(Config.clearClipsQuestion, () => root.clearClips());
+    }
 
     function preview(text) { return text.replace(/\s+/g, " ").trim(); }
     // (the clipboard's times are in seconds; Config.ago takes milliseconds)
@@ -503,7 +510,7 @@ PanelWindow {
                 // (destructive: written in red, and red under the pointer)
                 color: clearHover.hovered ? Config.hoverDanger : root.fieldColor
                 HoverHandler { id: clearHover }
-                ClickTap { onTapped: root.clearClips() }
+                ClickTap { onTapped: root.askClearClips() }
                 Text {
                     id: clearLabel
                     anchors.centerIn: parent

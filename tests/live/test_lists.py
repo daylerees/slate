@@ -311,6 +311,43 @@ class MoreKeepsItsRows(Lists):
         self.assertEqual(self.made("more"), before, "More made its rows again for one value changing")
 
 
+class MoreTrayRowsFollowTheirApp(Lists):
+    """Tray icons in More: a row was keyed by its place in the tray, so when an app before it
+    quit, the row kept its key and went on to show and act on the next app along. Keyed by the
+    app's id, the row that's left is the remaining app's own."""
+
+    def app(self, ident, title):
+        import os, subprocess
+        import slate
+        proc = subprocess.Popen(["python3", os.path.join(slate.FIXTURES, "live", "fake_tray_app.py"), ident, title],
+                                env=self.s.env, stdout=subprocess.PIPE, text=True)
+        self.addCleanup(proc.kill)
+        self.assertEqual(proc.stdout.readline().strip(), "registered")
+        return proc
+
+    def test_a_row_stays_with_its_app(self):
+        for k, v in MoreKeepsItsRows.SHOW.items():
+            self.keep_setting(k)
+            self.config(k, v)
+        alpha = self.app("alpha", "Alpha app")
+        self.app("beta", "Beta app")
+        self.wait(lambda st: {"alpha", "beta"} <= set(st["tray"]), "both icons in the tray")
+        self.addCleanup(lambda: self.ipc("test", "arrange", "squeeze", "0", "", ""))
+        self.ipc("test", "arrange", "squeeze", "1440", "", "")
+        self.s.settle(1.0)
+        self.open_panel("more")
+        labels = lambda st: [label for label, _ in st["bar"]["more"]]
+        self.wait(lambda st: {"Alpha app", "Beta app"} <= set(labels(st)), "both apps in More")
+        # (a row is kept by its key: the key Beta's row has is the row Beta keeps)
+        key = lambda st: [k for k, label in st["bar"]["moreKeys"] if label == "Beta app"]
+        beta = key(self.s.state())
+        self.assertEqual(len(beta), 1, self.s.state()["bar"]["moreKeys"])
+        alpha.kill(); alpha.wait()
+        self.wait(lambda st: "Alpha app" not in labels(st), "Alpha's row gone", timeout=10)
+        self.s.settle(0.5)
+        self.assertEqual(key(self.s.state()), beta, "Beta's row changed key: Alpha's old row took it over")
+
+
 class ClosedMenusHaveNoRows(Lists):
     """A right-click menu that's closed has no rows: the bar's follow Night Light (a ticked row),
     and they were made again each time it changed while nobody could see them."""

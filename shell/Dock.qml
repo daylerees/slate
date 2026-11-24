@@ -2057,7 +2057,6 @@ PanelWindow {
                                         width: parent.height; height: width; radius: Config.corner(width / 2)
                                         readonly property bool lit: mediaCell.under === mediaButton.modelData.id && mediaButton.modelData.on
                                         color: Qt.rgba(win.textColor.r, win.textColor.g, win.textColor.b, lit ? 0.14 : 0)
-                                        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
                                         // Glass: a sheen on it while it shows (fading with it)
                                     }
                                     Text {

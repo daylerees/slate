@@ -54,7 +54,6 @@ Rectangle {
         text: Config.glyph(0xEB55)
         color: clearHover.hovered ? box.win.text : box.win.dim
         // (with the fill behind it, not ahead of it)
-        Behavior on color { ColorAnimation { duration: Config.ms(100) } }
         font.family: Config.iconFont; font.pixelSize: box.clearSize
         HoverHandler { id: clearHover }
         ClickTap { onTapped: { input.text = ""; input.forceActiveFocus(); } }

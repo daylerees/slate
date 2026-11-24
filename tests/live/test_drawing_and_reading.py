@@ -102,6 +102,37 @@ class Picker(LiveCase):
         self.s.settle(0.8)
         self.assertEqual(self.s.state()["picker"]["clipReads"], reads + 1, "read again with nothing new")
 
+    def test_clear_all_asks_first(self):
+        """Clear all deleted the whole history in one click: now Slate's confirmation window
+        asks, and saying no keeps everything."""
+        self.addCleanup(lambda: self.ipc("power", "cancel"))
+        self.addCleanup(lambda: self.ipc("picker", "close"))
+        self.write(3)
+        self.ipc("picker", "clipboard")
+        self.wait(lambda st: st["picker"]["open"], "the clipboard history")
+        self.ipc("test", "pickerClearAll")
+        st = self.wait(lambda st: st["power"]["open"], "the question")
+        self.assertEqual(st["power"]["title"], "Clear your clipboard history?")
+        self.assertFalse(st["picker"]["open"], "the picker stayed open over the question")
+        self.ipc("power", "cancel")
+        self.wait(lambda st: not st["power"]["open"], "the question to close")
+        self.s.settle(0.5)
+        with open(self.index()) as f:
+            self.assertEqual(len(json.load(f)["entries"]), 3, "the history was cleared without a yes")
+        # ...and a yes clears it
+        self.ipc("picker", "clipboard")
+        self.wait(lambda st: st["picker"]["open"], "the clipboard history again")
+        self.ipc("test", "pickerClearAll")
+        self.wait(lambda st: st["power"]["open"], "the question again")
+        self.ipc("test", "powerAccept")
+        def cleared():
+            try:
+                with open(self.index()) as f:
+                    return json.load(f)["entries"] == []
+            except (OSError, ValueError):
+                return False
+        self.wait(lambda st: cleared(), "the history cleared", timeout=5)
+
     def test_the_emoji_list_is_read_once_for_both(self):
         self.addCleanup(lambda: self.ipc("picker", "close"))
         self.ipc("picker", "emoji")

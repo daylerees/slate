@@ -144,11 +144,18 @@ Item {
                 width: wd.dot; height: wd.dot
                 radius: Config.dotRadius(wd.dot)
                 scale: cell.size
-                // Inactive workspaces dimmed a little (the marker shows the one in use);
-                // brighter under the pointer
-                color: cell.lit ? (cell.full ? Config.palette.text : Config.palette.dim)
-                    : cell.full ? Config.palette.mid : Config.palette.faint
+                // Inactive workspaces dimmed a little (the marker shows the one in use): fading as
+                // a workspace fills or empties
+                color: cell.full ? Config.palette.mid : Config.palette.faint
                 Behavior on color { ColorAnimation { duration: Config.ms(150) } }
+                // ...and brighter under the pointer, at once, as every hover is (CONVENTIONS):
+                // faded, it left a half-lit trail along the dots behind the pointer
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    visible: cell.lit
+                    color: cell.full ? Config.palette.text : Config.palette.dim
+                }
             }
             // What takes the pointer: the dot, and reachAcross past it each side
             Item {

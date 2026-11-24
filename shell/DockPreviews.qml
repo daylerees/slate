@@ -17,7 +17,7 @@ PanelWindow {
     property real atX: 0          // by the icon, just off the dock (screen coordinates)
     property real atY: 0
     // Open for this app; fading in and out (the last app's windows stay on it while it fades)
-    readonly property bool wanted: !!dock.previewApp && dock.previewApp.windows.length > 0 && dock.hasOpened(dock.previewApp) && dock.dragKey === ""
+    readonly property bool wanted: dock.hasOpened(dock.previewApp) && dock.dragKey === ""
     property var shownApp: null
     onWantedChanged: if (wanted) shownApp = dock.previewApp
     Connections { target: previews.dock; function onPreviewAppChanged() { if (previews.wanted) previews.shownApp = dock.previewApp; } }

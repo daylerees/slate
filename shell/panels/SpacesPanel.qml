@@ -28,7 +28,7 @@ Column {
     property bool custom: false           // a colour of your own (hue strip and hex)
     readonly property var sameName: Spaces.list.find(s => s.name.toLowerCase() === name.trim().toLowerCase()) ?? null
     readonly property bool canSave: name.trim() !== "" && picked.length > 0
-    readonly property color inkColour: "#1b1f26"      // icons on a pastel
+    readonly property color inkColour: Config.palette.accentText      // icons on a pastel (dark in every theme)
 
     // The workspace you're on starts picked, once the list of workspaces with apps is in,
     // and only if it's on it (an empty one has nothing to save)

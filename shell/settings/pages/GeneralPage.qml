@@ -87,7 +87,10 @@ Column {
             Button {
                 icon: 0xEB41; label: "Clear"; destructive: true
                 enabled: Config.clipCount > 0
-                onClicked: Quickshell.execDetached(["python3", Quickshell.shellPath("scripts/clipstore.py"), "clear"])
+                // (asks first, as the picker's and the bar panel's do)
+                onClicked: win.askQuestion(Object.assign({}, Config.clearClipsQuestion, { destructive: true,
+                    run: () => Quickshell.execDetached(["python3", Quickshell.shellPath("scripts/clipstore.py"), "clear"])
+                }))
             }
         }
     }

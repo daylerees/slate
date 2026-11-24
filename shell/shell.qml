@@ -87,6 +87,7 @@ ShellRoot {
     // Clipboard history (Super+V) and emoji picker (Super+.)
     Picker {
         id: picker
+        confirmer: powerConfirm
         onShownChanged: if (shown) root.closeOverlaysBut(picker)
     }
     // Records clipboard history for the picker (scripts/clipstore.py); exits with Slate
@@ -423,6 +424,10 @@ ShellRoot {
         function fadeInClose(): void { Config.welcoming = false; Config.welcomeFading = false; }
         // Settings asking something (as its Reset does, with a switch): it asks in Slate's
         // confirmation window (power: custom)
+        // The picker's Clear all pressed, and the open question answered yes (only here, in test
+        // mode: the power target can't accept a question, or anything with IPC could say yes)
+        function pickerClearAll(): void { picker.askClearClips(); }
+        function powerAccept(): void { powerConfirm.confirm(); }
         function settingsAsk(): void {
             const w = settingsLoader.item;
             if (w) w.askQuestion({ title: "Test question?", body: "From the tests", button: "Yes",
@@ -654,7 +659,8 @@ ShellRoot {
                 spaces: { saved: Spaces.list.length, live: Spaces.live.length },
                 // (a player playing full screen, which holds off the idle timers)
                 mediaFullscreen: Config.mediaFullscreen,
-                power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption },
+                power: { open: powerConfirm.shown, action: powerConfirm.action, option: powerConfirm.hasOption,
+                         title: powerConfirm.custom ? powerConfirm.custom.title || "" : "" },
                 polkit: { open: polkitAgent.shown },
                 welcome: { built: welcome.built, open: welcome.shown, page: welcome.page, pages: welcome.pages, inApps: welcome.inApps, newHere: welcome.newHere },
                 fadeIn: { open: Config.welcoming, fading: Config.welcomeFading },
@@ -717,7 +723,7 @@ ShellRoot {
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
                 bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: !!barEditor.item && barEditor.item.shown, editorBuilt: !!barEditor.item, edge: popouts.edge,
-                       line: topBar.lineState(), span: topBar.lineSpan(), gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState(), order: Config.barOverflowOrder, priority: barEditor.item ? barEditor.item.priorityState : { open: false, list: [], scroll: 0, scrollMax: 0, lengthMenu: false, length: "" }, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState(), band: topBar.band(),
+                       line: topBar.lineState(), span: topBar.lineSpan(), gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState(), order: Config.barOverflowOrder, priority: barEditor.item ? barEditor.item.priorityState : { open: false, list: [], scroll: 0, scrollMax: 0, lengthMenu: false, length: "" }, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), moreKeys: topBar.moreKeys().map(k => [k, (topBar.moreRow(k) || {}).label || ""]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState(), band: topBar.band(),
                        // (the label off the bar saying what the pointer's over: BarLabel.qml)
                        label: topBar.label.testState() },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,

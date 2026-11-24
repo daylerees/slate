@@ -747,7 +747,7 @@ PanelWindow {
                             ShaderEffectSource {
                                 visible: ov.livePreviews
                                 anchors.fill: parent
-                                sourceItem: ov.shotFor(parent.win.address)
+                                sourceItem: parent.win ? ov.shotFor(parent.win.address) : null       // (a window gone mid-redraw: nothing)
                                 live: true
                                 smooth: true
                                 mipmap: true
@@ -785,7 +785,7 @@ PanelWindow {
                             SpaceBadge {
                                 x: Math.round(size * 0.3); y: x
                                 size: Math.round(Math.max(14, Math.min(24, parent.width * 0.12, parent.height * 0.2)))
-                                space: Config.s.spaceSwitcherBadges ? Spaces.spaceById(Spaces.spaceOfAddress[parent.win.address]) : null
+                                space: Config.s.spaceSwitcherBadges ? Spaces.spaceById(Spaces.spaceOfAddress[parent.win?.address ?? ""]) : null
                             }
                         }
                     }
