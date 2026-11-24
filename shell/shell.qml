@@ -132,6 +132,8 @@ ShellRoot {
         enabled: Config.testMode
         // A click (or right-click) on the dock's slot of this kind (drink, focus, trash…)
         function dockClick(kind: string, right: bool): void { win.clickItem(win.indexOfKind(kind), right); }
+        // An app's windows as if just asked for and not opened yet (an app starting): "" for none
+        function dockPretendUnopened(key: string): void { win.testUnopened = key; }
         // The open bar panel's controls that take a click but not the keyboard (Popouts.unreachable)
         function panelGaps(): string { return JSON.stringify(popouts.unreachable()); }
         // …and walking the keyboard through every stop, as Down does, looking again at each

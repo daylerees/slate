@@ -207,6 +207,25 @@ class Dock(LiveCase):
         self.steady(self.s.state, floor=1.2)
         self.assertFalse(self.s.state()["dock"]["preview"], "a preview with previews switched off")
 
+    def test_no_preview_before_the_window_opens(self):
+        """An app that's starting has a window the moment it asks for one, before it's drawn
+        anything or Hyprland has shown it: resting on its icon then showed an empty card. The
+        preview waits until the window has opened."""
+        if not any(c["class"] == "foot" for c in self.s.hyprctl("clients", json_out=True)):
+            self.s.hyprctl("eval", 'hl.exec_cmd("foot")')
+        self.wait(lambda st: any(x["kind"] == "app" and x["key"] == "foot" and x["windows"] > 0 for x in st["dock"]["slots"]),
+                  "a foot window on the dock")
+        self.addCleanup(lambda: self.ipc("dock", "closePreview"))
+        self.addCleanup(lambda: self.ipc("test", "dockPretendUnopened", ""))
+        self.ipc("test", "dockPretendUnopened", "foot")
+        self.ipc("dock", "preview", "foot")
+        self.s.settle(0.8)
+        self.assertFalse(self.s.state()["dock"]["preview"], "a preview of a window that hasn't opened")
+        # ...and once it has, it shows
+        self.ipc("test", "dockPretendUnopened", "")
+        self.ipc("dock", "preview", "foot")
+        self.wait(lambda st: st["dock"]["preview"], "foot's preview once its window opened")
+
     def test_preview_fades_away(self):
         """An app's window preview opens, and once closed it fades and its window goes (it used
         to vanish at once, with no fade)."""

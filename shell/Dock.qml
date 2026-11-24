@@ -730,7 +730,7 @@ PanelWindow {
         // An app's window previews, as pausing on it does:  slate ipc call dock preview firefox
         function preview(key: string): void {
             const sl = win.slots.find(o => o.kind === "app" && o.item.key === key);
-            if (!sl || sl.item.windows.length === 0 || win.previewMode === "off") return;
+            if (!sl || !win.hasOpened(sl.item) || win.previewMode === "off") return;
             win.previewApp = sl.item;
             const x = (strip.width - win.restWidth) / 2 + win.slotStart(sl.at) + win.base / 2;
             const p = strip.mapToItem(win.contentItem, x, win.previewEdge(sl.at));
@@ -948,10 +948,22 @@ PanelWindow {
     property bool previewHeld: false         // the pointer's on the panel
     Timer { id: previewDwell; interval: Math.max(1, Config.s.dockPreviewDelay * 1000); onTriggered: win.showPreview() }
     Timer { id: previewLeave; interval: 300; onTriggered: if (!win.previewHeld && !win.pointedApp) win.previewApp = null }
-    // The app under the pointer, while it has windows (null otherwise)
+    // Something there to preview: an app has one once Hyprland has opened (mapped) one of its
+    // windows. An app that's starting has a window the moment it asks for one, before it's drawn
+    // anything or Hyprland has shown it, and resting on its icon then showed an empty card. This
+    // only decides whether previews open: the cards follow the app's own windows as before, so
+    // nothing changes under them as a window closes (Hyprland's list drops it a moment before
+    // PreviewHold holds the captures, and a capture asked for then kills Slate)
+    readonly property var openedWindows: Hyprland.toplevels.values.map(h => h.wayland).filter(w => !!w)
+    function hasOpened(app) {
+        if (!app || (Config.testMode && app.key === testUnopened)) return false;
+        return app.windows.some(t => openedWindows.indexOf(t) >= 0);
+    }
+    property string testUnopened: ""             // (the tests: an app whose windows haven't opened yet)
+    // The app under the pointer, while it has windows to preview (null otherwise)
     readonly property var pointedApp: {
         const sl = hover > 0.5 && !appMenu.visible ? slotAt(hoveredIndex) : null;
-        return sl && sl.kind === "app" && sl.item.windows.length > 0 ? sl.item : null;
+        return sl && sl.kind === "app" && hasOpened(sl.item) ? sl.item : null;
     }
     onPointedAppChanged: {
         if (previewMode === "off") return;
