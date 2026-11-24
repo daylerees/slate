@@ -274,6 +274,7 @@ scripts/display-brightness.py  which displays Settings → Displays can set the 
                               (ddcutil detect, matched to Hyprland's outputs by DRM connector, else
                               EDID model and serial; getvcp 10), as JSON lines; changes nothing
 scripts/force-quit.sh         the dock menu's Force Quit: kills the apps behind the given windows (never Slate's own)
+scripts/gpu-busy.sh           how busy each graphics card is (AMD's own, NVIDIA's through nvidia-smi; a sleeping card isn't woken), for the battery panel's GPU row
 scripts/refresh-gtk-apps.sh   restarts windowless GTK4 apps after the colours change, so their next
                               window opens in the new ones (run by apply-theme.py and on window close)
 scripts/user-files.sh         makes the files for your own tweaks (hypr/*.lua, user/shell.qml) from
@@ -775,6 +776,7 @@ Arch package names (other distros: `packaging/<distro>.txt`).
 | `libnotify` | `notify-send` (login-screen update prompt, screenshot fallback) |
 | `fontconfig` | font lists in Settings, greeter font sync |
 | `curl` | weather |
+| `nvidia-smi` (optional, with NVIDIA's driver) | the battery panel's GPU row on NVIDIA cards (`scripts/gpu-busy.sh`); without it, the row isn't shown |
 | `openssh` (`ssh-keygen`) | checks an update's signature before it's installed (`scripts/update.py`, `bin/slate-update-install`) |
 | `xdg-utils` | `xdg-open` (open settings file, links) |
 | `glib2` (`gio`) | the dock: emptying and binning to the Waste Basket (`gio trash`), opening files dropped on an app (`gio launch`, `scripts/open-with.sh`) |
