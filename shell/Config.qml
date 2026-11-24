@@ -2011,7 +2011,7 @@ Singleton {
         bar: "#a6c8e8", control: "#a6d8c8", dock: "#9ad3b8", launcher: "#e8d08f", spaces: "#d8a6e8",
         hotcorners: "#e89f8f", lock: "#a8b8cc", unlock: "#a6c4e0", screensaver: "#b0a6e8", shortcuts: "#c8c8a0",
         apps: "#8fd8d0", startup: "#b9e4af", apprules: "#b8c8a6", datetime: "#e8a6a6", apptheming: "#e6a6e6", wallpaper: "#e6e699", icons: "#e8c4a6",
-        screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a",
+        screenshots: "#a6e0e8", updates: "#a6d8a6", assistant: "#b9a6e8", about: "#b8c0cc", debug: "#e8a0a0", webcam: "#c0dc9a", transfer: "#a0d0e0",
         // Slate Software's sections and Flathub's categories (SoftwareWindow.qml), the same way
         "software-discover": "#8fb3e8", "software-installed": "#e8c48f", "software-updates": "#a6d8a6",
         // (Flathub's categories: ten hues evenly round the wheel, neighbours far apart, none repeated)

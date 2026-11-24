@@ -129,7 +129,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │        DisplaysPage.qml, InputPage.qml, SoundPage.qml, PowerPage.qml, ShortcutsPage.qml,
 │        AppsPage.qml, StartupPage.qml, AppRulesPage.qml, DateTimePage.qml, ScreenshotsPage.qml, WindowsPage.qml,
 │        NotificationsPage.qml, BluetoothPage.qml, PrintersPage.qml, AboutPage.qml, WifiPage.qml,
-│        HotCornersPage.qml, DebugPage.qml, WebcamPage.qml, LockPage.qml, UnlockPage.qml, ScreensaverPage.qml,
+│        HotCornersPage.qml, DebugPage.qml, TransferPage.qml, WebcamPage.qml, LockPage.qml, UnlockPage.qml, ScreensaverPage.qml,
 │        UpdatesPage.qml, WorkspacesPage.qml, AssistantPage.qml, UsersPage.qml,
 │        AccessibilityPage.qml, TimersPage.qml, StoragePage.qml
 ├─ ScreenCorners.qml    bottom screen corners ("slate-corners")
@@ -274,6 +274,7 @@ scripts/display-brightness.py  which displays Settings → Displays can set the 
                               (ddcutil detect, matched to Hyprland's outputs by DRM connector, else
                               EDID model and serial; getvcp 10), as JSON lines; changes nothing
 scripts/force-quit.sh         the dock menu's Force Quit: kills the apps behind the given windows (never Slate's own)
+scripts/settings-transfer.py  Settings → Import & Export: your settings, saved Spaces, own files and wallpaper in one .slate-settings file, and back (a backup kept first, undone from the page)
 scripts/gpu-busy.sh           how busy each graphics card is (AMD's own, NVIDIA's through nvidia-smi; a sleeping card isn't woken), for the battery panel's GPU row
 scripts/refresh-gtk-apps.sh   restarts windowless GTK4 apps after the colours change, so their next
                               window opens in the new ones (run by apply-theme.py and on window close)

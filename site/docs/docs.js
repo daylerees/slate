@@ -61,6 +61,7 @@ const SECTIONS = [
     { id: "command-line", title: "The slate command", icon: 0xEBEF, about: "Restarting, logs, and controlling Slate from scripts" },
     { id: "customising", title: "Your own config", icon: 0xEA77, about: "Hyprland and QML tweaks of your own, kept safe", covers: ["about"] },
     { id: "assistant-server", title: "Slate for AI agents", icon: 0xF00A, about: "The MCP server, what it allows and what it refuses" },
+    { id: "transfer", title: "Moving your settings", icon: 0xF07A, about: "Export your settings to one file, and import them elsewhere", covers: ["transfer"] },
     { id: "troubleshooting", title: "Troubleshooting", icon: 0xEADD, about: "When something's not right: the Debug page, logs and resetting", covers: ["debug"] },
   ]},
 ];

@@ -57,6 +57,7 @@ Singleton {
         { id: "screenshots", label: "Screenshots", icon: 0xF201, more: true, about: "Where they're saved, their names, marking up, and recording", file: "ScreenshotsPage" },
         { id: "assistant", label: "Assistant", icon: 0xF014, more: true, about: "AI agents using Slate: what they may do and see", file: "AssistantPage" },
         { id: "updates", label: "Updates", icon: 0xEA96, more: true, about: "New versions of Slate: what's new, updating and going back", file: "UpdatesPage" },
+        { id: "transfer", label: "Import & Export", icon: 0xF07A, more: true, about: "Your settings in one file, to keep or take to another computer", file: "TransferPage" },
         { id: "debug", label: "Debug", icon: 0xEA48, more: true, about: "Fixes for when something hasn't caught up", file: "DebugPage" },
         // About is always last
         { id: "about", label: "About", icon: 0xEAC5, more: true, about: "Slate's files, and restarting it", file: "AboutPage" }
@@ -180,6 +181,9 @@ Singleton {
         ["Windows show", "workspaces", "overview live previews app icons windows cards thumbnails screenshots"],
         ["Windows show", "windows", "switcher alt tab super tab live previews app icons thumbnails"],
         ["Factory reset", "debug", "reset defaults start over wipe erase fresh install restore clear everything"],
+        ["Import & Export", "transfer", "export import backup restore save settings file move transfer new computer copy migrate"],
+        ["Export your settings", "transfer", "export backup save settings file"],
+        ["Put back your settings from before", "transfer", "undo import restore previous settings before"],
         ["Shortcuts", "shortcuts", "keyboard shortcuts keybinds hotkeys keys"],
         ["Default Apps", "apps", "terminal browser file manager editor calculator default applications"],
         ["Startup Apps", "startup", "autostart login start open at login"],

@@ -557,6 +557,7 @@ ShellRoot {
                             scroll: settings ? settings.scrolledTo : 0, viewHeight: settings ? Math.round(settings.scrollView.height) : 0,
                             thumbsLoading: settings ? settings.thumbsLoading + (settings.wallsListing ? 1 : 0) : 0,
                             thumbsMade: settings ? settings.thumbsMade : 0,
+                            transferFiles: settings ? settings.transferFiles : [],
                             checking: settings ? settings.checking : 0,
                             drop: settings ? settings.dropOpen : "",
                             // Settings greyed out for another one, with what each says it needs
