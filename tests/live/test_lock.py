@@ -3,6 +3,7 @@ back in (checked by PAM, with the password tests/container/entry.sh gives the te
 preview left open can't get in the way, and the lockout it shows follows faillock.conf."""
 import os
 
+import slate
 from live import LiveCase
 
 PASSWORD = "slate test"            # (tests/container/entry.sh)
@@ -85,6 +86,20 @@ class LockCase(LiveCase):
 
 class Lock(LockCase):
     # ---- Locking and unlocking ----------------------------------------------------------
+    def test_lock_and_suspend_waits_for_the_lock(self):
+        """The power menu's Lock & Suspend sleeps only once the lock covers every screen, as idle
+        suspend does: it waited a fixed 0.6 s, which a busy computer or the first lock of a
+        session could miss, showing the desktop on waking. (Under the tests the suspend is
+        counted, not made.)"""
+        before = self.s.state()["lock"]["suspends"]
+        self.ipc("lock", "lockAndSuspend")
+        st = self.wait(lambda st: st["lock"]["suspends"] == before + 1, "the suspend", timeout=15)["lock"]
+        self.assertTrue(st["suspendedLocked"], "suspended before the lock was up")
+        self.assertTrue(st["locked"])
+        panel = slate.read("shell", "panels", "SessionPanel.qml")
+        self.assertIn('pop.slate(["lock", "lockAndSuspend"])', panel, "the power menu doesn't wait for the lock")
+        self.assertNotIn("sleep 0.6", panel)
+
     def test_wrong_password_stays_locked_and_the_right_one_unlocks(self):
         self.lock()
         st = self.answer("not the password")

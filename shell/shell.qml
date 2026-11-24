@@ -636,7 +636,8 @@ ShellRoot {
                         hint: lockScreen.hint, autoGaveUp: lockScreen.autoGaveUp, waitForYou: lockScreen.waitForYou, unlockMethods: lockScreen.unlockMethods, autoService: lockScreen.autoService,
                         // (what it read from faillock.conf, and what it made of the wrong passwords so far)
                         deny: lockScreen.failDeny, interval: lockScreen.failInterval, unlockTime: lockScreen.unlockTime, lockedOut: lockScreen.lockedOut,
-                        failuresShown: lockScreen.failuresShown, screenOffWatching: lockScreen.screenOffWatching },
+                        failuresShown: lockScreen.failuresShown, screenOffWatching: lockScreen.screenOffWatching,
+                        suspends: lockScreen.testSuspends, suspendedLocked: lockScreen.testSuspendedLocked },
                 screensaver: { open: screensaver.shown, watching: screensaver.watching },
                 // Spaces (Spaces.qml): how many are saved, as the panel lists them, and the
                 // workspaces New Space would offer

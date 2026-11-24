@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import qs
 
 // ---- Session -----------------------------------------------------------
@@ -27,8 +26,8 @@ Column {
                 pop.close();
                 if (modelData.confirm && pop.powerConfirm) pop.powerConfirm.ask(modelData.id);
                 else if (modelData.id === "lock") pop.slate(["lock", "lock"]);
-                else if (modelData.id === "lock_and_suspend")   // lock first, then sleep
-                    Quickshell.execDetached(["sh", "-c", "\"$0\" ipc call lock lock; sleep 0.6; \"$1\" suspend", Quickshell.shellPath("bin/slate"), Quickshell.shellPath("bin/slate-init")]);
+                // (lock first, then sleep once the lock covers every screen: LockScreen.lockAndSuspend)
+                else if (modelData.id === "lock_and_suspend") pop.slate(["lock", "lockAndSuspend"]);
                 else Config.sessionAction(modelData.id);
             }
             Icon {

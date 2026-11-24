@@ -514,11 +514,20 @@ Scope {
     Timer { id: releaseSleep; interval: 150; onTriggered: { sleepFallback.stop(); root.sleepPending = false; logind.running = false; } }
     Timer { id: sleepFallback; interval: 4000; onTriggered: { root.sleepPending = false; logind.running = false; } }
 
-    // Slate's own idle suspend: lock first, then suspend once the lock is up
+    // Slate's own suspend (idle, and the power menu's Lock & Suspend): lock first, then suspend
+    // once the lock covers every screen. (The power menu used to wait a fixed 0.6 s instead,
+    // which a busy computer or the first lock of a session could miss, showing the desktop on
+    // waking)
     property bool suspendPending: false
+    property int testSuspends: 0           // (the tests: suspends asked for, none really made)
+    property bool testSuspendedLocked: false  // (…and whether the lock was up by then)
     function suspendIfSecure() {
-        if (suspendPending && sessionLock.secure) { suspendPending = false; Quickshell.execDetached([Quickshell.shellPath("bin/slate-init"), "suspend"]); }
+        if (!suspendPending || !sessionLock.secure) return;
+        suspendPending = false;
+        if (Config.testMode) { testSuspendedLocked = sessionLock.secure; testSuspends++; return; }
+        Quickshell.execDetached([Quickshell.shellPath("bin/slate-init"), "suspend"]);
     }
+    function lockAndSuspend() { suspendPending = true; lockNow(undefined, true); suspendIfSecure(); }
     // Start watching again a moment later; this runs after waking up
     Timer { id: rewatch; interval: 3000; onTriggered: logind.running = true }
     Connections {
@@ -623,6 +632,8 @@ Scope {
     IpcHandler {
         target: "lock"
         function lock(): void { root.lockNow(undefined, true); }
+        // Lock, then suspend once the lock is up (the power menu's Lock & Suspend)
+        function lockAndSuspend(): void { root.lockAndSuspend(); }
         function preview(mode: string): void {
             if (root.locked) return;      // nothing to try out while it's really locked
             root.previewMode = mode === "login" ? "login" : "lock";
