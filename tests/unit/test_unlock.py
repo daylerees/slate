@@ -292,7 +292,9 @@ class Keys(Unlock):
     def setUp(self):
         super().setUp()
         self.s.add("getent", by_args={"1000": "tester:x:1000:1000:Test:/home/tester:/bin/bash\n",
-                                      "1001": "sam:x:1001:1001:Sam:/home/sam:/bin/bash\n"})
+                                      "1001": "sam:x:1001:1001:Sam:/home/sam:/bin/bash\n",
+                                      "1002": "j.doe:x:1002:1002:J:/home/j.doe:/bin/bash\n",
+                                      "1003": "jxdoe:x:1003:1003:X:/home/jxdoe:/bin/bash\n"})
         self.me = {"PKEXEC_UID": "1000"}
 
     def lines(self):
@@ -320,6 +322,17 @@ class Keys(Unlock):
         self.go("key-remove", "1", env=self.me)
         self.assertEqual(self.lines(), ["sam:" + REG1[1:]])
         self.assertEqual(self.go("key-list", env=self.me)[1], "")
+
+    def test_a_name_with_a_dot_is_only_its_own(self):
+        """j.doe's line is j.doe's alone: as a grep pattern, the dot matched jxdoe's line too, so
+        saving keys for one deleted the other's, and listing showed someone else's keys."""
+        self.go("key-add", REG1, env={"PKEXEC_UID": "1003"})          # jxdoe
+        self.assertEqual(self.go("key-list", env={"PKEXEC_UID": "1002"})[1], "", "j.doe sees jxdoe's keys")
+        code, out = self.go("key-add", REG2, env={"PKEXEC_UID": "1002"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual(sorted(self.lines()), sorted(["jxdoe:" + REG1[1:], "j.doe:" + REG2[1:]]))
+        self.go("key-remove", "1", env={"PKEXEC_UID": "1002"})
+        self.assertEqual(self.lines(), ["jxdoe:" + REG1[1:]], "removing j.doe's key touched jxdoe's")
 
     def test_the_same_key_once(self):
         self.go("key-add", REG1, env=self.me)

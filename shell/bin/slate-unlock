@@ -118,8 +118,9 @@ howdy_bin() {
 }
 # ---- Security keys (pam_u2f) ----------------------------------------------------------------
 MAX_KEYS=10
-# Your keys, one a line
-keys_of() { [ -f "$KEYS" ] && grep -m1 "^$1:" "$KEYS" | cut -d: -f2- | tr ':' '\n' | grep -v '^$'; }
+# Your keys, one a line. Your line is the one whose first field is exactly your name (a grep
+# pattern would let the dot in j.doe match jxdoe's line too)
+keys_of() { [ -f "$KEYS" ] && awk -F: -v u="$1" '$1 == u { sub(/^[^:]*:/, ""); print; exit }' "$KEYS" | tr ':' '\n' | grep -v '^$'; }
 # The file again, your line as given (none: gone), everyone else's as they were; all at once
 write_keys() {   # write_keys <user> <key>…
     local user="$1" dir tmp; shift
@@ -129,7 +130,7 @@ write_keys() {   # write_keys <user> <key>…
     [ ! -L "$KEYS" ] && { [ ! -e "$KEYS" ] || [ -f "$KEYS" ]; } || { echo "slate-unlock: $KEYS isn't a plain file: not touching it" >&2; return 1; }
     tmp=$(mktemp "$dir/.u2f_keys.XXXXXX") || return 1
     {
-        [ -f "$KEYS" ] && grep -v "^$user:" "$KEYS"
+        [ -f "$KEYS" ] && awk -F: -v u="$user" '$1 != u' "$KEYS"
         if [ "$#" -gt 0 ]; then (IFS=:; echo "$user:$*"); fi
     } > "$tmp"
     chown root:root "$tmp" && chmod 0644 "$tmp" && mv -f "$tmp" "$KEYS" || { rm -f "$tmp"; return 1; }

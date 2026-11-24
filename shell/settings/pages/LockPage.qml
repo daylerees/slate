@@ -112,7 +112,10 @@ Column {
             function run(args, doing, done, failed) {
                 status = doing;
                 greeterRun.done = done; greeterRun.failed = failed;
-                greeterRun.command = [Quickshell.shellPath("bin/slate-system"), "--root", "slate-greeter-install"].concat(args);
+                // (the login screen's code from this Slate's own folder, which may not be
+                // ~/.config/slate: XDG_CONFIG_HOME, or the copy for everyone)
+                const from = "--from=" + Quickshell.shellPath("").replace(/\/$/, "");
+                greeterRun.command = [Quickshell.shellPath("bin/slate-system"), "--root", "slate-greeter-install"].concat(args, [from]);
                 greeterRun.running = true;
             }
             Row {

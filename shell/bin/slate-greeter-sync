@@ -112,12 +112,12 @@ if [ "${1:-}" = "--prompt" ]; then
     fi
     rm -f "$snooze"
     # (the root-owned copy of the installer, never the one in your Slate folder: slate-system)
-    if "$SRC/bin/slate-system" --root slate-greeter-install --code-only; then
+    if "$SRC/bin/slate-system" --root slate-greeter-install --code-only --from="$SRC"; then
         notify-send -a Slate -i "$icon" -h string:x-slate-page:lock "Login screen updated" "You'll see it at your next logout or restart."
     else
         rm -f "$asked"      # cancelled or failed: ask again next time
         # Critical too: it says how to finish the update by hand, so it stays until read
-        notify-send -a Slate -i "$icon" -u critical -h string:x-slate-page:lock "Login screen not updated" "Your current login screen stays as it is. Try again from Settings → Security, or in a terminal run: $SRC/bin/slate-system --root slate-greeter-install --code-only"
+        notify-send -a Slate -i "$icon" -u critical -h string:x-slate-page:lock "Login screen not updated" "Your current login screen stays as it is. Try again from Settings → Security, or in a terminal run: $(printf '%q' "$SRC/bin/slate-system") --root slate-greeter-install --code-only"
     fi
     exit 0
 fi

@@ -141,7 +141,7 @@ install() {
         nixos) echo "slate-system: on NixOS, add it to your configuration" >&2; return 1 ;;
         *) echo "slate-system: don't know how to install packages here" >&2; return 1 ;;
     esac
-    as_root slate-system-root "$@"
+    as_root slate-system-root --install "$@"
 }
 
 # ---- ollama: Ollama and its service, for Nova with a model on this computer ------------------
@@ -230,8 +230,9 @@ else
     esac
     [ -n "$names" ] || cmd=""
     # (the helpers first: by hand, with sudo, is the same one step Slate's prompt takes)
-    printf '%s\n' "$todo" | grep -qx helpers && cmd="${cmd:+$cmd; }sudo $SRC/bin/slate-helpers-install $SRC"
-    printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $HELPERS/slate-session-install $SRC"
+    # (the folders quoted for the shell: a Slate folder can have a space or a quote in its name)
+    printf '%s\n' "$todo" | grep -qx helpers && cmd="${cmd:+$cmd; }sudo $(printf '%q' "$SRC/bin/slate-helpers-install") $(printf '%q' "$SRC")"
+    printf '%s\n' "$todo" | grep -qx session && cmd="${cmd:+$cmd; }sudo $(printf '%q' "$HELPERS/slate-session-install") $(printf '%q' "$SRC")"
     # (no command Slate knows for this system: leave the line out rather than end on "run:")
     hint=""; [ -n "$cmd" ] && hint=" To finish by hand, run: $cmd"
     notify-send -a Slate -i "$ICON" "${replace[@]}" -u critical -h string:x-slate-page:updates "Not installed" \

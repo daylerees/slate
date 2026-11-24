@@ -505,16 +505,36 @@ class SystemRoot(HelpersCase):
         self.assertEqual(self.s.calls("pacman"), [])
 
     def test_installs_what_it_is_told_and_checks_it(self):
+        """--install: packages you chose in Settings (an app to theme, a firewall), by name."""
         self.on("ID=arch\n")
-        code, out = run([self.root, "kitty", "foot"], env=self.s.env, timeout=10)
+        code, out = run([self.root, "--install", "kitty", "foot"], env=self.s.env, timeout=10)
         self.assertEqual(code, 0, out)
         self.assertEqual(self.s.calls("pacman"), [["-S", "--needed", "--noconfirm", "kitty", "foot"]])
         for bad in ("-Syu", "a b", "a;b", "$(id)", "--config=/tmp/x", "/tmp/x.pkg"):
             with self.subTest(bad):
-                code, out = run([self.root, "kitty", bad], env=self.s.env, timeout=10)
+                code, out = run([self.root, "--install", "kitty", bad], env=self.s.env, timeout=10)
                 self.assertNotEqual(code, 0, out)
                 self.assertIn("bad package name", out)
         self.assertEqual(len(self.s.calls("pacman")), 1)
+
+    def test_packages_slate_needs_come_from_the_root_owned_list(self):
+        """The packages "Slate needs some packages → Install" asks for are only ones the root-owned
+        copy's list names for this distro: one added to the list in your own folder (which
+        anything running as you could change) isn't installed as root."""
+        self.on("ID=arch\n")
+        with open(os.path.join(self.slate, "packaging", "arch.txt"), "a") as f:
+            f.write("someone-elses-package\n")
+        code, out = run([self.root, "hyprland", "hyprland-guiutils"], env=self.s.env, timeout=10)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.s.calls("pacman"), [["-S", "--needed", "--noconfirm", "hyprland", "hyprland-guiutils"]])
+        for bad in ("someone-elses-package", "kitty"):
+            with self.subTest(bad):
+                code, out = run([self.root, "hyprland", bad], env=self.s.env, timeout=10)
+                self.assertNotEqual(code, 0, out)
+                self.assertIn("isn't one of the packages Slate needs here", out)
+        self.assertEqual(len(self.s.calls("pacman")), 1)
+        code, out = run([self.root, "--install"], env=self.s.env, timeout=10)
+        self.assertNotEqual(code, 0, out)
 
     def test_the_full_upgrade_and_nothing_else(self):
         """--upgrade: the distro's whole system upgrade, one fixed command, never only some
@@ -574,7 +594,7 @@ class SystemRoot(HelpersCase):
         self.on("ID=fedora\n")
         with open(os.path.join(self.slate, "packaging", "fedora.txt"), "a") as f:
             f.write("copr:someone/else\n")
-        code, out = run([self.root, "kitty"], env=self.s.env, timeout=10)
+        code, out = run([self.root, "--install", "kitty"], env=self.s.env, timeout=10)
         self.assertEqual(code, 0, out)
         coprs = [c[-1] for c in self.s.calls("dnf") if "copr" in c]
         own = [l.split("#")[0].strip()[5:] for l in slate.read("packaging", "fedora.txt").splitlines() if l.startswith("copr:")]
@@ -622,7 +642,7 @@ class SlateSystem(HelpersCase):
         self.assertEqual(self.pkexec("--root", "slate-private-camera", "install")[2], [[REAL + "/slate-private-camera", "install"]])
         self.assertEqual(self.pkexec("--install", "kitty")[2], [])       # (no package manager known here)
         self.on("ID=arch\n")
-        self.assertEqual(self.pkexec("--install", "kitty", "foot")[2], [[REAL + "/slate-system-root", "kitty", "foot"]])
+        self.assertEqual(self.pkexec("--install", "kitty", "foot")[2], [[REAL + "/slate-system-root", "--install", "kitty", "foot"]])
         self.assertEqual(self.pkexec("--fix")[2], [])
 
     def test_missing_or_out_of_date_goes_through_the_one_installer(self):
@@ -799,3 +819,46 @@ class GreeterFullInstall(GreeterPeople):
         self.assertFalse(os.path.exists(os.path.join(self.sys, "share", "slate-greeter")), "the new code was swapped in")
         with open(self.conf) as f:
             self.assertIn("agreety", f.read(), "greetd was pointed at it")
+
+
+OWNER_CHECKS = ("slate-helpers-install", "slate-session-install", "slate-greeter-install")
+
+
+class OwnerCheck(Case):
+    """yours_or_roots(): whose folder root may take files from (your own, or Slate's copy for
+    everyone: root's all the way up, writable by no one else). Every root helper that takes a
+    folder keeps a copy (they never import from your folder): the same text in each, run here
+    on the same folders. The login screen's installer used to skip it."""
+    scratch = True
+
+    def check(self, name, folder):
+        src = slate.read("shell", "bin", name)
+        start = src.index("yours_or_roots() {")
+        fn = src[start:src.index("\n}\n", start) + 3]
+        script = 'OWNER=%s\nasowner() { "$@"; }\n%s\nyours_or_roots "$1"' % (shlex.quote(me()), fn)
+        return run(["bash", "-c", script, "check", folder])[0]
+
+    def test_every_copy_is_the_same(self):
+        texts = {}
+        for name in OWNER_CHECKS:
+            src = slate.read("shell", "bin", name)
+            start = src.index("yours_or_roots() {")
+            texts[name] = src[start:src.index("\n}\n", start)]
+        self.assertEqual(len(set(texts.values())), 1, "the owner checks have drifted apart: " + ", ".join(texts))
+
+    def test_every_copy_decides_the_same(self):
+        mine = os.path.join(self.h.dir, "mine")
+        os.makedirs(mine)
+        cases = [(mine, 0, "your own folder"),
+                 ("/usr", 0, "root's, all the way up"),
+                 ("/tmp", 1, "root's but anyone can write in it"),
+                 (os.path.join(self.h.dir, "not-there"), 1, "not there")]
+        # (a folder of yours inside one anyone can write in is still yours; one of root's there isn't safe)
+        for name in OWNER_CHECKS:
+            for folder, want, why in cases:
+                with self.subTest(helper=name, folder=why):
+                    self.assertEqual(self.check(name, folder), want)
+
+    def test_the_login_screens_installer_checks_its_folder(self):
+        src = slate.read("shell", "bin", "slate-greeter-install")
+        self.assertRegex(src, r'yours_or_roots "\$SRC" \|\|', "the login screen's installer doesn't check whose folder it takes")

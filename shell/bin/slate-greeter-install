@@ -9,6 +9,9 @@
 #                                         update only the code (Slate offers this, asking
 #                                         for your password, when the design has changed)
 #   add --no-check to skip the test below (only if the test itself is what's failing)
+#   add --from=<Slate folder> to take the login screen's code from that folder (Settings and
+#   the login screen's sync name the one they run from); without it, your own install, else the
+#   copy installed for everyone. Either way it has to be yours or root's (yours_or_roots)
 #
 # Code goes to /usr/local/share/slate-greeter, owned by root (re-run this after
 # changing the login screen's design); the files are listed in greeter/files.
@@ -46,22 +49,52 @@ OWNER="${SUDO_USER:-}"
 [ -z "$OWNER" ] && [ -n "${PKEXEC_UID:-}" ] && OWNER=$(id -nu "$PKEXEC_UID")   # run via pkexec
 [ -n "$OWNER" ] && [ "$OWNER" != root ] || { echo "Run with sudo from your own account." >&2; exit 1; }
 HOMEDIR=$(getent passwd "$OWNER" | cut -d: -f6)
-# Slate's code, as slate-session finds it: your own install (or a link to a checkout) if you
-# have one, else the copy installed once for everyone. Read with your own permissions either way
-SRC="$HOMEDIR/.config/slate"
-for d in "$HOMEDIR/.config/slate" /usr/local/share/slate /usr/share/slate; do
-    runuser -u "$OWNER" -- test -f "$d/greeter/files" && { SRC=$d; break; }
-done
+asowner() { runuser -u "$OWNER" -- "$@"; }
 
-CHECK=1; MODE=full
+# Whose files root may take: your own folder, or Slate's copy for everyone (root's, as is every
+# folder above it, none of them writable by anyone else, so nothing can be swapped in after
+# it's looked at). Looked at with your own permissions. Anything else, like a path into
+# someone else's folder, is left alone.
+yours_or_roots() {
+    who=$(asowner stat -c %U -- "$1" 2>/dev/null) || return 1
+    [ "$who" = "$OWNER" ] && return 0
+    d=$1
+    while :; do
+        [ "$(asowner stat -c %U -- "$d" 2>/dev/null)" = root ] || return 1
+        [ -z "$(asowner find "$d" -maxdepth 0 -perm /022 2>/dev/null)" ] || return 1
+        [ "$d" = / ] && return 0
+        d=$(dirname -- "$d")
+    done
+}
+
+CHECK=1; MODE=full; FROM=""
 for a in "$@"; do
     case "$a" in
         --no-check) CHECK=0 ;;
+        --from=?*) FROM=${a#--from=} ;;
         --code-only) MODE=code ;;
         --revert) MODE=revert ;;
         *) echo "Unknown option: $a" >&2; exit 1 ;;
     esac
 done
+
+# Slate's code: the folder named (--from), else as slate-session finds it: your own install (or
+# a link to a checkout) if you have one, else the copy installed once for everyone. Read with
+# your own permissions, and only from a folder that's yours or the copy for everyone, never one
+# in someone else's home
+if [ -n "$FROM" ]; then
+    SRC=$(asowner realpath -e -- "$FROM" 2>/dev/null) || { echo "Can't find your Slate folder at $FROM" >&2; exit 1; }
+else
+    SRC="$HOMEDIR/.config/slate"
+    for d in "$HOMEDIR/.config/slate" /usr/local/share/slate /usr/share/slate; do
+        asowner test -f "$d/greeter/files" && { SRC=$d; break; }
+    done
+    SRC=$(asowner realpath -e -- "$SRC" 2>/dev/null) || SRC=""
+fi
+if [ "$MODE" != revert ]; then
+    [ -n "$SRC" ] && asowner test -f "$SRC/greeter/files" || { echo "There's no login screen in ${SRC:-your Slate folder} to install." >&2; exit 1; }
+    yours_or_roots "$SRC" || { echo "$SRC isn't yours or Slate's copy for everyone, so it wasn't used." >&2; exit 1; }
+fi
 
 if [ "$MODE" = revert ]; then
     [ -f "$BACKUP" ] || { echo "No backup at $BACKUP; nothing to revert." >&2; exit 1; }

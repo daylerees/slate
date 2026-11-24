@@ -14,6 +14,7 @@ install.sh and slate-system read /etc/os-release by name, so they're run from th
 that one path swapped for a sample's.
 """
 import os
+import shlex
 import shutil
 import sys
 
@@ -142,7 +143,7 @@ class SlateSystem(Case):
                 self.assertEqual(code, 0, out)
                 top = os.path.dirname(os.path.dirname(self.script))
                 self.assertEqual(self.s.calls("pkexec")[before:],
-                                 [[os.path.join(top, "bin", "slate-helpers-install"), top, "slate-system-root", "kitty", "foot"]])
+                                 [[os.path.join(top, "bin", "slate-helpers-install"), top, "slate-system-root", "--install", "kitty", "foot"]])
 
     def test_install_refused_where_it_cant(self):
         """Gentoo (emerge is yours), NixOS (your configuration) and anything unknown: said so,
@@ -183,6 +184,23 @@ class SlateSystem(Case):
                 first = next(l.split("#")[0].strip() for l in slate.read("packaging", fam + ".txt").splitlines()
                              if l.strip() and l.strip()[0] not in "#?" and not l.startswith("copr:"))
                 self.assertIn(" " + first, body[len(start) - 1:] + " ")
+
+    def test_finish_by_hand_quotes_the_folder(self):
+        """The command shown is one you could paste: a Slate folder with a space or a quote in
+        its name is quoted for the shell (it was glued in as it was)."""
+        root = os.path.join(self.h.dir, "Dayle's Slate")
+        os.makedirs(os.path.join(root, "bin"))
+        shutil.copytree(slate.path("packaging"), os.path.join(root, "packaging"))
+        script = os.path.join(root, "bin", "slate-system")
+        with open(script, "w", encoding="utf-8") as f:
+            f.write(swapped(slate.read("shell", "bin", "slate-system"), self.os_release))
+        os.chmod(script, 0o755)
+        self.script = os.path.realpath(script)
+        body = self.not_installed("arch")
+        cmd = body.split("To finish by hand, run: ", 1)[1]
+        # (the shell reads the folder back whole, whatever the quoting style)
+        words = shlex.split(next(c for c in cmd.split("; ") if "slate-helpers-install" in c))
+        self.assertEqual(words[:3], ["sudo", os.path.join(os.path.realpath(root), "bin", "slate-helpers-install"), os.path.realpath(root)])
 
     def test_never_run_followed_by_nothing(self):
         """Whatever the family, the sentence has a command after it or isn't there."""

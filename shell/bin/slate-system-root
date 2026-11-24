@@ -4,6 +4,11 @@
 # could have changed: slate-helpers-install puts a root-owned copy in /usr/local/libexec/slate,
 # and slate-system calls that one with pkexec (your password).
 #   slate-system-root [<package>…] [--session[=<Slate folder>]]
+#                                    packages Slate needs: only names in the root-owned copy's
+#                                    list for this distro (packaging/<family>.txt)
+#   slate-system-root --install <package>…
+#                                    packages you chose in Settings (an app to theme, a
+#                                    firewall): any well-formed name, as asked for by name
 #   slate-system-root --ollama <pkg> Ollama, from the distro's own package (only the names below,
 #                                    for its family), then its service turned on
 #   slate-system-root --upgrade      the distro's full system upgrade (Slate Software's Update):
@@ -72,6 +77,13 @@ if [ "${1:-}" = --ollama ]; then
     exit 1
 fi
 
+# What Slate's own list names, for this distro, from the root-owned copy ("?" optional ones too;
+# not its copr: lines, which are repositories). A package to fix that isn't here isn't
+# installed: the list in your own Slate folder, which anything running as you could add to,
+# is never what decides
+listed() { read_list | sed 's/^?//' | grep -v '^copr:' | grep -qxF -- "$1"; }
+chosen=0
+if [ "${1:-}" = --install ]; then chosen=1; shift; [ "$#" -gt 0 ] || { echo "slate-system: --install needs package names" >&2; exit 1; }; fi
 pkgs=(); session=0; folder=""
 for a in "$@"; do
     case "$a" in
@@ -80,6 +92,7 @@ for a in "$@"; do
         # XDG_CONFIG_HOME is set. slate-session-install checks it before taking anything)
         --session=*) session=1; folder=${a#--session=} ;;
         *) [[ "$a" =~ ^[A-Za-z0-9][A-Za-z0-9@._+:-]*$ ]] || { echo "slate-system: bad package name: $a" >&2; exit 1; }
+           [ "$chosen" -eq 1 ] || listed "$a" || { echo "slate-system: $a isn't one of the packages Slate needs here" >&2; exit 1; }
            pkgs+=("$a") ;;
     esac
 done
