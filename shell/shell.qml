@@ -611,7 +611,7 @@ ShellRoot {
                            inSub: topBar.menu.inSub, subHot: topBar.menu.subHot, subRowY: topBar.menu.subRowY,
                            items: topBar.menu.items.map(i => i.separator ? "-" : i.label),
                            edge: topBar.menu.edge, atY: topBar.menu.atY, gap: topBar.menu.gap, barHeight: topBar.barHeight },
-                switcher: { open: winSwitcher.shown, windows: winSwitcher.windows.length, previews: winSwitcher.previewsReady(),
+                switcher: { open: winSwitcher.shown, windows: winSwitcher.windows.length, previews: winSwitcher.previewsReady(), blurs: winSwitcher.blurCount(),
                             fade: Math.round(winSwitcher.fade * 100) / 100, animate: winSwitcher.animate },
                 // The wallpaper switcher: the wallpapers it shows, the one chosen, the one on screen
                 // and the one saved; the updates held back while it's open, and whether App theming
@@ -719,7 +719,7 @@ ShellRoot {
                        picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: !!barEditor.item && barEditor.item.shown, editorBuilt: !!barEditor.item, edge: popouts.edge,
                        line: topBar.lineState(), span: topBar.lineSpan(), gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState(), order: Config.barOverflowOrder, priority: barEditor.item ? barEditor.item.priorityState : { open: false, list: [], scroll: 0, scrollMax: 0, lengthMenu: false, length: "" }, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState(), band: topBar.band(),
                        // (the label off the bar saying what the pointer's over: BarLabel.qml)
-                       label: topBar.label.testState },
+                       label: topBar.label.testState() },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,
                 // (where each screen's bar takes the pointer: the click catchers leave it out)
                 barRects: Config.barRects,

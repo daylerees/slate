@@ -134,8 +134,13 @@ Column {
     property real diskTotal: 0
     property real swapUsed: 0
     property real swapTotal: 0             // (0: no swap, and no row for it)
-    property real gpu: 0                   // 0..1, the busiest card awake
-    property string gpuState: ""           // "": no card can say (no row); "busy"; "asleep"
+    property real gpu: pop.gpuLast         // 0..1, the busiest card awake
+    property string gpuState: pop.gpuSeen  // "": no card can say (no row); "busy"; "asleep"
+    // Asked every third reading (6 s: nvidia-smi is slow, and asking often kept a laptop's second
+    // card from going back to sleep), and not again in this opening once nothing has answered
+    property int gpuTick: 0
+    property bool gpuNone: false
+    property int gpuAsks: 0                // (the tests: how many times it asked)
     Process {
         id: gpuInfo
         command: [Quickshell.shellPath("scripts/gpu-busy.sh")]
@@ -145,7 +150,8 @@ Column {
                 const busy = lines.filter(l => l.startsWith("busy ")).map(l => Number(l.slice(5)) / 100).filter(n => !isNaN(n));
                 if (busy.length) { bat.gpu = Math.max(0, Math.min(1, Math.max(...busy))); bat.gpuState = "busy"; }
                 else if (lines.includes("asleep")) { bat.gpu = 0; bat.gpuState = "asleep"; }
-                else bat.gpuState = "";
+                else { bat.gpuState = ""; bat.gpuNone = true; }
+                pop.gpuSeen = bat.gpuState; pop.gpuLast = bat.gpu;
             }
         }
     }
@@ -188,7 +194,7 @@ Column {
         if (mem.MemTotal) { memTotal = mem.MemTotal; memUsed = mem.MemTotal - (mem.MemAvailable || mem.MemFree || 0); }
         swapTotal = mem.SwapTotal || 0;
         swapUsed = swapTotal ? swapTotal - (mem.SwapFree || 0) : 0;
-        if (!gpuInfo.running) gpuInfo.running = true;
+        if (!gpuNone && gpuTick++ % 3 === 0 && !gpuInfo.running) { gpuAsks++; gpuInfo.running = true; }
         // (the drive's size and use barely move: asked on opening, then every 30 s)
         if (Date.now() - lastDisk > 30000 && !diskInfo.running) { lastDisk = Date.now(); diskInfo.running = true; }
     }
@@ -196,7 +202,8 @@ Column {
     Timer {
         interval: 2000; repeat: true; triggeredOnStart: true
         running: pop.shown && pop.displayed === "battery"
-        onRunningChanged: if (running) bat.lastDisk = 0      // opened again: the drive read afresh
+        // opened again: the drive read afresh, and the graphics card asked again
+        onRunningChanged: if (running) { bat.lastDisk = 0; bat.gpuNone = false; bat.gpuTick = 0; }
         onTriggered: bat.sample()
     }
     // Shown values glide from one reading to the next (readings come every 2s)

@@ -644,6 +644,10 @@ PanelWindow {
     // icon, its name and what it says. A row does what the thing does on the bar: pressed (most
     // open their own panel, from More's place), right-clicked, scrolled over
     property var moreBar: null             // the bar whose More was pressed
+    // (the battery panel's graphics card, as last read: its row is there as the panel opens,
+    // rather than appearing a moment later and growing the panel under the pointer)
+    property string gpuSeen: ""
+    property real gpuLast: 0
 
     // ---- The panels, one file each in panels/ (the Loader above makes one when it opens) ----
     Component { id: volumePanel; VolumePanel { pop: PanelHost.pop } }

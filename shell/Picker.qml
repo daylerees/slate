@@ -65,7 +65,8 @@ PanelWindow {
         Qt.callLater(() => root.slideHighlight = true);
         search.text = "";
         typed = false;
-        if (m === "clipboard") clipFile.reload();
+        // (the history's read when it changed while hidden: onShownChanged, clipFile.stale. It
+        // was read again here at every opening too, and twice when it had changed)
         if (m === "emoji") Emoji.want();
         view().currentIndex = 0;
         view().positionViewAtBeginning();
@@ -108,7 +109,8 @@ PanelWindow {
         property bool stale: false
         onFileChanged: { if (root.shown) reload(); else stale = true; }
         onLoaded: { stale = false; if (Config.testMode) root.clipReads++; try { root.clips = JSON.parse(text()).entries || []; } catch (e) { root.clips = []; } }
-        onLoadFailed: root.clips = []
+        // (not there yet: looked for again at the next opening, as it may be made meanwhile)
+        onLoadFailed: { root.clips = []; stale = true; }
     }
     readonly property var clipResults: {
         const q = search.text.trim().toLowerCase();

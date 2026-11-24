@@ -90,9 +90,24 @@ Scope {
         onExited: code => root.helperThere = code === 0
     }
 
-    // What's turned off and back on, when it changes (and as Slate starts, when it's on)
+    // What's turned off and back on, when it changes. As Slate starts: everything, when it's on;
+    // when it's off, only if something was left off (its mark still there, after Slate stopped
+    // while it was on, or microphones waiting to come back). It used to put it all back at every
+    // start, the camera helper through pkexec included, for someone who'd never turned it on
     onOnChanged: apply()
-    Component.onCompleted: if (!Config.testMode) Qt.callLater(apply)
+    Component.onCompleted: {
+        if (Config.testMode) return;
+        if (on) Qt.callLater(apply);
+        else leftOff.running = true;
+    }
+    Process {
+        id: leftOff
+        command: ["sh", "-c", '[ -e "$0" ]', root.mark]
+        onExited: code => {
+            const mics = Config.s.privateRestore && Config.s.privateRestore.length > 0;
+            if (!root.on && (code === 0 || mics)) root.apply();
+        }
+    }
     function apply() {
         if (on) micsOff(); else micsBack();
         if (Config.testMode) return;

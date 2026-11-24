@@ -124,7 +124,9 @@ PanelWindow {
     }
 
     // (tests) Where it is on its screen, what it says, and whether it's showing
-    readonly property var testState: {
+    // (a function, worked out when a test asks: as a binding it was worked out on every frame of
+    // the label's fade, in normal use too)
+    function testState() {
         const sw = screen ? screen.width : 0, sh = screen ? screen.height : 0;
         const ox = side === "right" ? sw - bar.barHeight - width : side === "left" ? bar.barHeight : 0;
         const oy = side === "bottom" ? sh - bar.barHeight - height : side === "top" ? bar.barHeight : 0;

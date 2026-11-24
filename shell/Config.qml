@@ -1563,12 +1563,22 @@ Singleton {
             }
         }
     }
+    // Every layout there is, with its name, read once: the names here (xkbNames), and the whole
+    // list for Settings → Input (xkbList, which SettingsLookups hands on: Settings read it again
+    // with a process of its own). Not on the login screen, which hasn't the script
+    property var xkbList: []
+    property bool xkbRead: false
     Process {
-        running: true
+        running: !root.isLoginScreen
         command: [Quickshell.shellPath("scripts/xkb-layouts.py")]
         stdout: StdioCollector {
             onStreamFinished: {
-                try { const m = {}; for (const o of JSON.parse(text)) m[o.value] = o.label; root.xkbNames = m; } catch (e) {}
+                try {
+                    const list = JSON.parse(text), m = {};
+                    for (const o of list) m[o.value] = o.label;
+                    root.xkbNames = m; root.xkbList = list;
+                } catch (e) {}
+                root.xkbRead = true;
             }
         }
     }
@@ -3128,8 +3138,13 @@ Singleton {
     // still holds the old value (Slate stops sending it, it doesn't send Hyprland's own), so
     // its config is reloaded. (config set and Restore defaults: putting your keyboard layouts
     // back left the old ones in use, and the bar's layout switcher with them)
+    // Back to a default that means "not set here" ("", -1, -2: whatever Hyprland's config says),
+    // Hyprland's config is loaded again so its own value returns. Not for a default that's a real
+    // value Slate sends anyway (key repeat's 500 and 16, focus follows mouse "on"): reloading
+    // for those brought nothing back
     function hyprKeyEdited(key, was) {
-        if (hyprKeys.includes(key) && !sameValue(was, defaults[key]) && sameValue(root.s[key], defaults[key]))
+        const notSetHere = ["", -1, -2].some(n => sameValue(defaults[key], n));
+        if (hyprKeys.includes(key) && notSetHere && !sameValue(was, defaults[key]) && sameValue(root.s[key], defaults[key]))
             hyprReload.restart();
     }
     // Slate reloading Hyprland's config itself (to apply something of its own), rather than you

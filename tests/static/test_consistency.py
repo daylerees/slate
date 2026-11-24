@@ -1498,3 +1498,21 @@ class WallpaperTilesHaveNames(Case):
         tile = slate.read("shell", "settings", "WallTile.qml")
         self.assertIn("Accessible.name: tile.title || fileName", tile)
         self.assertIn("Accessible.checked: current", tile)
+
+
+class QuietAtStart(Case):
+    def test_private_mode_off_does_nothing_at_start_unless_left_off(self):
+        """With Private Mode off, it ran its helpers at every start (the camera one through
+        pkexec): now only when something was left switched off."""
+        src = slate.read("shell", "PrivateMode.qml")
+        start = src[src.index("Component.onCompleted: {"):src.index("Component.onCompleted: {") + 200]
+        self.assertIn("if (on) Qt.callLater(apply);", start)
+        self.assertIn("else leftOff.running = true;", start)
+        self.assertNotIn("Component.onCompleted: if (!Config.testMode) Qt.callLater(apply)", src)
+
+    def test_the_graphics_card_is_asked_less_often(self):
+        """The battery panel asked how busy the graphics card was every 2 s (nvidia-smi is slow,
+        and asking kept a laptop's second card awake), and kept asking when nothing answered."""
+        src = slate.read("shell", "panels", "BatteryPanel.qml")
+        self.assertIn("if (!gpuNone && gpuTick++ % 3 === 0 && !gpuInfo.running)", src)
+        self.assertIn("bat.gpuNone = true;", src)

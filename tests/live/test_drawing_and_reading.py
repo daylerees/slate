@@ -46,11 +46,25 @@ class Lookups(LiveCase):
         self.s.settle(3)
         reads = self.s.state()["lookups"]
         self.assertGreater(reads, 0)
-        for page in ("input", "datetime", "screenshots", "icons"):
+        # (Screenshots excepted: it looks for its tools each time, below)
+        for page in ("input", "datetime", "icons"):
             self.ipc("settings", "page", page)
             self.wait(lambda st: st["settings"]["section"] == page, page)
         self.s.settle(1.5)
         self.assertEqual(self.s.state()["lookups"], reads, "a page opened again ran its lookups again")
+
+    def test_screenshots_looks_for_its_tools_each_time(self):
+        """A tool it says is missing is often installed from a terminal meanwhile: looked for
+        each time the page opens (it was once a session, so it went on saying it was missing)."""
+        self.addCleanup(lambda: self.ipc("settings", "close"))
+        self.ipc("settings", "page", "screenshots")
+        self.wait(lambda st: st["settings"]["section"] == "screenshots", "Screenshots")
+        self.s.settle(1.5)
+        reads = self.s.state()["lookups"]
+        self.ipc("settings", "page", "datetime")
+        self.wait(lambda st: st["settings"]["section"] == "datetime", "another page")
+        self.ipc("settings", "page", "screenshots")
+        self.wait(lambda st: st["settings"]["section"] == "screenshots" and st["lookups"] > reads, "the tools looked for again", timeout=8)
 
 
 class Picker(LiveCase):
@@ -75,9 +89,18 @@ class Picker(LiveCase):
             self.write(n)
             self.s.settle(0.5)
         self.assertEqual(self.s.state()["picker"]["clipReads"], reads, "the history was read on a copy with the picker hidden")
-        # ...and opening it reads it once
+        # ...and opening it reads it once (it was read at every opening too, twice after a copy)
         self.ipc("picker", "clipboard")
         self.wait(lambda st: st["picker"]["clipReads"] == reads + 1, "the history read as it opened", timeout=5)
+        self.s.settle(0.8)
+        self.assertEqual(self.s.state()["picker"]["clipReads"], reads + 1, "read twice as it opened")
+        # Closed and opened again with nothing copied meanwhile: not read at all
+        self.ipc("picker", "close")
+        self.wait(lambda st: not st["picker"]["open"], "the picker to close")
+        self.ipc("picker", "clipboard")
+        self.wait(lambda st: st["picker"]["open"], "the picker again")
+        self.s.settle(0.8)
+        self.assertEqual(self.s.state()["picker"]["clipReads"], reads + 1, "read again with nothing new")
 
     def test_the_emoji_list_is_read_once_for_both(self):
         self.addCleanup(lambda: self.ipc("picker", "close"))
@@ -105,3 +128,21 @@ class OverviewBlur(LiveCase):
         st = self.wait(lambda st: st["overview"]["open"] and st["overview"]["blurs"] > 0, "the overview's blur", timeout=10)
         self.s.settle(0.5)
         self.assertEqual(self.s.state()["overview"]["blurs"], 1, "the wallpaper was blurred more than once for one monitor's cards")
+
+
+class SwitcherBlur(LiveCase):
+    def test_one_blurred_wallpaper_for_a_monitors_cards(self):
+        """The switcher's strip repeats its windows round the loop, and every card blurred the
+        wallpaper for itself: now once for each monitor of the windows shown."""
+        self.keep_setting("glass")
+        self.config("glass", "true")
+        self.wait(lambda st: st["overview"]["blurOn"], "Hyprland's blur on", timeout=15)
+        for ws in (1, 2):
+            self.s.hyprctl("dispatch", 'function() hl.exec_cmd("foot --title sblur-%d sleep 60", { workspace = "%d silent" }) end' % (ws, ws))
+        self.addCleanup(lambda: self.s.hyprctl("dispatch", "function() for _, w in ipairs(hl.get_windows()) do if (w.title or ''):match('^sblur%-') then hl.dispatch(hl.dsp.window.close({ window = 'address:' .. w.address })) end end end"))
+        self.wait(lambda st: {w["workspace"] for w in st["windows"] if w["title"].startswith("sblur-")} == {1, 2}, "the windows", timeout=15)
+        self.addCleanup(lambda: self.ipc("switcher", "cancel"))
+        self.ipc("switcher", "next")
+        self.wait(lambda st: st["switcher"]["open"] and st["switcher"]["blurs"] > 0, "the switcher's blur", timeout=10)
+        self.s.settle(0.5)
+        self.assertEqual(self.s.state()["switcher"]["blurs"], 1, "the wallpaper was blurred more than once for one monitor's cards")

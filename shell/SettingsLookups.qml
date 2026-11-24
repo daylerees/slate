@@ -13,15 +13,9 @@ Singleton {
     id: root
     property int reads: 0                        // (the tests: how many lookups have run)
 
-    property var layouts: []
-    function wantLayouts() { if (!layoutsProc.done && !layoutsProc.running) layoutsProc.running = true; }
-    Process {
-        id: layoutsProc
-        property bool done: false
-        command: [Quickshell.shellPath("scripts/xkb-layouts.py")]
-        onStarted: root.reads++
-        stdout: StdioCollector { onStreamFinished: { try { root.layouts = JSON.parse(text); layoutsProc.done = true; } catch (e) {} } }
-    }
+    // (the keyboard layouts: Config reads them once as Slate starts, for the names it shows)
+    readonly property var layouts: Config.xkbList
+    function wantLayouts() {}
 
     property var zones: []
     function wantZones() { if (!zonesProc.done && !zonesProc.running) zonesProc.running = true; }
@@ -39,9 +33,12 @@ Singleton {
     // Pointer and icon themes (scripts/icon-themes.py): kind "cursors" or "icons"
     property var cursorThemes: []
     property var iconThemes: []
+    // (read again when the page opens if the list is over a minute old: a theme installed with
+    // the package manager meanwhile shows up)
     function wantThemes(kind) {
         const p = kind === "cursors" ? cursorsProc : iconsProc;
-        if (!p.done && !p.running) p.running = true;
+        if (p.running) return;
+        if (!p.done || Date.now() - p.readAt > 60000) p.running = true;
     }
     function refreshThemes(kind) {
         const p = kind === "cursors" ? cursorsProc : iconsProc;
@@ -50,22 +47,27 @@ Singleton {
     Process {
         id: cursorsProc
         property bool done: false
+        property real readAt: 0
         command: [Quickshell.shellPath("scripts/icon-themes.py"), "--cursors"]
         onStarted: root.reads++
-        stdout: StdioCollector { onStreamFinished: { try { root.cursorThemes = JSON.parse(text); cursorsProc.done = true; } catch (e) {} } }
+        stdout: StdioCollector { onStreamFinished: { try { root.cursorThemes = JSON.parse(text); cursorsProc.done = true; cursorsProc.readAt = Date.now(); } catch (e) {} } }
     }
     Process {
         id: iconsProc
         property bool done: false
+        property real readAt: 0
         command: [Quickshell.shellPath("scripts/icon-themes.py"), "--icons"]
         onStarted: root.reads++
-        stdout: StdioCollector { onStreamFinished: { try { root.iconThemes = JSON.parse(text); iconsProc.done = true; } catch (e) {} } }
+        stdout: StdioCollector { onStreamFinished: { try { root.iconThemes = JSON.parse(text); iconsProc.done = true; iconsProc.readAt = Date.now(); } catch (e) {} } }
     }
 
-    // The screenshot tools (Settings → Screenshots says what to install when one's missing)
-    property bool hasSwash: false
+    // The screenshot tools (Settings → Screenshots says what to install when one's missing):
+    // looked for every time the page opens, as one's often installed from a terminal meanwhile
+    // (a single cheap check). Taken to be there until it answers, so the page doesn't say one
+    // is missing for a moment when it isn't
+    property bool hasSwash: true
     property bool hasRecorder: true
-    function wantTools() { if (!toolsProc.done && !toolsProc.running) toolsProc.running = true; }
+    function wantTools() { if (!toolsProc.running) toolsProc.running = true; }
     Process {
         id: toolsProc
         property bool done: false

@@ -727,6 +727,16 @@ SCENES["overview-windows"] = {
 # cards (one blur for all of a monitor's cards)
 def _clear_window(title, text):
     return ("&foot", "-o", "colors-dark.alpha=0.55", "--title", title, "sh", "-c", "printf '\\033[?25l%s' \"$0\"; exec sleep infinity", text)
+# The switcher the same way: the blurred wallpaper behind each see-through window's card
+SCENES["switcher-blur"] = {
+    "settings": {"glass": "true"},
+    "do": (_to_workspace(1)
+           + [_clear_window(*_STILL[0]), _on(_STILL[0][0], 1)]
+           + _to_workspace(2) + [_clear_window(*_STILL[2]), _on(_STILL[2][0], 2)]
+           + _to_workspace(1) + [lambda st: st["bars"][0]["dots"]["count"] == 3, ("switcher", "next")]),
+    "wait": lambda st: st["switcher"]["open"] and st["switcher"]["windows"] == 2 and st["switcher"]["previews"] == 2,
+    "settle": 2, "undo": [("switcher", "cancel"), lambda st: not any(w["title"] in (_STILL[0][0], _STILL[2][0]) for w in st["windows"])],
+}
 SCENES["overview-blur"] = {
     "settings": {"glass": "true"},
     "do": (_to_workspace(1)

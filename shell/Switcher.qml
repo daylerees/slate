@@ -6,6 +6,7 @@
 //   slate ipc call switcher next | prev | commit | cancel
 
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -184,13 +185,70 @@ PanelWindow {
     function shotFor(win) { return Carousel.shotFor(shotRepeater, "win", win); }
     // How many of the live captures have a picture yet (the test IPC's state)
     function previewsReady() { return Carousel.previewsReady(shotRepeater); }
-    // The wallpaper behind see-through windows' previews (WallBlur), decoded ahead of time at
-    // WallBlur's size so it's in the image cache as the switcher opens
+    // The wallpaper behind see-through windows' previews (blurMons, below), decoded ahead of time
+    // at their size so it's in the image cache as the switcher opens
     Image {
         visible: false
         source: sw.livePreviews && Config.hyprBlur.enabled && Config.wallpaper ? "file://" + Config.wallpaper : ""
-        sourceSize: Qt.size(1600, 1000)     // (WallBlur's decodeSize)
+        sourceSize: Qt.size(1600, 1000)     // (the blur's own size: one decode for both)
         asynchronous: true
+    }
+    // The wallpaper blurred as Hyprland blurs it behind see-through windows, once for each
+    // monitor of the windows shown, at blurScale of the screen: each card shows its window's part
+    // of it (blurFor). Every card blurred the wallpaper for itself, the strip's repeats included.
+    // (The blur's strength comes out the same: blurred at blurScale and scaled to the card is
+    // blurred at the card's own scale)
+    readonly property real blurScale: 0.25
+    function monitorOf(t) {
+        const o = t ? t.lastIpcObject : null;
+        return o ? Hyprland.monitors.values.find(x => x.id === o.monitor) ?? null : null;
+    }
+    // (a monitor's size in the layout's pixels; turned on its side, its width and height swap)
+    function monitorSize(m) {
+        const turned = ((m.lastIpcObject?.transform || 0) % 2) === 1, sc = m.scale || 1;
+        return turned ? Qt.size(m.height / sc, m.width / sc) : Qt.size(m.width / sc, m.height / sc);
+    }
+    readonly property var blurMons: {
+        const out = {};
+        if (!(sw.livePreviews && sw.shown && Config.hyprBlur.enabled && Config.wallpaper)) return out;
+        for (const t of windows) { const m = monitorOf(t); if (m) out[m.name] = m; }
+        return out;
+    }
+    function blurFor(m) { return m ? Carousel.shotFor(blurRepeater, "key", m.name) : null; }
+    function blurCount() { return blurRepeater.count; }       // (the test IPC's state)
+    Item {
+        x: -10000
+        Repeater {
+            id: blurRepeater
+            model: ScriptModel { values: Object.keys(sw.blurMons) }
+            delegate: Item {
+                required property string modelData
+                readonly property string key: modelData
+                readonly property var mon: sw.blurMons[modelData] ?? null
+                readonly property size full: mon ? sw.monitorSize(mon) : Qt.size(1, 1)
+                width: full.width * sw.blurScale
+                height: full.height * sw.blurScale
+                Image {
+                    id: blurPicture
+                    anchors.fill: parent
+                    visible: false
+                    source: Config.wallpaper ? "file://" + Config.wallpaper : ""
+                    fillMode: Image.PreserveAspectCrop
+                    sourceSize: Qt.size(1600, 1000)       // (the size it's decoded at below too: shared)
+                    asynchronous: true
+                }
+                MultiEffect {
+                    anchors.fill: parent
+                    visible: blurPicture.status === Image.Ready
+                    source: blurPicture.status === Image.Ready ? blurPicture : null
+                    blurEnabled: true
+                    blur: 1
+                    blurMax: Math.max(4, Math.min(64, Math.round(Config.hyprBlur.size * Math.pow(2, Config.hyprBlur.passes) * sw.blurScale)))
+                    contrast: Config.hyprBlur.contrast - 1
+                    saturation: Config.hyprBlur.vibrancy
+                }
+            }
+        }
     }
     Item {
         x: -10000
@@ -352,22 +410,32 @@ PanelWindow {
                     height: sw.previewH
                     // Behind a see-through window: the wallpaper blurred as on screen, from
                     // where the window is on its screen
-                    WallBlur {
+                    // (its window's part of the monitor's blurred wallpaper: sw.blurFor. Built as the
+                    // switcher opens and shown with the window's first frame, so it's ready by then)
+                    Item {
+                        id: cardBlur
                         readonly property var o: card.modelData.lastIpcObject
-                        readonly property var m: o ? Hyprland.monitors.values.find(x => x.id === o.monitor) ?? null : null
-                        // (built as the switcher opens and shown with the window's first frame, so
-                        // it's ready by then: built only then, it flicked in just after)
-                        visible: Config.hyprBlur.enabled && sw.livePreviews && !!o && !!o.at && !!m
+                        readonly property var m: sw.monitorOf(card.modelData)
+                        readonly property Item blur: visible ? sw.blurFor(m) : null
+                        visible: Config.hyprBlur.enabled && sw.livePreviews && !!o && !!o.at && !!o.size && !!m
                         opacity: shot.hasContent ? 1 : 0
                         anchors.fill: shot
-                        // The window's own place whenever it's known (a 1×1 stand-in only when it isn't)
-                        win: o && o.at && o.size && m ? Qt.rect(o.at[0] - m.x, o.at[1] - m.y, o.size[0], o.size[1]) : Qt.rect(0, 0, 1, 1)
-                        // (a rotated monitor, turned on its side, swaps its width and height)
-                        readonly property bool turned: !!m && ((m.lastIpcObject?.transform || 0) % 2) === 1
-                        screen: m ? (turned ? Qt.size(m.height / (m.scale || 1), m.width / (m.scale || 1))
-                                            : Qt.size(m.width / (m.scale || 1), m.height / (m.scale || 1))) : Qt.size(1, 1)
-                        pixelScale: o && o.size ? shot.width / Math.max(1, o.size[0]) : 0.25
-                        radius: Config.corner(8)
+                        layer.enabled: visible
+                        layer.effect: MultiEffect { maskEnabled: true; maskSource: cardBlurMask }
+                        ShaderEffectSource {
+                            anchors.fill: parent
+                            visible: !!sourceItem
+                            sourceItem: cardBlur.blur
+                            sourceRect: cardBlur.visible ? Qt.rect((cardBlur.o.at[0] - cardBlur.m.x) * sw.blurScale, (cardBlur.o.at[1] - cardBlur.m.y) * sw.blurScale,
+                                                                   cardBlur.o.size[0] * sw.blurScale, cardBlur.o.size[1] * sw.blurScale) : Qt.rect(0, 0, 1, 1)
+                        }
+                        Item {
+                            id: cardBlurMask
+                            anchors.fill: parent
+                            visible: false
+                            layer.enabled: true
+                            Rectangle { anchors.fill: parent; radius: Config.corner(8) }
+                        }
                     }
                     // The window's live capture (shared with its other cards: see shotFor), copied
                     // at its own size
