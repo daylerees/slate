@@ -34,6 +34,8 @@ import hashlib, json, os, re, shutil, subprocess, sys, tarfile, tempfile, time, 
 REPO = "daylerees/slate"
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
 HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))      # Slate's code, this one
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+from slate_common import runtime_dir  # noqa: E402
 DEST = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "slate")  # your files
 # Yours, never replaced by an update: copied across to the new version as they are (the
 # same list as KEEP in install.sh, which must match)
@@ -369,7 +371,9 @@ def install():
         return
     st.update(status="downloading", error="", log=LOG, got=0, size=0)
     save(st)
-    tmp = tempfile.mkdtemp(prefix="slate-update-")
+    # (in the runtime folder, yours alone, where the new version is unpacked and its installer
+    # run: never /tmp)
+    tmp = tempfile.mkdtemp(prefix="slate-update-", dir=runtime_dir())
     try:
         rel = fetch_latest()
         # Only the tag is taken from the reply for downloading, and only once it's a proper

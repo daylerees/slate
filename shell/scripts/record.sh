@@ -98,7 +98,7 @@ print("yes" if d.get("recordMicrophone") else "")
         command -v "$tool" >/dev/null 2>&1 || couldnt "Slate couldn't record the screen" \
             "It needs $tool, which isn't installed. Install the $package, then try again."
     done
-    said=$(mktemp) || couldnt "Slate couldn't record the screen" \
+    said=$(mktemp "$RUNTIME/slate-record-said.XXXXXX") || couldnt "Slate couldn't record the screen" \
         "There was nowhere to keep a note while recording. Check there's some free space, then try again."
     modules=""
     trap 'rm -f "$said"; unmix' EXIT

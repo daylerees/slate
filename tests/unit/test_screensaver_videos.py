@@ -238,3 +238,56 @@ class Command(Case):
         self.assertEqual(sorted(os.listdir(d)), sorted([".slate-scenery.json", "CREDITS.txt"] + [c["file"] for c in m.CLIPS]))
         with open(os.path.join(d, m.CLIPS[0]["file"])) as f:
             self.assertEqual(f.read(), "video")
+
+
+class FetchCap(Case):
+    """fetch() itself, with a fake server: a clip that's far bigger than any of them (a wrong
+    reply) is stopped, and leaves nothing behind, rather than filling the disk."""
+    scratch = True
+
+    @classmethod
+    def setUpClass(cls):
+        cls.m = load()
+
+    def serve(self, body, length=None):
+        class Reply(io.BytesIO):
+            def __init__(self):
+                super().__init__(body)
+                self.headers = {"Content-Length": str(len(body) if length is None else length)}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+        self.addCleanup(setattr, urllib.request, "urlopen", urllib.request.urlopen)
+        urllib.request.urlopen = lambda req, timeout=None: Reply()
+
+    def test_a_clip_arrives_whole_and_reports_progress(self):
+        d = self.h("videos")
+        os.makedirs(d, exist_ok=True)
+        self.serve(b"x" * 300000)
+        seen = []
+        self.m.fetch("https://upload.wikimedia.org/a.webm", os.path.join(d, "a.webm"), seen.append)
+        self.assertEqual(os.path.getsize(os.path.join(d, "a.webm")), 300000)
+        self.assertEqual(os.listdir(d), ["a.webm"])
+        self.assertAlmostEqual(seen[-1], 1.0)
+
+    def test_too_big_by_its_own_word(self):
+        d = self.h("videos")
+        os.makedirs(d, exist_ok=True)
+        self.serve(b"x" * 10, length=self.m.MAX_CLIP_BYTES + 1)
+        with self.assertRaises(self.m.TooBig):
+            self.m.fetch("https://upload.wikimedia.org/a.webm", os.path.join(d, "a.webm"), lambda f: None)
+        self.assertEqual(os.listdir(d), [])
+
+    def test_too_big_as_it_arrives(self):
+        """A reply that doesn't say how big it is, and keeps coming."""
+        d = self.h("videos")
+        os.makedirs(d, exist_ok=True)
+        self.addCleanup(setattr, self.m, "MAX_CLIP_BYTES", self.m.MAX_CLIP_BYTES)
+        self.m.MAX_CLIP_BYTES = 200000
+        self.serve(b"x" * 500000, length=0)
+        with self.assertRaises(self.m.TooBig):
+            self.m.fetch("https://upload.wikimedia.org/a.webm", os.path.join(d, "a.webm"), lambda f: None)
+        self.assertEqual(os.listdir(d), [])

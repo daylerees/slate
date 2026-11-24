@@ -10,9 +10,12 @@ import stat
 import slate
 from slate import Case, run
 
-SHELL_SCRIPTS = (("shell", "bin", "slate"), ("shell", "bin", "slate-build-hyprbars"), ("shell", "scripts", "screenshot.sh"))
-PYTHON_SCRIPTS = (("shell", "scripts", "spaces.py"), ("shell", "scripts", "voice.py"), ("shell", "scripts", "launcher-entries.py"),
-                  ("shell", "scripts", "software.py"))
+SHELL_SCRIPTS = (("shell", "bin", "slate"), ("shell", "bin", "slate-build-hyprbars"), ("shell", "scripts", "screenshot.sh"),
+                 ("shell", "scripts", "record.sh"))
+# (the rule once, in slate_common.py; the scripts that need the folder import it from there)
+PYTHON_SCRIPTS = (("shell", "scripts", "slate_common.py"),)
+ROOT_HELPERS = ("slate-helpers-install", "slate-session-install", "slate-update-install")
+PYTHON_USERS = ("spaces.py", "voice.py", "launcher-entries.py", "software.py", "update.py")
 QML = ("Config.qml", "UserFiles.qml", "SettingsWindow.qml", "Spaces.qml", "PrivateMode.qml", "shell.qml")
 
 
@@ -57,6 +60,34 @@ class RuntimeDir(Case):
         rules = {"/".join(p): python_rule(p) for p in PYTHON_SCRIPTS}
         self.assertNotIn(None, rules.values(), rules)
         self.assertEqual(len(set(rules.values())), 1, "the Python scripts work the folder out differently")
+
+    def test_temporary_files_go_in_the_runtime_folder(self):
+        """A bare mktemp is /tmp (often on disk: a crash could leave a screenshot behind). Every
+        shell script that makes a temporary file makes it in $RUNTIME."""
+        import glob
+        for path in glob.glob(slate.path("shell", "scripts", "*.sh")) + glob.glob(slate.path("shell", "bin", "*")):
+            # (the helpers that run as root: root has no runtime folder, and mktemp -d there makes a
+            # 0700 folder only root can open)
+            if not os.path.isfile(path) or os.path.basename(path) in ROOT_HELPERS:
+                continue
+            with open(path, errors="replace") as f:
+                text = f.read()
+            with self.subTest(os.path.basename(path)):
+                self.assertNotRegex(text, r"\$\(mktemp(\s+-d)?\s*\)", "a temporary file in /tmp")
+
+    def test_python_scripts_share_the_one_rule(self):
+        """runtime_dir() was copied into four scripts: they import slate_common's now, and no
+        Python script keeps one of its own."""
+        import glob
+        for path in glob.glob(slate.path("shell", "scripts", "*.py")):
+            name = os.path.basename(path)
+            if name == "slate_common.py":
+                continue
+            with self.subTest(name):
+                self.assertNotRegex(open(path).read(), r"(?m)^def runtime_dir\(", "a runtime_dir() of its own")
+        for name in PYTHON_USERS:
+            with self.subTest(name):
+                self.assertRegex(slate.read("shell", "scripts", name), r"from slate_common import [^\n]*\bruntime_dir\b")
 
     def test_xdg_runtime_dir_when_there_is_one(self):
         for parts in SHELL_SCRIPTS:

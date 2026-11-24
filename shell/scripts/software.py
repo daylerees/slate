@@ -51,6 +51,7 @@ import xml.etree.ElementTree as ET
 HERE = os.path.dirname(os.path.abspath(__file__))
 SLATE = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
+from slate_common import runtime_dir  # noqa: E402
 
 REMOTE = "flathub"
 API = "https://flathub.org/api/v2/collection/%s?page=1&per_page=%d"
@@ -550,18 +551,6 @@ def update_system():
 # process of its own (so a reload or restart of Slate can't cut it off), which keeps how it's going
 # in a file Slate follows: {token, what, id, pid, progress, done, result}. Slate picks up a job
 # still running when it starts, from the same file.
-def runtime_dir():
-    """Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only
-    you can open, never /tmp (the rule is Config.qml's runtimeDir)."""
-    d = os.environ.get("XDG_RUNTIME_DIR")
-    if d:
-        return d
-    d = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate", "run")
-    os.makedirs(d, mode=0o700, exist_ok=True)
-    os.chmod(d, 0o700)
-    return d
-
-
 def job_file():
     return os.path.join(runtime_dir(), "slate", "software-job.json")
 

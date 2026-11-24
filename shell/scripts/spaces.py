@@ -47,22 +47,10 @@ import time
 import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from slate_common import replace_private_json  # noqa: E402
+from slate_common import replace_private_json, runtime_dir  # noqa: E402
 
 DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "slate")
 STORE = os.path.join(DATA, "spaces.json")
-
-
-def runtime_dir():
-    """Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only
-    you can open, never /tmp (the rule is Config.qml's runtimeDir)."""
-    d = os.environ.get("XDG_RUNTIME_DIR")
-    if d:
-        return d
-    d = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate", "run")
-    os.makedirs(d, mode=0o700, exist_ok=True)
-    os.chmod(d, 0o700)
-    return d
 
 
 RUNTIME = os.path.join(runtime_dir(), "slate")

@@ -1,5 +1,5 @@
 """Small helpers that several of Slate's scripts need, kept in one place so they can't drift
-apart: writing a private file, reading a block of the assistant's prompt file, and
+apart: Slate's runtime folder, writing a private file, reading a block of the assistant's prompt file, and
 downloading a file with a size cap and a SHA-256.
 
 Only scripts that run as you import this. Anything that runs as root (the helpers in
@@ -9,6 +9,18 @@ import json
 import os
 import re
 import urllib.request
+
+
+def runtime_dir():
+    """Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only
+    you can open, never /tmp (the rule is Config.qml's runtimeDir)."""
+    d = os.environ.get("XDG_RUNTIME_DIR")
+    if d:
+        return d
+    d = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate", "run")
+    os.makedirs(d, mode=0o700, exist_ok=True)
+    os.chmod(d, 0o700)
+    return d
 
 
 def write_private(path, text):

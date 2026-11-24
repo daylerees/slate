@@ -208,7 +208,7 @@ def load_updater():
 def release_archive(tag, marker, who):
     """A release as tools/release-assets.sh packs it (slate-<tag>/ with install.sh and shell/),
     whose install.sh only notes that it ran, how, and which archive it came from."""
-    script = ('#!/bin/bash\necho "$1 %s" >> "%s"\n' % (who, marker)).encode()
+    script = ('#!/bin/bash\necho "$1 %s" >> "%s"\ndirname "$(readlink -f "$0")" > "%s.where"\n' % (who, marker, marker)).encode()
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as t:
         for name in ("slate-%s" % tag, "slate-%s/shell" % tag):
@@ -390,6 +390,18 @@ class Install(Releases):
     def test_unreadable_checksum_refused(self):
         self.release(self.TAG, self.good, checksum="<html>Not here</html>\n")
         self.refused("Slate couldn't check this download")
+
+    def test_unpacked_and_run_in_the_runtime_folder(self):
+        """The new version is unpacked, and its installer run, in the runtime folder (yours
+        alone, gone at log out), never /tmp."""
+        runtime = os.path.join(self.h.dir, "run")
+        os.makedirs(runtime, mode=0o700)
+        with mock.patch.dict(os.environ, {"XDG_RUNTIME_DIR": runtime}):
+            self.assertEqual(self.install()["status"], "done")
+        with open(self.marker + ".where") as f:
+            where = f.read().strip()
+        self.assertTrue(where.startswith(os.path.realpath(runtime) + os.sep), where)
+        self.assertEqual(os.listdir(runtime), [], "left behind in the runtime folder")
 
     def test_unsigned_refused(self):
         """The checksum shows the download arrived whole, not who made it: anyone who could

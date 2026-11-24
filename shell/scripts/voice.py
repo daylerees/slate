@@ -38,7 +38,7 @@ import time
 import urllib.error
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from slate_common import download_to  # noqa: E402
+from slate_common import download_to, runtime_dir  # noqa: E402
 
 MODEL = {
     "name": "ggml-base.bin",
@@ -74,18 +74,6 @@ def model_there():
         return os.path.getsize(model_path()) == MODEL["size"]
     except OSError:
         return False
-
-
-def runtime_dir():
-    """Slate's runtime folder: $XDG_RUNTIME_DIR, or without one a folder of your own that only
-    you can open, never /tmp (the rule is Config.qml's runtimeDir)."""
-    d = os.environ.get("XDG_RUNTIME_DIR")
-    if d:
-        return d
-    d = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "slate", "run")
-    os.makedirs(d, mode=0o700, exist_ok=True)
-    os.chmod(d, 0o700)
-    return d
 
 
 def private_mode():

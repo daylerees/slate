@@ -24,6 +24,9 @@ import subprocess
 import sys
 import urllib.request
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from slate_common import download_to  # noqa: E402
+
 CLIPS = [
     {
         "file": "earth-from-the-iss.webm",
@@ -148,24 +151,40 @@ CLIPS = [
 USER_AGENT = "Slate-desktop/1.0 (screensaver scenery downloader; https://github.com/daylerees/slate)"
 
 
+# The most one clip may weigh: the largest Commons transcode chosen here is about 300 MB, so a
+# reply far bigger than that is something else, and isn't allowed to fill the disk
+MAX_CLIP_BYTES = 600 * 1024 * 1024
+
+
+class TooBig(Exception):
+    pass
+
+
 def fetch(url, dest, report):
-    """Download url to dest; report(fraction of this file) as it goes (about 100 times)."""
+    """Download url to dest; report(fraction of this file) as it goes (about 100 times). Raises
+    TooBig, leaving nothing behind, past MAX_CLIP_BYTES."""
     tmp = dest + ".part"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=60) as r, open(tmp, "wb") as f:
-        total = int(r.headers.get("Content-Length") or 0)
-        done, last = 0, -1
-        while True:
-            chunk = r.read(1 << 16)
-            if not chunk:
-                break
-            f.write(chunk)
-            done += len(chunk)
-            if total:
-                pct = done * 100 // total
-                if pct != last:
-                    last = pct
-                    report(done / total)
+    total, last = [0], [-1]
+
+    def opened(r):
+        total[0] = int(r.headers.get("Content-Length") or 0)
+        if total[0] > MAX_CLIP_BYTES:
+            raise TooBig(url)
+
+    def chunk(done):
+        if total[0]:
+            pct = done * 100 // total[0]
+            if pct != last[0]:
+                last[0] = pct
+                report(done / total[0])
+    try:
+        _, _, over = download_to(url, tmp, MAX_CLIP_BYTES, USER_AGENT, 60, on_open=opened, on_chunk=chunk)
+        if over:
+            raise TooBig(url)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
     os.replace(tmp, dest)            # only a finished download gets its real name
 
 

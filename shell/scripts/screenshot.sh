@@ -51,9 +51,10 @@ for tool in $needed; do
     command -v "$tool" >/dev/null 2>&1 || couldnt "Slate couldn't take the screenshot" \
         "It needs $tool, which isn't installed. Install the \"$tool\" package, then try again."
 done
-# The picture while it's being taken, and what grim or slurp said if they stopped (plain
-# mktemp: a suffix is GNU's alone, and nothing needs one)
-tmp=$(mktemp) && said=$(mktemp) || couldnt "Slate couldn't take the screenshot" \
+# The picture while it's being taken, and what grim or slurp said if they stopped: in the
+# runtime folder, which is yours alone and goes at log out, never /tmp, where a crash could
+# leave a screenshot on disk (mktemp with no suffix: a suffix is GNU's alone)
+tmp=$(mktemp "$RUNTIME/slate-shot.XXXXXX") && said=$(mktemp "$RUNTIME/slate-shot-said.XXXXXX") || couldnt "Slate couldn't take the screenshot" \
     "There was nowhere to keep the picture while taking it. Check there's some free space, then try again."
 # (and the screen let go, if it was frozen: freeze_screen)
 freeze=""
