@@ -15,7 +15,7 @@ Column {
     PageTitle { text: "Import & Export" }
     IntroText {
         text: "Keep your Slate settings in one file, or take them to another computer: every setting, your saved "
-            + "Spaces, your own Hyprland tweaks and QML, and your wallpaper."
+            + "Spaces, the dock's pinned apps, your own Hyprland tweaks and QML, and your wallpaper."
         leftPadding: 0; bottomPadding: 8
     }
 
@@ -33,9 +33,13 @@ Column {
                 id: exportRun
                 command: [transferPane.script, "export"]
                 stdout: StdioCollector { onStreamFinished: exportRow.saved = text.trim() }
+                // (why it couldn't, in Slate's words: too much in your own folders, say)
+                stderr: StdioCollector { id: exportWhy }
                 onExited: code => {
+                    const why = exportWhy.text.trim().split("\n").pop();
                     exportRow.status = code === 0 && exportRow.saved !== ""
                         ? "Saved to " + exportRow.saved.replace(transferPane.home, "~")
+                        : why.startsWith("Slate couldn't") ? why
                         : "Slate couldn't save your settings. Check there's some free space, then try again";
                     files.look();
                 }
@@ -65,11 +69,9 @@ Column {
         stdout: StdioCollector { onStreamFinished: { try { files.list = JSON.parse(text); } catch (e) { files.list = []; } files.looked = true;
                                                      transferPane.win.transferFiles = files.list.map(f => f.name + (f.ok ? "" : " (unreadable)")); } }
     }
-    // Looked at again whenever you come back to this page (a file downloaded meanwhile)
-    Connections { target: transferPane.win; function onVisibleChanged() { if (transferPane.win.visible) files.look(); } }
     function dateOf(s) { return s ? Config.dateText(new Date(s * 1000), "full") : ""; }
     function whatsIn(has) {
-        const words = { settings: "settings", spaces: "Spaces", hypr: "Hyprland tweaks", user: "your QML", wallpaper: "wallpaper" };
+        const words = { settings: "settings", spaces: "Spaces", dock: "dock pins", hypr: "Hyprland tweaks", user: "your QML", wallpaper: "wallpaper" };
         return Config.listText((has || []).map(h => words[h]).filter(w => !!w));
     }
     Group {
@@ -92,7 +94,7 @@ Column {
                 Button {
                     icon: 0xEA96
                     label: "Import…"
-                    enabled: fileRow.modelData.ok && !importRun.running
+                    enabled: fileRow.modelData.ok && !transferPane.importing
                     onClicked: transferPane.askImport(fileRow.modelData)
                 }
             }
@@ -101,16 +103,23 @@ Column {
     function askImport(f) {
         win.askQuestion({
             title: "Import these settings?",
-            body: "Your settings, saved Spaces, own Hyprland tweaks and QML, and wallpaper are replaced with the ones in "
-                + "“" + f.name + "”. Slate restarts to use them; your apps and windows stay open. Yours now are kept, "
-                + "and you can put them back here.\n\nYour own files can hold code that runs as part of your desktop, so "
-                + "only import a file you made or trust.",
+            body: "Your settings, saved Spaces, dock pins, own Hyprland tweaks and QML, and wallpaper are replaced with the "
+                + "ones in “" + f.name + "”. Slate restarts to use them; your apps and windows stay open. Yours now "
+                + "are kept, and you can put them back here.\n\nA settings file can change which apps open things, how "
+                + "your screen locks and what your keys do, and your own files can hold code that runs as part of your "
+                + "desktop. Only import a file you made or trust.",
             button: "Import",
-            run: () => { importRun.command = ["setsid", "-f", transferPane.script, "import", f.path]; importRun.running = true; }
+            run: () => {
+                transferPane.importing = true;
+                // (in its own session: it restarts Slate, Settings with it, and says how it went)
+                Quickshell.execDetached(["setsid", "-f", transferPane.script, "import", f.path]);
+            }
         });
     }
-    // (in its own session: it restarts Slate, Settings with it, and says how it went)
-    Process { id: importRun }
+    // An import on its way: the buttons rest until Slate restarts (it says how it went then, or
+    // straight away when the file's refused, and Settings opens afresh either way)
+    property bool importing: false
+    Timer { running: transferPane.importing; interval: 8000; onTriggered: transferPane.importing = false }
 
     // ---- Undo --------------------------------------------------------------------------------
     QtObject { id: lastImport; property var info: ({}) }
@@ -119,13 +128,15 @@ Column {
         command: [transferPane.script, "last"]
         stdout: StdioCollector { onStreamFinished: { try { lastImport.info = JSON.parse(text); } catch (e) { lastImport.info = {}; } } }
     }
-    GroupLabel { visible: !!lastImport.info.backup; text: "Before your last import" }
+    GroupLabel { text: "Undo" }
     Group {
-        visible: !!lastImport.info.backup
         SettingRow {
             label: "Put back your settings from before"
-            detail: "Everything the import replaced on " + transferPane.dateOf(lastImport.info.when) + " comes back, as it was"
+            detail: lastImport.info.backup
+                ? "Everything your last import replaced, on " + transferPane.dateOf(lastImport.info.when) + ", comes back as it was"
+                : "Nothing to put back. After an import, the settings you had before can be put back from here"
             Button {
+                visible: !!lastImport.info.backup
                 label: "Undo import…"
                 onClicked: win.askQuestion({
                     title: "Put back your settings from before?",
@@ -137,5 +148,5 @@ Column {
             }
         }
     }
-    Footnote { text: "Copies of what an import replaces are kept in ~/.local/share/slate/backups. Workspace names last only until you log out, so they aren't saved." }
+    Footnote { text: "Copies of what an import replaces are kept in ~/.local/share/slate/backups. Workspace names last only until you log out, and hidden files in your own folders (like a .git folder) stay out, so they aren't saved." }
 }

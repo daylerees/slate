@@ -36,13 +36,14 @@
       <h2>What's in the file</h2>
       <ul>
         <li>Every setting from the Settings app.</li>
-        <li>Your saved Spaces.</li>
+        <li>Your saved Spaces, and the apps pinned to your dock.</li>
         <li>Your own files: your Hyprland tweaks (<code>~/.config/slate/hypr</code>) and your own QML
           (<code>user/</code>).</li>
         <li>Your wallpaper picture, so the other computer looks the same. If it's one of Slate's own wallpapers, it's
           named rather than copied, as every Slate has it.</li>
       </ul>
-      <p>Workspace names last only until you log out, so they aren't saved.</p>
+      <p>Workspace names last only until you log out, so they aren't saved. Hidden files in your own folders (a
+        <code>.git</code> folder, an editor's swap files) are left out too.</p>
 
       <h2>Export</h2>
       <p>Choose <strong>Export</strong> and Slate saves a file called <em>Slate settings</em> with today's date to your
@@ -54,13 +55,15 @@
         in your home folder, and it shows up under Import. Choose <strong>Import…</strong> beside it, and Slate asks
         before anything changes.</p>
       <p>Importing replaces your settings, saved Spaces, own files and wallpaper with the ones in the file, then Slate
-        restarts to use them. Your apps and windows stay open. Your own files can hold code that runs as part of your
-        desktop, so only import a file you made or trust. Slate only reads what belongs in a settings file, and
-        leaves a file with anything else in it alone.</p>
+        restarts to use them. Your apps and windows stay open. A settings file can change which apps open things, how
+        your screen locks and what your keys do, and your own files can hold code that runs as part of your desktop,
+        so only import a file you made or trust. Slate only reads what belongs in a settings file, and leaves a file
+        with anything else in it alone, saying why.</p>
+      <p>If an import can't finish, Slate puts back everything it had changed, and a notification says so.</p>
 
       <h2>Undoing an import</h2>
-      <p>What an import replaces is kept first. Until the next import, <strong>Undo import…</strong> on the same page
-        puts it all back as it was. The copies stay in <code>~/.local/share/slate/backups</code> either way.</p>
+      <p>What an import replaces is kept first. <strong>Undo import…</strong> on the same page puts it all back as it
+        was, your own folders included (one that wasn't there before goes again). It undoes the latest import, once. The copies stay in <code>~/.local/share/slate/backups</code> either way.</p>
     </article>
     <nav class="docs-pager" id="docs-pager"></nav>
   </main>

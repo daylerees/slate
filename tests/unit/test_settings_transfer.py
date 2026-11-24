@@ -154,3 +154,119 @@ class Transfer(Case):
         self.assertIn("wallpaper", paths[mine]["has"])
         self.assertIn(broken, paths)
         self.assertFalse(paths[broken]["ok"])
+
+
+class TransferSafety(Transfer):
+    """What the review found (SLT-328): an import that fails halfway puts everything back and
+    says so; odd names are refused before anything changes; undo puts back exactly what was there
+    and only once; export writes only what import accepts."""
+
+    def mod(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("settings_transfer", SCRIPT)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+
+    def test_a_failure_halfway_puts_everything_back(self):
+        path = self.export()
+        self.put(os.path.join(self.user, "settings.json"), json.dumps({"accent": "#0088ff"}))
+        self.put(os.path.join(self.user, "hypr", "binds.lua"), "-- theirs\n")
+        self.env["SLATE_TRANSFER_TEST_FAIL"] = "hypr"
+        self.go("import", path, code=1)
+        self.assertEqual(json.loads(self.read(os.path.join(self.user, "settings.json")))["accent"], "#0088ff")
+        self.assertEqual(self.read(os.path.join(self.user, "hypr", "binds.lua")), "-- theirs\n")
+        self.assertEqual(self.go("last"), "{}", "a failed import offered as undoable")
+        self.assertFalse([n for n in os.listdir(self.user) if n.startswith(".import-")], "the staging folder was left")
+
+    def test_a_bare_folder_name_is_refused_before_anything_changes(self):
+        before = self.read(os.path.join(self.user, "settings.json"))
+        for members in ([("hypr", b"x", None)], [("user", b"x", None)], [("hypr/a", b"x", None), ("hypr/a/b", b"y", None)]):
+            with self.subTest(members[0][0]):
+                path = self.made(members)
+                self.go("import", path, code=1)
+                self.assertEqual(self.read(os.path.join(self.user, "settings.json")), before)
+                self.assertTrue(os.path.isdir(os.path.join(self.user, "hypr")))
+
+    def test_undo_removes_own_folders_that_werent_there(self):
+        path = self.export()
+        import shutil
+        shutil.rmtree(os.path.join(self.user, "user"))
+        self.go("import", path)
+        self.assertTrue(os.path.isfile(os.path.join(self.user, "user", "Mine.qml")))
+        self.go("undo")
+        self.assertFalse(os.path.exists(os.path.join(self.user, "user")), "imported QML left after undo")
+
+    def test_a_linked_folder_comes_back_as_a_link(self):
+        path = self.export()
+        mine = self.h("dotfiles", "hypr")
+        os.makedirs(mine)
+        self.put(os.path.join(mine, "binds.lua"), "-- dotfiles\n")
+        import shutil
+        shutil.rmtree(os.path.join(self.user, "hypr"))
+        os.symlink(mine, os.path.join(self.user, "hypr"))
+        self.go("import", path)
+        self.assertFalse(os.path.islink(os.path.join(self.user, "hypr")))
+        self.assertEqual(self.read(os.path.join(mine, "binds.lua")), "-- dotfiles\n", "the import wrote into the link's folder")
+        self.go("undo")
+        self.assertEqual(os.readlink(os.path.join(self.user, "hypr")), mine)
+
+    def test_only_the_newest_import_can_be_undone_once(self):
+        a = self.export()
+        self.go("import", a)
+        self.go("import", a)
+        self.assertNotEqual(self.go("last"), "{}")
+        self.go("undo")
+        self.assertEqual(self.go("last"), "{}", "an older import offered after undoing the newest")
+        self.go("undo", code=1)
+
+    def test_the_dock_pins_go_with_it(self):
+        dock = os.path.join(self.h.home, ".local", "state", "slate", "dock.json")
+        self.put(dock, json.dumps({"pinned": ["foot", "firefox"]}))
+        path = self.export()
+        self.put(dock, json.dumps({"pinned": []}))
+        self.go("import", path)
+        self.assertEqual(json.loads(self.read(dock))["pinned"], ["foot", "firefox"])
+        self.go("undo")
+        self.assertEqual(json.loads(self.read(dock))["pinned"], [])
+
+    def test_an_imported_wallpaper_never_overwrites_another(self):
+        first = self.export()
+        with open(self.pic, "wb") as f:
+            f.write(b"\x89PNG another picture")
+        second = self.export()
+        self.go("import", first)
+        one = json.loads(self.read(os.path.join(self.user, "settings.json")))["wallpaper"]
+        self.go("import", second)
+        two = json.loads(self.read(os.path.join(self.user, "settings.json")))["wallpaper"]
+        self.assertNotEqual(one, two)
+        self.assertEqual(open(one, "rb").read(), b"\x89PNG picture")
+
+    def test_scripts_stay_runnable(self):
+        p = os.path.join(self.user, "hypr", "start.sh")
+        self.put(p, "#!/bin/sh\n")
+        os.chmod(p, 0o755)
+        path = self.export()
+        os.remove(p)
+        self.go("import", path)
+        self.assertTrue(os.access(p, os.X_OK))
+
+    def test_export_leaves_out_hidden_and_backup_files_and_keeps_to_the_limits(self):
+        self.put(os.path.join(self.user, "hypr", ".git", "config"), "[core]\n")
+        self.put(os.path.join(self.user, "hypr", "binds.lua~"), "old\n")
+        self.put(os.path.join(self.user, "hypr", ".binds.lua.swp"), "swap\n")
+        with zipfile.ZipFile(self.export()) as z:
+            names = z.namelist()
+        self.assertFalse([n for n in names if ".git" in n or n.endswith("~") or ".swp" in n], names)
+        m = self.mod()
+        with self.assertRaises(m.Refused):
+            m.check_members([("hypr/a", 200 * 1024 * 1024), ("hypr/b", 120 * 1024 * 1024)])
+        with self.assertRaises(m.Refused):
+            m.check_members([("settings.json", 5 * 1024 * 1024)])
+        many = os.path.join(self.user, "user", "many")
+        os.makedirs(many)
+        for i in range(m.MAX_MEMBERS + 1):
+            open(os.path.join(many, "f%d.qml" % i), "w").close()
+        out = run(["python3", SCRIPT, "export", self.docs], env=self.env, timeout=60)
+        self.assertNotEqual(out[0], 0)
+        self.assertIn("couldn't fit your settings", out[1])
