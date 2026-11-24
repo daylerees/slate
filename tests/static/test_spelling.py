@@ -89,6 +89,13 @@ class Spelling(Case):
         self.assertEqual({f: ws for f, ws in bad.items() if ws}, {},
                          "British spellings in what people read: use the American one")
 
+    def test_your_own_files(self):
+        """The files Slate makes for your own tweaks (hypr/*.lua, user/shell.qml) are read by
+        people, comments and all: their instructions are the comments."""
+        names = [f for f in slate.files("shell/data/user-files", "")]
+        self.assertTrue(names)
+        self.check(names, lambda s: [(0, len(s), re.sub(r"(?<![\w])[\w]+\.[\w.]+", "", s))])
+
     def test_the_word_list_knows_the_usual_ones(self):
         """The checker itself: it must catch the usual British words and leave identifiers alone."""
         for british, american in {

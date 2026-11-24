@@ -82,5 +82,11 @@ install -D -m 755 -o root -g root "$tmp/slate-session" "$BIN"
 install -D -m 644 -o root -g root "$tmp/slate.desktop" "$ENTRY"
 
 echo "Done. Pick \"Slate\" on the login screen next time you log in."
-echo "Personal Hyprland settings (shortcuts, rules, monitors, startup apps): ~/.config/slate/hypr/"
+# (yours are in your own Slate folder: the one given, for an install of your own; for the copy
+# for everyone, root can't see where yours is, as XDG_CONFIG_HOME doesn't come through sudo)
+if [ "$(asowner stat -c %U -- "$SLATE" 2>/dev/null)" = "$OWNER" ]; then
+    echo "Personal Hyprland settings (shortcuts, rules, monitors, startup apps): $SLATE/hypr/"
+else
+    echo "Personal Hyprland settings (shortcuts, rules, monitors, startup apps): the hypr folder in your Slate settings, usually ~/.config/slate/hypr/"
+fi
 echo "To remove: sudo /usr/local/libexec/slate/slate-session-install --remove"

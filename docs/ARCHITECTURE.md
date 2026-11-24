@@ -107,7 +107,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │  │                      them (~/.local/state/slate/displays.json and displays.lua)
 │  ├─ EdgePicker.qml      the small screen to pick the bar's or the dock's edge
 │  ├─ HotCornerPicker.qml the small screen showing what each hot corner does
-│  ├─ SwitchBoard.qml     Settings → Control Centre: the picture of the panel to drag its quick switches about
+│  ├─ SwitchBoard.qml     Settings → Control Center: the picture of the panel to drag its quick switches about
 │  ├─ FolderSwatch.qml    a small folder in a colour (Settings → Icons → Folder colour)
 │  └─ settings/           the rest of Settings, a file each (the window keeps the page map, the sidebar,
 │     │                   search, the dropdown layer and the questions). Every file reaches the window as
@@ -660,7 +660,7 @@ keyboard focus. Slate overlays first release the keyboard (`releasing`), then di
 `notifications.json` (history, DND). App icon tiles are drawn by
 `scripts/appicon.py --tile` into `~/.cache/slate/tiles/`. Clipboard history:
 `~/.local/state/slate/clipboard/`, recent emoji: `emoji.json`.
-Spaces: `~/.local/share/slate/spaces.json` (kept by the installer, unlike `~/.config/slate`).
+Spaces: `~/.local/share/slate/spaces.json` (yours, kept by the installer and updates).
 Crash reports: `~/.cache/slate/crashes/` (bin/slate's keeper; the last 5, yours alone; see SESSION.md).
 
 ### Spaces

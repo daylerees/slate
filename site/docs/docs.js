@@ -52,7 +52,7 @@ const SECTIONS = [
     { id: "apps", title: "Default and startup apps", icon: 0xEBB6, about: "Which apps open things, and what opens at login", covers: ["apps", "startup"] },
     { id: "screenshots", title: "Screenshots", icon: 0xF201, about: "Areas, windows and screens, saved and marked up, and recording the screen", covers: ["screenshots"] },
     { id: "clipboard", title: "Clipboard and emoji", icon: 0xEA6F, about: "Clipboard history and the emoji picker" },
-    { id: "night-light", title: "Night light, game mode and caffeine", icon: 0xEAF8, about: "Warmer evenings, smoother games, and staying awake", covers: ["general"] },
+    { id: "night-light", title: "Night Light, Game Mode and Caffeine", icon: 0xEAF8, about: "Warmer evenings, smoother games, and staying awake", covers: ["general"] },
     { id: "region", title: "Region and time", icon: 0xEA70, about: "Time zone, the clock, dates and the weather's units", covers: ["datetime"] },
   ]},
   { title: "Reference", pages: [

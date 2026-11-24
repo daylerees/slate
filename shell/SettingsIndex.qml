@@ -135,7 +135,7 @@ Singleton {
         ["Direction", "appearance", "shadow angle direction light"],
         ["Rounded UI elements", "appearance", "square corners sharp hard edges radius rounding windows buttons panels"],
         ["Location", "general", "weather city town sunrise sunset"],
-        ["Night light", "general", "blue light warm schedule temperature"],
+        ["Night Light", "general", "blue light warm schedule temperature"],
         ["Volume keys", "sound", "sound tick click audio feedback volume"],
         ["Notifications", "sound", "sound chime alert ding audio notifications volume"],
         ["Questions and warnings", "sound", "sound attention alert confirm confirmation password prompt warning critical urgent audio volume"],

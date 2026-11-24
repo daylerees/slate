@@ -235,3 +235,24 @@ class Architecture(Case):
         for name in sorted(named - have - {"LoginWindow.qml"}):      # greeter/LoginWindow.qml: the login screen's own
             with self.subTest(name):
                 self.fail(f"docs/ARCHITECTURE.md names {name}, which isn't in shell/ any more")
+
+
+class FeaturesPageList(Case):
+    def test_the_sites_page_list_is_settings_own(self):
+        """features.html lists Settings' pages by name, by hand: it once missed five (Storage,
+        Timers, Accessibility, Face, Fingerprint & Keys, Screensaver). Joined to SettingsIndex's
+        own list, in both directions."""
+        index = slate.read("shell", "SettingsIndex.qml")
+        labels = re.findall(r'\{ id: "(\w+)", label: "([^"]+)"', index)
+        pages = [label for pid, label in labels if pid != "overview"]
+        site = slate.read("site", "features.html")
+        listed = re.search(r"<li>Pages: (.*?)</li>", site).group(1).replace("&amp;", "&")
+        listed = re.sub(r"\s*\([^)]*\)", "", listed)                 # (the asides)
+        for label in pages:
+            with self.subTest(label):
+                self.assertIn(label, listed, "a Settings page missing from features.html's list")
+        # ...and nothing listed that Settings hasn't got (names with a comma inside are taken first)
+        rest = listed
+        for label in sorted(pages, key=len, reverse=True):
+            rest = rest.replace(label, "")
+        self.assertEqual(re.sub(r"[,\s]", "", rest), "", "features.html lists a page Settings doesn't have")

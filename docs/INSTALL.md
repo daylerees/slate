@@ -331,7 +331,7 @@ keep it.
 | Super+Tab / Alt+Tab | window switcher |
 | Super+Left / Right | previous / next workspace |
 | Super+Down | workspace overview |
-| Super+Ctrl+1…3 | go to workspace 1…3 |
+| Super+Alt+1…3 | go to workspace 1…3 (Super+Ctrl+1…3: this monitor's) |
 | Super+Shift+arrows | move window |
 | Super+F / Super+D | fullscreen / maximize |
 | Super+Alt+Space | float / tile window |

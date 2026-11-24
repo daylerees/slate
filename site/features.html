@@ -151,7 +151,7 @@
         <li>Your profile: name, picture over the wallpaper, user and host, uptime; click the picture to change it, in a picker of its own with your picture folders, a thumbnail grid and a round preview; until you choose one, a themed person icon stands in for it, here, in Settings and on the lock and login screens</li>
         <li>Media controls for whatever's playing</li>
         <li>The time and date, with the weather beneath the calendar: today as it is now, standing out, and the next three days</li>
-        <li>Quick toggles: Wi-Fi, Bluetooth, Caffeine (stay awake), Night light, Do Not Disturb, Performance mode, Airplane mode (Wi-Fi, Bluetooth and mobile broadband off together, and back as they were after), Game mode, Light mode, Mute, Mute microphone, Power saver, Glass, Charging limit, Hide the dock, Hide the menu bar, Floating windows, Clipboard history and Private Mode. Switches for hardware your computer hasn't got are left out. The panel shows eight, all the same size; put them in your own order in Settings → Control Center, by dragging one onto another in a picture of the panel to swap them, with the ones that aren't in it waiting right beside</li>
+        <li>Quick toggles: Wi-Fi, Bluetooth, Caffeine (stay awake), Night Light, Do Not Disturb, Performance mode, Airplane Mode (Wi-Fi, Bluetooth and mobile broadband off together, and back as they were after), Game mode, Light mode, Mute, Mute microphone, Power saver, Glass, Charging limit, Hide the dock, Hide the menu bar, Floating windows, Clipboard history and Private Mode. Switches for hardware your computer hasn't got are left out. The panel shows eight, all the same size; put them in your own order in Settings → Control Center, by dragging one onto another in a picture of the panel to swap them, with the ones that aren't in it waiting right beside</li>
         <li>Private Mode: your microphones muted, your camera off for every app, Nova and assistants off, and screenshots, screen recording and screen sharing stopped, all back as they were when you turn it off. The first time, Slate asks before adding the small helper that turns the camera off (your password, once)</li>
         <li>Shortcuts to Settings and the power menu</li>
       </ul>
@@ -327,7 +327,7 @@
       <h3>Moving around</h3>
       <ul>
         <li>Next and previous workspace, with an on-screen indicator that names the workspace you land on (a switch turns the name off), wrapping round from the last to the first (optional; off, the overview's row ends there too)</li>
-        <li>Go to, or move a window to, workspace 1–9 (per monitor too)</li>
+        <li>Go to, or move a window to, workspace 1–3 (per monitor too; more with <code>NUM_WPM</code>)</li>
         <li>Move a window to a new workspace after the last one in use</li>
         <li>Always keep an empty workspace, last in the row (optional)</li>
         <li>A secret workspace, to show or hide over the others; a note in the middle says when it's empty</li>
@@ -413,7 +413,7 @@
       </ul>
     </article>
     <article>
-      <h3>Night light</h3>
+      <h3>Night Light</h3>
       <ul>
         <li>A warmer screen in the evening, with adjustable warmth</li>
         <li>On by hand, sunset to sunrise for your location, or a custom schedule</li>
@@ -803,7 +803,7 @@
         <li>Opens on All Settings: a tile for every page, with a search across all settings; every other page has the same search at its top</li>
         <li>Import &amp; Export: every setting, your saved Spaces, your own Hyprland tweaks and QML, and your wallpaper in one file, to keep or take to another computer; importing asks first, keeps what it replaces, and can be undone</li>
         <li>A Debug page (from All Settings): reload everything (Hyprland's config and Slate itself, your apps stay open), resync the login screen, set how much detail goes in Slate's log (asks before restarting Slate), export recent logs with system details to attach to a bug report (your location is left out, your own command for Nova shows only as set or not, your main display's serial number is left out, and your home folder is written as ~), and factory reset Slate: it asks twice, can clear your own Hyprland tweaks and QML too, and keeps everything in a backup folder first</li>
-        <li>Pages: General, Appearance (with Wallpaper, Icons and App Theming a click away at its top), Wallpaper, Icons, Displays, Input, Sound, Power, Windows, Workspaces, Notifications, Network, Bluetooth, Printers, Webcam, Users, Menu Bar, Control Center, Dock, Launcher, Spaces, Hot Corners, Security, Shortcuts, Default Apps, Startup Apps, App Rules, Region, Screenshots, App Theming, Assistant, Updates, Import &amp; Export, Debug, About</li>
+        <li>Pages: General, Appearance (with Wallpaper, Icons and App Theming a click away at its top), Wallpaper, Icons, Displays, Input, Sound, Power, Windows, Workspaces, Notifications, Storage, Timers, Accessibility, Network, Bluetooth, Printers, Webcam, Menu Bar, Control Center, Dock, Launcher, Spaces, Hot Corners, Users, Security, Face, Fingerprint &amp; Keys, Screensaver, Shortcuts, Default Apps, Startup Apps, App Rules, Region, App Theming, Screenshots, Assistant, Updates, Import &amp; Export, Debug, About</li>
         <li>Restore defaults on each page, and a small dot after any setting you've changed: point at it to see the default</li>
         <li>A setting grayed out because it needs another says which one ("Needs Accent color from wallpaper to be on"), and clicking that takes you there</li>
         <li>Move it by dragging its sidebar top or page header; while it's open it goes with you from workspace to workspace</li>
@@ -892,10 +892,10 @@
         <dt>Super Shift S</dt><dd>Move the window to the secret workspace</dd>
         <dt>Super W</dt><dd>Move the window to a new workspace at the end</dd>
         <dt>Super Ctrl ← / →</dt><dd>Move the window to the previous / next workspace</dd>
-        <dt>Super Alt 1–9</dt><dd>Go to workspace</dd>
-        <dt>Super Ctrl 1–9</dt><dd>Go to this monitor's workspace</dd>
-        <dt>Super Shift Ctrl 1–9</dt><dd>Move the window to this monitor's workspace</dd>
-        <dt>Super Shift Alt 1–9</dt><dd>Send the window there, staying here</dd>
+        <dt>Super Alt 1–3</dt><dd>Go to workspace</dd>
+        <dt>Super Ctrl 1–3</dt><dd>Go to this monitor's workspace</dd>
+        <dt>Super Shift Ctrl 1–3</dt><dd>Move the window to this monitor's workspace</dd>
+        <dt>Super Shift Alt 1–3</dt><dd>Send the window there, staying here</dd>
         <dt>Super 1–3</dt><dd>Focus the first, second or third monitor</dd>
         <dt>Super Shift 1–3</dt><dd>Move the window to that monitor</dd>
       </dl>

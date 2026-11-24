@@ -252,10 +252,10 @@ Column {
             }
         }
     }
-    GroupLabel { text: "Night light" }
+    GroupLabel { text: "Night Light" }
     Group {
         ToggleSetting {
-            label: "Night light"
+            label: "Night Light"
             detail: "Warmer screen colors that are kinder to your eyes at night. Also in the control center"
             key: "nightLight"
         }

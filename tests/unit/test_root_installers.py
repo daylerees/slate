@@ -171,6 +171,8 @@ class SessionFiles(RootCase):
         os.rename(self.slate, elsewhere)
         code, out = run([SESSION, elsewhere], env=self.s.env, timeout=20)
         self.assert_installed(code, out)
+        # It says where your own Hyprland files are: in that folder, not ~/.config/slate
+        self.assertIn("startup apps): " + os.path.realpath(elsewhere) + "/hypr/", out)
         # (and through a link to it, which is resolved first)
         os.remove(self.log)
         link = os.path.join(self.h.dir, "a-link")

@@ -68,7 +68,10 @@
       <h3>With Settings</h3>
       <p>For Hyprland's side of things (keyboard, mouse, touchpad, focus, animations, default apps, the lid and the
         power button), Settings only sends what you change there. Anything you haven't changed keeps what your own
-        files say. Where both set the same thing, your <code>hyprland.lua</code> wins, since it's loaded last.</p>
+        files say, and where both set the same thing, your <code>hyprland.lua</code> wins, since it's loaded last.</p>
+      <p>A few things are Settings' own, and Slate sets them again each time the config reloads: gaps, borders,
+        rounded corners and dimming (Settings → Windows and Appearance). Change those in Settings; a line for them in
+        your files is replaced straight away.</p>
 
       <h2>Saving and mistakes</h2>
       <p>Saving one of your files applies it straight away: Hyprland's config reloads for the <code>.lua</code> files,
@@ -94,7 +97,7 @@ hl.window_rule({ match = { class = "^(Spotify)$" }, workspace = "5 silent" })
 
 -- hypr/hyprland.lua
 hl.config({ input = { kb_layout = "gb", kb_options = "caps:escape" } })
-hl.config({ general = { gaps_in = 4, gaps_out = 8 } })</code></pre>
+hl.config({ binds = { workspace_back_and_forth = true } })</code></pre>
       <p>A shortcut with a <code>description</code> of <code>"Group: what it does"</code> shows in
         <a href="shortcuts.html">Settings → Shortcuts</a>. <code>SLATE</code> is the slate command, so any of
         <a href="command-line.html">its actions</a> can go on a key.</p>

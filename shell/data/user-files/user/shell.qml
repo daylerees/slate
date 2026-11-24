@@ -7,7 +7,7 @@
 //
 // Quickshell's docs: https://quickshell.org/docs/
 // Slate's own pieces are usable here too, e.g. Config.s (settings), Config.accent,
-// Config.palette.card (theme colours), Spaces.list.
+// Config.palette.card (theme colors), Spaces.list.
 //
 // Examples: remove the "//" in front of the lines of one to try it.
 

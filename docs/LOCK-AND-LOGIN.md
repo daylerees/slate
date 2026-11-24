@@ -170,8 +170,8 @@ The greeter's output goes to the journal (`journalctl -t slate-greeter`), not tt
   `Config.qml` or `SettingsData.qml`, which are shared with the rest of Slate and change with
   nearly everything; those come along with the next update. It asks once per version, and
   "Later" (or dismissing it) waits a week. If the update is canceled or fails, an urgent
-  "Login screen not updated" notification gives the command to run instead. Settings → Lock
-  & Idle has the same Update button.
+  "Login screen not updated" notification gives the command to run instead. Settings →
+  Security has the same Update button.
   Files are read with your own permissions, not root's.
 - **Safety net**, so a broken update never leaves anyone at a text console:
   1. **Tested before it's installed.** `slate-greeter-install` test-loads the new copy with

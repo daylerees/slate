@@ -12,24 +12,25 @@ distros replace with their own), so nothing flashes up between the login screen 
 
 ```
 login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
-   └─ uwsm start -e -D Hyprland -N Slate -- start-hyprland -- -c <slate>/session/hypr/hyprland.lua
+   └─ uwsm start -e -D Hyprland -N Slate -- start-hyprland -- -c $SLATE_DIR/session/hypr/hyprland.lua
       (plain start-hyprland when uwsm isn't installed, or systemd isn't running: then inside
        dbus-run-session if there's no session bus yet)
          ├─ ~/.config/slate/hypr/env.lua, variables.lua        (yours, first)
          ├─ Slate's config: colors, variables, animations, autostart, decorations,
          │  hyprbars, inputs, binds, misc, monitors, windowrules, workspaces, slate
          ├─ ~/.config/slate/hypr/monitors.lua, binds.lua, rules.lua,
-         │  autostart.lua, hyprland.lua                        (yours, last; they win)
-         └─ autostart: slate ─▶ the keeper (`slate _keep`) ─▶ qs -p ~/.config/slate
+         │  autostart.lua, hyprland.lua                        (yours, last; they win,
+         │                                                       but for what Settings owns)
+         └─ autostart: slate ─▶ the keeper (`slate _keep`) ─▶ qs -p $SLATE_DIR
 ```
 
 ## Files
 
 | Path | What |
 |---|---|
-| `~/.config/slate/session/hypr/` | Slate's Hyprland config (source) |
-| `~/.config/slate/session/slate-session` | launcher (source) |
-| `~/.config/slate/session/slate.desktop` | login entry (source) |
+| `$SLATE_DIR/session/hypr/` | Slate's Hyprland config (source) |
+| `$SLATE_DIR/session/slate-session` | launcher (source) |
+| `$SLATE_DIR/session/slate.desktop` | login entry (source) |
 | `/usr/local/bin/slate-session`, `/usr/share/wayland-sessions/slate.desktop` | installed copies |
 | `~/.config/slate/hypr/env.lua` | yours: `hl.env(...)` environment variables for apps (loaded first) |
 | `~/.config/slate/hypr/variables.lua` | yours: `TERMINAL`, `BROWSER`, `FILE_MANAGER`, `EDITOR`, `CALCULATOR`, `MONITOR1..3`, `NUM_WPM`, cursor |
@@ -37,7 +38,7 @@ login screen ─ "Slate" (slate.desktop) ─▶ /usr/local/bin/slate-session
 | `~/.config/slate/hypr/binds.lua` | yours: extra or replaced shortcuts, `hl.unbind(...)` |
 | `~/.config/slate/hypr/rules.lua` | yours: window and workspace rules |
 | `~/.config/slate/hypr/autostart.lua` | yours: commands at login (`hl.on("hyprland.start", …)`) |
-| `~/.config/slate/hypr/hyprland.lua` | yours, loaded last: anything else (keyboard layout, devices…); wins over everything |
+| `~/.config/slate/hypr/hyprland.lua` | yours, loaded last: anything else (keyboard layout, devices…); wins over Slate's config and your other files, but not over what Settings owns (gaps, borders, rounded corners, dimming: `HyprlandLook.qml` sets them again after each reload) |
 | `~/.config/slate/user/shell.qml` | yours: QML loaded into Slate itself (extra widgets, IPC handlers) |
 | `~/.local/state/slate/keyset.lua` | written by Settings → Shortcuts: `KEYSET = "slate"`, `"hyprland"` (Hyprland's default shortcuts) or `"hyprland-extras"` (those plus Slate's on free keys); read by `binds.lua`, which then binds that set |
 | `~/.local/state/slate/displays.lua` | written by Settings → Displays (loaded by `monitors.lua`; your `hyprland.lua` loads later and wins) |
@@ -51,8 +52,11 @@ itself for `shell.qml` (`UserFiles.qml`). A mistake in a `.lua` file skips that 
 rest still loads) and Slate shows it in a notification, with Hyprland's own config errors;
 a mistake in `shell.qml` leaves Slate running without it, and is shown the same way.
 
-`slate-session` looks for the config in `$XDG_CONFIG_HOME/slate/session/hypr/`, your own
-install: the config finds the rest of Slate there too, so that's the one place it runs from.
+`SLATE_DIR` is where Slate's code is: `/usr/local/share/slate` (or `/usr/share/slate` from a
+package), installed once for everyone and root's, or `$XDG_CONFIG_HOME/slate` for an install of
+your own. `slate-session` takes the first of those that has `session/hypr/hyprland.lua`, your own
+first, and exports it; the config and `bin/slate` find the rest of Slate through it. Your own
+files (`hypr/`, `user/`) and settings stay in `~/.config/slate` either way.
 
 Inside the session `SLATE_SESSION=1` is set. `slate-greeter-sync` uses it to make Slate the
 login screen's default session.
