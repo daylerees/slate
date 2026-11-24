@@ -39,6 +39,23 @@ class WritePrivate(unittest.TestCase):
         finally:
             os.umask(old)
 
+    def test_replaced_all_at_once_and_private(self):
+        """A file that was readable by anyone is replaced by one that's yours alone, with nothing
+        left beside it."""
+        old = os.umask(0o022)
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                path = os.path.join(d, "x.json")
+                with open(path, "w") as f:
+                    f.write("{}")
+                os.chmod(path, 0o644)
+                common.replace_private_json(path, {"b": 2})
+                self.assertEqual(json.load(open(path)), {"b": 2})
+                self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
+                self.assertEqual(os.listdir(d), ["x.json"])
+        finally:
+            os.umask(old)
+
 
 class PromptBlocks(unittest.TestCase):
     def test_picks_wanted_blocks_as_paragraphs(self):

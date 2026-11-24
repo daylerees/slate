@@ -25,6 +25,15 @@ def write_private_json(path, data):
     write_private(path, json.dumps(data, indent=1))
 
 
+def replace_private_json(path, data):
+    """write_private_json, all at once: written beside it, then put in its place, so a reader (or
+    a crash) never finds half a file. The file that was there, readable by anyone or not, is
+    replaced by one that's yours alone."""
+    tmp = path + ".tmp"
+    write_private_json(tmp, data)
+    os.replace(tmp, path)
+
+
 def prompt_blocks(path, wanted):
     """The blocks of data/assistant-prompt.md whose [heading] is one of wanted, each as one
     paragraph, separated by blank lines. Raises OSError when the file can't be read."""

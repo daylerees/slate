@@ -46,6 +46,9 @@ import sys
 import time
 import uuid
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from slate_common import replace_private_json  # noqa: E402
+
 DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "slate")
 STORE = os.path.join(DATA, "spaces.json")
 
@@ -370,11 +373,8 @@ def load():
 
 
 def store(data):
-    os.makedirs(DATA, exist_ok=True)
-    tmp = STORE + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=1)
-    os.replace(tmp, STORE)
+    # (yours alone: window titles, the commands apps were started with, folders)
+    replace_private_json(STORE, data)
 
 
 def save(name, colour, icon, ids):
@@ -742,11 +742,7 @@ def session_save():
             "saved": int(time.time()), "workspaces": workspaces,
             "active": [{"monitor": m["name"], "workspace": m.get("activeWorkspace", {}).get("id", 0)} for m in monitors],
             "focused": next((m["name"] for m in monitors if m.get("focused")), "")}
-    os.makedirs(STATE, exist_ok=True)
-    tmp = SESSION + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=1)
-    os.replace(tmp, SESSION)
+    replace_private_json(SESSION, data)       # (yours alone, as the Spaces are)
 
 
 def session_forget():

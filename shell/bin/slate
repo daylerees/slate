@@ -62,7 +62,7 @@ ICON="$SLATE_DIR/assets/icon/icon-64.png"
 RESTARTED="Slate ran into a problem and started again by itself. Your apps and windows stayed open."
 GAVE_UP="Slate keeps stopping, so it hasn't been started again. Your apps and windows are still open. To try again, open a terminal and type: slate"
 
-note() { printf '%s slate: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG"; }
+note() { (umask 077; printf '%s slate: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG"); }
 
 # The keeper's process number, while it's running (only if it's still this Slate's keeper:
 # numbers get reused)
@@ -208,7 +208,13 @@ keep() {
     # Stopped on purpose (slate stop, restart --full, shutting down): Slate goes with it
     trap '[ -n "$child" ] && kill -KILL "$child" 2>/dev/null; [ "$(cat "$KEEPER" 2>/dev/null)" = "$$" ] && rm -f "$KEEPER"; exit 0' TERM INT HUP
     echo $$ >"$KEEPER"
-    : >"$LOG"
+    # (yours alone: it holds window titles, folders and file names. A log made readable by anyone
+    # before, or by note() just now, is tightened as it's emptied)
+    (umask 077; : >"$LOG"); chmod 600 "$LOG" 2>/dev/null || true
+    # Saved Spaces and the apps kept for your next login, from before they were made yours alone
+    # (scripts/spaces.py writes them 0600 now): tightened as Slate starts (Migration, kept until 2027-06)
+    chmod 600 "${XDG_DATA_HOME:-$HOME/.local/share}/slate/spaces.json" \
+              "${XDG_STATE_HOME:-$HOME/.local/state}/slate/session.json" 2>/dev/null || true
     crashes=; again=
     while :; do
         rm -f "$READY"

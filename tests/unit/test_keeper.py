@@ -14,6 +14,7 @@ import json
 import os
 import shutil
 import signal
+import stat
 import time
 
 import slate
@@ -204,6 +205,38 @@ class Keeper(Case):
 
     def quiet_for(self, seconds=1.0):
         time.sleep(seconds)
+
+    def test_the_log_is_yours_alone(self):
+        """Slate's log holds window titles, folders and file names: made 0600, and a log that was
+        readable by anyone is tightened as it's emptied."""
+        log = os.path.join(self.h.cache, "slate.log")
+        os.makedirs(self.h.cache, exist_ok=True)
+        with open(log, "w") as f:
+            f.write("old\n")
+        os.chmod(log, 0o644)
+        old = os.umask(0o022)
+        try:
+            self.slate_cmd()
+        finally:
+            os.umask(old)
+        self.started(1)
+        self.assertEqual(stat.S_IMODE(os.stat(log).st_mode), 0o600)
+
+    def test_saved_spaces_from_before_are_tightened(self):
+        """Spaces and the kept session saved before they were made private are tightened as
+        Slate starts, without waiting for their next save."""
+        made = []
+        for parts in ((".local", "share", "slate", "spaces.json"), (".local", "state", "slate", "session.json")):
+            p = os.path.join(self.h.home, *parts)
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            with open(p, "w") as f:
+                f.write("{}")
+            os.chmod(p, 0o644)
+            made.append(p)
+        self.slate_cmd()
+        self.started(1)
+        for p in made:
+            self.assertEqual(stat.S_IMODE(os.stat(p).st_mode), 0o600, p)
 
     # ---- a crash ------------------------------------------------------------------------
     def test_a_crash_starts_slate_again_and_says_so(self):

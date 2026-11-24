@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+import stat
 import time
 
 import slate
@@ -197,6 +198,39 @@ class Store(SpacesBase):
                 out = self.spaces(*args, code=1)
                 self.assertIn("spaces.py snapshot", out)
         self.assertEqual(self.s.calls("hyprctl"), [])
+
+
+class Private(SpacesBase):
+    """Saved Spaces and the apps kept for your next login hold window titles, the commands apps
+    were started with and folders: yours alone, whatever the umask, even where a file readable
+    by anyone was there before."""
+
+    def mode(self, p):
+        return stat.S_IMODE(os.stat(p).st_mode)
+
+    def test_spaces_and_the_kept_session_are_yours_alone(self):
+        self.hyprland()
+        for p in (self.store, self.session):
+            self.write(p, {"spaces": []} if p == self.store else {})
+            os.chmod(p, 0o644)
+        old = os.umask(0o022)
+        try:
+            self.spaces("save", "Work", "#3366ff", "edba", "1")
+            self.spaces("session-save")
+        finally:
+            os.umask(old)
+        self.assertEqual(self.mode(self.store), 0o600)
+        self.assertEqual(self.mode(self.session), 0o600)
+
+    def test_made_in_a_private_folder(self):
+        self.hyprland()
+        old = os.umask(0o022)
+        try:
+            self.spaces("session-save")
+        finally:
+            os.umask(old)
+        self.assertEqual(self.mode(os.path.dirname(self.session)), 0o700)
+        self.assertEqual(self.mode(self.session), 0o600)
 
 
 class Session(SpacesBase):
