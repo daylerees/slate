@@ -74,7 +74,10 @@ Scope {
     // (the corners all ask at the same moment: the first starts it, and all hear the answer)
     function askPointer() { if (!cursorCheck.running) cursorCheck.running = true; }
 
+    // (the tests: how many corners are there to rest the pointer in)
+    function shownCount() { return cornersVariants.instances.filter(c => c.visible).length; }
     Variants {
+        id: cornersVariants
         model: [
             { top: true, left: true, key: "hotCornerTopLeft" },
             { top: true, left: false, key: "hotCornerTopRight" },
@@ -86,7 +89,8 @@ Scope {
             screen: Config.primaryScreen           // the main display's corners (Settings → Displays)
             required property var modelData
             readonly property string action: Config.s[modelData.key]
-            visible: action !== "none"
+            // (resting in game mode: games that scroll at the screen's edges set them off mid-game)
+            visible: action !== "none" && !Config.gameMode
             anchors { top: modelData.top; bottom: !modelData.top; left: modelData.left; right: !modelData.left }
             implicitWidth: 2; implicitHeight: 2
             color: "transparent"

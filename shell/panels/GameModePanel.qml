@@ -36,7 +36,8 @@ Column {
                 { code: 0xEA38, label: "Animations" },
                 { code: 0xEA9B, label: "Live window previews (shapes instead)" },
                 { code: 0xEA35, label: "Notification pop-ups (they still go to the list)" },
-                { code: 0xEB63, label: "Ignoring the touchpad while you type" }
+                { code: 0xEB63, label: "Ignoring the touchpad while you type" },
+                { code: 0xF7A0, label: "Hot corners" }
             ].concat(Config.s.pointerTrail ? [{ code: 0xF1D4, label: "The pointer's trail" }] : [])
             delegate: Item {
                 required property var modelData

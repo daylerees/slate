@@ -174,7 +174,8 @@ class EveryPanelControl(LiveCase):
             if name == "new space":
                 self.ipc("test", "newSpace")
             self.s.settle(0.8)
-            found = json.loads(self.ipc("test", "panelWalk"))["gaps"]
+            walked = json.loads(self.ipc("test", "panelWalk"))
+            found = walked["gaps"] + ["(no name for a screen reader) " + u for u in walked["unnamed"]]
             if found:
                 gaps[name] = found
             self.ipc("popout", "close")

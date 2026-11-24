@@ -42,6 +42,7 @@ Column {
                 delegate: RowButton {
                     required property var modelData
                     width: 28; height: 26
+                    Accessible.name: modelData.d < 0 ? "Previous month" : "Next month"
                     onClicked: cal.monthOffset += modelData.d
                     Icon { anchors.centerIn: parent; code: parent.modelData.code; font.pixelSize: 15 }
                 }

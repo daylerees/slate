@@ -16,7 +16,7 @@ Column {
         { value: "screenoff", label: "Turn screen off" }
     ]
     PageTitle { text: "Hot Corners" }
-    IntroText { text: "Rest the pointer in a corner of the screen to run an action." }
+    IntroText { text: "Rest the pointer in a corner of the screen to run an action. They rest in game mode, where games that scroll at the screen's edges would set them off." }
     // The screen, with each corner's action; click one to set it below
     property string corner: "TopLeft"
     readonly property string cornerKey: "hotCorner" + corner          // (its setting: hotCornerTopLeft…)

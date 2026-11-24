@@ -127,6 +127,7 @@ Column {
                     // Flat and solid, with glass too: the card's own solid colour, no edge and
                     // nothing showing through; under the pointer, the muted hover over it
                     readonly property color base: Config.palette.card
+                    Accessible.name: modelData.act === "settings" ? "Settings" : "Power"
                     color: controlButtonHover.hovered ? Qt.tint(base, Config.hover) : base
                     HoverHandler { id: controlButtonHover }
                     onClicked: {
@@ -257,6 +258,8 @@ Column {
                                 delegate: RowButton {
                                     required property var modelData
                                     width: 32; height: 30
+                                    Accessible.name: modelData.act === "prev" ? "Previous track" : modelData.act === "next" ? "Next track"
+                                        : (controlView.player && controlView.player.isPlaying ? "Pause" : "Play")
                                     onClicked: {
                                         const p = controlView.player; if (!p) return;
                                         if (modelData.act === "prev") p.previous();

@@ -179,7 +179,7 @@ SHOTS = {
                              undo=[("popout", "close"), ("test", "weather", "false")], crop=(960, 0, 480, 520)),
     "panel-screenshot": _panel("screenshot", crop=(820, 0, 620, 330)),
     "panel-windowmode": _panel("windowmode", crop=(0, 0, 400, 480)),
-    "panel-gamemode": _panel("gamemode", crop=(840, 0, 600, 490)),
+    "panel-gamemode": _panel("gamemode", crop=(840, 0, 600, 520)),
     "panel-spaces": _panel("spaces", crop=(0, 0, 540, 340)),
     # (the pop-ups gone first, so only the panel shows them)
     "panel-notifications": _panel("notifications", settings={"notificationSeconds": "2"},

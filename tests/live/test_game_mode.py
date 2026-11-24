@@ -55,6 +55,19 @@ class GameMode(LiveCase):
             self.s.settle(0.2)
         self.fail(f"Hyprland didn't run all of Slate's settings (push {st['hypr']['pushes']}): an error in them?")
 
+    def test_hot_corners_rest(self):
+        """Games that scroll at the screen's edges set the hot corners off mid-game (opening the
+        launcher, locking the screen): in game mode they rest, and come back after."""
+        for k in ("gameMode", "hotCornerTopLeft"):
+            self.keep_setting(k)
+        self.config("gameMode", "false")
+        self.config("hotCornerTopLeft", "launcher")
+        self.wait(lambda st: st["hotCorners"] >= 1, "the corner")
+        self.config("gameMode", "true")
+        self.wait(lambda st: st["hotCorners"] == 0, "the corners resting in game mode")
+        self.config("gameMode", "false")
+        self.wait(lambda st: st["hotCorners"] >= 1, "the corner back")
+
     def test_terminals_go_solid(self):
         """Game mode's rule that makes terminals solid (slate-game-opaque) is made from the
         session's one list of terminals, TERMINAL_CLASSES, and made again when that changes.

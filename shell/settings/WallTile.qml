@@ -97,6 +97,10 @@ Item {
     activeFocusOnTab: visible && enabled
     Keys.onPressed: e => { if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { tile.picked(); e.accepted = true; } }
     Accessible.role: Accessible.Button
-    Accessible.name: tile.title
+    // (its name as shown under it: Slate's own by its title, yours by the file's name; and which
+    // is the wallpaper now)
+    Accessible.name: tile.title || fileName
+    Accessible.checkable: true
+    Accessible.checked: current
     FocusRing { round: 10 }
 }

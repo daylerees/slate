@@ -140,17 +140,23 @@ ShellRoot {
         // (a card's close button and a space's delete show only once theirs has the keyboard):
         // { stops: what each says, gaps: every gap seen }
         function panelWalk(): string {
-            const gaps = popouts.unreachable(), said = [];
+            const gaps = popouts.unreachable(), said = [], unnamed = [];
             popouts.focusFirst(true);
             for (let i = 0; i < 200; i++) {
                 const f = popouts.contentItem.Window.activeFocusItem;
                 said.push(Config.textOf(f) || String(f).split("(")[0]);
+                // (a stop a screen reader reads as just "button": an icon with no words)
+                if (f && popouts.keyStops().indexOf(f) >= 0 && !(f.Accessible && String(f.Accessible.name || "").trim())) {
+                    const p = f.mapToItem(popouts.contentItem, 0, 0);
+                    const where = String(f).split("(")[0] + " @" + Math.round(p.x) + "," + Math.round(p.y);
+                    if (!unnamed.includes(where)) unnamed.push(where);
+                }
                 for (const g of popouts.unreachable()) if (!gaps.includes(g)) gaps.push(g);
                 const stops = popouts.keyStops();
                 if (stops.indexOf(f) < 0 || stops.indexOf(f) === stops.length - 1) break;
                 popouts.keyStep(true);
             }
-            return JSON.stringify({ stops: said, gaps: gaps });
+            return JSON.stringify({ stops: said, gaps: gaps, unnamed: unnamed });
         }
         // Arranging the menu bar without a pointer: what a drag, a click on the bar or a button
         // on the panel comes to (Config's bar… functions)
@@ -593,6 +599,7 @@ ShellRoot {
                          why: Config.iconsBusyWhy() },
                 picker: { open: picker.shown, mode: picker.mode, clipReads: picker.clipReads, emojiReads: Emoji.reads },
                 lookups: SettingsLookups.reads,
+                hotCorners: hotCorners.shownCount(),
                 trayMenu: { open: topBar.trayMenu.visible, depth: topBar.trayMenu.stack.length, hot: topBar.trayMenu.hot, chosen: topBar.trayMenu.testChosen,
                             lastInView: topBar.trayMenu.testHotInView() },
                 osd: { shown: osdPop.shown, mode: osdPop.mode, label: osdPop.label },

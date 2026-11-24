@@ -1489,3 +1489,12 @@ class NovaNoticeKeepsToKeepChat(Case):
         i = src.index('doneNote.command = Config.notify("Nova"')
         block = src[i - 600:i + 200]
         self.assertIn("Config.s.assistantKeepChat ? esc(line)", block, "the answer's words go in the notice whatever the setting")
+
+
+class WallpaperTilesHaveNames(Case):
+    def test_your_own_pictures_have_a_name_for_a_screen_reader(self):
+        """Only Slate's own wallpapers had a title, so every tile under Your pictures was read out
+        as just "button"; and which is the wallpaper now wasn't said."""
+        tile = slate.read("shell", "settings", "WallTile.qml")
+        self.assertIn("Accessible.name: tile.title || fileName", tile)
+        self.assertIn("Accessible.checked: current", tile)

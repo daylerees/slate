@@ -30,6 +30,7 @@ Column {
             spacing: 8
             Label { anchors.verticalCenter: parent.verticalCenter; text: "Do Not Disturb"; color: pop.dim; font.pixelSize: Config.text(12) }
             Switch {
+                name: "Do Not Disturb"
                 anchors.verticalCenter: parent.verticalCenter
                 checked: pop.notifs ? pop.notifs.quiet : false
                 onToggled: if (pop.notifs) pop.notifs.setQuiet(!pop.notifs.quiet)
@@ -38,6 +39,7 @@ Column {
                 visible: notifView.list.length > 0
                 width: 30; height: 28
                 danger: true
+                Accessible.name: "Clear all notifications"
                 onClicked: if (pop.notifs) pop.notifs.clearAll()
                 Icon { anchors.centerIn: parent; code: 0xEB41; font.pixelSize: 16; color: pop.danger }
             }

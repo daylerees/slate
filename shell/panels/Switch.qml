@@ -5,6 +5,9 @@ import qs
 Rectangle {
     // (a screen reader: a check box it can switch)
     Accessible.role: Accessible.CheckBox
+    // (what it switches: its own name, else the words of the title it sits in, "Game Mode")
+    property string name: ""
+    Accessible.name: name !== "" ? name : (parent && typeof parent.text === "string" ? parent.text : "")
     Accessible.checkable: true
     Accessible.checked: checked
     Accessible.onToggleAction: toggled()
