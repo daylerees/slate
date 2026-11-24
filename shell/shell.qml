@@ -292,7 +292,10 @@ ShellRoot {
         // Software's daily look found this (what scripts/software.py daily says: {"apps": n,
         // "system": n}): it notifies as it would (SoftwareUpdates)
         function softwareDaily(json: string): void { SoftwareUpdates.found(JSON.parse(json)); }
-        function softwareDailyReset(): void { SoftwareUpdates.known = ({}); }
+        function softwareDailyReset(): void { SoftwareUpdates.known = ({}); SoftwareUpdates.testEvery = 0; }
+        function softwareDailyEvery(ms: int): void { SoftwareUpdates.testEvery = ms; }
+        // Night light put to Hyprland again, as at every start and every reload of Hyprland's config
+        function nightLightApply(): void { nightLight.apply(); }
         // Logging in, for your apps from last time (Config.pickUpAtLogin; atLogin never fires under the tests)
         function pickUpAtLogin(): void { Config.pickUpAtLogin(); }
         // Settings → Updates as the updater would leave it (update.json): a new version, its download, a failure
@@ -534,6 +537,7 @@ ShellRoot {
                 // (only once it's been made: reading it here would make it, and hide whether Slate did)
                 softwareDaily: Config.softwareDailyMadeAt
                     ? { looks: SoftwareUpdates.looks, notices: SoftwareUpdates.notices, waiting: SoftwareUpdates.waiting,
+                        due: SoftwareUpdates.isDue(Date.now()),
                         madeAt: Config.softwareDailyMadeAt, slateStarted: root.startedAt }
                     : { madeAt: 0, slateStarted: root.startedAt },
                 software: softwareLoader.item ? (w => ({

@@ -41,15 +41,25 @@ Scope {
     }
 
     FileView { id: shaderFile; path: root.shaderPath; atomicWrites: true; printErrors: false }
+    // Off, Slate takes away only the shader it put there, and puts back the one it replaced
+    // (SLATE_NIGHT and SLATE_NIGHT_BEFORE, marks in Hyprland's own Lua, as SLATE_SQUARED is for
+    // rounding; a reload of Hyprland's config starts them afresh, with its own shader): a shader
+    // you set yourself (hyprshade, your own hypr/ files) was wiped at every start and reload
     function apply() {
         if (on) {
             // (FileView makes the folder when it's missing: no mkdir first)
             shaderFile.setText(shader);
-            Quickshell.execDetached(["hyprctl", "eval", `hl.config({ decoration = { screen_shader = ${Config.luaString(shaderPath)} } })`]);
+            Quickshell.execDetached(["hyprctl", "eval", "if not SLATE_NIGHT then local ok, v = pcall(hl.get_config, \"decoration.screen_shader\"); "
+                + "SLATE_NIGHT_BEFORE = ok and type(v) == \"string\" and v or \"\" end; SLATE_NIGHT = true; "
+                + `hl.config({ decoration = { screen_shader = ${Config.luaString(shaderPath)} } })`]);
+            if (Config.testMode) testApplied = "on";
         } else {
-            Quickshell.execDetached(["hyprctl", "eval", `hl.config({ decoration = { screen_shader = "" } })`]);
+            Quickshell.execDetached(["hyprctl", "eval", "if SLATE_NIGHT then SLATE_NIGHT = nil; "
+                + "hl.config({ decoration = { screen_shader = SLATE_NIGHT_BEFORE or \"\" } }); SLATE_NIGHT_BEFORE = nil end"]);
+            if (Config.testMode) testApplied = "off";
         }
     }
+    property string testApplied: ""       // (the tests: what apply() last did)
     onOnChanged: applyLater.restart()
     onShaderChanged: if (on) applyLater.restart()
     Timer { id: applyLater; interval: 200; running: true; onTriggered: root.apply() }

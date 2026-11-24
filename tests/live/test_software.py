@@ -274,6 +274,17 @@ class DailyLook(LiveCase):
         st = self.wait(lambda st: st["softwareDaily"]["waiting"] == 6, "the new count")["softwareDaily"]
         self.assertEqual(st["notices"], before["notices"] + 1, "told twice in a day")
 
+    def test_due_again_as_time_passes(self):
+        """Whether it's time to look again is worked out when asked: it was a binding on the
+        clock, never worked out again as time passed, so in a long session the daily look
+        stopped after the first. (With a 3-second wait standing in for 20 hours.)"""
+        self.ipc("test", "softwareDaily", json.dumps({"apps": 0, "system": 0}))     # (just looked)
+        self.wait(lambda st: st["softwareDaily"]["looks"] > 0, "the look")
+        self.ipc("test", "softwareDailyEvery", "3000")
+        self.assertFalse(self.daily()["due"], "due straight after looking")
+        time.sleep(3.5)
+        self.assertTrue(self.daily()["due"], "still not due once the wait had passed")
+
     def test_nothing_with_it_off_or_metered(self):
         before = self.daily()
         self.config("softwareUpdateCheck", "false")

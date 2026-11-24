@@ -18,7 +18,8 @@ Singleton {
     id: root
     readonly property string script: Quickshell.shellPath("scripts/software.py")
     readonly property string stateFile: Config.stateHome + "/slate/software-updates.json"
-    readonly property real every: 20 * 3600 * 1000
+    readonly property real every: Config.testMode && testEvery > 0 ? testEvery : 20 * 3600 * 1000
+    property real testEvery: 0            // (the tests: a shorter wait, to see time passing count)
 
     // What's known: { checked (ms), notified (ms), apps, system }
     property var known: ({})
@@ -38,15 +39,16 @@ Singleton {
     }
     function save() { file.setText(JSON.stringify(known) + "\n"); }
 
-    // Worth looking now?
-    readonly property bool due: Config.s.softwareUpdateCheck && !Config.testMode && !Config.gameMode
-        && Date.now() - checkedAt > every
+    // Worth looking now? Worked out with the time when asked: a binding on Date.now() is never
+    // worked out again as time passes, so the daily look stopped after the first one in a long
+    // session
+    function isDue(now) { return Config.s.softwareUpdateCheck && !Config.gameMode && now - checkedAt > every; }
     // A few minutes after Slate starts (not while it's busy starting), then once an hour to see
     // whether it's due: the engine itself is only run when it is
     Timer { interval: 3 * 60 * 1000; running: true; onTriggered: root.lookIfDue() }
     Timer { interval: 3600 * 1000; running: Config.s.softwareUpdateCheck && !Config.testMode; repeat: true; onTriggered: root.lookIfDue() }
     function lookIfDue() {
-        if (root.due && !run.running) { run.running = true; }
+        if (!Config.testMode && isDue(Date.now()) && !run.running) { run.running = true; }
     }
     Process {
         id: run
