@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Pipewire
 import qs
+import "Press.js" as Press
 
 // ---- Volume ------------------------------------------------------------
 Column {
@@ -55,11 +56,7 @@ Column {
                     Accessible.onToggleAction: muteIcon.toggle()
                     Accessible.onPressAction: muteIcon.toggle()
                     activeFocusOnTab: visible
-                    Keys.onPressed: e => {
-                        if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-                        muteIcon.toggle();
-                        e.accepted = true;
-                    }
+                    Keys.onPressed: e => Press.keys(e, () => muteIcon.toggle())
                     FocusRing { round: 6 }
                 }
                 Label {
@@ -101,19 +98,17 @@ Column {
                 readonly property string shortName: (modelData.properties && modelData.properties["device.profile.description"])
                     || modelData.nickname || modelData.description || modelData.name
                 onClicked: Pipewire.preferredDefaultAudioSink = modelData
-                Icon {
+                RowIcon {
                     id: devIcon
                     code: parent.shortName.toLowerCase().includes("head") ? 0xEABD : 0xEA8B
                     color: parent.fg
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.pixelSize: 16
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                 }
-                Label {
+                RowLabel {
                     anchors { left: devIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     text: parent.shortName
                     color: parent.fg
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 }
             }
         }

@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Networking
 import QtQuick.Effects
 import qs
+import "Press.js" as Press
 
 // ---- Spaces -----------------------------------------------------------
 // Saved sets of workspaces (Spaces.qml, scripts/spaces.py): click one to bring it back on
@@ -186,11 +187,7 @@ Column {
                                 Accessible.name: "Delete " + spRow.modelData.name
                                 Accessible.onPressAction: spRow.askDelete()
                                 activeFocusOnTab: visible
-                                Keys.onPressed: e => {
-                                    if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space && e.key !== Qt.Key_Delete) return;
-                                    spRow.askDelete();
-                                    e.accepted = true;
-                                }
+                                Keys.onPressed: e => Press.keys(e, () => spRow.askDelete(), true)
                                 FocusRing { round: 7 }
                             }
                         }
@@ -237,11 +234,7 @@ Column {
             Accessible.name: "Back"
             Accessible.onPressAction: spacesView.mode = "list"
             activeFocusOnTab: visible
-            Keys.onPressed: e => {
-                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-                spacesView.mode = "list";
-                e.accepted = true;
-            }
+            Keys.onPressed: e => Press.keys(e, () => spacesView.mode = "list")
             FocusRing { round: 7 }
         }
         PanelTitle { x: spBack.width + 6; width: parent.width - x; text: "New Space" }
@@ -400,11 +393,7 @@ Column {
                             Accessible.onToggleAction: spacesView.toggle(wsCard.modelData.id)
                             Accessible.onPressAction: spacesView.toggle(wsCard.modelData.id)
                             activeFocusOnTab: visible
-                            Keys.onPressed: e => {
-                                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-                                spacesView.toggle(wsCard.modelData.id);
-                                e.accepted = true;
-                            }
+                            Keys.onPressed: e => Press.keys(e, () => spacesView.toggle(wsCard.modelData.id))
                             FocusRing { round: 8 }
                         }
                         Label {
@@ -646,11 +635,7 @@ Column {
             Accessible.name: "Cancel"
             Accessible.onPressAction: spacesView.mode = "list"
             activeFocusOnTab: visible
-            Keys.onPressed: e => {
-                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-                spacesView.mode = "list";
-                e.accepted = true;
-            }
+            Keys.onPressed: e => Press.keys(e, () => spacesView.mode = "list")
             FocusRing { round: 8 }
         }
         Rectangle {
@@ -666,11 +651,7 @@ Column {
             Accessible.name: spSave.text
             Accessible.onPressAction: spacesView.save()
             activeFocusOnTab: visible
-            Keys.onPressed: e => {
-                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-                spacesView.save();
-                e.accepted = true;
-            }
+            Keys.onPressed: e => Press.keys(e, () => spacesView.save())
             FocusRing { round: 8 }
         }
     }

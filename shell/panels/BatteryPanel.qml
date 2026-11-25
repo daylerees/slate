@@ -96,19 +96,17 @@ Column {
                 Column {
                     anchors.centerIn: parent
                     spacing: 2
-                    Icon {
+                    RowIcon {
                         anchors.horizontalCenter: parent.horizontalCenter
                         code: profileButton.modelData.code
                         font.pixelSize: 18
                         color: profileButton.fg
-                        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     }
-                    Label {
+                    RowLabel {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: profileButton.modelData.label
                         font.pixelSize: Config.text(12)
                         color: profileButton.fg
-                        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     }
                 }
             }

@@ -477,3 +477,17 @@ class ClearingAsks(Case):
         self.assertIn("pop.powerConfirm.confirmWith(Config.clearClipsQuestion", panel)
         self.assertIn("win.askQuestion(Object.assign({}, Config.clearClipsQuestion", slate.read("shell", "settings", "pages", "GeneralPage.qml"))
         self.assertIn("confirmer: powerConfirm", slate.read("shell", "shell.qml")[slate.read("shell", "shell.qml").index("Picker {"):][:200])
+
+
+class PanelKeys(Case):
+    def test_panel_controls_press_through_press_js(self):
+        """Enter, Return and Space press a panel's control: one handler (panels/Press.js),
+        rather than the same five lines in eleven places."""
+        import glob, os
+        for path in sorted(glob.glob(os.path.join(slate.ROOT, "shell", "panels", "*.qml"))):
+            if path.endswith("RowButton.qml"):      # (its own keys: the menu and Delete too)
+                continue
+            with self.subTest(os.path.basename(path)):
+                src = open(path, encoding="utf-8").read()
+                self.assertNotRegex(src, r"if \(e\.key !== Qt\.Key_Return && e\.key !== Qt\.Key_Enter && e\.key !== Qt\.Key_Space",
+                                    "presses by keyboard with a handler of its own: use Press.keys")

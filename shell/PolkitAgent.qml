@@ -120,14 +120,7 @@ PanelWindow {
         height: content.implicitHeight + 48
         color: root.cardColor
 
-        transform: Translate { id: shakeX }
-        SequentialAnimation {
-            id: shake
-            NumberAnimation { target: shakeX; property: "x"; to: -12; duration: Config.ms(50) }
-            NumberAnimation { target: shakeX; property: "x"; to: 10; duration: Config.ms(70) }
-            NumberAnimation { target: shakeX; property: "x"; to: -6; duration: Config.ms(60) }
-            NumberAnimation { target: shakeX; property: "x"; to: 0; duration: Config.ms(60) }
-        }
+        transform: Shake { id: shake }
 
         FocusScope {
             anchors.fill: parent

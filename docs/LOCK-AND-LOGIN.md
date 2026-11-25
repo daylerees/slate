@@ -1,7 +1,7 @@
 # Lock screen and login screen
 
 Both use the same design, `LoginScreen.qml`: wallpaper behind (plain slate if none),
-round avatar with a dark border, a password frame with a caps-lock indicator,
+round avatar with a dark border, your name under it, a password frame with a caps-lock indicator,
 a session switcher bottom-left (login only) and a power menu bottom-right (login
 always; lock screen only if enabled). Rounded screen corners follow the setting.
 With glass on, the panels are glass too (frosted wallpaper drawn by `WallBlur.qml`, since

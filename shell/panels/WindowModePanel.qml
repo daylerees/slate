@@ -42,26 +42,23 @@ Column {
                 selected: Config.focusedMode === modelData.value
                 // (the default's mode: back to following the default)
                 onClicked: Config.setWorkspaceMode(wmView.ws, modelData.value)
-                Icon {
+                RowIcon {
                     id: modeIcon
                     code: modeRow.modelData.icon; font.pixelSize: 16
                     color: modeRow.fgDim
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                 }
-                Label {
+                RowLabel {
                     anchors { left: modeIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
                     text: modeRow.modelData.label
                     color: modeRow.fg
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.weight: Font.Normal
                 }
-                Label {
+                RowLabel {
                     visible: modeRow.isDefault
                     anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     text: "Default"
                     color: modeRow.fgDim
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.pixelSize: Config.text(12); font.weight: Font.Normal
                 }
             }

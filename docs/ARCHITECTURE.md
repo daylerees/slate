@@ -31,6 +31,7 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ Meter.qml            the thin level bar (the battery, Wi-Fi signal and volume pop-up)
 ├─ BarArranger.qml      the drag-to-arrange area over the bar while its layout is edited
 ├─ TrayIcon.qml         one tray icon's picture, measured and sized to match the others
+├─ Shake.qml            a wrong password: the card shakes (lock and login screens, password prompt)
 ├─ BarLabel.qml         the label off the bar saying what the pointer's over ("slate-bar-label")
 ├─ Popouts.qml          drop-down panels under the bar ("slate-popout")
 │  ├─ Weather.qml       the weather from Open-Meteo for Settings' location (every 30 min), held for
@@ -41,7 +42,9 @@ shell.qml               root: creates everything below, plus the dock itself
 │                       panels/Icon.qml, panels/Divider.qml, panels/Heading.qml,
 │                       panels/Slider.qml, panels/Switch.qml, panels/RowButton.qml,
 │                       panels/LinkRow.qml, panels/PanelTitle.qml, panels/PanelField.qml,
-│                       panels/ForecastDay.qml
+│                       panels/ForecastDay.qml, panels/RowLabel.qml and panels/RowIcon.qml (a
+│                       row's words and icon, fading to the dark color on the accent),
+│                       panels/Press.js (Enter, Return or Space presses a control)
 │                       and one file for each panel, loaded when it opens: panels/VolumePanel.qml,
 │                       panels/WifiPanel.qml, panels/KeyboardPanel.qml, panels/ClipboardPanel.qml,
 │                       panels/ScreenshotPanel.qml, panels/BluetoothPanel.qml,

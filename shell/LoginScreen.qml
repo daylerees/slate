@@ -136,6 +136,16 @@ Item {
     }
     // The wallpaper, crossfading when it changes (the login screen, choosing someone with a look
     // of their own): the new one loads behind, then fades in as the old one fades out
+    component PlainName: Text {
+        width: Math.min(implicitWidth, 420)
+        horizontalAlignment: Text.AlignHCenter
+        textFormat: Text.PlainText                    // (a name someone chose)
+        elide: Text.ElideRight
+        color: "#ffffff"
+        font.family: ls.font; font.pixelSize: 20; font.weight: Font.Medium
+        layer.enabled: ls.shadowOn > 0
+        layer.effect: MultiEffect { shadowEnabled: ls.shadowOn > 0; shadowColor: "#000000"; shadowOpacity: 0.6 * ls.shadowOn; shadowBlur: 0.5; blurMax: 16; shadowVerticalOffset: 1 }
+    }
     component PicLayer: RoundImage {
         id: picLayer
         property bool on: false
@@ -225,8 +235,9 @@ Item {
         id: centre
         visible: ls.interactive
         anchors.centerIn: parent
-        // (lifted by half of what the avatar's border added, so the password frame stays put)
-        anchors.verticalCenterOffset: -34
+        // (lifted by half of what the avatar's border and your name added, so the password frame
+        // stays put)
+        anchors.verticalCenterOffset: -34 - (ls.displayName !== "" ? 22 : 0)
         spacing: 18
 
         // Round avatar with a border (8 px round a 124 px picture): the border is the accent
@@ -298,6 +309,13 @@ Item {
                 PicLayer { id: picB }
             }
         }
+        // Your name under the picture (the lock screen's, or whoever's chosen on the login
+        // screen), on the wallpaper: white, with the soft shadow the cards have, to read on any
+        PlainName {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: ls.displayName !== ""
+            text: ls.displayName
+        }
 
         // Password frame
         Rectangle {
@@ -310,14 +328,7 @@ Item {
             layer.enabled: true
             layer.effect: MultiEffect { shadowEnabled: ls.shadowOn > 0; shadowColor: "#000000"; shadowOpacity: 0.4 * ls.shadowOn; shadowBlur: Config.shadowEffectBlur; shadowHorizontalOffset: Config.shadowDX; shadowVerticalOffset: Config.shadowDY; blurMax: 32 }
             GlassFill { screen: ls; shown: ls.glassOn; wallpaper: ls.wallpaper; fill: Config.surface(ls.frame); radius: box.radius }
-            transform: Translate { id: shakeX }
-            SequentialAnimation {
-                id: shake
-                NumberAnimation { target: shakeX; property: "x"; to: -12; duration: Config.ms(50) }
-                NumberAnimation { target: shakeX; property: "x"; to: 10; duration: Config.ms(70) }
-                NumberAnimation { target: shakeX; property: "x"; to: -6; duration: Config.ms(60) }
-                NumberAnimation { target: shakeX; property: "x"; to: 0; duration: Config.ms(60) }
-            }
+            transform: Shake { id: shake }
 
             Column {
                 id: boxCol

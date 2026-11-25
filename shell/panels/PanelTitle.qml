@@ -1,5 +1,6 @@
 import QtQuick
 import qs
+import "Press.js" as Press
 
 // A panel's title row: its name on the left; anything put inside it (a switch, a count)
 // anchors itself, usually to the right
@@ -37,11 +38,7 @@ Item {
         Accessible.name: parent.editName
         Accessible.onPressAction: parent.editClicked()
         activeFocusOnTab: visible
-        Keys.onPressed: e => {
-            if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-            parent.editClicked();
-            e.accepted = true;
-        }
+        Keys.onPressed: e => Press.keys(e, () => parent.editClicked())
         FocusRing { round: 6 }
     }
 }

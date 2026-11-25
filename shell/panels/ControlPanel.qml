@@ -7,6 +7,7 @@ import Quickshell.Networking
 import Quickshell.Bluetooth
 import QtQuick.Effects
 import qs
+import "Press.js" as Press
 
 // ---- Control centre ----------------------------------------------------
 Column {
@@ -98,11 +99,7 @@ Column {
             Accessible.name: "Change your picture"
             Accessible.onPressAction: avatar.change()
             activeFocusOnTab: visible
-            Keys.onPressed: e => {
-                if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-                avatar.change();
-                e.accepted = true;
-            }
+            Keys.onPressed: e => Press.keys(e, () => avatar.change())
             FocusRing { round: 30 }
         }
         Column {
@@ -377,19 +374,17 @@ Column {
                         anchors.centerIn: parent
                         width: parent.width - 12
                         spacing: 3
-                        Icon {
+                        RowIcon {
                             anchors.horizontalCenter: parent.horizontalCenter
                             code: controlTile.tile.code
                             color: controlTile.fg
-                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         }
-                        Label {
+                        RowLabel {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
                             text: controlTile.tile.label
                             font.pixelSize: Config.text(11)
                             color: controlTile.fg
-                            Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         }
                     }
                 }

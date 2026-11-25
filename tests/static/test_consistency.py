@@ -1516,3 +1516,13 @@ class QuietAtStart(Case):
         src = slate.read("shell", "panels", "BatteryPanel.qml")
         self.assertIn("if (!gpuNone && gpuTick++ % 3 === 0 && !gpuInfo.running)", src)
         self.assertIn("bat.gpuNone = true;", src)
+
+
+class LoginScreenName(Case):
+    def test_the_name_is_shown(self):
+        """The lock and login screens were handed your name by three callers and never showed
+        it: it's under the picture, and both shakes are the one Shake.qml."""
+        src = slate.read("shell", "LoginScreen.qml")
+        self.assertRegex(src, r"PlainName \{[^}]*visible: ls\.displayName !== \"\"[^}]*text: ls\.displayName")
+        for f in ("LoginScreen.qml", "PolkitAgent.qml"):
+            self.assertIn("transform: Shake { id: shake }", slate.read("shell", f))

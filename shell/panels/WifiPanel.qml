@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
 import qs
+import "Press.js" as Press
 
 // ---- Wi-Fi -------------------------------------------------------------
 Column {
@@ -149,20 +150,18 @@ Column {
                     if (n.known || !netRow.secure) { n.connect(); wifiView.askingFor = ""; }
                     else wifiView.askingFor = (wifiView.askingFor === n.name ? "" : n.name);
                 }
-                Icon {
+                RowIcon {
                     id: signalIcon
                     readonly property real s: netRow.modelData.signalStrength
                     code: s > 0.66 ? 0xEB52 : s > 0.33 ? 0xEBA5 : 0xEBA4
                     color: parent.fg
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.pixelSize: 16
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                 }
-                Label {
+                RowLabel {
                     anchors { left: signalIcon.right; leftMargin: 10; right: netStatus.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                     text: netRow.modelData.name
                     color: parent.fg
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 }
                 Row {
                     id: netStatus
@@ -286,11 +285,7 @@ Column {
                 Accessible.description: tile.detail.copy ? "Copy" : ""
                 Accessible.onPressAction: if (tile.detail.copy) tile.copy()
                 activeFocusOnTab: visible && tile.detail.copy
-                Keys.onPressed: e => {
-                    if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-                    tile.copy();
-                    e.accepted = true;
-                }
+                Keys.onPressed: e => Press.keys(e, () => tile.copy())
                 FocusRing { round: 9 }
             }
         }

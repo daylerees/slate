@@ -1,5 +1,6 @@
 import QtQuick
 import qs
+import "Press.js" as Press
 
 // An on/off switch, as in the Wi-Fi, Bluetooth, game mode and notifications panels
 Rectangle {
@@ -15,11 +16,7 @@ Rectangle {
     // (the keyboard: a stop for Tab and the arrow keys, which the panel moves between:
     // Popouts.keyStep; Enter or Space presses; its ring)
     activeFocusOnTab: visible && enabled
-    Keys.onPressed: e => {
-        if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-        toggled();
-        e.accepted = true;
-    }
+    Keys.onPressed: e => Press.keys(e, () => toggled())
     FocusRing { round: 13 }
     readonly property var pop: PanelHost.pop
     id: onOff

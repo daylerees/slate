@@ -18,6 +18,7 @@ LoginScreen.qml              LoginScreen.qml
 Config.qml                   Config.qml
 SettingsData.qml             SettingsData.qml
 RoundImage.qml               RoundImage.qml
+Shake.qml                    Shake.qml
 WallBlur.qml                 WallBlur.qml
 Gloss.qml                    Gloss.qml
 shaders/gloss.frag.qsb       shaders/gloss.frag.qsb

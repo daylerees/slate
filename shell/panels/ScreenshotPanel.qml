@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs
+import "Press.js" as Press
 
 // ---- Screenshots ------------------------------------------------------
 // Take one of an area, a window or the screen (scripts/screenshot.sh), or record one
@@ -62,11 +63,7 @@ Column {
         Accessible.onPressAction: tile.picked()
         // (the keyboard: a stop, Enter or Space picks it)
         activeFocusOnTab: visible
-        Keys.onPressed: e => {
-            if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space) return;
-            tile.picked();
-            e.accepted = true;
-        }
+        Keys.onPressed: e => Press.keys(e, () => tile.picked())
         FocusRing {}
         HoverFill { base: pop.card; hovered: tileHover.hovered; radius: parent.radius }
         Column {

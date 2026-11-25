@@ -62,28 +62,25 @@ Column {
                 toggles: true
                 selected: d.connected
                 onClicked: d.connected ? d.disconnect() : d.connect()
-                Icon {
+                RowIcon {
                     id: devIcon
                     code: btView.iconFor(devRow.d)
                     color: devRow.fg
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     font.pixelSize: 17
                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                 }
                 Column {
                     anchors { left: devIcon.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     spacing: 1
-                    Label {
+                    RowLabel {
                         width: parent.width
                         text: devRow.d.name || devRow.d.deviceName || devRow.d.address
                         color: devRow.fg
-                        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                     }
-                    Label {
+                    RowLabel {
                         width: parent.width
                         font.pixelSize: Config.text(11); font.weight: Font.Normal
                         color: devRow.fgDim
-                        Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                         opacity: devRow.selected ? 0.8 : 1
                         text: devRow.busy ? (devRow.d.connected ? "Disconnecting…" : "Connecting…")
                             : devRow.d.connected ? "Connected" + (devRow.d.batteryAvailable ? " · " + Math.round(devRow.d.battery * 100) + "% battery" : "")

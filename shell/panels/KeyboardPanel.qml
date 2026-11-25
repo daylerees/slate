@@ -36,11 +36,10 @@ Column {
                         font.family: pop.bar.fontFamily; font.pixelSize: Config.text(11); font.weight: Font.Bold
                     }
                 }
-                Label {
+                RowLabel {
                     anchors { left: codeCap.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     text: layoutBtn.modelData.name
                     color: layoutBtn.fg
-                    Behavior on color { ColorAnimation { duration: Config.ms(120) } }
                 }
             }
         }
