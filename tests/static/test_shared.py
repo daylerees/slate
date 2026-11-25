@@ -200,3 +200,31 @@ class PowerModeAtLogin(Case):
         self.assertIn("Component.onCompleted: atLogin = root.welcoming && !root.isLoginScreen", block)
         self.assertIn("onTriggered: if (atLogin) root.applyPowerProfile()", block)
         self.assertIn("function onOnBatteryChanged() { if (!root.isLoginScreen) root.applyPowerProfile(); }", src)
+
+
+class BarLayoutSplit(Case):
+    def test_change_handlers_follow_the_names(self):
+        """The bar's arrangement moved from Config.qml to BarLayout.qml. A Connections on Config
+        for one of its names (onBarLayoutChanged…) still loaded, and silently never fired: the
+        bar stopped laying itself out again. Every handler listens where its name lives."""
+        import glob, os
+        bl = slate.read("shell", "BarLayout.qml")
+        cfg = slate.read("shell", "Config.qml")
+        mine = set(re.findall(r"^    (?:readonly )?(?:property \w+|signal|function) (\w+)", bl, re.M))
+        theirs = set(re.findall(r"^    (?:readonly )?(?:property \w+|signal|function) (\w+)", cfg, re.M))
+        for path in sorted(glob.glob(os.path.join(slate.ROOT, "shell", "**", "*.qml"), recursive=True)):
+            src = open(path, encoding="utf-8").read()
+            for m in re.finditer(r"Connections \{\s*target: (Config|BarLayout)\b", src):
+                # (its own braces only)
+                depth, i = 1, m.end()
+                while depth and i < len(src):
+                    depth += {"{": 1, "}": -1}.get(src[i], 0)
+                    i += 1
+                body = src[m.end():i]
+                for h in re.findall(r"function on(\w+?)(?:Changed)?\(", body):
+                    name = h[0].lower() + h[1:]
+                    with self.subTest(f"{os.path.basename(path)}: on{h}"):
+                        if m.group(1) == "Config":
+                            self.assertFalse(name in mine and name not in theirs, f"{name} is BarLayout's: target BarLayout")
+                        else:
+                            self.assertIn(name, mine, f"{name} isn't BarLayout's")

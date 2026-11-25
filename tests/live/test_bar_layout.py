@@ -71,7 +71,7 @@ class BarLayout(LiveCase):
 
     def test_an_old_layout_with_chalk_shows_nova(self):
         """An arrangement saved before the assistant was renamed names its button "chalk": it's
-        read as Nova's (Config.barId), so the button stays where it was put."""
+        read as Nova's (BarLayout.barId), so the button stays where it was put."""
         import json as _json
         old = [{"items": ["control"]}, {"items": ["apps", "chalk"]}, {"items": ["spaces", "windowmode", "workspaces"]},
                "space", {"items": ["clock"]}, {"items": ["power"]}]

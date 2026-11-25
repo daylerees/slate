@@ -1271,7 +1271,7 @@ def settings_show(key="", page=""):
 
 LOOKS = ["Liquid Glass", "Metro Flat"]
 PANELS = ["control", "spaces", "notifications", "session", "volume", "wifi", "clipboard", "screenshot",
-          "keyboard", "bluetooth", "battery", "gamemode", "calendar", "windowmode", "drink", "focus"]
+          "keyboard", "bluetooth", "battery", "gamemode", "calendar", "windowmode", "drink", "focus", "more"]
 
 
 @tool("look_apply", "Apply a look",
@@ -1287,7 +1287,8 @@ def look_apply(name):
 
 
 @tool("panel_open", "Open a panel",
-      "Open one of the menu bar's panels for the person to use (control is the control center).",
+      "Open one of the menu bar's panels for the person to use (control is the control center; more holds "
+      "what there isn't room for on the bar).",
       {"name": {"type": "string", "enum": PANELS}}, ["name"], tier="change")
 def panel_open(name):
     changing("Open a panel?", "%s is asking to open the %s panel." % (asker(), name), "Open")
@@ -1312,7 +1313,7 @@ def timer(action):
     return {"done": action}
 
 
-# What can be on the menu bar, by the names its arrangement uses (Config.barItems). "more" holds
+# What can be on the menu bar, by the names its arrangement uses (BarLayout.barItems). "more" holds
 # whatever there isn't room for: it's always on the bar
 BAR_ITEMS = {
     "control": "Control Center", "apps": "Apps", "spaces": "Spaces", "nova": "Nova", "windowmode": "Window mode",

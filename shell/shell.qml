@@ -165,45 +165,45 @@ ShellRoot {
             const n = v => parseInt(v);
             if (what === "start") Config.barArranging = true;
             else if (what === "done") Config.barArranging = false;
-            else if (what === "reset") Config.barReset();
+            else if (what === "reset") BarLayout.barReset();
             // (an arrangement as saved, JSON: one from an older Slate, say)
             // (as {"layout": […]}: qs ipc takes the brackets off an argument that starts with one)
             else if (what === "load") Config.s.barLayout = JSON.parse(a).layout;
-            else if (what === "moveItem") Config.barMoveItem(a, n(b), n(c));
-            else if (what === "moveEntry") Config.barMoveEntry(n(a), n(b));
-            else if (what === "moveTuck") Config.barMoveTuck(n(a), n(b), n(c));
-            else if (what === "addSpace") Config.barAddSpace(n(a));
-            else if (what === "addBox") Config.barAddBox(n(a));
-            else if (what === "remove") Config.barRemoveEntry(n(a));
-            else if (what === "split") Config.barSplit(n(a));
-            else if (what === "tuck") Config.barSetTuck(n(a), b === "" ? undefined : b === "true", c === "" ? undefined : c);
-            else if (what === "tuckFrom") Config.barSetTuck(n(a), undefined, undefined, b);
-            else if (what === "shown") Config.barSetShown(a, b === "true");
-            else if (what === "pick") Config.barPick(n(a), b);
+            else if (what === "moveItem") BarLayout.barMoveItem(a, n(b), n(c));
+            else if (what === "moveEntry") BarLayout.barMoveEntry(n(a), n(b));
+            else if (what === "moveTuck") BarLayout.barMoveTuck(n(a), n(b), n(c));
+            else if (what === "addSpace") BarLayout.barAddSpace(n(a));
+            else if (what === "addBox") BarLayout.barAddBox(n(a));
+            else if (what === "remove") BarLayout.barRemoveEntry(n(a));
+            else if (what === "split") BarLayout.barSplit(n(a));
+            else if (what === "tuck") BarLayout.barSetTuck(n(a), b === "" ? undefined : b === "true", c === "" ? undefined : c);
+            else if (what === "tuckFrom") BarLayout.barSetTuck(n(a), undefined, undefined, b);
+            else if (what === "shown") BarLayout.barSetShown(a, b === "true");
+            else if (what === "pick") BarLayout.barPick(n(a), b);
             // (a chip from the pool held over the bar at a place on the desktop: the gap opens)
             else if (what === "hover") {
                 const at = c.split(",");
-                Config.barFloat = { kind: a, icons: [{ code: (Config.barItem(b) || { icon: 0xEAD5 }).icon, item: b, text: topBar.exampleOf(b) }] };
-                Config.barCarry = { kind: a, id: b };
-                Config.barCarryAt = Qt.point(Number(at[0]), Number(at[1]));
-                Config.barFloatAt = Config.barCarryAt;
+                BarLayout.barFloat = { kind: a, icons: [{ code: (BarLayout.barItem(b) || { icon: 0xEAD5 }).icon, item: b, text: topBar.exampleOf(b) }] };
+                BarLayout.barCarry = { kind: a, id: b };
+                BarLayout.barCarryAt = Qt.point(Number(at[0]), Number(at[1]));
+                BarLayout.barFloatAt = BarLayout.barCarryAt;
             }
             else if (what === "drag") { const p = c.split(","); topBar.testDrag(n(a), n(b), Number(p[0]), Number(p[1])); }
             else if (what === "squeeze") topBar.squeeze = Number(a);
             // (a container's collapse button clicked: open, or closed again)
             else if (what === "open") topBar.testOpenBox(n(a), b !== "false");
-            else if (what === "collapse") Config.barSetCollapse(n(a), b);
-            else if (what === "overflow") Config.barSetOverflow(a === "" ? [] : a.split(","), b === "" ? [] : b.split(","));
-            else if (what === "stay") Config.barSetStay(a, b === "true");
-            else if (what === "preview") Config.barPreview = Number(a);
+            else if (what === "collapse") BarLayout.barSetCollapse(n(a), b);
+            else if (what === "overflow") BarLayout.barSetOverflow(a === "" ? [] : a.split(","), b === "" ? [] : b.split(","));
+            else if (what === "stay") BarLayout.barSetStay(a, b === "true");
+            else if (what === "preview") BarLayout.barPreview = Number(a);
             // (menu item priority: its window, and a row moved to a place in its list; and the
             // "Try it shorter" dropdown: its menu opened or closed, a length chosen from it)
             else if (what === "length") { if (!barEditor.item) return; if (a === "pick") barEditor.item.lengthPick(Number(b)); else barEditor.item.lengthMenu(a === "open"); }
-            else if (what === "priority") { if (a === "move") { if (barEditor.item) barEditor.item.priorityMove(b, n(c)); } else if (a === "scroll") { if (barEditor.item) barEditor.item.priorityScroll(Number(b)); } else Config.barPrioritising = a === "open"; }
+            else if (what === "priority") { if (a === "move") { if (barEditor.item) barEditor.item.priorityMove(b, n(c)); } else if (a === "scroll") { if (barEditor.item) barEditor.item.priorityScroll(Number(b)); } else BarLayout.barPrioritising = a === "open"; }
             else if (what === "scroll") topBar.scrollBy(Number(a));
             else if (what === "more") topBar.moreClick({ id: a, tray: null }, b === "right");
-            else if (what === "fixed") Config.barSetFixed(n(a), Number(b), c);
-            else if (what === "carry") { Config.barCarry = { kind: a, id: b }; Config.barCarryTarget = JSON.parse(c); Config.barDrop(); }
+            else if (what === "fixed") BarLayout.barSetFixed(n(a), Number(b), c);
+            else if (what === "carry") { BarLayout.barCarry = { kind: a, id: b }; BarLayout.barCarryTarget = JSON.parse(c); BarLayout.barDrop(); }
         }
         // Hot corners: is this point (Hyprland's pixels, as `hyprctl cursorpos` says) in that
         // corner ("topLeft", "bottomRight"…) of the main display? (what unlocking asks)
@@ -375,8 +375,8 @@ ShellRoot {
             return JSON.stringify(topBar.testPoint(t.x + t.w / 2, t.y + t.h / 2, "hover"));
         }
         // What the label off the bar would call a tray icon with this id, title and tooltip title
-        // (Config.trayName: the tidying of a raw id)
-        function trayName(id: string, title: string, tooltip: string): string { return Config.trayName({ id: id, title: title, tooltipTitle: tooltip }); }
+        // (BarLayout.trayName: the tidying of a raw id)
+        function trayName(id: string, title: string, tooltip: string): string { return BarLayout.trayName({ id: id, title: title, tooltipTitle: tooltip }); }
         // What a notification's card makes of a message before drawing it, and whether it would
         // open a link in one (NotificationText.js)
         function safeBody(body: string): string { return NotificationText.safeBody(body); }
@@ -721,9 +721,9 @@ ShellRoot {
                 // Live previews held as windows closed, and stopped as their own did (PreviewHold.qml)
                 previews: { holds: PreviewHold.testHolds, stopped: PreviewHold.testStopped, held: PreviewHold.held },
                 // The menu bar's arrangement, and arranging it (BarEditor.qml)
-                bar: { arranging: Config.barArranging, layout: Config.barLayout, isDefault: Config.barIsDefault,
-                       picked: Config.barSelected, pickedItem: Config.barSelectedItem, editor: !!barEditor.item && barEditor.item.shown, editorBuilt: !!barEditor.item, edge: popouts.edge,
-                       line: topBar.lineState(), span: topBar.lineSpan(), gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState(), order: Config.barOverflowOrder, priority: barEditor.item ? barEditor.item.priorityState : { open: false, list: [], scroll: 0, scrollMax: 0, lengthMenu: false, length: "" }, stay: Config.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), moreKeys: topBar.moreKeys().map(k => [k, (topBar.moreRow(k) || {}).label || ""]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState(), band: topBar.band(),
+                bar: { arranging: Config.barArranging, layout: BarLayout.barLayout, isDefault: BarLayout.barIsDefault,
+                       picked: BarLayout.barSelected, pickedItem: BarLayout.barSelectedItem, editor: !!barEditor.item && barEditor.item.shown, editorBuilt: !!barEditor.item, edge: popouts.edge,
+                       line: topBar.lineState(), span: topBar.lineSpan(), gives: topBar.gives, opened: topBar.openBoxes(), clock: topBar.clockText, titleWidth: Math.round(topBar.titleWidth), overflowed: topBar.overflowed, scroll: topBar.scrollState(), order: BarLayout.barOverflowOrder, priority: barEditor.item ? barEditor.item.priorityState : { open: false, list: [], scroll: 0, scrollMax: 0, lengthMenu: false, length: "" }, stay: BarLayout.barStay, more: topBar.moreRows().map(r => [r.label, r.value]), moreKeys: topBar.moreKeys().map(k => [k, (topBar.moreRow(k) || {}).label || ""]), menu: topBar.menu.visible ? topBar.menu.items.map(i => i.label) : [], dots: topBar.dotsState(), band: topBar.band(),
                        // (the label off the bar saying what the pointer's over: BarLabel.qml)
                        label: topBar.label.testState() },
                 barEdge: Config.barEdge, dockEdge: Config.dockEdge,

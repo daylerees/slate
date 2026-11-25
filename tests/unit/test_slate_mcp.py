@@ -1392,8 +1392,9 @@ class SettingsTools(Base):
         bar = slate.read("shell", "Bar.qml")
         names = re.sub(r"\s*//\s*", " ", bar.split("// names:")[1].split("function panel")[0])
         self.assertEqual(mcp.PANELS, [n.strip() for n in names.split(",")])
-        items = re.findall(r'\{ id: "(\w+)", label: "([^"]+)"', config.split("readonly property var barItems")[1].split("\n    ]")[0])
-        self.assertEqual(list(mcp.BAR_ITEMS.items()), items, "bar_arrange's names aren't the bar's (Config.barItems)")
+        layout = slate.read("shell", "BarLayout.qml")
+        items = re.findall(r'\{ id: "(\w+)", label: "([^"]+)"', layout.split("readonly property var barItems")[1].split("\n    ]")[0])
+        self.assertEqual(list(mcp.BAR_ITEMS.items()), items, "bar_arrange's names aren't the bar's (BarLayout.barItems)")
 
     def test_bar_layout_takes_fixed_spaces(self):
         """A fixed space in bar_arrange's layout: "fixed:<n>px" or "fixed:<n>%", as Slate saves it."""

@@ -30,8 +30,10 @@ def python_rule(parts):
 
 
 def lua_rule():
-    m = re.search(r'^local runtimeDir = .*?^end\n', slate.read("shell", "session", "hypr", "hyprland.lua"), re.M | re.S)
-    return m.group(0) if m else None
+    # (one line, on paths.lua's slateEnv and SLATE_STATE_HOME, which hyprland.lua loads first)
+    m = re.search(r'^local runtimeDir = [^\n]*\n', slate.read("shell", "session", "hypr", "hyprland.lua"), re.M)
+    paths = slate.path("shell", "session", "hypr", "config", "paths.lua")
+    return ('dofile("%s"); local env = slateEnv\n' % paths + m.group(0)) if m else None
 
 
 class RuntimeDir(Case):

@@ -32,6 +32,7 @@ shell.qml               root: creates everything below, plus the dock itself
 ├─ BarArranger.qml      the drag-to-arrange area over the bar while its layout is edited
 ├─ TrayIcon.qml         one tray icon's picture, measured and sized to match the others
 ├─ Shake.qml            a wrong password: the card shakes (lock and login screens, password prompt)
+├─ BarLayout.qml        singleton: the menu bar's arrangement (what's on it, in what order; arranging it; the assistant's bar_arrange)
 ├─ BarLabel.qml         the label off the bar saying what the pointer's over ("slate-bar-label")
 ├─ Popouts.qml          drop-down panels under the bar ("slate-popout")
 │  ├─ Weather.qml       the weather from Open-Meteo for Settings' location (every 30 min), held for

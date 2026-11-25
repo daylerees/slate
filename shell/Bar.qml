@@ -121,7 +121,7 @@ PanelWindow {
     function moreKeys() {
         const keys = [];
         for (const id of inMore) {
-            if (!Config.barItem(id) || !left.things[id]) continue;
+            if (!BarLayout.barItem(id) || !left.things[id]) continue;
             if (id === "tray") { keys.push(...trayKeys()); continue; }
             keys.push(id);
         }
@@ -130,9 +130,9 @@ PanelWindow {
     function moreRow(key) {
         if (key.startsWith("tray:")) {
             const tr = SystemTray.items.values[trayKeys().indexOf(key)];
-            return tr ? { id: "tray", tray: tr, label: Config.trayName(tr) || "App", icon: 0, image: String(tr.icon), value: "" } : null;
+            return tr ? { id: "tray", tray: tr, label: BarLayout.trayName(tr) || "App", icon: 0, image: String(tr.icon), value: "" } : null;
         }
-        const it = Config.barItem(key), t = left.things[key];
+        const it = BarLayout.barItem(key), t = left.things[key];
         if (!it || !t) return null;
         return { id: key, tray: null, label: it.label, icon: it.icon, image: "",
                  value: key === "workspaces" || key === "workspacename" ? Config.focusedWorkspaceLabel : (t.plain ? t.label : "") };
@@ -245,14 +245,14 @@ PanelWindow {
     function thingTip(seg) {
         if (seg.isToggle) {
             const names = seg.shell ? seg.shell.cells.filter(c => c.wanted && !c.overflowed && !c.carried)
-                .map(c => { const it = Config.barItem(c.name); return it ? it.label : ""; }).filter(n => n !== "") : [];
+                .map(c => { const it = BarLayout.barItem(c.name); return it ? it.label : ""; }).filter(n => n !== "") : [];
             return Config.listText(names);
         }
         if (seg.tipText !== "") return seg.tipText;
         const n = seg.name;
         if (n === "" || n === "windowtitle" || n === "tray") return "";
         if (n === "windowicon") { const e = appTile.entry; if (e && e.name) return e.name; }
-        const it = Config.barItem(n);
+        const it = BarLayout.barItem(n);
         return it ? it.label : "";
     }
     // (for the label: a panel or menu from the bar is open)
@@ -603,7 +603,7 @@ PanelWindow {
         // (done, with menu item priority up: back to the arranging, as its Back does. It's what
         // Escape runs while the bar's arranged)
         function edit(what: string): void {
-            if (what !== "start" && Config.barPrioritising) Config.barPrioritising = false;
+            if (what !== "start" && BarLayout.barPrioritising) BarLayout.barPrioritising = false;
             else Config.barArranging = what === "start";
         }
         // Open (or close) one of the bar's panels under its button, e.g.
@@ -612,9 +612,9 @@ PanelWindow {
         // keyboard, bluetooth, battery, gamemode, calendar, windowmode, drink, focus, more
         function panel(name: string): void { bar.focusedBar().openPanel(name); }
         // The whole arrangement, read and set as JSON (the assistant's bar_arrange; see
-        // Config.barArrangement / barArrange)
-        function arrangement(): string { return JSON.stringify(Config.barArrangement()); }
-        function arrange(spec: string): void { Config.barArrange(JSON.parse(spec)); }
+        // BarLayout.barArrangement / barArrange)
+        function arrangement(): string { return JSON.stringify(BarLayout.barArrangement()); }
+        function arrange(spec: string): void { BarLayout.barArrange(JSON.parse(spec)); }
     }
 
     // Takes pointer input: the bar while shown, a thin strip at the top edge while hidden
@@ -702,14 +702,14 @@ PanelWindow {
 
     // ---- Room along the line (the flexible spaces, and how long a title may be) ------------
     readonly property real lineFull: Math.max(0, (vert ? content.height : content.width) - 2 * sidePadding)
-    readonly property real lineLength: Math.max(0, lineFull - squeeze - lineFull * Config.barPreview)
-    // Tried shorter while it's arranged (Config.barPreview, "Try it shorter"): the shorter line
+    readonly property real lineLength: Math.max(0, lineFull - squeeze - lineFull * BarLayout.barPreview)
+    // Tried shorter while it's arranged (BarLayout.barPreview, "Try it shorter"): the shorter line
     // sits in the middle of the edge, half of what it gives up at each end, gliding there
-    property real previewShift: lineFull * Config.barPreview / 2
+    property real previewShift: lineFull * BarLayout.barPreview / 2
     Behavior on previewShift { NumberAnimation { duration: Config.ms(240); easing.type: Easing.OutCubic } }
     // (tests: where the line's room starts and ends along the bar, and the bar's length)
     // (worked out when a test asks: shell.qml's state)
-    function lineSpan() { return ({ preview: Config.barPreview, start: sidePadding + previewShift,
+    function lineSpan() { return ({ preview: BarLayout.barPreview, start: sidePadding + previewShift,
                                       end: sidePadding + previewShift + lineLength, length: vert ? content.height : content.width }); }
     // (tests, and the arranging panel's narrow preview: the line made this much shorter)
     property real squeeze: 0
@@ -721,11 +721,11 @@ PanelWindow {
     // wheel over the bar, and by itself as something's carried to either end. From the
     // beginning each time arranging starts.
     readonly property real lineNatural: vert ? left.height : left.width
-    readonly property real scrollMax: Config.barShowAll ? Math.max(0, Math.ceil(lineNatural - lineLength)) : 0
+    readonly property real scrollMax: BarLayout.barShowAll ? Math.max(0, Math.ceil(lineNatural - lineLength)) : 0
     property real scroll: 0
     onScrollMaxChanged: scroll = Math.max(0, Math.min(scrollMax, scroll))
     function scrollBy(d) { scroll = Math.max(0, Math.min(scrollMax, scroll + d)); }
-    Connections { target: Config; function onBarShowAllChanged() { bar.scroll = 0; } }
+    Connections { target: BarLayout; function onBarShowAllChanged() { bar.scroll = 0; } }
 
     // ---- When it doesn't all fit: slimming (docs/ARCHITECTURE.md, "When the bar's contents don't fit") ----
     // The line gives up the cheapest things first, each only if it still doesn't fit after the
@@ -741,7 +741,7 @@ PanelWindow {
     // arranged: everything's there then, to be picked up.
     property var gives: []
     // ...and when slimming isn't enough, things leave the bar for More, one at a time, in the
-    // order they're least minded (Config.barOverflowDefault; some stay whatever happens), and
+    // order they're least minded (BarLayout.barOverflowDefault; some stay whatever happens), and
     // come back in the reverse order. What's in More now, in that order:
     property var overflowed: []
     property bool fitting: false
@@ -751,7 +751,7 @@ PanelWindow {
     readonly property real titleLeast: 44     // a title shorter than this isn't worth its room
     function slimPlan() {
         const plan = [];
-        if (Config.barShowAll) return plan;
+        if (BarLayout.barShowAll) return plan;
         if (Config.s.barShowTitle && winTitle.shell && titleText.text !== "") plan.push("title");
         if (!vert) {
             const texts = [];
@@ -767,20 +767,20 @@ PanelWindow {
             if (Config.s.barClockSeconds) plan.push("clock:seconds");
         }
         // ...then the containers set to collapse when needed tuck away, one at a time: the one
-        // holding what's minded least first (Config.barOverflowRank)
+        // holding what's minded least first (BarLayout.barOverflowRank)
         const boxes = [];
         for (const c of left.children) {
             if (!c.isBox || c.collapse !== "needed" || c.cells.indexOf(moreBtn) >= 0) continue;     // (More is never tucked away)
             const shown = c.cells.filter(x => x.wanted);
-            if (shown.length >= 2) boxes.push({ at: c.index, rank: Math.min(...shown.map(x => Config.barOverflowRank(x.name))) });
+            if (shown.length >= 2) boxes.push({ at: c.index, rank: Math.min(...shown.map(x => BarLayout.barOverflowRank(x.name))) });
         }
         boxes.sort((a, b) => a.rank - b.rank || a.at - b.at);
         for (const b of boxes) plan.push("tuck:" + b.at);
         // ...and then things leave for More (none from a collapsed container you've opened: it's
         // what you asked to see, and the rest make room for it)
-        for (const id of Config.barOverflowOrder) {
+        for (const id of BarLayout.barOverflowOrder) {
             const t = left.things[id];
-            if (!t || !t.shell || Config.barStays(id) || (t.shell.tuck && t.shell.expanded)) continue;
+            if (!t || !t.shell || BarLayout.barStays(id) || (t.shell.tuck && t.shell.expanded)) continue;
             if (id === "windowtitle" ? (Config.s.barShowTitle && titleText.text !== "") : t.wanted) plan.push("over:" + id);
         }
         return plan;
@@ -842,6 +842,9 @@ PanelWindow {
     Connections {
         target: Config
         function onBarArrangingChanged() { fitLater.restart(); }
+    }
+    Connections {
+        target: BarLayout
         function onBarPreviewChanged() { fitLater.restart(); }
         function onBarOverflowOrderChanged() { fitLater.restart(); }
         function onBarStayChanged() { fitLater.restart(); }
@@ -1046,7 +1049,7 @@ PanelWindow {
         // (Rounded screen corners: ScreenCorners.qml draws all four, over the bar)
 
         // ---- The line of things along the bar ------------------------------
-        // One line, in the order Config.barLayout gives (Settings → Menu Bar): containers, the
+        // One line, in the order BarLayout.barLayout gives (Settings → Menu Bar): containers, the
         // window's title and flexible spaces, which share whatever room is left.
         // Everything on the bar is written out once below, as it always was; arrange() only
         // decides which of them are on the line and in what order, by handing each to the line
@@ -1098,7 +1101,7 @@ PanelWindow {
                     opacity: bar.arrangeLook
                     anchors.fill: parent
                     radius: Config.corner(bar.capsuleRadius)
-                    readonly property bool picked: Config.barSelected === sp.index
+                    readonly property bool picked: BarLayout.barSelected === sp.index
                     color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
                     PickDashes { picked: parent.picked }
                     Text {
@@ -1123,7 +1126,7 @@ PanelWindow {
                 property string spec: ""
                 property bool carried: false    // being dragged: off the line till it lands
                 visible: !carried
-                readonly property var size: Config.barFixed(spec) || { n: 0, unit: "px" }
+                readonly property var size: BarLayout.barFixed(spec) || { n: 0, unit: "px" }
                 readonly property real screenLength: bar.screen ? (bar.vert ? bar.screen.height : bar.screen.width) : 0
                 readonly property real len: Math.max(1, size.unit === "%" ? screenLength * size.n / 100 : size.n)
                 width: bar.vert ? bar.capsuleHeight : len
@@ -1133,7 +1136,7 @@ PanelWindow {
                     opacity: bar.arrangeLook
                     anchors.fill: parent
                     radius: Config.corner(bar.capsuleRadius)
-                    readonly property bool picked: Config.barSelected === fx.index
+                    readonly property bool picked: BarLayout.barSelected === fx.index
                     color: picked ? Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18) : "transparent"
                     PickDashes { picked: parent.picked }
                     Text {
@@ -1212,7 +1215,7 @@ PanelWindow {
                 afresh = false;
                 showing.restart();
                 // (each with its place in the arrangement, which is what a change is made by)
-                let order = Config.barLayout.map((entry, at) => ({ entry: entry, at: at }));
+                let order = BarLayout.barLayout.map((entry, at) => ({ entry: entry, at: at }));
                 // A left bar's title reads upwards, growing up from where it sits: where it's
                 // followed by a flexible space (Slate's own arrangement), it goes after the
                 // space instead, down by what comes next
@@ -1225,7 +1228,7 @@ PanelWindow {
                     const entry = o.entry;
                     fresh.push(slotComp.createObject(left, { to: o.at }));
                     if (entry === "space") fresh.push(flexSpace.createObject(left, { index: o.at }));
-                    else if (Config.barFixed(entry)) fresh.push(fixedSpace.createObject(left, { index: o.at, spec: entry }));
+                    else if (BarLayout.barFixed(entry)) fresh.push(fixedSpace.createObject(left, { index: o.at, spec: entry }));
                     else {
                         const box = boxComp.createObject(left, { index: o.at, collapse: entry.collapse || "needed", tuckFrom: entry.tuckFrom || "end" });
                         if (entry.tuckIcon) box.tuckIcon = parseInt(entry.tuckIcon, 16) || 0xEC38;
@@ -1233,7 +1236,7 @@ PanelWindow {
                         fresh.push(box);
                     }
                 }
-                fresh.push(slotComp.createObject(left, { to: Config.barLayout.length }));
+                fresh.push(slotComp.createObject(left, { to: BarLayout.barLayout.length }));
                 made = fresh;
                 for (const m of old) m.destroy();
                 for (const name in things) if (things[name].parent !== was[name] && was[name] !== null) things[name].held = true;
@@ -1244,7 +1247,7 @@ PanelWindow {
             // (not laid again as arranging starts or ends: the places to land are there all
             // along, with no size until something's carried, so the bar eases into its arranging
             // look with nothing hidden and shown again, which flashed every thing on it)
-            Connections { target: Config; function onBarLayoutChanged() { left.arrange(); } function onBarRedraw() { left.afresh = true; left.arrange(); } }
+            Connections { target: BarLayout; function onBarLayoutChanged() { left.arrange(); } function onBarRedraw() { left.afresh = true; left.arrange(); } }
             Connections { target: bar; function onVertChanged() { left.arrange(); } function onAtRightChanged() { left.arrange(); } }
 
         }
@@ -1334,12 +1337,12 @@ PanelWindow {
                 hover: false
                 stretchy: true              // (it takes the room the rest of the line doesn't need)
                 pad: 18
-                wanted: Config.s.barShowTitle && ((Config.barShowAll && bar.arrangeShown) || (titleText.text !== "" && !bar.slimTitle))
+                wanted: Config.s.barShowTitle && ((BarLayout.barShowAll && bar.arrangeShown) || (titleText.text !== "" && !bar.slimTitle))
                 // Room for the title: what the line has left once everything else on it has what
                 // it needs (the gaps between them included). A long title stops there and fades
                 // out rather than running under whatever comes next
                 // (all it likes while the bar's arranged: the line scrolls then, if it has to)
-                readonly property real room: Config.barShowAll ? 100000 : Math.max(0, bar.lineLength - bar.lineFixed - bar.spacesLeast)
+                readonly property real room: BarLayout.barShowAll ? 100000 : Math.max(0, bar.lineLength - bar.lineFixed - bar.spacesLeast)
                 length: (bar.vert ? titleBody.height : titleBody.width) + pad
                 // Eased: from the window's title to "Window" and back as arranging starts and ends,
                 // and from one title to the next, so the flexible spaces either side (worked out
@@ -1570,7 +1573,7 @@ PanelWindow {
             // The workspace in use, as the dots' marker shows (one for the whole desktop, so every
             // screen's bar says the same). Click for the window mode panel, where it's named.
             // Only text, like the clock: short of room it doesn't slim (there'd be nothing left),
-            // it leaves for More whole, early (Config.barOverflowDefault)
+            // it leaves for More whole, early (BarLayout.barOverflowDefault)
             Segment {
                 id: wsName
                 readonly property string says: Config.focusedWorkspaceLabel
@@ -1649,7 +1652,7 @@ PanelWindow {
                             Reach {
                                 id: trayReach
                                 extra: (bar.capsuleHeight - (bar.vert ? trayItem.width : trayItem.height)) / 2
-                                tip: Config.trayName(trayItem.modelData)
+                                tip: BarLayout.trayName(trayItem.modelData)
                                 ClickArea {
                                     anchors.fill: parent
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
@@ -1685,7 +1688,7 @@ PanelWindow {
                         Reach {
                             id: toggleReach
                             extra: (bar.capsuleHeight - 22) / 2
-                            tip: Config.barItem("tray").label
+                            tip: BarLayout.barItem("tray").label
                             ClickTap { onTapped: { trayCapsule.expanded = !trayCapsule.expanded; trayClose.stop(); } }
                         }
                     }
@@ -1903,7 +1906,7 @@ PanelWindow {
             // something is, or while the bar's arranged, so it can be put where it's wanted
             Segment {
                 id: moreBtn
-                wanted: bar.inMore.length > 0 || Config.barShowAll
+                wanted: bar.inMore.length > 0 || BarLayout.barShowAll
                 iconCode: 0xEA95
                 length: bar.capsuleHeight + 8
                 onClicked: { if (bar.popouts) bar.popouts.moreBar = bar; bar.openPopout("more", moreBtn); }
@@ -2110,7 +2113,7 @@ PanelWindow {
         }
         // Picked, while the bar's being arranged: lit in the accent colour, with an outline
         Rectangle {
-            visible: Config.barArranging && !!seg.shell && Config.barSelected === seg.shell.index && Config.barSelectedItem === seg.name && seg.name !== ""
+            visible: Config.barArranging && !!seg.shell && BarLayout.barSelected === seg.shell.index && BarLayout.barSelectedItem === seg.name && seg.name !== ""
             anchors { fill: parent; margins: 2 }
             radius: Config.corner(Math.max(0, bar.capsuleRadius - 2))
             color: Qt.rgba(bar.accent.r, bar.accent.g, bar.accent.b, 0.18)
@@ -2207,7 +2210,7 @@ PanelWindow {
             PickDashes { picked: box.picked }
         }
         // (picked as a whole, by its gripper: one of its things picked lights that instead)
-        readonly property bool picked: Config.barSelected === box.index && Config.barSelectedItem === ""
+        readonly property bool picked: BarLayout.barSelected === box.index && BarLayout.barSelectedItem === ""
         Text {
             visible: bar.arrangeLook > 0
             opacity: bar.arrangeLook
@@ -2217,13 +2220,13 @@ PanelWindow {
             color: box.picked ? bar.accent : bar.dimTextColor
             font.family: bar.iconFont; font.pixelSize: 13
         }
-        // How it collapses (Config.barBox): "always" tucked behind its button until that's clicked;
+        // How it collapses (BarLayout.barBox): "always" tucked behind its button until that's clicked;
         // "needed", only when the bar's short of room and has asked it to (needTuck, from bar.fit),
         // and only with two things or more to tuck; "never"
         property string collapse: "needed"
         property bool needTuck: false
         readonly property bool always: collapse === "always"
-        readonly property bool tuck: always || (collapse === "needed" && needTuck && !Config.barShowAll)
+        readonly property bool tuck: always || (collapse === "needed" && needTuck && !BarLayout.barShowAll)
         property string tuckFrom: "end"         // "start": the button first, the things after it; else last
         property int tuckIcon: 0xEC38
         hoverTint: false                        // (each thing has its own hover fill)
@@ -2237,7 +2240,7 @@ PanelWindow {
         // 0 closed … 1 open, eased; the things stay laid out until it has finished closing
         // (open while the bar's being arranged, so what's in it can be got at)
         // (...unless it's being tried shorter, when it closes as it would)
-        property real openness: !tuck || expanded || Config.barShowAll ? 1 : 0
+        property real openness: !tuck || expanded || BarLayout.barShowAll ? 1 : 0
         Behavior on openness { NumberAnimation { duration: Config.ms(280); easing.type: Easing.OutCubic } }
         readonly property bool showThings: !tuck || openness > 0
         // Along the container: its things, and the button at one end while it tucks

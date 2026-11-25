@@ -164,7 +164,7 @@ JsonAdapter {
     // What's on the bar and in what order (Settings → Menu Bar, by dragging on the bar itself):
     // a list, along the bar, of containers ({ items: [ids], collapse: never | always | needed,
     // tuck, tuckIcon, tuckFrom }), "space" (a flexible space) and fixed spaces. [] = Slate's own
-    // arrangement (Config.barLayoutDefault). Config.qml's bar… functions change it (and read
+    // arrangement (BarLayout.barLayoutDefault). BarLayout.qml's bar… functions change it (and read
     // older shapes: "title", a container's "tuck" item)
     property var barLayout: []
     property bool barBlur: true               // with glass: what's behind the bar is blurred (off: seen straight through it)

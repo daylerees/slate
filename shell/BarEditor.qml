@@ -7,9 +7,9 @@
 //     more of (a container, a flexible space). A chip is clicked, or dragged onto the bar,
 //     which is another window: this one works out where the pointer is on the desktop (where
 //     this window is, from one look at Hyprland's pointer position as the chip is pressed,
-//     then the pointer's place in the window) and tells the bar (Config.barCarry,
+//     then the pointer's place in the window) and tells the bar (BarLayout.barCarry,
 //     barCarryAt), which shows where it would land;
-//   - the options of whatever is picked on the bar (Config.barSelected, barSelectedItem):
+//   - the options of whatever is picked on the bar (BarLayout.barSelected, barSelectedItem):
 //     a container (its collapse button too), one thing in it, a flexible space, the active window;
 //   - when there isn't room: Set priority (a view of its own in the same panel, sliding across)
 //     and Try it shorter.
@@ -41,7 +41,7 @@ PanelWindow {
     property real fade: shown && ready ? 1 : 0
     Behavior on fade { NumberAnimation { duration: Config.ms(220); easing.type: Easing.OutCubic } }
     // Menu item priority (Set priority): a view of its own, sliding in over the arranging one
-    readonly property bool prioritising: shown && Config.barPrioritising
+    readonly property bool prioritising: shown && BarLayout.barPrioritising
     property real turn: prioritising ? 1 : 0
     Behavior on turn { NumberAnimation { duration: Config.ms(200); easing.type: Easing.OutCubic } }
 
@@ -81,26 +81,26 @@ PanelWindow {
     mask: Region { item: root.shown ? card : null }
 
     // ---- What's picked on the bar ---------------------------------------------------
-    readonly property var picked: Config.barSelected >= 0 ? (Config.barLayout[Config.barSelected] || null) : null
-    readonly property string pickedItem: Config.barSelectedItem
+    readonly property var picked: BarLayout.barSelected >= 0 ? (BarLayout.barLayout[BarLayout.barSelected] || null) : null
+    readonly property string pickedItem: BarLayout.barSelectedItem
     readonly property string kind: !picked ? "none" : picked === "space" ? "space"
-        : Config.barFixed(picked) ? "fixed" : pickedItem !== "" ? "item" : "box"
+        : BarLayout.barFixed(picked) ? "fixed" : pickedItem !== "" ? "item" : "box"
     // (a picked fixed space's size: { n, unit })
-    readonly property var pickedFixed: kind === "fixed" ? Config.barFixed(picked) : null
+    readonly property var pickedFixed: kind === "fixed" ? BarLayout.barFixed(picked) : null
     readonly property var pickedThings: picked && typeof picked !== "string" ? picked.items.filter(id => id !== "tuck") : []
     // (how the picked container collapses: "never", "always" or "needed"; and whether it has a
     // collapse button at all, to set up)
     readonly property string pickedCollapse: !!picked && typeof picked !== "string" ? (picked.collapse || "needed") : ""
     readonly property bool pickedTuck: pickedCollapse === "always" || pickedCollapse === "needed"
-    function nameOf(id) { const it = Config.barItem(id); return it ? it.label : id; }
-    readonly property string textKey: kind === "item" ? (Config.barTextKeys[pickedItem] || "") : ""
+    function nameOf(id) { const it = BarLayout.barItem(id); return it ? it.label : id; }
+    readonly property string textKey: kind === "item" ? (BarLayout.barTextKeys[pickedItem] || "") : ""
     // What the options are headed with: the picked thing's name and icon, and a line about it
     readonly property string pickedName: kind === "space" ? "Flexible space" : kind === "fixed" ? "Fixed space" : kind === "box" ? "Container"
         : kind === "item" ? nameOf(pickedItem) : ""
     readonly property int pickedIcon: kind === "space" ? 0xEB59 : kind === "fixed" ? 0xEF54 : kind === "box" ? 0xEAD5
-        : kind === "item" ? ((Config.barItem(pickedItem) || { icon: 0 }).icon || 0) : 0
+        : kind === "item" ? ((BarLayout.barItem(pickedItem) || { icon: 0 }).icon || 0) : 0
     readonly property string pickedAbout: kind === "space" ? "Takes up the spare room, pushing what's either side of it apart."
-            + (Config.barSpaces < 2 ? " The bar always keeps one." : "")
+            + (BarLayout.barSpaces < 2 ? " The bar always keeps one." : "")
         : kind === "fixed" ? "Keeps a gap of the same size, however much else is on the bar."
         : kind === "item" && pickedItem === "more" ? "What there isn't room for waits behind it. It shows only when something's there, and always stays on the bar."
         : kind === "box" ? (pickedThings.length > 0 ? "Holds " + listOf(pickedThings.map(nameOf)) + "." : "Empty for now. Drag things into it.")
@@ -112,7 +112,7 @@ PanelWindow {
     function listOf(names) { return Config.listText(names); }
 
     // ---- The pool, and carrying a chip to the bar ------------------------------------
-    readonly property var pool: Config.barItems.filter(i => i.key !== "" && !Config.s[i.key])
+    readonly property var pool: BarLayout.barItems.filter(i => i.key !== "" && !Config.s[i.key])
     property point origin: Qt.point(0, 0)      // this window's corner on the desktop
     property bool placed: false                // ...once it's known
     property point pointer: Qt.point(0, 0)     // the pointer, in this window
@@ -140,19 +140,19 @@ PanelWindow {
         pointer = Qt.point(x, y);
         if (!carrying) {
             carrying = chip;
-            Config.barCarryAt = Qt.point(-100000, -100000);
-            Config.barFloatAt = Qt.point(-100000, -100000);
-            Config.barFloat = { kind: chip.carry.kind,
+            BarLayout.barCarryAt = Qt.point(-100000, -100000);
+            BarLayout.barFloatAt = Qt.point(-100000, -100000);
+            BarLayout.barFloat = { kind: chip.carry.kind,
                                 icons: [{ code: chip.icon, item: chip.item, text: chip.item !== "" ? root.bar.exampleOf(chip.item) : "" }] };
-            Config.barCarry = chip.carry;
+            BarLayout.barCarry = chip.carry;
         }
-        if (placed) { Config.barCarryAt = Qt.point(origin.x + x, origin.y + y); Config.barFloatAt = Config.barCarryAt; }
+        if (placed) { BarLayout.barCarryAt = Qt.point(origin.x + x, origin.y + y); BarLayout.barFloatAt = BarLayout.barCarryAt; }
     }
     function dropped() {
-        carrying = null; Config.barFloat = null;
-        if (Config.barDrop()) Config.click();
+        carrying = null; BarLayout.barFloat = null;
+        if (BarLayout.barDrop()) Config.click();
     }
-    function letGo() { carrying = null; Config.barFloat = null; Config.barCarry = null; Config.barCarryTarget = null; }
+    function letGo() { carrying = null; BarLayout.barFloat = null; BarLayout.barCarry = null; BarLayout.barCarryTarget = null; }
     onShownChanged: if (!shown) letGo()
     onPrioritisingChanged: { prioList.held = ""; prioList.moving = null; }
 
@@ -258,7 +258,7 @@ PanelWindow {
     // The bar tried shorter, to see what slims down and what leaves: a dropdown as Settings
     // draws them (DropdownSetting), its menu in dropLayer below
     readonly property var lengths: [{ value: 0, label: "Full length" }, { value: 0.25, label: "Three quarters" }, { value: 0.5, label: "Half" }, { value: 0.67, label: "A third" }]
-    readonly property var length: lengths.find(o => Math.abs(Config.barPreview - o.value) < 0.01) || lengths[0]
+    readonly property var length: lengths.find(o => Math.abs(BarLayout.barPreview - o.value) < 0.01) || lengths[0]
     component Shorter: Row {
         id: shorter
         readonly property Item button: shortButton
@@ -457,15 +457,15 @@ PanelWindow {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                         spacing: 8
                         PanelButton {
-                            visible: !Config.barIsDefault
+                            visible: !BarLayout.barIsDefault
                             label: "Restore defaults"
                             onClicked: {
-                                if (!root.confirmer) { Config.barReset(); return; }
+                                if (!root.confirmer) { BarLayout.barReset(); return; }
                                 root.confirmer.confirmWith({
                                     title: "Put the menu bar back as it started?",
                                     body: "Everything goes back to where Slate first had it, and what you took off the bar returns. Your other menu bar settings stay as they are.",
                                     button: "Restore defaults"
-                                }, () => Config.barReset());
+                                }, () => BarLayout.barReset());
                             }
                         }
                         PanelButton {
@@ -494,9 +494,9 @@ PanelWindow {
                         spacing: 8
                         Heading {
                             width: parent.width
-                            text: Config.barLeaving ? "Let go to take it off the bar"
+                            text: BarLayout.barLeaving ? "Let go to take it off the bar"
                                 : root.pool.length === 0 ? "Everything's on the bar" : "Not on the bar"
-                            color: Config.barLeaving ? root.accent : root.dim
+                            color: BarLayout.barLeaving ? root.accent : root.dim
                         }
                         // (where something dragged off the bar lands: lit while it's over here, so
                         // it's clear letting go will put it back)
@@ -507,8 +507,8 @@ PanelWindow {
                                 x: -8; y: 0
                                 width: parent.width + 16; height: parent.height
                                 radius: Config.corner(10)
-                                color: Config.barLeaving ? Config.hover : "transparent"
-                                border.width: Config.barLeaving ? 1 : 0
+                                color: BarLayout.barLeaving ? Config.hover : "transparent"
+                                border.width: BarLayout.barLeaving ? 1 : 0
                                 border.color: root.accent
                             }
                             Flow {
@@ -522,24 +522,24 @@ PanelWindow {
                                         required property var modelData
                                         icon: modelData.icon; label: modelData.label
                                         carry: ({ kind: "item", id: modelData.id })
-                                        onClicked: Config.barSetShown(modelData.id, true)
+                                        onClicked: BarLayout.barSetShown(modelData.id, true)
                                     }
                                 }
                                 // (always more of these)
                                 PoolChip {
                                     icon: 0xEAD5; label: "Container"
                                     carry: ({ kind: "box", id: "" })
-                                    onClicked: Config.barAddBox(Config.barLayout.length)
+                                    onClicked: BarLayout.barAddBox(BarLayout.barLayout.length)
                                 }
                                 PoolChip {
                                     icon: 0xEB59; label: "Flexible space"
                                     carry: ({ kind: "space", id: "" })
-                                    onClicked: Config.barAddSpace(Config.barLayout.length)
+                                    onClicked: BarLayout.barAddSpace(BarLayout.barLayout.length)
                                 }
                                 PoolChip {
                                     icon: 0xEF54; label: "Fixed space"
                                     carry: ({ kind: "fixed", id: "" })
-                                    onClicked: Config.barAddFixed(Config.barLayout.length)
+                                    onClicked: BarLayout.barAddFixed(BarLayout.barLayout.length)
                                 }
                             }
                         }
@@ -622,8 +622,8 @@ PanelWindow {
                         SwitchRow {
                             visible: root.kind === "item" && root.pickedItem !== "more"
                             label: "Always keep on the bar"
-                            checked: Config.barStays(root.pickedItem)
-                            onToggled: v => Config.barSetStay(root.pickedItem, v)
+                            checked: BarLayout.barStays(root.pickedItem)
+                            onToggled: v => BarLayout.barSetStay(root.pickedItem, v)
                         }
                         SwitchRow {
                             visible: root.kind === "item" && root.pickedItem === "tray"
@@ -664,7 +664,7 @@ PanelWindow {
                                 const now = root.pickedFixed.unit === "%" ? sl * root.pickedFixed.n / 100 : root.pickedFixed.n;
                                 const to = v === "%" ? now * 100 / sl : now;
                                 const near = root.fixedSizes[v].reduce((a, b) => Math.abs(b - to) < Math.abs(a - to) ? b : a);
-                                Config.barSetFixed(Config.barSelected, near, v);
+                                BarLayout.barSetFixed(BarLayout.barSelected, near, v);
                             }
                         }
                         Choices {
@@ -672,7 +672,7 @@ PanelWindow {
                             title: "Size"
                             options: root.pickedFixed ? root.fixedSizes[root.pickedFixed.unit].map(n => ({ value: n, label: n + (root.pickedFixed.unit === "%" ? "%" : "") })) : []
                             current: root.pickedFixed ? root.pickedFixed.n : 0
-                            onChose: v => Config.barSetFixed(Config.barSelected, v, root.pickedFixed.unit)
+                            onChose: v => BarLayout.barSetFixed(BarLayout.barSelected, v, root.pickedFixed.unit)
                         }
 
                         // A container
@@ -683,7 +683,7 @@ PanelWindow {
                             title: "Collapse"
                             options: [{ value: "never", label: "Never" }, { value: "needed", label: "When needed" }, { value: "always", label: "Always" }]
                             current: root.pickedCollapse
-                            onChose: v => Config.barSetCollapse(Config.barSelected, v)
+                            onChose: v => BarLayout.barSetCollapse(BarLayout.barSelected, v)
                         }
                         // ...its button's icon, and which end it sits at
                         Choices {
@@ -691,13 +691,13 @@ PanelWindow {
                             title: "Its button"
                             options: [0xEC38, 0xEA95, 0xEA94, 0xEA60, 0xEA61, 0xEC42, 0xEB0B, 0xEA9A].map(c => ({ value: c, code: c }))
                             current: root.pickedTuck ? (parseInt(root.picked.tuckIcon, 16) || 0xEC38) : 0
-                            onChose: v => Config.barSetTuck(Config.barSelected, undefined, v === 0xEC38 ? "" : v.toString(16))
+                            onChose: v => BarLayout.barSetTuck(BarLayout.barSelected, undefined, v === 0xEC38 ? "" : v.toString(16))
                         }
                         Choices {
                             visible: root.kind === "box" && root.pickedThings.length > 1 && root.pickedTuck
                             options: [{ value: "start", label: "At the start" }, { value: "end", label: "At the end" }]
                             current: root.pickedTuck && root.picked.tuckFrom === "start" ? "start" : "end"
-                            onChose: v => Config.barSetTuck(Config.barSelected, undefined, undefined, v)
+                            onChose: v => BarLayout.barSetTuck(BarLayout.barSelected, undefined, undefined, v)
                         }
 
                         // (no visible: of its own: it's empty, so no height, when neither shows. Bound
@@ -709,23 +709,23 @@ PanelWindow {
                                 id: splitRow
                                 visible: root.kind === "box" && root.pickedThings.length > 1
                                 code: 0xEDB5; text: "Split up"
-                                onClicked: Config.barSplit(Config.barSelected)
+                                onClicked: BarLayout.barSplit(BarLayout.barSelected)
                             }
                             // Off the bar
                             // (the last flexible space stays: something has to take up the spare room. And
                             // More, which holds what doesn't fit, is never off the bar)
                             LinkRow {
                                 id: offRow
-                                visible: root.kind !== "none" && !(root.kind === "space" && Config.barSpaces < 2)
+                                visible: root.kind !== "none" && !(root.kind === "space" && BarLayout.barSpaces < 2)
                                     && !(root.kind === "item" && root.pickedItem === "more")
                                 danger: true
                                 code: 0xEB41
                                 iconColor: root.danger; textColor: root.danger
                                 text: root.kind === "space" || root.kind === "fixed" ? "Take away" : "Take off the bar"
                                 onClicked: {
-                                    if (root.kind === "item") Config.barSetShown(root.pickedItem, false);
-                                    else Config.barRemoveEntry(Config.barSelected);
-                                    Config.barSelected = -1;
+                                    if (root.kind === "item") BarLayout.barSetShown(root.pickedItem, false);
+                                    else BarLayout.barRemoveEntry(BarLayout.barSelected);
+                                    BarLayout.barSelected = -1;
                                 }
                             }
                         }
@@ -743,7 +743,7 @@ PanelWindow {
                         id: priorityButton
                         icon: 0xEF11                      // a numbered list
                         label: "Set priority"
-                        onClicked: Config.barPrioritising = true
+                        onClicked: BarLayout.barPrioritising = true
                     }
                     Shorter { id: panelShorter }
                 }
@@ -752,7 +752,7 @@ PanelWindow {
             // ---- Menu item priority -------------------------------------------------------
             // What the bar does when it's short of room, explained, beside the
             // one part of it that's yours to set: the order things leave for More. Shown highest
-            // priority first (the last to leave), so it's Config.barOverflowOrder backwards, without
+            // priority first (the last to leave), so it's BarLayout.barOverflowOrder backwards, without
             // what always stays, which never leaves and so has no place in it
             Item {
                 id: prioView
@@ -764,7 +764,7 @@ PanelWindow {
                 visible: opacity > 0
                 // (Escape goes back to the arranging)
                 focus: root.prioritising
-                Keys.onEscapePressed: Config.barPrioritising = false
+                Keys.onEscapePressed: BarLayout.barPrioritising = false
 
                 Item {
                     id: prioTop
@@ -773,7 +773,7 @@ PanelWindow {
                         id: prioBack
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         width: 28; height: 28
-                        onClicked: Config.barPrioritising = false
+                        onClicked: BarLayout.barPrioritising = false
                         Icon { anchors.centerIn: parent; code: 0xEA60; font.pixelSize: 16; color: root.dim }
                     }
                     PanelTitle {
@@ -816,7 +816,7 @@ PanelWindow {
                         Heading { text: "Your priority" }
                         Para { text: "The list is that order. What's at the top stays on the bar longest, and what's at the bottom leaves first. Drag to change it." }
                         Para {
-                            readonly property var names: Config.barStay.map(root.nameOf)
+                            readonly property var names: BarLayout.barStay.map(root.nameOf)
                             color: root.dim
                             text: (names.length === 0 ? "Nothing's set to always stay just now."
                                    : names.length === 1 ? names[0] + " always stays, so it isn't listed."
@@ -854,7 +854,7 @@ PanelWindow {
                         }
                         function drop() {
                             if (held !== "" && moving && moving.join() !== root.priority.join()) {
-                                Config.barSetOverflow(moving.slice().reverse(), Config.barStay);
+                                BarLayout.barSetOverflow(moving.slice().reverse(), BarLayout.barStay);
                                 Config.click();
                             }
                             held = ""; moving = null;
@@ -890,7 +890,7 @@ PanelWindow {
                                 delegate: Rectangle {
                                     id: prioRow
                                     required property string modelData
-                                    readonly property var it: Config.barItem(modelData)
+                                    readonly property var it: BarLayout.barItem(modelData)
                                     readonly property bool isHeld: prioList.held === modelData
                                     readonly property bool lit: isHeld || prioList.lit === modelData
                                     width: prioFlick.width; height: prioList.rowHeight
@@ -940,7 +940,7 @@ PanelWindow {
                                     }
                                     Label {
                                         anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                                        visible: !Config.barShown(prioRow.modelData)
+                                        visible: !BarLayout.barShown(prioRow.modelData)
                                         text: "Not on the bar"
                                         color: root.dim
                                         font.pixelSize: Config.text(12); font.weight: Font.Normal
@@ -1085,7 +1085,7 @@ PanelWindow {
         }
     }
 
-    readonly property var priority: Config.barOverflowOrder.filter(id => !Config.barStays(id)).reverse()
+    readonly property var priority: BarLayout.barOverflowOrder.filter(id => !BarLayout.barStays(id)).reverse()
     function priorityScroll(y) { prioFlick.contentY = Math.max(0, Math.min(prioFlick.contentHeight - prioFlick.height, y)); }
     readonly property var priorityState: ({ open: prioritising, list: priority, scroll: prioFlick.contentY, scrollMax: Math.max(0, prioFlick.contentHeight - prioFlick.height), lengthMenu: lengthMenuOpen, length: length.label })
     function priorityMove(id, slot) {          // (tests: as a row dragged to a place and let go)
@@ -1095,7 +1095,7 @@ PanelWindow {
         prioList.drop();
     }
     function lengthMenu(open) { dropLayer.owner = open ? (prioritising ? prioShorter : panelShorter) : null; }
-    function lengthPick(value) { dropLayer.owner = null; Config.barPreview = value; }
+    function lengthPick(value) { dropLayer.owner = null; BarLayout.barPreview = value; }
     readonly property bool lengthMenuOpen: dropLayer.owner !== null
 
     // While the bar's being arranged, everything under it is heavily dimmed: every screen's
@@ -1123,10 +1123,10 @@ PanelWindow {
     }
 
     // What's being dragged, from the bar or from the pool, under the pointer wherever it goes
-    // (Config.barFloat): a window of its own over the whole screen, which the pointer goes
+    // (BarLayout.barFloat): a window of its own over the whole screen, which the pointer goes
     // straight through. Drawn as it is on the bar while that's being arranged: its icons in a
     // container; a flexible space and an empty container as their outlines. Let go over a gap
-    // on the bar, it glides into it (Config.barLanding) before it's moved there
+    // on the bar, it glides into it (BarLayout.barLanding) before it's moved there
     function iconColour(item) {
         return item === "power" ? bar.errorColor
             : item === "nova" ? (Config.colourful ? Config.pageColour("assistant") : root.text)
@@ -1136,7 +1136,7 @@ PanelWindow {
     }
     PanelWindow {
         screen: root.screen
-        visible: !!Config.barFloat
+        visible: !!BarLayout.barFloat
         anchors { top: true; bottom: true; left: true; right: true }
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
@@ -1145,12 +1145,12 @@ PanelWindow {
         mask: Region {}
         Rectangle {
             id: floater
-            readonly property var f: Config.barFloat
+            readonly property var f: BarLayout.barFloat
             readonly property bool hollow: !!f && (f.kind === "space" || f.kind === "fixed" || (f.kind === "box" && f.icons.length === 0))
-            x: Config.barFloatAt.x - (root.screen ? root.screen.x : 0) - width / 2
-            y: Config.barFloatAt.y - (root.screen ? root.screen.y : 0) - height / 2
-            Behavior on x { enabled: Config.barLanding; NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
-            Behavior on y { enabled: Config.barLanding; NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
+            x: BarLayout.barFloatAt.x - (root.screen ? root.screen.x : 0) - width / 2
+            y: BarLayout.barFloatAt.y - (root.screen ? root.screen.y : 0) - height / 2
+            Behavior on x { enabled: BarLayout.barLanding; NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
+            Behavior on y { enabled: BarLayout.barLanding; NumberAnimation { duration: Config.ms(120); easing.type: Easing.OutCubic } }
             width: Math.max(root.bar.capsuleHeight + 8, floatRow.implicitWidth + 18)
             height: root.bar.capsuleHeight
             radius: Config.corner(root.bar.capsuleRadius)
@@ -1158,7 +1158,7 @@ PanelWindow {
             border.width: 1
             border.color: root.accent
             // (pulled well off the bar: fading, as it's about to go back to the pool)
-            opacity: Config.barLeaving ? 0.45 : 0.95
+            opacity: BarLayout.barLeaving ? 0.45 : 0.95
             Behavior on opacity { NumberAnimation { duration: Config.ms(120) } }
             Shadow {}
             Row {

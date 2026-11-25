@@ -26,7 +26,7 @@ PanelWindow {
     readonly property string sourceTip: source ? source.tip : ""
     readonly property var sourceAt: source ? (source.tipAt || source) : null
     readonly property bool held: Config.barArranging || bar.popoutsOpen || bar.menuOpen
-        || Config.barCarry !== null || Config.barFloat !== null || bar.reveal < 0.99 || bar.movingOut
+        || BarLayout.barCarry !== null || BarLayout.barFloat !== null || bar.reveal < 0.99 || bar.movingOut
     // Showing (or fading in), and what it says and where
     property bool shown: false
     property string says: ""
