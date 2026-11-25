@@ -116,6 +116,7 @@ shell.qml               root: creates everything below, plus the dock itself
 │     ├─ Building blocks (shell/settings/): SettingRow.qml (label, description and a control; says what it
 │     │  needs), Group.qml and GroupLabel.qml (a card of rows under its heading), PageTitle.qml,
 │     │  IntroText.qml, Footnote.qml, Separator.qml, IconButton.qml, Button.qml, FieldFrame.qml,
+│     │  ExportRow.qml (saves something to a file: Debug's logs, Import & Export's settings),
 │     │  TextField.qml (a text box: FieldFrame round its TextInput, with a hint),
 │     │  SegmentedChoice.qml (two or three choices side by side: Dark | Light | Auto),
 │     │  SearchField.qml (a search box: the window's, All Settings', Shortcuts'),
@@ -618,8 +619,10 @@ Slate's small runtime files live in `$XDG_RUNTIME_DIR`. When that isn't set (a b
 shell), every script and `Config.runtimeDir` use `${XDG_STATE_HOME:-$HOME/.local/state}/slate/run`
 instead, made mode 0700, never a fixed name in `/tmp`.
 
-## Hyprland integration (`~/.config/hypr/config/*.lua`)
+## Hyprland integration (`session/hypr/config/*.lua`)
 
+- `paths.lua` — loaded first: `slateEnv(name)` (an empty variable counts as unset) and
+  `SLATE_STATE_HOME` / `SLATE_DATA_HOME`, for the rest of the config.
 - `autostart.lua` — starts `slate`.
 - `binds.lua` — three sets (Settings → Shortcuts, `~/.local/state/slate/keyset.lua`): Slate's
   (below), Hyprland's default shortcuts, or Hyprland's plus Slate's on free keys. Slate's set: Super tap → launcher; Super+Space launcher; Super+Tab switcher;

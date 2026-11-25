@@ -91,6 +91,45 @@ class Syntax(Case):
             with self.subTest(f):
                 self.assertFalse(unused.get(f), f"imports it doesn't use: {unused.get(f)}")
 
+    # What each module gives a file to use: a module imported with none of these in the file is
+    # unused. qmllint only says so in a file it can fully resolve, and leaves it unsaid in any
+    # with an unqualified lookup (most panels and windows: they read their parent's properties),
+    # so those were never checked (UpdateHold, ReloadNotices and five panels had some).
+    # (QtQuick, Quickshell itself and qs give too much to list, and are left to qmllint)
+    MODULE_TYPES = {
+        "Quickshell.Io": r"Process|FileView\w*|IpcHandler|StdioCollector|SplitParser|Socket\w*|DataStream\w*|JsonAdapter|JsonObject",
+        "Quickshell.Wayland": r"Wlr\w+|WlSession\w*|Screencopy\w*|ToplevelManager|Toplevel|IdleInhibitor|IdleMonitor",
+        "Quickshell.Hyprland": r"Hyprland\w*|GlobalShortcut",
+        "QtQuick.Effects": r"MultiEffect|RectangularShadow",
+        "QtQuick.Shapes": r"Shape|ShapePath|LinearGradient|RadialGradient|ConicalGradient",
+        "Qt.labs.folderlistmodel": r"FolderListModel",
+        "QtMultimedia": r"Video|VideoOutput|MediaPlayer|AudioOutput|SoundEffect|Camera\w*|CaptureSession|ImageCapture|MediaDevices",
+        "Quickshell.Bluetooth": r"Bluetooth\w*",
+        "Quickshell.Services.Pipewire": r"Pw\w+|Pipewire",
+        "Quickshell.Networking": r"Networking|Network\w+|Wifi\w+|Connection\w+|DeviceConnectionState",
+        "Quickshell.Services.UPower": r"UPower\w*|PowerProfile\w*|PerformanceDegradationReason",
+        "Quickshell.Services.Mpris": r"Mpris\w*",
+        "Quickshell.Services.SystemTray": r"SystemTray\w*|Status|Category",
+        "Quickshell.Services.Pam": r"Pam\w+",
+        "Quickshell.Services.Greetd": r"Greetd\w*",
+        "Quickshell.Services.Polkit": r"Polkit\w*|AuthFlow|Identity",
+        "Quickshell.Services.Notifications": r"Notification|NotificationServer|NotificationUrgency|NotificationAction|NotificationCloseReason",
+    }
+
+    def test_every_imported_module_is_used(self):
+        for f in slate.files("shell", ".qml"):
+            if f.startswith("shell/data/user-files/"):
+                continue
+            src = slate.read(f)
+            body = re.sub(r"//[^\n]*|/\*.*?\*/", "", src, flags=re.S)
+            body = re.sub(r"^import [^\n]*$", "", body, flags=re.M)
+            for mod in re.findall(r"^import ([A-Za-z][\w.]*)\s*$", src, re.M):
+                words = self.MODULE_TYPES.get(mod)
+                if not words:
+                    continue
+                with self.subTest(f"{f}: {mod}"):
+                    self.assertRegex(body, rf"\b(?:{words})\b", f"imports {mod} and uses nothing from it")
+
     def test_lua(self):
         luac = need("luac", "luac5.4", "luac5.5")
         for f in slate.files("shell", ".lua"):

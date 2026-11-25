@@ -154,7 +154,7 @@ hl.env("HYPRCURSOR_SIZE", tostring(CURSOR_SIZE))
 
 -- fzf in Slate's colours (Settings → App Theming writes this file, and empties
 -- it when fzf's theming is off). Your own FZF_DEFAULT_OPTS still apply on top.
-local fzfOpts = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/slate/fzf/slate.opts"
+local fzfOpts = SLATE_STATE_HOME .. "/slate/fzf/slate.opts"
 local fzfFile = io.open(fzfOpts, "a")
 if not fzfFile then
     -- Its folder isn't there yet: make it (only then, as it starts a shell while Hyprland loads)

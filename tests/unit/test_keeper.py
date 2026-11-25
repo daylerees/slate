@@ -478,3 +478,45 @@ class Keeper(Case):
         self.assertIn("===== Slate's last crash =====", text)
         self.assertIn("QQuickItem::update", text)
         self.assertNotIn(self.h.home, text)
+
+
+class OldStateMoves(Case):
+    """The dock's pins, the launcher's counts and the notification history were kept in
+    ~/.local/state whatever XDG_STATE_HOME said; they follow it now, moved once as Slate starts
+    (bin/slate's move_old_state), so someone with it set loses nothing."""
+
+    def run_move(self, home, state):
+        src = slate.read("shell", "bin", "slate")
+        fn = src[src.index("move_old_state() {"):]
+        fn = fn[:fn.index("\n}\n") + 3]
+        env = dict(os.environ, HOME=home)
+        if state is None:
+            env.pop("XDG_STATE_HOME", None)
+        else:
+            env["XDG_STATE_HOME"] = state
+        return run(["bash", "-euo", "pipefail", "-c", fn + "move_old_state; echo done"], env=env)
+
+    def test_moved_once_and_never_over_newer(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        home, state = os.path.join(d, "home"), os.path.join(d, "xdg-state")
+        old = os.path.join(home, ".local", "state", "slate")
+        os.makedirs(old)
+        for f in ("dock.json", "launcher.json", "notifications.json"):
+            with open(os.path.join(old, f), "w") as fh:
+                fh.write(f)
+        os.makedirs(os.path.join(state, "slate"))
+        with open(os.path.join(state, "slate", "launcher.json"), "w") as fh:
+            fh.write("newer")
+        code, out = self.run_move(home, state)
+        self.assertEqual((code, out.strip()), (0, "done"), out)
+        read = lambda *p: open(os.path.join(*p)).read()
+        self.assertEqual(read(state, "slate", "dock.json"), "dock.json")
+        self.assertEqual(read(state, "slate", "notifications.json"), "notifications.json")
+        self.assertEqual(read(state, "slate", "launcher.json"), "newer", "a newer file was replaced")
+        self.assertTrue(os.path.exists(os.path.join(old, "launcher.json")), "the old one went though it wasn't moved")
+        self.assertFalse(os.path.exists(os.path.join(old, "dock.json")))
+        # Unset, or empty (counted as unset): nothing to move, and nothing fails
+        for v in (None, ""):
+            code, out = self.run_move(home, v)
+            self.assertEqual((code, out.strip()), (0, "done"), out)

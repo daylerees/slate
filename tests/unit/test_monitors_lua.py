@@ -67,6 +67,7 @@ function yours(spec) hl.monitor(spec) end
 
 local ok, err = pcall((loadstring or load)(os.getenv("STUB_BEFORE")))
 if not ok then note("ERR", tostring(err)) end
+dofile(os.getenv("STUB_CONFIG"):match("^(.*/)") .. "paths.lua")   -- (as hyprland.lua loads it first)
 ok, err = pcall(dofile, os.getenv("STUB_CONFIG"))
 if not ok then note("ERR", tostring(err)) end
 ok, err = pcall((loadstring or load)(os.getenv("STUB_CASE")))

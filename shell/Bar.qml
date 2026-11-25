@@ -83,9 +83,6 @@ PanelWindow {
     // A panel is open from this bar (the panels go to whichever screen opened them)
     // (from the start of opening, so the bar is done changing before the panel slides)
     readonly property bool popoutHere: !!popouts && popouts.engaged && popouts.screen === bar.screen
-    // Is this the very first or very last thing on the bar ("start" / "end"; "" if neither)?
-    // Its panel then sits flush against that end of the screen, as the control centre's and
-    // the power menu's always have: now whichever buttons are there, wherever they've been put
     // What a thing would say on the bar with its text on (for the arranging panel's pool: a chip
     // carried from there is drawn as the thing will be when it lands)
     function exampleOf(id) { const t = left.things[id]; return id === "windowtitle" ? "Window" : t && !bar.vert ? (t.exampleLabel || "") : ""; }
@@ -191,9 +188,6 @@ PanelWindow {
     // (worked out when a test asks: shell.qml's state)
     function band() { return ({ x: Math.round(content.x + (vert ? bgX : 0)), y: Math.round(content.y + (vert ? 0 : bgY)),
                                    w: Math.round(vert ? barHeight : content.width), h: Math.round(vert ? content.height : barHeight) }); }
-    // (tests) The pretend pointer at x, y ("hover"), taken away ("leave"), or pressed there
-    // ("click"): what it's over (the thing's name, and the dot for the workspaces), and whether
-    // that's lit
     // A press on the bar (PointHandler on the bar, and the tests' pretend one): the panel open
     // as it began closes as it ends, once what was pressed has had its say, if it's still the one
     // open (what was pressed didn't open another, or close it by its own button)
@@ -615,7 +609,7 @@ PanelWindow {
         // Open (or close) one of the bar's panels under its button, e.g.
         //   slate ipc call bar panel control
         // names: control, spaces, notifications, session, volume, wifi, clipboard, screenshot,
-        // keyboard, bluetooth, battery, gamemode, calendar, windowmode, drink, focus
+        // keyboard, bluetooth, battery, gamemode, calendar, windowmode, drink, focus, more
         function panel(name: string): void { bar.focusedBar().openPanel(name); }
         // The whole arrangement, read and set as JSON (the assistant's bar_arrange; see
         // Config.barArrangement / barArrange)

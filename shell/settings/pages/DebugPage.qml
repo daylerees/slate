@@ -73,28 +73,15 @@ Column {
             }
         }
         Separator {}
-        SettingRow {
+        ExportRow {
             id: exportRow
-            property string saved: ""          // the file, once exported
-            property string status: ""
             label: "Export recent logs"
-            detail: status !== "" ? status
-                : "Saves Slate's recent log and details about your system to a text file in Downloads, to attach "
-                  + "when reporting a problem. Your location is left out; look the file over before sharing it, as "
-                  + "the log can name apps, windows and file paths"
-            Process {
-                id: exportRun
-                command: [Quickshell.shellPath("bin/slate-logs")]
-                stdout: StdioCollector { onStreamFinished: exportRow.saved = text.trim() }
-                onExited: code => exportRow.status = code === 0 && exportRow.saved !== ""
-                    ? "Saved to " + exportRow.saved.replace(Quickshell.env("HOME"), "~") + ". Look it over before sharing it"
-                    : "Slate couldn't save the logs"
-            }
-            Row {
-                spacing: 8
-                Button { visible: exportRow.saved !== ""; label: "Show"; onClicked: Quickshell.execDetached(["xdg-open", exportRow.saved.substring(0, exportRow.saved.lastIndexOf("/"))]) }
-                Button { label: "Export"; onClicked: { exportRow.saved = ""; exportRow.status = "Saving…"; exportRun.running = true; } }
-            }
+            about: "Saves Slate's recent log and details about your system to a text file in Downloads, to attach "
+                + "when reporting a problem. Your location is left out; look the file over before sharing it, as "
+                + "the log can name apps, windows and file paths"
+            command: [Quickshell.shellPath("bin/slate-logs")]
+            savedText: f => "Saved to " + f.replace(Quickshell.env("HOME"), "~") + ". Look it over before sharing it"
+            failText: why => "Slate couldn't save the logs"
         }
     }
     GroupLabel { text: "Start over" }

@@ -25,14 +25,16 @@ class Shared(Case):
 
     def test_state_and_cache_folders_come_from_config(self):
         """~/.local/state and ~/.cache are worked out once (Config.stateHome / cacheHome). The
-        paths that deliberately stay at HOME (dock.json, the tiles and so on) don't read the
-        XDG variables at all."""
+        paths that deliberately stay at HOME (the tiles and so on) don't read the XDG variables at all."""
         for name in qml_files():
             if name == "Config.qml":
                 continue
             with self.subTest(name):
                 self.assertNotRegex(slate.read("shell", name), r"XDG_(STATE|CACHE)_HOME",
                                     f"{name} reads the XDG folder itself: use Config.stateHome / cacheHome")
+                # (nor spells the state folder out: the dock's pins, the launcher's counts and the
+                # notification history did, whatever XDG_STATE_HOME said)
+                self.assertNotIn('"/.local/state', slate.read("shell", name), f"{name} spells out ~/.local/state: use Config.stateHome")
 
     def test_notices_are_built_by_config_notify(self):
         """Slate's notices go through Config.notify (one place for the icon, the page they open

@@ -333,8 +333,6 @@ PanelWindow {
     readonly property color accentText: Config.palette.accentText
     readonly property color danger: bar.errorColor
     readonly property color warn: Config.palette.warn       // getting full or busy: before the red
-    // The panels' clocks, in the clock style set for the bar (Settings → Menu Bar → Clock),
-    // without seconds: they're big and don't tick every second
     readonly property real radius: Config.corner(14)
     readonly property real pad: 14
 
@@ -369,7 +367,7 @@ PanelWindow {
             // The curved joins either side of it, where it leaves the bar, as part of its shape:
             // the shadow follows them out to the bar (and, kept from under them, nothing shows
             // through them on glass). None where the panel's flush with the screen's edge, nor
-            // with Rounded UI elements off (Canvas joins below: the same shapes)
+            // with Rounded UI elements off (the joins below: the same shapes)
             readonly property real jr: Config.s.roundedElements ? bar.cornerRadius : 0
             readonly property bool joinStart: jr > 0 && !pop.atScreenStart
             readonly property bool joinEnd: jr > 0 && !pop.atScreenEnd
@@ -395,9 +393,6 @@ PanelWindow {
     }
 
     // ---- Panel body --------------------------------------------------------
-    // A panel opened from the bar's first or last button (in Slate's own arrangement the
-    // control centre and the power menu; whichever buttons you've put there) sits flush
-    // against the start / end of the screen, rounded only on its one corner out in the screen
     // Where the open panel is on its screen (Slate's px), for the tests: its shadow's place
     // (worked out when a test asks: shell.qml's state)
     function panelBox() { return ({ x: Math.round(margins.left + panelArea.x + body.x), y: Math.round(margins.top + panelArea.y + body.y),

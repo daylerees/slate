@@ -781,7 +781,7 @@ PanelWindow {
     property var lastUsed: ({})          // app id → when it was last opened from here (ms)
     FileView {
         id: usage
-        path: Quickshell.env("HOME") + "/.local/state/slate/launcher.json"
+        path: Config.stateHome + "/slate/launcher.json"
         blockLoading: true
         onLoaded: { try { const d = JSON.parse(text()); root.counts = d.counts || {}; root.lastUsed = d.last || {}; } catch (e) {} }
     }

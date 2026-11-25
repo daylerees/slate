@@ -152,7 +152,7 @@ class WindowRules(Case):
 
     def load(self, *files, chunk=None, forget_terminals=False):
         """Run these config files (and then `chunk`): the rules made, and TERMINAL_CLASSES."""
-        env = dict(self.env, STUB_FILES=":".join(os.path.join(CONFIG, f) for f in files))
+        env = dict(self.env, STUB_FILES=":".join(os.path.join(CONFIG, f) for f in ["paths.lua"] + list(files)))   # (paths.lua first, as hyprland.lua loads it)
         if chunk is not None:
             env["STUB_CHUNK"] = os.path.join(self.h.dir, "chunk.lua")
             with open(env["STUB_CHUNK"], "w") as f:

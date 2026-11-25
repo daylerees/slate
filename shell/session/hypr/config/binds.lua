@@ -21,7 +21,7 @@ local mainMod = "SUPER"
 --   "hyprland-extras"  Hyprland's defaults, plus Slate's shortcuts on keys they leave free
 KEYSET = "slate"
 do
-    local path = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/slate/keyset.lua"
+    local path = SLATE_STATE_HOME .. "/slate/keyset.lua"
     local f = io.open(path, "r")
     if f then
         f:close()

@@ -1,4 +1,5 @@
-// Rounded screen corners, all four (always black, the same squircle shape the bar uses).
+// Rounded screen corners, all four: always black, a squircle (superellipse) of the size and
+// shape the bar keeps (Bar.screenCornerRadius, screenCornerShape), as its flare uses.
 // Drawn here rather than by the bar, so they stay while the bar is auto-hidden.
 // Each corner is its own small window, just the size of the corner and anchored to it (as the hot
 // corners are), rather than one window the size of the whole screen with almost nothing in it:

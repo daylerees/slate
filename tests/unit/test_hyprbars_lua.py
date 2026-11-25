@@ -35,6 +35,7 @@ hl = setmetatable({
         end,
     }, { __index = function() return anything end }),
 }, { __index = function() return anything end })
+dofile(os.getenv("STUB_CONFIG"):match("^(.*/)") .. "paths.lua")   -- (as hyprland.lua loads it first)
 dofile(os.getenv("STUB_CONFIG"))
 print("LOADED=" .. tostring(HYPRBARS_LOADED))
 '''
@@ -183,3 +184,26 @@ class SystemPackages(Case):
         self.assertEqual(lua, sh)
         for need in ("/usr/lib64/hyprland/plugins/hyprbars.so", "/usr/lib/x86_64-linux-gnu/hyprland/plugins/hyprbars.so"):
             self.assertIn(need, lua)
+
+
+class EmptyVariables(Case):
+    def test_an_empty_xdg_variable_counts_as_unset(self):
+        """`os.getenv("XDG_STATE_HOME") or …` took an empty variable as a folder ("" .. "/slate/…"
+        is /slate/…); Config.qml counts it as unset. paths.lua does the same for the Lua config."""
+        paths = slate.path("shell", "session", "hypr", "config", "paths.lua")
+        lua = slate.need("lua", "luajit", "lua5.1")
+        env = dict(os.environ, HOME="/home/x", XDG_STATE_HOME="", XDG_DATA_HOME="")
+        code, out = run([lua, "-e", f'dofile("{paths}"); io.write(SLATE_STATE_HOME, "|", SLATE_DATA_HOME, "|", tostring((slateEnv("XDG_STATE_HOME"))))'], env=env)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out, "/home/x/.local/state|/home/x/.local/share|nil")
+        env.update(XDG_STATE_HOME="/st", XDG_DATA_HOME="/da")
+        code, out = run([lua, "-e", f'dofile("{paths}"); io.write(SLATE_STATE_HOME, "|", SLATE_DATA_HOME)'], env=env)
+        self.assertEqual(out, "/st|/da")
+
+    def test_the_config_uses_it(self):
+        """No `os.getenv("XDG_…") or` left in Slate's Hyprland config: they go through paths.lua."""
+        import glob
+        for p in glob.glob(slate.path("shell", "session", "hypr", "**", "*.lua"), recursive=True):
+            with self.subTest(os.path.basename(p)):
+                with open(p) as f:
+                    self.assertNotRegex(f.read(), r'os\.getenv\("XDG_(STATE|DATA|CONFIG)_HOME"\)\s*or')

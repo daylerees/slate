@@ -5,7 +5,7 @@
 -- Slate keeps the bar colour, title colour, font and size in step with its theme.
 -- Your own changes go in ~/.config/slate/hypr/hyprland.lua, which loads after this file.
 
-local dataHome = os.getenv("XDG_DATA_HOME") or (os.getenv("HOME") .. "/.local/share")
+local dataHome = SLATE_DATA_HOME          -- (hyprland.lua: empty counts as not set)
 local plugins = dataHome .. "/slate/plugins/"
 local system = {
     "/usr/lib/hyprland-plugins/hyprbars.so",
@@ -181,9 +181,9 @@ if HYPRBARS_LOADED then
         -- sized from Slate's font size. hyprbars only takes button colours and sizes when the
         -- config loads, so Slate writes them to ~/.local/state/slate/hyprbars.lua and reloads
         -- Hyprland when they change.
-        local theme = { accent = "rgb(8b94a3)", accent_text = "rgb(12151a)", button_size = 16 }
-        local stateHome = os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")
-        local okTheme, t = pcall(dofile, stateHome .. "/slate/hyprbars.lua")
+        -- (until Slate has written its theme: the default accent, colors.lua's, not its dim gray)
+        local theme = { accent = "rgb(8fb3e8)", accent_text = "rgb(12151a)", button_size = 16 }
+        local okTheme, t = pcall(dofile, SLATE_STATE_HOME .. "/slate/hyprbars.lua")
         if okTheme and type(t) == "table" then
             for k, v in pairs(t) do theme[k] = v end
         end
@@ -200,6 +200,9 @@ if HYPRBARS_LOADED then
     -- From Slate's patch to hyprbars (data/hyprbars-idle-button-color.patch); a hyprbars
     -- without it doesn't know this setting (and setting it anyway is a config error). Slate
     -- sets it from its theme
-    HYPRBARS_IDLE = hl.get_config("plugin.hyprbars.idle_button_color") ~= nil
+    -- (asked inside pcall, as windowrules.lua does: on a hyprbars without the patch the lookup
+    -- itself can raise, which stopped the rest of Slate's config loading)
+    local okIdle, idle = pcall(hl.get_config, "plugin.hyprbars.idle_button_color")
+    HYPRBARS_IDLE = okIdle and idle ~= nil
     if HYPRBARS_IDLE then pcall(hl.config, { plugin = { hyprbars = { idle_button_color = "rgb(5a6372)" } } }) end
 end

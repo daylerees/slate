@@ -143,7 +143,7 @@ hl.window_rule({ name = "slate-settings-no-dim", match = { class = "^(slate-sett
 -- Float settings and utility windows
 local floatApps = {
     { class = "^(kvantummanager|qt[56]ct|nwg-look)$" },
-    { class = "^(org.pulseaudio.pavucontrol|blueman-manager|nm-applet|nm-connection-editor)$" },
+    { class = "^(org\\.pulseaudio\\.pavucontrol|blueman-manager|nm-applet|nm-connection-editor)$" },
     { title = "^(Winetricks.*|Protontricks.*)$" },
 }
 for _, m in ipairs(floatApps) do alwaysFloats({ match = m, float = true }) end

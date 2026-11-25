@@ -130,6 +130,7 @@ if os.getenv("STUB_APPS") then
     TERMINAL, FILE_MANAGER, EDITOR, CALCULATOR = t, f, e, c
 end
 -- (KNOWN_APPS and TERMINAL_RUN are variables.lua's: the values above are kept)
+dofile(os.getenv("STUB_CONFIG"):match("^(.*/)") .. "paths.lua")   -- (as hyprland.lua loads it first)
 dofile(os.getenv("STUB_VARIABLES"))
 NUM_WPM = 3
 -- (monitors named in variables.lua, unless a test wants them left unnamed, as they are out of the box)
@@ -444,6 +445,7 @@ class BindsLua(Case):
             with self.subTest(terminal=terminal):
                 code, out = run([self.lua, "-e",
                                  f'hl = setmetatable({{}}, {{ __index = function() return function() end end }}); '
+                                 f'dofile("{os.path.join(CONFIG_DIR, "paths.lua")}"); '
                                  f'TERMINAL = "{terminal}"; dofile("{os.path.join(CONFIG_DIR, "variables.lua")}"); '
                                  "io.write(TERMINAL_RUN(\"sh -c 'x'\"))"], env=self.h.env)
                 self.assertEqual(code, 0, out)

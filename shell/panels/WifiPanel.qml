@@ -1,14 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
-import Quickshell.Hyprland
-import Quickshell.Services.UPower
-import Quickshell.Services.Pipewire
 import Quickshell.Networking
-import Quickshell.Bluetooth
-import Quickshell.Services.Mpris
-import QtQuick.Effects
 import qs
 
 // ---- Wi-Fi -------------------------------------------------------------
@@ -53,8 +46,6 @@ Column {
             onToggled: Networking.wifiEnabled = !Networking.wifiEnabled
         }
     }
-    // (a computer with no Wi-Fi: say so. The bar's Wi-Fi button isn't shown there, but
-    // the panel can still be asked for)
     // Wired: its own line, above whatever Wi-Fi there is
     Item {
         visible: wifiView.onWire

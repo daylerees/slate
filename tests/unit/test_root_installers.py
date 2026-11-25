@@ -11,6 +11,7 @@ the test, `getent` gives the scratch home, and the commands that would write to 
 (`install`, and `mktemp` for the login screen's staging folder) are stand-ins that only record
 what they were asked to do."""
 import os
+import re
 import shlex
 import pwd
 import shutil
@@ -864,3 +865,29 @@ class OwnerCheck(Case):
     def test_the_login_screens_installer_checks_its_folder(self):
         src = slate.read("shell", "bin", "slate-greeter-install")
         self.assertRegex(src, r'yours_or_roots "\$SRC" \|\|', "the login screen's installer doesn't check whose folder it takes")
+
+
+class PackageNames(Case):
+    """bin/slate-system (yours) and bin/slate-system-root (root's copy) each check a package's
+    name before installing it, and the two had drifted (root's let ":" through). Root's copy
+    can't read a file of yours, so the rule is written in both: run both on the same names."""
+    SAMPLES = {
+        "foot": True, "python-gobject": True, "libqt6svg6": True, "gtk+3": True, "qt6-base@x": True,
+        "lib32-mesa": True, "gst-plugins-good1.0": True,
+        "": False, "-rf": False, "--root": False, ".hidden": False, "a b": False, "a;b": False,
+        "a:i386": False, "copr:x/y": False, "x11-apps/xrdb": False, "a$(id)": False, "a\nb": False,
+    }
+
+    def rule(self, *path):
+        src = slate.read(*path)
+        found = re.findall(r'\[\[ "\$\w+" =~ (\^\S+\$) \]\] \|\| \{ echo "slate-system: bad package name', src)
+        self.assertEqual(len(found), 1, path)
+        return found[0]
+
+    def test_both_halves_take_the_same_names(self):
+        mine, roots = self.rule("shell", "bin", "slate-system"), self.rule("shell", "bin", "slate-system-root")
+        for name, ok in self.SAMPLES.items():
+            for label, rule in (("slate-system", mine), ("slate-system-root", roots)):
+                with self.subTest(f"{label}: {name!r}"):
+                    code, _ = run(["bash", "-c", f'[[ "$1" =~ {rule} ]]', "_", name])
+                    self.assertEqual(code == 0, ok)

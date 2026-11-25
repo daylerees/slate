@@ -7,14 +7,10 @@
 import QtQuick
 import Qt.labs.folderlistmodel
 import QtQuick.Effects
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Services.SystemTray
 import Quickshell.Hyprland
-import Quickshell.Services.Mpris
-
 PanelWindow {
     id: win
 
@@ -41,8 +37,9 @@ PanelWindow {
     ]
     FileView {
         id: dockState
-        // (~/.local/state on purpose, not Config.stateHome: it stays where it has always been)
-        path: Quickshell.env("HOME") + "/.local/state/slate/dock.json"
+        // (in Config.stateHome, as the rest of Slate's state is: bin/slate moved it there from
+        // ~/.local/state, where it used to stay wherever your state folder was set to be)
+        path: Config.stateHome + "/slate/dock.json"
         blockLoading: true
         onLoaded: { try { const d = JSON.parse(text()); if (Array.isArray(d.pinned)) win.pinned = d.pinned; } catch (e) {} }
         onLoadFailed: firstRun.start()

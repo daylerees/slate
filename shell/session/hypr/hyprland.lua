@@ -12,7 +12,8 @@
 --   binds.lua       keyboard shortcuts
 --   rules.lua       window and workspace rules
 --   autostart.lua   commands to run at login
---   hyprland.lua    last: anything else; wins over everything above
+--   hyprland.lua    last: anything else; wins over everything above but what Settings
+--                   owns (gaps, borders, rounded corners, dimming: set again after each reload)
 -- A mistake in one is skipped (the rest still loads) and noted in
 -- $XDG_RUNTIME_DIR/slate-hypr-errors.txt, which Slate shows in a notification.
 
@@ -20,7 +21,8 @@ hl.env("SLATE_SESSION", "1")
 -- Your own Slate folder (settings, these tweaks, your QML), and where Slate's code is: the same
 -- folder for an install of your own, apart from it when Slate is installed for everyone
 -- (slate-session says which, in SLATE_DIR)
-local function env(name) local v = os.getenv(name); if v and v ~= "" then return v end end
+require("config.paths")                 -- slateEnv, SLATE_STATE_HOME, SLATE_DATA_HOME
+local env = slateEnv
 local yourSlate = (env("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")) .. "/slate"
 -- (this file is session/hypr/hyprland.lua in Slate's code: its own path says where that is,
 -- should SLATE_DIR not reach Hyprland, as under uwsm)
@@ -37,12 +39,7 @@ SLATE = SLATE_DIR .. "/bin/slate"
 local userDir = yourSlate .. "/hypr"         -- your own files (see the top of this file)
 -- Mistakes in them, for Slate to show (started empty on each load of the config)
 -- (in Slate's runtime folder, as Config.qml's runtimeDir works it out: never /tmp)
-local runtimeDir = os.getenv("XDG_RUNTIME_DIR") or ""
-if runtimeDir == "" then
-    local stateHome = os.getenv("XDG_STATE_HOME") or ""
-    if stateHome == "" then stateHome = (os.getenv("HOME") or "") .. "/.local/state" end
-    runtimeDir = stateHome .. "/slate/run"
-end
+local runtimeDir = env("XDG_RUNTIME_DIR") or (SLATE_STATE_HOME .. "/slate/run")
 local errorsPath = runtimeDir .. "/slate-hypr-errors.txt"
 do local e = io.open(errorsPath, "w"); if e then e:close() end end
 local function userFile(name)

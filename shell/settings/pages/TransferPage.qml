@@ -22,33 +22,15 @@ Column {
     // ---- Export ----------------------------------------------------------------------------
     GroupLabel { text: "Export" }
     Group {
-        SettingRow {
+        ExportRow {
             id: exportRow
-            property string saved: ""          // the file, once made
-            property string status: ""
             label: "Export your settings"
-            detail: status !== "" ? status
-                : "Saves them to a file in your Documents folder. It holds your own files too, so keep it somewhere private"
-            Process {
-                id: exportRun
-                command: [transferPane.script, "export"]
-                stdout: StdioCollector { onStreamFinished: exportRow.saved = text.trim() }
-                // (why it couldn't, in Slate's words: too much in your own folders, say)
-                stderr: StdioCollector { id: exportWhy }
-                onExited: code => {
-                    const why = exportWhy.text.trim().split("\n").pop();
-                    exportRow.status = code === 0 && exportRow.saved !== ""
-                        ? "Saved to " + exportRow.saved.replace(transferPane.home, "~")
-                        : why.startsWith("Slate couldn't") ? why
-                        : "Slate couldn't save your settings. Check there's some free space, then try again";
-                    files.look();
-                }
-            }
-            Row {
-                spacing: 8
-                Button { visible: exportRow.saved !== ""; label: "Show"; onClicked: Quickshell.execDetached(["xdg-open", exportRow.saved.substring(0, exportRow.saved.lastIndexOf("/"))]) }
-                Button { icon: 0xEB47; label: "Export"; enabled: !exportRun.running; onClicked: { exportRow.saved = ""; exportRow.status = "Saving…"; exportRun.running = true; } }
-            }
+            about: "Saves them to a file in your Documents folder. It holds your own files too, so keep it somewhere private"
+            command: [transferPane.script, "export"]
+            icon: 0xEB47
+            savedText: f => "Saved to " + f.replace(transferPane.home, "~")
+            failText: why => why !== "" ? why : "Slate couldn't save your settings. Check there's some free space, then try again"
+            onFinished: files.look()
         }
     }
 

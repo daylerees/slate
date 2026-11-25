@@ -38,8 +38,8 @@ USER = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".co
 SHARE = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share"), "slate")
 SETTINGS = os.path.join(USER, "settings.json")
 SPACES = os.path.join(SHARE, "spaces.json")
-# The dock's pinned apps (Dock.qml keeps them in ~/.local/state on purpose, whatever XDG_STATE_HOME says)
-DOCK = os.path.join(HOME, ".local", "state", "slate", "dock.json")
+# The dock's pinned apps (Dock.qml: in XDG_STATE_HOME, as the rest of Slate's state)
+DOCK = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local", "state"), "slate", "dock.json")
 BACKUPS = os.path.join(SHARE, "backups")
 WALLPAPERS = os.path.join(SHARE, "wallpapers")       # where an imported wallpaper picture goes
 OWN = ("hypr", "user")                                # your own folders, whole

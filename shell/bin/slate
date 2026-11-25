@@ -203,6 +203,19 @@ save_crash() {
     ls -1t "$CRASHES"/crash-*.txt 2>/dev/null | tail -n +$((KEEP_REPORTS + 1)) | while IFS= read -r old; do rm -f "$old"; done
 }
 
+# The dock's pins, the launcher's counts and the notification history were kept in
+# ~/.local/state whatever XDG_STATE_HOME said, as nothing else of Slate's was: with it set, they
+# move there once, before Slate reads them, and nothing is lost (Migration, kept until 2027-06)
+move_old_state() {
+    old="$HOME/.local/state/slate" new="${XDG_STATE_HOME:-$HOME/.local/state}/slate"
+    [ "$old" = "$new" ] && return 0
+    for f in dock.json launcher.json notifications.json; do
+        if [ -f "$old/$f" ] && [ ! -e "$new/$f" ] && [ ! -L "$new/$f" ]; then
+            mkdir -p "$new" && mv -- "$old/$f" "$new/$f" || true
+        fi
+    done
+    return 0
+}
 keep() {
     child=
     # Stopped on purpose (slate stop, restart --full, shutting down): Slate goes with it
@@ -215,6 +228,7 @@ keep() {
     # (scripts/spaces.py writes them 0600 now): tightened as Slate starts (Migration, kept until 2027-06)
     chmod 600 "${XDG_DATA_HOME:-$HOME/.local/share}/slate/spaces.json" \
               "${XDG_STATE_HOME:-$HOME/.local/state}/slate/session.json" 2>/dev/null || true
+    move_old_state
     crashes=; again=
     while :; do
         rm -f "$READY"

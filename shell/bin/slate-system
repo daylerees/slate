@@ -133,6 +133,7 @@ install() {
     [ "$#" -gt 0 ] || { echo "slate-system: --install needs package names" >&2; return 1; }
     local p
     for p in "$@"; do
+        # (the same rule as bin/slate-system-root's, which a unit test holds them to)
         [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9@._+-]*$ ]] || { echo "slate-system: bad package name: $p" >&2; return 1; }
     done
     case "$FAMILY" in

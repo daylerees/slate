@@ -21,7 +21,7 @@ Scope {
     readonly property int maxToasts: Config.s.notificationMaxToasts
     readonly property int maxHistory: 100
     readonly property real toastWidth: 360
-    readonly property string stateFile: Quickshell.env("HOME") + "/.local/state/slate/notifications.json"
+    readonly property string stateFile: Config.stateHome + "/slate/notifications.json"
 
     // ---- State -------------------------------------------------------------
     property bool dnd: false                // Do Not Disturb by hand (the switch; saved)

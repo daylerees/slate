@@ -167,7 +167,7 @@ for _, m in ipairs(hl.get_monitors() or {}) do giveBest(m, false) end
 -- (by its description, so they follow the monitor between ports)
 hl.monitor = noting
 do
-    local stateHome = os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")
+    local stateHome = SLATE_STATE_HOME
     local path = stateHome .. "/slate/displays.lua"
     local f = io.open(path, "r")
     if f then

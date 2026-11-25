@@ -1,8 +1,5 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
-import Quickshell.Io
-import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../.."
 import ".."

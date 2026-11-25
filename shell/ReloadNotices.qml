@@ -3,8 +3,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
-
 Scope {
     id: root
 
