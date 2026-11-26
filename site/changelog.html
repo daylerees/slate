@@ -39,6 +39,65 @@
 </section>
 
 <!-- New releases go here, newest first. -->
+<section id="v0.37.0" class="fp-section cl-release">
+  <h2><i class="ti">&#xEB34;</i> v0.37.0 <time datetime="2026-11-26">26 November 2026</time></h2>
+  <div class="cl-grid">
+    <article>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Import &amp; Export.</strong> A new Settings page saves everything that makes Slate yours to one file: every setting, your saved Spaces, your own Hyprland tweaks and QML, and your wallpaper. Use it to keep a backup or to set up another computer the same way. Importing asks first, keeps what it replaces, and can be undone from the same page.</li>
+        <li><strong>Signed updates.</strong> Every release is now signed, and Settings → Updates installs only an update that carries Slate's signature as well as matching its checksum. Anyone who could publish on GitHub without Slate's key can no longer get an update installed. Nothing changes in how you update.</li>
+        <li><strong>Swap and GPU in the battery panel.</strong> The System section shows how much swap is in use and how busy your graphics card is (AMD, or NVIDIA with nvidia-smi installed). A laptop's resting graphics card shows as Asleep and isn't woken to ask.</li>
+        <li><strong>Settings by keyboard and screen reader.</strong> Every control in Settings, and the menus apps put in the tray, can now be reached with Tab and the arrow keys, pressed with Enter or Space, and read out by a screen reader.</li>
+        <li><strong>Tidier Settings.</strong> One look for buttons you can't press yet, a dropdown for every choice, and each page with its own color in Colorful mode.</li>
+        <li><strong>Your name on the lock and login screens,</strong> under your picture.</li>
+        <li><strong>Hot corners rest in game mode,</strong> so games that scroll at the screen's edges don't set them off.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Fixes</h3>
+      <ul>
+        <li>The dock no longer shows an empty preview while an app is still opening.</li>
+        <li>Import &amp; Export finishes or puts everything back: a failed import says so and restores your settings, every refused file says why, and Undo restores exactly what was there.</li>
+        <li>The daily look for updates keeps going in a long session, and Night light no longer clears a screen shader you set yourself.</li>
+        <li>Lock &amp; Suspend in the power menu waits for the lock screen before sleeping.</li>
+        <li>Going back to tiling from a floating workspace leaves calculators, dialogs and other always-floating windows floating.</li>
+        <li>The shortcut set follows Settings however it changes (Restore defaults, Import), and Super with the =/+ key zooms in on US and UK keyboards.</li>
+        <li>The overview reads clearly in light mode, choosing an open window in the launcher goes to it, and recent files with an apostrophe, &amp; or # open properly.</li>
+        <li>The power menu from the control center opens in the right place, and a click on the menu bar works first time with an app's tray menu open.</li>
+        <li>Super+Escape's Force Quit lets you pick a window, and can never quit Slate itself.</li>
+        <li>Do Not Disturb's schedule says when it really ends.</li>
+        <li>Settings → Webcam's preview shows again.</li>
+        <li>Settings → About's Open file opens your own settings file, and Settings → Assistant's Sign in works with any terminal (WezTerm, GNOME Terminal, Ptyxis and Xfce Terminal included).</li>
+        <li>Monitor shortcuts work out of the box, and every example in your own binds.lua works once uncommented.</li>
+        <li>Closing the lid with a switched-off screen, the power mode after a reload, and names with unusual characters are all handled properly.</li>
+        <li>The daily look for updates starts with Slate.</li>
+        <li>The login screen installs without sudo and is never left half-installed. When Slate sets up the login screen it never follows a link out of its own folder.</li>
+        <li>Messages that need a package name the right one for your distro, and NixOS's login screen finds your sessions.</li>
+        <li>Kinder wording in a few notices, and links to Settings pages that had moved.</li>
+        <li>A handful of look-and-feel slips: a doubled hover, missing fades, a square corner and two mismatched shades.</li>
+        <li>Clearing your clipboard history asks first, from the picker, the menu bar's panel and Settings.</li>
+        <li>Every hover shows at once, the control center's buttons and the workspace dots included, and the Wi-Fi, Sound, Battery and Notifications panels link to their Settings page like the others.</li>
+        <li>A tray icon in the menu bar's More keeps its own row when another app quits.</li>
+        <li>A screen reader names every button in the panels (Clear all, the calendar's arrows, the media controls) and your own wallpapers in Settings.</li>
+        <li>Settings → Screenshots notices a tool you've just installed, and new icon and pointer themes show up without restarting Slate.</li>
+        <li>With XDG_STATE_HOME set, the dock's pins, the launcher's history and your notifications move there with the rest of Slate's state, and an empty one counts as not set.</li>
+        <li>An older hyprbars without Slate's patch can no longer stop the rest of Slate's Hyprland setup loading.</li>
+      </ul>
+    </article>
+    <article>
+      <h3>Other</h3>
+      <ul>
+        <li><strong>Privacy:</strong> saved Spaces, the apps kept for your next login, and Slate's log are now readable only by you. With Keep chats off, Nova's "answered" notification no longer shows what it said. Screenshots, recordings and updates keep their temporary files in your private runtime folder rather than /tmp, and the screensaver's video downloads have a size cap.</li>
+        <li><strong>Security:</strong> hardening in the parts that run as administrator. Security keys for accounts with a dot in the name stay separate, Slate installs only the packages on its own list, the login screen installer checks the folder it's given, the commands Slate suggests quote their folders, and an update has to be the version it was published as.</li>
+        <li><strong>Performance:</strong> Slate does much less work in the background: fewer polls and processes, Hyprland's events handled once, panels and the overview keeping what they've already drawn, and Settings remembering what it has looked up. The window switcher blurs the wallpaper once per screen rather than once per card, the battery panel asks the graphics card less often, and Private Mode does nothing at start while it's off.</li>
+        <li>OpenSSH (ssh-keygen) is now needed, to check updates' signatures. The installer adds it.</li>
+        <li>Heads-up: with the next Quickshell release, its Hyprland module warns as it loads (seen against today's Arch packages). Slate works the same; it's being watched.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
 <section id="v0.36.0" class="fp-section cl-release">
   <h2><i class="ti">&#xEB34;</i> v0.36.0 <time datetime="2026-11-22">22 November 2026</time></h2>
   <div class="cl-grid">
