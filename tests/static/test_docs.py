@@ -256,3 +256,34 @@ class FeaturesPageList(Case):
         for label in sorted(pages, key=len, reverse=True):
             rest = rest.replace(label, "")
         self.assertEqual(re.sub(r"[,\s]", "", rest), "", "features.html lists a page Settings doesn't have")
+
+
+class SharePreviews(Case):
+    """A link to the site shared in Slack, a chat app or on social sites shows a preview: every
+    page has its Open Graph tags, matching the page itself (a docs page made by copying another
+    keeps the old one's title and address otherwise), with the large share image at an address
+    the apps can fetch (a relative one, as the homepage once had, shows nothing)."""
+    BASE = "https://daylerees.github.io/slate/"
+
+    def test_every_page_has_its_own_preview(self):
+        import glob, os
+        from PIL import Image
+        with Image.open(slate.path("site", "assets", "share.png")) as im:
+            self.assertEqual(im.size, (1200, 630), "the share image is the size the apps show")
+        self.assertLess(os.path.getsize(slate.path("site", "assets", "share.png")), 1_000_000)
+        pages = sorted(glob.glob(slate.path("site", "*.html")) + glob.glob(slate.path("site", "docs", "*.html")))
+        self.assertGreater(len(pages), 40)
+        for path in pages:
+            rel = os.path.relpath(path, slate.path("site"))
+            with self.subTest(rel):
+                src = open(path, encoding="utf-8").read()
+                meta = dict(re.findall(r'<meta (?:property|name)="((?:og|twitter):[\w:]+)" content="([^"]*)">', src))
+                title = re.search(r"<title>(.*?)</title>", src).group(1)
+                desc = re.search(r'<meta name="description" content="([^"]*)">', src).group(1)
+                self.assertEqual(meta.get("og:title"), title)
+                self.assertEqual(meta.get("og:description"), desc)
+                self.assertEqual(meta.get("og:url"), self.BASE + ("" if rel == "index.html" else rel))
+                self.assertEqual(meta.get("og:image"), self.BASE + "assets/share.png")
+                self.assertEqual(meta.get("og:site_name"), "Slate")
+                self.assertEqual(meta.get("twitter:card"), "summary_large_image")
+                self.assertTrue(meta.get("og:image:alt"))
