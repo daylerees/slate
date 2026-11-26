@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import qs
 
 // ---- Arranging: dragging things about on the bar itself --------------------------

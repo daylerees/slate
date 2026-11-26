@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import qs
 
 // A tray icon's picture, as the bar draws it: in the bar's text colour (or its own colours, in

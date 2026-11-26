@@ -1,7 +1,5 @@
 import QtQuick
-import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Networking
 import QtQuick.Effects
 import qs
 import "Press.js" as Press

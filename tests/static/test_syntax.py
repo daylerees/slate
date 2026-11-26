@@ -95,7 +95,7 @@ class Syntax(Case):
     # unused. qmllint only says so in a file it can fully resolve, and leaves it unsaid in any
     # with an unqualified lookup (most panels and windows: they read their parent's properties),
     # so those were never checked (UpdateHold, ReloadNotices and five panels had some).
-    # (QtQuick, Quickshell itself and qs give too much to list, and are left to qmllint)
+    # (QtQuick and qs give too much to list, and are left to qmllint)
     MODULE_TYPES = {
         "Quickshell.Io": r"Process|FileView\w*|IpcHandler|StdioCollector|SplitParser|Socket\w*|DataStream\w*|JsonAdapter|JsonObject",
         "Quickshell.Wayland": r"Wlr\w+|WlSession\w*|Screencopy\w*|ToplevelManager|Toplevel|IdleInhibitor|IdleMonitor",
@@ -106,7 +106,13 @@ class Syntax(Case):
         "QtMultimedia": r"Video|VideoOutput|MediaPlayer|AudioOutput|SoundEffect|Camera\w*|CaptureSession|ImageCapture|MediaDevices",
         "Quickshell.Bluetooth": r"Bluetooth\w*",
         "Quickshell.Services.Pipewire": r"Pw\w+|Pipewire",
-        "Quickshell.Networking": r"Networking|Network\w+|Wifi\w+|Connection\w+|DeviceConnectionState",
+        # (not Connection\w+: that's Connections, QtQuick's own, which nearly every file has)
+        "Quickshell.Networking": r"Networking|Network\w+|Wifi\w+|ConnectionState|DeviceConnectionState",
+        # Quickshell itself: its singleton and its types (a newer qmllint found files with none)
+        "Quickshell": r"Quickshell|ShellRoot|Scope|Variants|LazyLoader|PanelWindow|FloatingWindow|PopupWindow|QsWindow|"
+                      r"ScriptModel|ObjectModel|PersistentProperties|Singleton|Region|RegionShape|Intersection|PopupAnchor|"
+                      r"Edges|ExclusionMode|SystemClock|ElapsedTimer|DesktopEntries|DesktopEntry|QsMenu\w*|ColorQuantizer|"
+                      r"Retainable|BoundComponent|Reloadable|TransformWatcher|EasingCurve|IconImage",
         "Quickshell.Services.UPower": r"UPower\w*|PowerProfile\w*|PerformanceDegradationReason",
         "Quickshell.Services.Mpris": r"Mpris\w*",
         "Quickshell.Services.SystemTray": r"SystemTray\w*|Status|Category",
@@ -121,7 +127,8 @@ class Syntax(Case):
             if f.startswith("shell/data/user-files/"):
                 continue
             src = slate.read(f)
-            body = re.sub(r"//[^\n]*|/\*.*?\*/", "", src, flags=re.S)
+            # (comments out: not a "//" after a colon, which is a URL in a string, "file://…")
+            body = re.sub(r"(?<!:)//[^\n]*|/\*.*?\*/", "", src, flags=re.S)
             body = re.sub(r"^import [^\n]*$", "", body, flags=re.M)
             for mod in re.findall(r"^import ([A-Za-z][\w.]*)\s*$", src, re.M):
                 words = self.MODULE_TYPES.get(mod)

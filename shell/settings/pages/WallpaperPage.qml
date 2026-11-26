@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Networking
 import Qt.labs.folderlistmodel
 import "../.."
 import ".."

@@ -1,6 +1,4 @@
 import QtQuick
-import Quickshell
-import Quickshell.Networking
 import "../.."
 import ".."
 
