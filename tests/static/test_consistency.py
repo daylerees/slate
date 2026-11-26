@@ -1526,3 +1526,8 @@ class LoginScreenName(Case):
         self.assertRegex(src, r"PlainName \{[^}]*visible: ls\.displayName !== \"\"[^}]*text: ls\.displayName")
         for f in ("LoginScreen.qml", "PolkitAgent.qml"):
             self.assertIn("transform: Shake { id: shake }", slate.read("shell", f))
+        # (and Settings' preview of the login screen names whoever's picked, as the real one does:
+        # it named you whoever was chosen)
+        lock = slate.read("shell", "LockScreen.qml")
+        self.assertIn("displayName: people.length > 0 ? (people[Math.min(personIndex, people.length - 1)].name", lock)
+        self.assertIn("onPersonPicked: i => personIndex = i", lock)

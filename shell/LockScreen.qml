@@ -595,7 +595,10 @@ Scope {
             mode: root.previewMode
             wallpaper: Config.wallpaper
             avatar: root.avatar
-            displayName: root.displayName
+            // (the login preview with several people: the chosen one's name, as on the real login
+            // screen, which shows whoever's picked; and picking one there changes it)
+            displayName: people.length > 0 ? (people[Math.min(personIndex, people.length - 1)].name || root.displayName) : root.displayName
+            onPersonPicked: i => personIndex = i
             sessions: root.sessions
             busy: root.busy
             message: root.message
